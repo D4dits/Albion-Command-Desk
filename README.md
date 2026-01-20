@@ -7,6 +7,10 @@ It reads UDP traffic only (PCAP replay or live capture); no client hooks, overla
 
 Core safety rule: the meter aggregates only the local player and party members (never unrelated nearby players).
 
+<p align="center">
+  <img src="assets/DPS.png" alt="">
+</p>
+
 ## Quickstart (Windows / PowerShell)
 1) Create and activate a virtualenv:
 ```
