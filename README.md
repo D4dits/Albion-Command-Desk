@@ -46,6 +46,35 @@ albion-dps replay .\path\to\file.pcap
 albion-dps live
 ```
 
+## Quickstart (Linux)
+1) Create and activate a virtualenv:
+```
+python -m venv venv
+source venv/bin/activate
+```
+2) Install this repo (editable) + live capture deps:
+```
+python -m pip install -U pip
+python -m pip install -e ".[capture]"
+```
+3) Replay a PCAP:
+```
+albion-dps replay /path/to/file.pcap
+```
+4) Live capture (pick the right interface):
+```
+albion-dps live --list-interfaces
+albion-dps live --interface "wlp3s0"
+```
+5) If live capture fails with "Operation not permitted", grant capture permissions:
+```
+sudo setcap cap_net_raw,cap_net_admin=eip "$(which python)"
+```
+Alternative (run with sudo using the venv python):
+```
+sudo "$(which python)" -m albion_dps live
+```
+
 ## Requirements
 - Python 3.10+
 - Replay mode: no extra dependencies
