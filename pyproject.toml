@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "albion-dps"
+version = "0.1.0"
+description = "Albion Online DPS/Heal meter (CLI)"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+albion-dps = "albion_dps.cli:main"
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+capture = ["pcapy-ng>=1.0.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["albion_dps*"]
+exclude = ["wzor*", "tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
