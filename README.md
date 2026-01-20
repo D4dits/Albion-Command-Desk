@@ -1,4 +1,4 @@
-[![Buy me a coffee](https://buycoffee.to/static/img/share/share-button-white.png)](https://buycoffee.to/ao-dps)
+[![Buy me a coffee](https://img.shields.io/badge/Support-Buy%20me%20a%20coffee-orange)](https://buycoffee.to/ao-dps)
 
 # Albion DPS Meter (CLI)
 
