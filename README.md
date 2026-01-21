@@ -127,6 +127,26 @@ $env:ALBION_DPS_SELF_NAME="YourName"
 $env:ALBION_DPS_SELF_ID="123456"
 ```
 
+## GUI (Textual)
+Install GUI extras:
+```
+python -m pip install -e ".[gui]"
+```
+For live capture GUI:
+```
+python -m pip install -e ".[gui,capture]"
+```
+
+Run GUI:
+```
+albion-dps gui live
+albion-dps gui replay .\path\to\file.pcap
+```
+
+Notes:
+- GUI runs in a terminal window (no overlay on the game client).
+- Exit with `Ctrl+C`.
+
 ## Modes (what “session” means)
 - `battle` (default): creates a session when you enter combat state and ends it when you leave combat state.
   Fallback: if combat state isn’t observed, it can still end by `--battle-timeout` inactivity.
