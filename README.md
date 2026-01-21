@@ -178,6 +178,7 @@ If self/party info isn’t observed yet, results can be empty. You can seed/over
 ## Project docs
 - Architecture overview: `docs/ARCHITECTURE.md`
 - Troubleshooting: `docs/TROUBLESHOOTING.md`
+- GUI work plan: `docs/GUI_PLAN.md`
 - Reverse-engineering workflow notes: `PROMPTS.md`
 
 ## Tests
