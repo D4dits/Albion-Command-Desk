@@ -91,6 +91,8 @@ class PartyRegistry:
             return
         id_key = PARTY_SUBTYPE_ID_KEYS.get(subtype)
         if id_key is not None:
+            if self._party_names:
+                return
             entity_id = event.parameters.get(id_key)
             if isinstance(entity_id, int):
                 self._party_roster_candidates.add(entity_id)
@@ -110,6 +112,12 @@ class PartyRegistry:
             self.set_self_name(names[0], confirmed=True)
             return
         self._party_names.update(names)
+        self._party_roster_candidates.clear()
+        self._party_roster_self_seen = False
+        if self._self_ids:
+            self._party_ids.intersection_update(self._self_ids)
+        else:
+            self._party_ids.clear()
 
     def observe_packet(self, packet: RawPacket) -> None:
         self._last_packet_fingerprint = (
@@ -230,8 +238,6 @@ class PartyRegistry:
         return bool(self._party_ids)
 
     def sync_names(self, name_registry: NameRegistry) -> None:
-        if self.strict:
-            return
         if not self._party_names:
             return
         mapped = {
