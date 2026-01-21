@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 from rich.text import Text
 from textual.app import App, ComposeResult
-from textual.containers import Vertical
+from textual.containers import Horizontal, Vertical
 from textual.widgets import DataTable, Static
 
 from albion_dps.models import MeterSnapshot
@@ -13,6 +13,8 @@ from albion_dps.models import MeterSnapshot
 
 SORT_FIELD = {"dmg": "damage", "dps": "dps", "heal": "heal", "hps": "hps"}
 BAR_WIDTH = 24
+ROLE_COLORS = {"tank": "#4fb3ff", "dps": "#ff7a59", "heal": "#6de38f"}
+FALLBACK_PALETTE = ["#ffd166", "#06d6a0", "#118ab2", "#ef476f", "#a39dff"]
 
 
 class AlbionDpsApp(App):
@@ -31,6 +33,14 @@ class AlbionDpsApp(App):
         border: round #1f2a36;
         height: 1fr;
     }
+    #history {
+        margin: 1 2 1 0;
+        border: round #1f2a36;
+        width: 36;
+        padding: 1 2;
+        color: #e6edf3;
+        background: #0f151d;
+    }
     """
 
     def __init__(
@@ -41,6 +51,8 @@ class AlbionDpsApp(App):
         top_n: int,
         mode: str,
         zone_label_provider: Callable[[], str | None],
+        history_provider: Callable[[int], list],
+        history_limit: int,
     ) -> None:
         super().__init__()
         self._snapshot_queue = snapshot_queue
@@ -48,12 +60,15 @@ class AlbionDpsApp(App):
         self._top_n = top_n
         self._mode = mode
         self._zone_label_provider = zone_label_provider
+        self._history_provider = history_provider
+        self._history_limit = history_limit
         self._last_snapshot: MeterSnapshot | None = None
         self._header = Static(id="header")
         self._table = DataTable(id="scoreboard")
+        self._history = Static(id="history")
 
     def compose(self) -> ComposeResult:
-        yield Vertical(self._header, self._table)
+        yield Vertical(self._header, Horizontal(self._table, self._history))
 
     def on_mount(self) -> None:
         self._table.add_columns("source", "damage", "heal", "dps", "hps", "bar")
@@ -89,12 +104,16 @@ class AlbionDpsApp(App):
             entries = entries[: self._top_n]
 
         max_value = max((entry[5] for entry in entries), default=0.0)
+        max_damage = max((entry[1] for entry in entries), default=0.0)
+        max_heal = max((entry[2] for entry in entries), default=0.0)
         rows = []
         for label, damage, heal, dps, hps, sort_value in entries:
-            bar = _bar(sort_value, max_value, BAR_WIDTH)
+            role = _infer_role(damage, heal, max_damage, max_heal)
+            color = _color_for_label(label, role)
+            bar = _bar(sort_value, max_value, BAR_WIDTH, color)
             rows.append(
                 (
-                    label,
+                    Text(label, style=color),
                     f"{damage:.0f}",
                     f"{heal:.0f}",
                     f"{dps:.1f}",
@@ -106,6 +125,7 @@ class AlbionDpsApp(App):
         self._table.clear()
         for row in rows:
             self._table.add_row(*row)
+        self._history.update(_format_history(self._history_provider, self._history_limit))
 
 
 def _snapshot_entries(
@@ -126,11 +146,47 @@ def _snapshot_entries(
     return entries
 
 
-def _bar(value: float, max_value: float, width: int) -> Text:
+def _bar(value: float, max_value: float, width: int, color: str) -> Text:
     if max_value <= 0:
         fill = 0
     else:
         fill = int(round((value / max_value) * width))
     fill = max(0, min(width, fill))
     bar = "#" * fill + "." * (width - fill)
-    return Text(bar, style="bold #57a6ff")
+    return Text(bar, style=f"bold {color}")
+
+
+def _infer_role(damage: float, heal: float, max_damage: float, max_heal: float) -> str | None:
+    if heal > 0.0 and heal >= damage:
+        return "heal"
+    if max_damage > 0.0 and damage >= max_damage * 0.6:
+        return "dps"
+    if damage > 0.0 or heal > 0.0:
+        return "tank"
+    return None
+
+
+def _color_for_label(label: str, role: str | None) -> str:
+    if role and role in ROLE_COLORS:
+        return ROLE_COLORS[role]
+    if not label:
+        return FALLBACK_PALETTE[0]
+    idx = sum(ord(ch) for ch in label) % len(FALLBACK_PALETTE)
+    return FALLBACK_PALETTE[idx]
+
+
+def _format_history(
+    history_provider: Callable[[int], list], limit: int
+) -> Text:
+    history = history_provider(max(limit, 1))
+    if not history:
+        return Text("History:\n(empty)")
+    lines = ["History:"]
+    for idx, summary in enumerate(history, start=1):
+        top = summary.entries[0] if summary.entries else None
+        label = top.label if top else "-"
+        dps = top.dps if top else 0.0
+        lines.append(
+            f"[{idx}] {summary.mode} {summary.duration:05.2f}s | {label} dmg {summary.total_damage:.0f} dps {dps:.1f}"
+        )
+    return Text("\n".join(lines))

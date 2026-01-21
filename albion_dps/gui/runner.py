@@ -79,14 +79,16 @@ def run_gui(args: argparse.Namespace) -> int:
             event_mapper=mapper.map,
             snapshot_interval=1.0,
         )
-        return _run_textual_app(
-            AlbionDpsApp,
-            snapshots,
-            sort_key=args.sort,
-            top_n=args.top,
-            mode=args.mode,
-            zone_label_provider=meter.zone_label,
-        )
+    return _run_textual_app(
+        AlbionDpsApp,
+        snapshots,
+        sort_key=args.sort,
+        top_n=args.top,
+        mode=args.mode,
+        zone_label_provider=meter.zone_label,
+        history_provider=meter.history,
+        history_limit=max(args.history, 1),
+    )
 
     if args.gui_command == "replay":
         snapshots = replay_snapshots(
@@ -99,14 +101,16 @@ def run_gui(args: argparse.Namespace) -> int:
             event_mapper=mapper.map,
             snapshot_interval=1.0,
         )
-        return _run_textual_app(
-            AlbionDpsApp,
-            snapshots,
-            sort_key=args.sort,
-            top_n=args.top,
-            mode=args.mode,
-            zone_label_provider=meter.zone_label,
-        )
+    return _run_textual_app(
+        AlbionDpsApp,
+        snapshots,
+        sort_key=args.sort,
+        top_n=args.top,
+        mode=args.mode,
+        zone_label_provider=meter.zone_label,
+        history_provider=meter.history,
+        history_limit=max(args.history, 1),
+    )
 
     logging.getLogger(__name__).error("Unknown gui command")
     return 1
@@ -151,6 +155,8 @@ def _run_textual_app(
     top_n: int,
     mode: str,
     zone_label_provider: Callable[[], str | None],
+    history_provider: Callable[[int], list],
+    history_limit: int,
 ) -> int:
     snapshot_queue: SnapshotQueue = queue.Queue()
     stop_event = threading.Event()
@@ -166,6 +172,8 @@ def _run_textual_app(
         top_n=top_n,
         mode=mode,
         zone_label_provider=zone_label_provider,
+        history_provider=history_provider,
+        history_limit=history_limit,
     )
     try:
         app.run()
