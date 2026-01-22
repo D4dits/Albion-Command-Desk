@@ -314,6 +314,8 @@ def _flush_or_trim_pending(
             remaining: list[CombatEvent] = []
             for item in pending_events:
                 if _allow_event(item, party_registry, name_registry):
+                    if hasattr(meter, "merge_event_into_history") and meter.merge_event_into_history(item):
+                        continue
                     meter.push(item)
                 elif retain_unresolved:
                     remaining.append(item)

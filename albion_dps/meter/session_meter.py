@@ -224,6 +224,43 @@ class SessionMeter:
             return entries
         return entries[:limit]
 
+    def merge_event_into_history(self, event: CombatEvent) -> bool:
+        history = self._history.get(self.mode)
+        if not history:
+            return False
+        label = self.name_lookup(event.source_id) if self.name_lookup else None
+        if not label:
+            label = str(event.source_id)
+        for idx in range(len(history) - 1, -1, -1):
+            summary = history[idx]
+            if event.timestamp < summary.start_ts or event.timestamp > summary.end_ts:
+                continue
+            grouped: dict[str, tuple[float, float]] = {
+                entry.label: (entry.damage, entry.heal) for entry in summary.entries
+            }
+            damage, heal = grouped.get(label, (0.0, 0.0))
+            if event.kind == "damage":
+                damage += event.amount
+            else:
+                heal += event.amount
+            grouped[label] = (damage, heal)
+            entries = _build_entries_from_grouped(grouped, summary.duration)
+            total_damage = sum(entry.damage for entry in entries)
+            total_heal = sum(entry.heal for entry in entries)
+            history[idx] = SessionSummary(
+                mode=summary.mode,
+                start_ts=summary.start_ts,
+                end_ts=summary.end_ts,
+                duration=summary.duration,
+                label=summary.label,
+                entries=entries,
+                total_damage=total_damage,
+                total_heal=total_heal,
+                reason=summary.reason,
+            )
+            return True
+        return False
+
     def manual_active(self) -> bool:
         return self._manual_active
 
@@ -300,6 +337,12 @@ def _build_entries(
         current_damage, current_heal = grouped.get(label, (0.0, 0.0))
         grouped[label] = (current_damage + damage, current_heal + heal)
 
+    return _build_entries_from_grouped(grouped, duration)
+
+
+def _build_entries_from_grouped(
+    grouped: dict[str, tuple[float, float]], duration: float
+) -> list[SessionEntry]:
     entries: list[SessionEntry] = []
     for label, (damage, heal) in grouped.items():
         if duration > 0:
@@ -317,7 +360,6 @@ def _build_entries(
                 hps=hps,
             )
         )
-
     entries.sort(key=lambda item: item.damage, reverse=True)
     return entries
 
