@@ -12,8 +12,8 @@ from albion_dps.protocol.photon_decode import PhotonDecoder
 from albion_dps.protocol.registry import default_registry
 
 
-def test_pcap27_does_not_include_non_party_sources() -> None:
-    pcap_path = Path("albion_dps/artifacts/pcaps/albion_combat_27_party.pcap")
+def test_pcap35_solo_does_not_include_non_party_names() -> None:
+    pcap_path = Path("albion_dps/artifacts/pcaps/albion_combat_35_solo.pcap")
     if not pcap_path.exists():
         pytest.skip(f"Missing PCAP fixture: {pcap_path}")
 
@@ -23,8 +23,7 @@ def test_pcap27_does_not_include_non_party_sources() -> None:
     party = PartyRegistry()
     meter = SessionMeter(mode="battle", history_limit=20, name_lookup=names.lookup)
 
-    last_snapshot = None
-    for snap in replay_snapshots(
+    for _snap in replay_snapshots(
         pcap_path,
         decoder,
         meter,
@@ -33,16 +32,11 @@ def test_pcap27_does_not_include_non_party_sources() -> None:
         event_mapper=mapper.map,
         snapshot_interval=0.0,
     ):
-        last_snapshot = snap
-
-    assert last_snapshot is not None
+        pass
 
     history = meter.history(limit=10)
     assert history, "expected at least one battle session"
     labels = {entry.label for summary in history for entry in summary.entries}
-    if party._self_name:
-        assert all(label == party._self_name or label.isdigit() for label in labels)
-    else:
-        assert all(label.isdigit() for label in labels)
-    numeric_labels = {label for label in labels if label.isdigit()}
-    assert len(numeric_labels) <= 1
+    assert labels
+    assert all(label.isdigit() for label in labels)
+    assert len(labels) <= 1
