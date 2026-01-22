@@ -10,21 +10,21 @@ Core safety rule: the meter aggregates only the local player and party members (
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.9%2B-blue?logo=python&logoColor=white">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey">
   <img src="https://img.shields.io/badge/Game-Albion%20Online-orange">
 </p>
 
 ---
 
-## ☕ Support the project
+## Support the project
 
 If this project helps you and you'd like to support further development,
 you can buy me a coffee:
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?style=for-the-badge)](https://buycoffee.to/ao-dps/)
 
-Every contribution helps — thank you! ❤️
+Every contribution helps - thank you!
 
 ## Quickstart (Windows / PowerShell)
 1) Create and activate a virtualenv:
@@ -79,7 +79,7 @@ sudo "$(which python)" -m albion_dps live
 - Python 3.10+
 - Replay mode: no extra dependencies
 - Live capture:
-  - Windows: Npcap installed (recommended: “WinPcap API-compatible mode”) + `pcapy-ng`
+  - Windows: Npcap installed (recommended: "WinPcap API-compatible mode") + `pcapy-ng`
   - Linux: libpcap + `pcapy-ng`
 
 ## Install
@@ -151,9 +151,9 @@ GUI keys:
 - `b` battle mode, `z` zone mode, `m` manual mode
 - `1` dps sort, `2` dmg sort, `3` hps sort, `4` heal sort
 
-## Modes (what “session” means)
+## Modes (what "session" means)
 - `battle` (default): creates a session when you enter combat state and ends it when you leave combat state.
-  Fallback: if combat state isn’t observed, it can still end by `--battle-timeout` inactivity.
+  Fallback: if combat state is not observed, it can still end by `--battle-timeout` inactivity.
 - `zone`: a long-running session per server endpoint (shown as `ip:port`), reset on zone change.
 - `manual`: start/stop sessions yourself (TUI key: space).
 
@@ -194,10 +194,11 @@ interface. Start the game to generate traffic.
 
 ## Party-only filtering (important)
 The meter aggregates only events from:
-- the local player (“self”)
+- the local player ("self")
 - party members (when present)
 
-If self/party info isn’t observed yet, results can be empty. You can seed/override self using `--self-name` or `--self-id`.
+If self/party info is not observed yet, results can be empty. You can seed/override self using `--self-name` or `--self-id`.
+When party disbands or you leave, the roster is cleared and only self remains in aggregation.
 
 ## Project docs
 - Architecture overview: `docs/ARCHITECTURE.md`
@@ -206,7 +207,7 @@ If self/party info isn’t observed yet, results can be empty. You can seed/over
 - Reverse-engineering workflow notes: `PROMPTS.md`
 
 ## Tests
-Some integration tests use PCAP fixtures; if you don’t have them locally, those tests will be skipped.
+Some integration tests use PCAP fixtures; if you do not have them locally, those tests will be skipped.
 ```
 python -m pip install -e ".[test]"
 python -m pytest -q
