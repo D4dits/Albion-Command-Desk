@@ -149,7 +149,10 @@ def stream_snapshots(
                     if (
                         party_registry is not None
                         and party_registry.strict
-                        and not party_registry.has_ids()
+                        and (
+                            not party_registry.has_ids()
+                            or party_registry.has_unresolved_names()
+                        )
                     ):
                         pending_events.append(item)
             else:
@@ -165,7 +168,10 @@ def stream_snapshots(
                 elif (
                     party_registry is not None
                     and party_registry.strict
-                    and not party_registry.has_ids()
+                    and (
+                        not party_registry.has_ids()
+                        or party_registry.has_unresolved_names()
+                    )
                 ):
                     pending_events.append(event)
 
@@ -185,7 +191,10 @@ def stream_snapshots(
             elif (
                 party_registry is not None
                 and party_registry.strict
-                and not party_registry.has_ids()
+                and (
+                    not party_registry.has_ids()
+                    or party_registry.has_unresolved_names()
+                )
             ):
                 pending_combat_states.append(
                     (packet.timestamp, combat_state[0], combat_state[1], combat_state[2])
@@ -287,21 +296,6 @@ def _flush_or_trim_pending(
 ) -> None:
     if party_registry is None:
         return
-    if party_registry.has_ids():
-        if pending_events:
-            for item in pending_events:
-                if _allow_event(item, party_registry, name_registry):
-                    meter.push(item)
-            pending_events.clear()
-        if pending_combat_states and hasattr(meter, "observe_combat_state"):
-            for ts, entity_id, in_active, in_passive in sorted(pending_combat_states):
-                if _allow_combat_state(entity_id, party_registry, name_registry):
-                    try:
-                        meter.observe_combat_state(entity_id, in_active, in_passive, ts)
-                    except TypeError:
-                        pass
-            pending_combat_states.clear()
-        return
     if not (pending_events or pending_combat_states):
         return
     cutoff = now_ts - pending_max_age
@@ -312,3 +306,27 @@ def _flush_or_trim_pending(
         pending_events[:] = pending_events[-pending_max_count:]
     if len(pending_combat_states) > pending_max_count:
         pending_combat_states[:] = pending_combat_states[-pending_max_count:]
+    if not (pending_events or pending_combat_states):
+        return
+    if party_registry.has_ids():
+        retain_unresolved = party_registry.has_unresolved_names()
+        if pending_events:
+            remaining: list[CombatEvent] = []
+            for item in pending_events:
+                if _allow_event(item, party_registry, name_registry):
+                    meter.push(item)
+                elif retain_unresolved:
+                    remaining.append(item)
+            pending_events[:] = remaining
+        if pending_combat_states and hasattr(meter, "observe_combat_state"):
+            remaining_states: list[tuple[float, int, bool, bool]] = []
+            for ts, entity_id, in_active, in_passive in sorted(pending_combat_states):
+                if _allow_combat_state(entity_id, party_registry, name_registry):
+                    try:
+                        meter.observe_combat_state(entity_id, in_active, in_passive, ts)
+                    except TypeError:
+                        pass
+                elif retain_unresolved:
+                    remaining_states.append((ts, entity_id, in_active, in_passive))
+            pending_combat_states[:] = remaining_states
+        return

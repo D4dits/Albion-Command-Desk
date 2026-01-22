@@ -50,6 +50,7 @@ class PartyRegistry:
     strict: bool = True
     _party_names: set[str] = field(default_factory=set)
     _party_ids: set[int] = field(default_factory=set)
+    _resolved_party_names: set[str] = field(default_factory=set)
     _party_roster_candidates: set[int] = field(default_factory=set)
     _party_roster_self_seen: bool = False
     _target_ids: set[int] = field(default_factory=set)
@@ -112,6 +113,7 @@ class PartyRegistry:
             self.set_self_name(names[0], confirmed=True)
             return
         self._party_names.update(names)
+        self._resolved_party_names.clear()
         self._party_roster_candidates.clear()
         self._party_roster_self_seen = False
         if self._self_ids:
@@ -237,16 +239,25 @@ class PartyRegistry:
             return bool(self._self_ids)
         return bool(self._party_ids)
 
+    def has_unresolved_names(self) -> bool:
+        if not self._party_names:
+            return False
+        return bool(self._party_names.difference(self._resolved_party_names))
+
     def sync_names(self, name_registry: NameRegistry) -> None:
         if not self._party_names:
             return
-        mapped = {
-            entity_id
-            for entity_id, name in name_registry.snapshot().items()
-            if name in self._party_names
-        }
-        if mapped:
-            self._party_ids.update(mapped)
+        snapshot = name_registry.snapshot()
+        mapped_ids: set[int] = set()
+        for entity_id, name in snapshot.items():
+            if name not in self._party_names:
+                continue
+            if not isinstance(entity_id, int) or entity_id <= 0:
+                continue
+            mapped_ids.add(entity_id)
+            self._resolved_party_names.add(name)
+        if mapped_ids:
+            self._party_ids.update(mapped_ids)
 
     def infer_self_name_from_targets(self, name_registry: NameRegistry) -> None:
         if self._self_name_confirmed:
