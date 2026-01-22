@@ -284,6 +284,30 @@ class PartyRegistry:
                 continue
             name_registry.record(entity_id, self._self_name)
 
+    def sync_self_name(self, name_registry: NameRegistry) -> None:
+        if not self._self_ids:
+            return
+        for entity_id in self._self_ids:
+            mapped = name_registry.lookup(entity_id)
+            if mapped:
+                if self._self_name != mapped or not self._self_name_confirmed:
+                    self.set_self_name(mapped, confirmed=True)
+                return
+        if not self._party_names:
+            return
+        snapshot = name_registry.snapshot()
+        name_ids: dict[str, set[int]] = {name: set() for name in self._party_names}
+        for entity_id, name in snapshot.items():
+            if name in name_ids and isinstance(entity_id, int) and entity_id > 0:
+                name_ids[name].add(entity_id)
+        non_self_names = set()
+        for name, ids in name_ids.items():
+            if any(entity_id in self._party_ids and entity_id not in self._self_ids for entity_id in ids):
+                non_self_names.add(name)
+        candidates = [name for name in self._party_names if name not in non_self_names]
+        if len(candidates) == 1:
+            self.set_self_name(candidates[0], confirmed=True)
+
     def allows(self, source_id: int, name_registry: NameRegistry | None = None) -> bool:
         if not isinstance(source_id, int):
             return False
@@ -417,6 +441,8 @@ class PartyRegistry:
             self._party_ids.difference_update(self._self_ids)
             self._self_ids.clear()
             self._primary_self_id = None
+            self._self_name = None
+            self._self_name_confirmed = False
             self._combat_ids_seen.clear()
 
 

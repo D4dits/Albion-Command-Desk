@@ -15,6 +15,15 @@ NAME_SUBTYPE_ENTITY_NAME = 166
 NAME_SUBTYPE_ENTITY_ID_KEY = 0
 NAME_SUBTYPE_ENTITY_ALT_ID_KEY = 4
 NAME_SUBTYPE_ENTITY_NAME_KEY = 5
+NAME_SUBTYPE_UNIT_INFO = 29
+NAME_SUBTYPE_UNIT_NAME_KEY = 1
+NAME_SUBTYPE_CHARACTER_INFO = 30
+NAME_SUBTYPE_CHARACTER_NAME_KEY = 5
+NAME_SUBTYPE_EQUIPMENT = 90
+NAME_EQUIPMENT_ENTITY_ID_KEY = 0
+NAME_EQUIPMENT_ITEM_LIST_KEY = 2
+NAME_EQUIPMENT_MIN_MATCHES = 3
+NAME_EQUIPMENT_MIN_RATIO = 2.0
 
 
 @dataclass
@@ -25,6 +34,8 @@ class NameRegistry:
     _strong_name_ids: dict[str, set[int]] = field(default_factory=dict)
     _weak_name_ids: dict[str, set[int]] = field(default_factory=dict)
     _strong_id_names: dict[int, str] = field(default_factory=dict)
+    _item_names: dict[int, set[str]] = field(default_factory=dict)
+    _entity_items: dict[int, list[int]] = field(default_factory=dict)
 
     def observe(self, message: PhotonMessage) -> None:
         if message.event_code is None:
@@ -78,6 +89,32 @@ class NameRegistry:
             if isinstance(name, str) and name:
                 self._store(parameters.get(NAME_SUBTYPE_ENTITY_ID_KEY), name)
                 self._store(parameters.get(NAME_SUBTYPE_ENTITY_ALT_ID_KEY), name)
+        if subtype == NAME_SUBTYPE_UNIT_INFO:
+            name = parameters.get(NAME_SUBTYPE_UNIT_NAME_KEY)
+            if isinstance(name, str) and name:
+                self._store(parameters.get(NAME_SUBTYPE_ENTITY_ID_KEY), name)
+        if subtype == NAME_SUBTYPE_CHARACTER_INFO:
+            name = parameters.get(NAME_SUBTYPE_CHARACTER_NAME_KEY)
+            if isinstance(name, str) and name:
+                entity_id = parameters.get(NAME_SUBTYPE_ENTITY_ID_KEY)
+                self._store(entity_id, name)
+                item_id = parameters.get(1)
+                if isinstance(item_id, int):
+                    self._item_names.setdefault(item_id, set()).add(name)
+                    if isinstance(entity_id, int):
+                        self._infer_name_from_items(entity_id)
+                    if self._entity_items:
+                        for target_id, items in list(self._entity_items.items()):
+                            if item_id in items:
+                                self._infer_name_from_items(target_id)
+        if subtype == NAME_SUBTYPE_EQUIPMENT:
+            entity_id = parameters.get(NAME_EQUIPMENT_ENTITY_ID_KEY)
+            items = parameters.get(NAME_EQUIPMENT_ITEM_LIST_KEY)
+            if isinstance(entity_id, int) and isinstance(items, list):
+                filtered = [item for item in items if isinstance(item, int) and item > 0]
+                if filtered:
+                    self._entity_items[entity_id] = filtered
+                    self._infer_name_from_items(entity_id)
         if subtype == NAME_SUBTYPE_ID_NAME:
             self._store(parameters.get(NAME_ID_KEY), parameters.get(NAME_SUBTYPE_NAME_KEY), weak=True)
         raw_id = parameters.get(NAME_ID_KEY)
@@ -145,6 +182,30 @@ class NameRegistry:
         for guid, name in zip(guids, names):
             if _is_guid(guid) and isinstance(name, str) and name:
                 self._guid_names[bytes(guid)] = name
+
+    def _infer_name_from_items(self, entity_id: int) -> None:
+        items = self._entity_items.get(entity_id)
+        if not items:
+            return
+        counts: dict[str, int] = {}
+        for item_id in items:
+            for name in self._item_names.get(item_id, set()):
+                if not name:
+                    continue
+                counts[name] = counts.get(name, 0) + 1
+        if not counts:
+            return
+        sorted_counts = sorted(counts.items(), key=lambda item: item[1], reverse=True)
+        best_name, best_count = sorted_counts[0]
+        second_count = sorted_counts[1][1] if len(sorted_counts) > 1 else 0
+        if best_count < NAME_EQUIPMENT_MIN_MATCHES:
+            return
+        if second_count > 0 and (best_count / float(second_count)) < NAME_EQUIPMENT_MIN_RATIO:
+            return
+        current_strong = self._strong_id_names.get(entity_id)
+        if current_strong is not None and current_strong != best_name:
+            return
+        self._store(entity_id, best_name)
 
 
 def _is_guid(value: object) -> bool:

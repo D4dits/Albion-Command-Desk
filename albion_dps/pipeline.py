@@ -116,9 +116,9 @@ def stream_snapshots(
                 if name_registry is not None:
                     party_registry.sync_names(name_registry)
                     party_registry.infer_self_name_from_targets(name_registry)
-                    party_registry.sync_id_names(name_registry)
                 party_registry.try_resolve_self_id(name_registry)
                 if name_registry is not None:
+                    party_registry.sync_self_name(name_registry)
                     party_registry.sync_id_names(name_registry)
             if fame_tracker is not None:
                 fame_tracker.observe(message, packet)
@@ -268,6 +268,8 @@ def _allow_combat_state(
 ) -> bool:
     if party_registry is None:
         return True
+    if party_registry.strict:
+        return entity_id in party_registry.snapshot_self_ids()
     return party_registry.allows(entity_id, name_registry)
 
 

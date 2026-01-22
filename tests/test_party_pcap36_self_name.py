@@ -12,8 +12,8 @@ from albion_dps.protocol.photon_decode import PhotonDecoder
 from albion_dps.protocol.registry import default_registry
 
 
-def test_pcap32_party_history_merges_to_three_fights() -> None:
-    pcap_path = Path("albion_dps/artifacts/pcaps/albion_combat_32_party.pcap")
+def test_pcap36_self_name_is_mapped_from_party_roster() -> None:
+    pcap_path = Path("albion_dps/artifacts/pcaps/albion_combat_36_party.pcap")
     if not pcap_path.exists():
         pytest.skip(f"Missing PCAP fixture: {pcap_path}")
 
@@ -34,8 +34,8 @@ def test_pcap32_party_history_merges_to_three_fights() -> None:
     ):
         pass
 
-    history = meter.history(limit=10)
-    assert len(history) == 4
-    for summary in history:
-        labels = {entry.label for entry in summary.entries}
-        assert "SocialFur10" in labels
+    history = meter.history(limit=5)
+    assert history
+    labels = {entry.label for summary in history for entry in summary.entries}
+    assert "SocialFur10" in labels
+    assert "D4dits" in labels
