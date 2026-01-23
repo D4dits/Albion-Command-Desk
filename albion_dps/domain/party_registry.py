@@ -98,7 +98,7 @@ class PartyRegistry:
         if not names:
             return
         if subtype in SELF_SUBTYPE_NAME_KEYS:
-            self.set_self_name(names[0], confirmed=True)
+            self.set_self_name(names[0], confirmed=False)
             return
         self._party_names.update(names)
         self._resolved_party_names.clear()
@@ -236,6 +236,13 @@ class PartyRegistry:
             if name not in self._party_names:
                 continue
             if not isinstance(entity_id, int) or entity_id <= 0:
+                continue
+            if (
+                entity_id in self._self_ids
+                and self._self_name_confirmed
+                and self._self_name is not None
+                and name != self._self_name
+            ):
                 continue
             if entity_id not in self._combat_ids_seen and entity_id not in self._self_ids:
                 continue
