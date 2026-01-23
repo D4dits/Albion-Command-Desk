@@ -148,15 +148,14 @@ def stream_snapshots(
                     if _allow_event(item, party_registry, name_registry):
                         meter.push(item)
                         continue
-                    if (
-                        party_registry is not None
-                        and party_registry.strict
-                        and (
+                    if party_registry is not None and party_registry.strict:
+                        if (
                             not party_registry.has_ids()
                             or party_registry.has_unresolved_names()
-                        )
-                    ):
-                        pending_events.append(item)
+                        ):
+                            pending_events.append(item)
+                        elif name_registry is not None and name_registry.lookup(item.source_id) is None:
+                            pending_events.append(item)
             else:
                 if (
                     party_registry is not None
@@ -167,15 +166,14 @@ def stream_snapshots(
                     party_registry.try_resolve_self_id(name_registry)
                 if _allow_event(event, party_registry, name_registry):
                     meter.push(event)
-                elif (
-                    party_registry is not None
-                    and party_registry.strict
-                    and (
+                elif party_registry is not None and party_registry.strict:
+                    if (
                         not party_registry.has_ids()
                         or party_registry.has_unresolved_names()
-                    )
-                ):
-                    pending_events.append(event)
+                    ):
+                        pending_events.append(event)
+                    elif name_registry is not None and name_registry.lookup(event.source_id) is None:
+                        pending_events.append(event)
 
         for message in messages:
             combat_state = _decode_combat_state(message)
@@ -318,7 +316,6 @@ def _flush_or_trim_pending(
     if not (pending_events or pending_combat_states):
         return
     if party_registry.has_ids():
-        retain_unresolved = party_registry.has_unresolved_names()
         if pending_events:
             remaining: list[CombatEvent] = []
             for item in pending_events:
@@ -326,7 +323,7 @@ def _flush_or_trim_pending(
                     if hasattr(meter, "merge_event_into_history") and meter.merge_event_into_history(item):
                         continue
                     meter.push(item)
-                elif retain_unresolved:
+                else:
                     remaining.append(item)
             pending_events[:] = remaining
         if pending_combat_states and hasattr(meter, "observe_combat_state"):
@@ -337,7 +334,7 @@ def _flush_or_trim_pending(
                         meter.observe_combat_state(entity_id, in_active, in_passive, ts)
                     except TypeError:
                         pass
-                elif retain_unresolved:
+                else:
                     remaining_states.append((ts, entity_id, in_active, in_passive))
             pending_combat_states[:] = remaining_states
         return

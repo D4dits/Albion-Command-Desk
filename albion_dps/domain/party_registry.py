@@ -326,7 +326,12 @@ class PartyRegistry:
         if self.strict:
             if not self._self_ids:
                 return False
-            return source_id in self._party_ids or source_id in self._self_ids
+            if source_id in self._party_ids or source_id in self._self_ids:
+                return True
+            if name_registry is None or not self._party_names:
+                return False
+            name = name_registry.lookup(source_id)
+            return name is not None and name in self._party_names
         if self._party_ids:
             return source_id in self._party_ids
         if not self._party_names or name_registry is None:
