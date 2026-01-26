@@ -3,6 +3,8 @@
 Goal: a modern, cross-platform desktop UI (Windows/Linux/macOS) with real-time stats,
 history cards, copy-to-clipboard, fame totals, and key legend. Passive only (no overlay).
 
+Status: implemented (Qt runner, QML UI, models, smoke test).
+
 ## Selected stack
 - PySide6 (Qt6 for Python)
 - QML for UI (declarative, modern layout, smooth animations)

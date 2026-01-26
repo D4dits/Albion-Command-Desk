@@ -6,16 +6,21 @@ It reads UDP traffic only (PCAP replay or live capture); no client hooks, overla
 Core safety rule: the meter aggregates only the local player and party members (never unrelated nearby players).
 
 <p align="center">
-  <img src="assets/DPS.png" alt="">
-</p>
-
-<p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey">
   <img src="https://img.shields.io/badge/Game-Albion%20Online-orange">
 </p>
 
 ---
+
+## Screenshots
+<p align="center">
+  <img src="assets/DPS_GUI.png" alt="Qt GUI">
+</p>
+
+<p align="center">
+  <img src="assets/DPS.png" alt="Textual TUI">
+</p>
 
 ## Support the project
 
@@ -156,7 +161,7 @@ GUI keys:
 - `b` battle mode, `z` zone mode, `m` manual mode
 - `1` dps sort, `2` dmg sort, `3` hps sort, `4` heal sort
 
-PySide6/QML desktop UI (planned): see `docs/PYSIDE6_PLAN.md` (branch: PySide6).
+PySide6/QML desktop UI: see `docs/PYSIDE6_PLAN.md` for architecture notes.
 
 ## GUI (PySide6/QML)
 Install Qt GUI extras:

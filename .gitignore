@@ -7,6 +7,7 @@ __pycache__/
 
 # Test / tooling caches
 .pytest_cache/
+.pytest_tmp*/
 .mypy_cache/
 .ruff_cache/
 .coverage
@@ -34,4 +35,3 @@ AGENTS.md
 .idea/
 Thumbs.db
 Desktop.ini
-
