@@ -180,10 +180,18 @@ def _ensure_pyside6_paths() -> None:
     bin_path = base / "bin"
     qml_path = base / "qml"
     plugins_path = base / "plugins"
-    if os.name == "nt" and bin_path.exists():
-        os.environ["PATH"] = f"{bin_path}{os.pathsep}{os.environ.get('PATH', '')}"
+    if os.name == "nt":
+        path_entries = [str(base)]
+        if bin_path.exists():
+            path_entries.insert(0, str(bin_path))
+        os.environ["PATH"] = f"{os.pathsep.join(path_entries)}{os.pathsep}{os.environ.get('PATH', '')}"
+        if bin_path.exists():
+            try:
+                os.add_dll_directory(str(bin_path))
+            except Exception:
+                pass
         try:
-            os.add_dll_directory(str(bin_path))
+            os.add_dll_directory(str(base))
         except Exception:
             pass
     os.environ.setdefault("QML2_IMPORT_PATH", str(qml_path))
