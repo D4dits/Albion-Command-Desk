@@ -1,35 +1,35 @@
 # PROMPTS for Codex (CLI)
 
-## Ogólna zasada
-Zawsze pracuj w małych PR-ach: jedna funkcja -> test -> integracja.
-Jeśli brakuje danych (np. brak PCAP), dodaj instrumentation i artefakty debug.
+## Ogolna zasada
+Zawsze pracuj w malych PR-ach: jedna funkcja -> test -> integracja.
+Jesli brakuje danych (np. brak PCAP), dodaj instrumentation i artefakty debug.
 
 ---
 
-## Prompt 1 — scaffolding
-"Utwórz strukturę projektu wg TASKS M0. Dodaj pyproject.toml z entrypointem `albion-dps`.
+## Prompt 1 - scaffolding
+"Utworz strukture projektu wg TASKS M0. Dodaj pyproject.toml z entrypointem `albion-dps`.
 Dodaj minimalne modele danych: RawPacket, PhotonMessage, CombatEvent, MeterSnapshot (dataclasses).
 Dodaj pytest i jeden test sanity."
 
-## Prompt 2 — replay PCAP
+## Prompt 2 - replay PCAP
 "Zaimplementuj `replay_pcap.py`: wczytaj PCAP i emituj RawPacket (timestamp, src/dst, payload).
-Dodaj test: dla przykładowego PCAP policz liczbę pakietów i sprawdź deterministyczność iteracji."
+Dodaj test: dla przykladowego PCAP policz liczbe pakietow i sprawdz deterministycznosc iteracji."
 
-## Prompt 3 — unknown dump
-"Dodaj mechanizm: jeśli parser nie rozpoznaje payloadu, zapisz go do artifacts/unknown/{ts}_{hash}.bin
-oraz linię logu z metadanymi. Dodaj test: zasymuluj unknown payload."
+## Prompt 3 - unknown dump
+"Dodaj mechanizm: jesli parser nie rozpoznaje payloadu, zapisz go do artifacts/unknown/{ts}_{hash}.bin
+oraz linie logu z metadanymi. Dodaj test: zasymuluj unknown payload."
 
-## Prompt 4 — minimal photon framing
-"Zaimplementuj minimalny decoder Photona (tylko tyle, by wyciągnąć event/opcode i payload).
-Dodaj registry kodów i debug print w trybie --debug.
-Dodaj testy na hex fixture (małe sample payloady)."
+## Prompt 4 - minimal photon framing
+"Zaimplementuj minimalny decoder Photona (tylko tyle, by wyciagnac event/opcode i payload).
+Dodaj registry kodow i debug print w trybie --debug.
+Dodaj testy na hex fixture (male sample payloady)."
 
-## Prompt 5 — meter aggregation
-"Zaimplementuj agregację dmg/heal per source. Dodaj rolling DPS window.
+## Prompt 5 - meter aggregation
+"Zaimplementuj agregacje dmg/heal per source. Dodaj rolling DPS window.
 Dodaj testy: seria CombatEvent -> oczekiwane sumy + dps."
 
-## Prompt 6 — CLI table
-"Zaimplementuj CLI render tabeli (odświeżanie co 1s) dla snapshotów z metera.
+## Prompt 6 - CLI table
+"Zaimplementuj CLI render tabeli (odswiezanie co 1s) dla snapshotow z metera.
 Dodaj flagi: --sort, --top, --snapshot."
 
 ---

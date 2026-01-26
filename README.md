@@ -142,6 +142,11 @@ Run GUI:
 albion-dps gui live
 albion-dps gui replay .\path\to\file.pcap
 ```
+Without installing (runs directly from the repo checkout):
+```
+python -m albion_dps gui live
+python -m albion_dps gui replay .\path\to\file.pcap
+```
 
 Notes:
 - GUI runs in a terminal window (no overlay on the game client).
@@ -199,6 +204,7 @@ The meter aggregates only events from:
 
 If self/party info is not observed yet, results can be empty. You can seed/override self using `--self-name` or `--self-id`.
 When party disbands or you leave, the roster is cleared and only self remains in aggregation.
+Late party IDs are accepted once names resolve, so history can update as mapping improves.
 
 ## Project docs
 - Architecture overview: `docs/ARCHITECTURE.md`

@@ -1,35 +1,35 @@
-# TASKS — Albion DPS Meter
+# TASKS - Albion DPS Meter
 
-## Milestone M0 — Skeleton
+## Milestone M0 - Skeleton
 - [x] pyproject + entrypoint `albion-dps`
-- [x] moduły i puste kontrakty typów
+- [x] moduly i puste kontrakty typow
 - [x] logger + konfiguracja
 
-## Milestone M1 — Capture (live + replay)
-- [x] replay PCAP: iteracja pakietów + timestamp
+## Milestone M1 - Capture (live + replay)
+- [x] replay PCAP: iteracja pakietow + timestamp
 - [x] live capture: BPF UDP + konfiguracja interfejsu
-- [x] zapis surowych payloadów (debug)
+- [x] zapis surowych payloadow (debug)
 
-## Milestone M2 — Photon decode (minimum)
+## Milestone M2 - Photon decode (minimum)
 - [x] parser ramki -> message (event/op)
-- [x] registry kodów + tryb unknown dump
-- [x] test: dekodowanie przykładowych payloadów
+- [x] registry kodow + tryb unknown dump
+- [x] test: dekodowanie przykladowych payloadow
 
-## Milestone M3 — Combat events
+## Milestone M3 - Combat events
 - [x] mapowanie na CombatEvent: damage/heal
 - [x] podstawowe pola: source, target, amount, time
 
-## Milestone M4 — Meter
+## Milestone M4 - Meter
 - [x] agregacja per player
 - [x] rolling DPS window
 - [x] combat session reset
 
-## Milestone M5 — CLI UI
-- [x] tabela odświeżana w terminalu
+## Milestone M5 - CLI UI
+- [x] tabela odswiezana w terminalu
 - [x] sort/top/snapshot
 - [x] tryb `--debug` (unknown)
 
-## Milestone M6 — Wireshark playbook + test goldens
+## Milestone M6 - Wireshark playbook + test goldens
 - [x] workflow dokumentacja
 - [x] 2-3 PCAP + expected outputs
 
@@ -43,3 +43,9 @@
 - [x] copy history entry to clipboard (1-9)
 - [x] zone sessions keyed by server endpoint
 - [x] fame total + fame per hour + reset
+
+## Milestone M9 - GUI (Textual TUI)
+- [x] GUI subcommand `albion-dps gui` (live/replay)
+- [x] Textual app with table, bars, and history panel
+- [x] role coloring + fallback palette
+- [x] headless smoke test
