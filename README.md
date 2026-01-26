@@ -156,6 +156,8 @@ GUI keys:
 - `b` battle mode, `z` zone mode, `m` manual mode
 - `1` dps sort, `2` dmg sort, `3` hps sort, `4` heal sort
 
+PySide6/QML desktop UI (planned): see `docs/PYSIDE6_PLAN.md` (branch: PySide6).
+
 ## Modes (what "session" means)
 - `battle` (default): creates a session when you enter combat state and ends it when you leave combat state.
   Fallback: if combat state is not observed, it can still end by `--battle-timeout` inactivity.

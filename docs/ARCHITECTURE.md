@@ -17,6 +17,10 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (CLI + GUI, live + PCAP 
   - `SessionMeter` owns session boundaries (`battle`/`zone`/`manual`) and history.
   - `RollingMeter` owns totals + rolling DPS/HPS window.
 
+## Qt UI (planned in PySide6 branch)
+- Qt runner bridges snapshots to QAbstractListModel models.
+- QML renders scoreboard, history cards, key legend, and fame stats.
+
 ## Module boundaries (intended)
 - Capture does not know parsing/UI.
 - Protocol parser does not know UI.

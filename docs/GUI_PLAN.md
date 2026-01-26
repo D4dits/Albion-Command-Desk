@@ -1,6 +1,7 @@
-# GUI plan (branch: gui)
+# GUI plan (Textual TUI)
 
 Status: implemented in this branch (Textual TUI).
+Modern desktop UI plan: `docs/PYSIDE6_PLAN.md` (branch: PySide6).
 
 ## Selected stack
 - Textual (Python TUI): pure Python, no native binaries, works on Windows/Linux/macOS.
