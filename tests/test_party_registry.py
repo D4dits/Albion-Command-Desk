@@ -51,7 +51,9 @@ def test_party_registry_detects_self_subtype_238() -> None:
     registry.seed_self_ids([101])
     names = NameRegistry()
     registry.sync_id_names(names)
-    assert names.lookup(101) == "D4dits"
+    assert registry._self_name == "D4dits"
+    assert not registry._self_name_confirmed
+    assert names.lookup(101) is None
 
 
 def test_party_registry_detects_self_subtype_228() -> None:
@@ -63,7 +65,9 @@ def test_party_registry_detects_self_subtype_228() -> None:
     registry.seed_self_ids([101])
     names = NameRegistry()
     registry.sync_id_names(names)
-    assert names.lookup(101) == "D4dits"
+    assert registry._self_name == "D4dits"
+    assert not registry._self_name_confirmed
+    assert names.lookup(101) is None
 
 
 def test_party_registry_tracks_target_from_client_request() -> None:
