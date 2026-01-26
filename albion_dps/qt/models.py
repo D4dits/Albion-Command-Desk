@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, Callable
 
 from PySide6.QtCore import (
     QAbstractListModel,
@@ -29,6 +29,16 @@ ROLE_COLORS = {
     "heal": "#5deaa1",
     "tank": "#5da1ea",
 }
+FALLBACK_PALETTE = [
+    "#7dd3fc",
+    "#fbbf24",
+    "#f472b6",
+    "#34d399",
+    "#a78bfa",
+    "#f97316",
+    "#22d3ee",
+    "#e879f9",
+]
 FALLBACK_COLOR = "#9aa4af"
 
 HISTORY_MAX_PLAYERS = 5
@@ -171,7 +181,14 @@ class UiState(QObject):
     fameChanged = Signal()
     sortChanged = Signal()
 
-    def __init__(self, *, sort_key: str, top_n: int, history_limit: int) -> None:
+    def __init__(
+        self,
+        *,
+        sort_key: str,
+        top_n: int,
+        history_limit: int,
+        set_mode_callback: Callable[[str], None] | None = None,
+    ) -> None:
         super().__init__()
         self._mode = "battle"
         self._zone = "-"
@@ -181,8 +198,12 @@ class UiState(QObject):
         self._sort_key = sort_key
         self._top_n = top_n
         self._history_limit = history_limit
+        self._set_mode_callback = set_mode_callback
         self._players = PlayerModel()
         self._history = HistoryModel()
+        self._last_snapshot = None
+        self._last_names: dict[int, str] = {}
+        self._last_history: list[SessionSummary] = []
 
     @Property(str, notify=modeChanged)
     def mode(self) -> str:
@@ -220,6 +241,32 @@ class UiState(QObject):
     def historyLimit(self) -> int:
         return self._history_limit
 
+    @Slot(str)
+    def setSortKey(self, key: str) -> None:
+        if key not in SORT_KEY_MAP:
+            return
+        if key == self._sort_key:
+            return
+        self._sort_key = key
+        self.sortChanged.emit()
+        if self._last_snapshot is not None:
+            self._players.set_items(
+                _build_player_rows(
+                    self._last_snapshot.totals,
+                    names=self._last_names,
+                    sort_key=self._sort_key,
+                    top_n=self._top_n,
+                )
+            )
+
+    @Slot(str)
+    def setMode(self, mode: str) -> None:
+        if mode not in ("battle", "zone", "manual"):
+            return
+        if self._set_mode_callback is not None:
+            self._set_mode_callback(mode)
+        self._set_mode(mode)
+
     @Slot(int)
     def copyHistory(self, index: int) -> None:
         text = self._history.get_copy_text(index)
@@ -242,6 +289,9 @@ class UiState(QObject):
         fame_total: int,
         fame_per_hour: float,
     ) -> None:
+        self._last_snapshot = snapshot
+        self._last_names = dict(names)
+        self._last_history = list(history)
         self._set_mode(mode)
         self._set_zone(zone or "-")
         self._set_time(snapshot.timestamp)
@@ -292,14 +342,16 @@ def _build_player_rows(
 ) -> list[PlayerRow]:
     rows: list[PlayerRow] = []
     metric = SORT_KEY_MAP.get(sort_key, "dps")
+    max_damage = max((stats.get("damage", 0.0) for stats in totals.values()), default=0.0)
+    max_heal = max((stats.get("heal", 0.0) for stats in totals.values()), default=0.0)
     for source_id, stats in totals.items():
         label = names.get(source_id) or str(source_id)
         damage = float(stats.get("damage", 0.0))
         heal = float(stats.get("heal", 0.0))
         dps = float(stats.get("dps", 0.0))
         hps = float(stats.get("hps", 0.0))
-        role = _infer_role(damage, heal)
-        color = ROLE_COLORS.get(role, FALLBACK_COLOR)
+        role = _infer_role(damage, heal, max_damage=max_damage, max_heal=max_heal)
+        color = _color_for_label(label, role)
         rows.append(
             PlayerRow(
                 name=label,
@@ -345,10 +397,24 @@ def _metric_value(item: PlayerRow, metric: str) -> float:
     return item.dps
 
 
-def _infer_role(damage: float, heal: float) -> str:
-    if heal > damage:
-        return "heal"
-    return "dps"
+def _infer_role(damage: float, heal: float, *, max_damage: float, max_heal: float) -> str | None:
+    if heal > 0.0:
+        if damage <= 0.0 or heal >= damage * 0.7 or (max_heal > 0.0 and heal >= max_heal * 0.5):
+            return "heal"
+    if max_damage > 0.0 and damage >= max_damage * 0.6:
+        return "dps"
+    if damage > 0.0 or heal > 0.0:
+        return "tank"
+    return None
+
+
+def _color_for_label(label: str, role: str | None) -> str:
+    if role and role in ROLE_COLORS:
+        return ROLE_COLORS[role]
+    if not label:
+        return FALLBACK_PALETTE[0]
+    idx = sum(ord(ch) for ch in label) % len(FALLBACK_PALETTE)
+    return FALLBACK_PALETTE[idx]
 
 
 def _build_history_rows(

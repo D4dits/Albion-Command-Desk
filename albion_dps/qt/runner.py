@@ -62,6 +62,7 @@ def run_qt(args: argparse.Namespace) -> int:
         sort_key=args.sort,
         top_n=args.top,
         history_limit=max(args.history, 1),
+        set_mode_callback=meter.set_mode,
     )
     engine.rootContext().setContextProperty("uiState", state)
     engine.load(str(qml_path))

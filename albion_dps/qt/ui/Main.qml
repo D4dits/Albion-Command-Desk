@@ -47,6 +47,38 @@ ApplicationWindow {
                         color: mutedColor
                         font.pixelSize: 12
                     }
+                    RowLayout {
+                        spacing: 8
+                        Button {
+                            text: "Battle"
+                            onClicked: uiState.setMode("battle")
+                        }
+                        Button {
+                            text: "Zone"
+                            onClicked: uiState.setMode("zone")
+                        }
+                        Button {
+                            text: "Manual"
+                            onClicked: uiState.setMode("manual")
+                        }
+                        Item { width: 16 }
+                        Button {
+                            text: "DPS"
+                            onClicked: uiState.setSortKey("dps")
+                        }
+                        Button {
+                            text: "DMG"
+                            onClicked: uiState.setSortKey("dmg")
+                        }
+                        Button {
+                            text: "HPS"
+                            onClicked: uiState.setSortKey("hps")
+                        }
+                        Button {
+                            text: "HEAL"
+                            onClicked: uiState.setSortKey("heal")
+                        }
+                    }
                 }
 
                 ColumnLayout {
@@ -234,4 +266,13 @@ ApplicationWindow {
             }
         }
     }
+
+    Shortcut { sequence: "B"; onActivated: uiState.setMode("battle") }
+    Shortcut { sequence: "Z"; onActivated: uiState.setMode("zone") }
+    Shortcut { sequence: "M"; onActivated: uiState.setMode("manual") }
+    Shortcut { sequence: "1"; onActivated: uiState.setSortKey("dps") }
+    Shortcut { sequence: "2"; onActivated: uiState.setSortKey("dmg") }
+    Shortcut { sequence: "3"; onActivated: uiState.setSortKey("hps") }
+    Shortcut { sequence: "4"; onActivated: uiState.setSortKey("heal") }
+    Shortcut { sequence: "Q"; onActivated: Qt.quit() }
 }
