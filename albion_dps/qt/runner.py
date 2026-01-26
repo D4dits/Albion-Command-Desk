@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import queue
 import threading
 from collections.abc import Iterable
@@ -25,6 +26,7 @@ def run_qt(args: argparse.Namespace) -> int:
         for interface in list_interfaces():
             print(interface)
         return 0
+    _ensure_pyside6_paths()
     try:
         from PySide6.QtCore import QTimer
         from PySide6.QtGui import QGuiApplication
@@ -58,6 +60,14 @@ def run_qt(args: argparse.Namespace) -> int:
 
     app = QGuiApplication([])
     engine = QQmlApplicationEngine()
+    warnings: list = []
+
+    def handle_warnings(messages) -> None:
+        warnings.extend(messages)
+        for message in messages:
+            logging.getLogger(__name__).error("QML: %s", message.toString())
+
+    engine.warnings.connect(handle_warnings)
     state = UiState(
         sort_key=args.sort,
         top_n=args.top,
@@ -67,7 +77,9 @@ def run_qt(args: argparse.Namespace) -> int:
     engine.rootContext().setContextProperty("uiState", state)
     engine.load(str(qml_path))
     if not engine.rootObjects():
-        logging.getLogger(__name__).error("Failed to load QML UI.")
+        logging.getLogger(__name__).error(
+            "Failed to load QML UI. If QtQuick plugin is missing, reinstall PySide6 and restart the shell."
+        )
         stop_event.set()
         return 1
 
@@ -157,6 +169,25 @@ def _build_snapshot_stream(
 
     logging.getLogger(__name__).error("Unknown qt command")
     return None
+
+
+def _ensure_pyside6_paths() -> None:
+    try:
+        import PySide6  # type: ignore
+    except Exception:
+        return
+    base = Path(PySide6.__file__).resolve().parent
+    bin_path = base / "bin"
+    qml_path = base / "qml"
+    plugins_path = base / "plugins"
+    if os.name == "nt" and bin_path.exists():
+        os.environ["PATH"] = f"{bin_path}{os.pathsep}{os.environ.get('PATH', '')}"
+        try:
+            os.add_dll_directory(str(bin_path))
+        except Exception:
+            pass
+    os.environ.setdefault("QML2_IMPORT_PATH", str(qml_path))
+    os.environ.setdefault("QT_PLUGIN_PATH", str(plugins_path))
 
 
 def _build_runtime(
