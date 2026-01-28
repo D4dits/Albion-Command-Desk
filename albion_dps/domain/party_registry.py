@@ -10,6 +10,7 @@ from albion_dps.protocol.protocol16 import (
     Protocol16Error,
     decode_event_data,
     decode_operation_request,
+    decode_operation_response,
 )
 
 PARTY_EVENT_CODE = 1
@@ -40,6 +41,10 @@ SELF_ID_MIN_SCORE = 1.0
 SELF_ID_MIN_SCORE_GAP = 1.0
 TARGET_LINK_WINDOW_SECONDS = 2.0
 TARGET_LINK_REORDER_SECONDS = 0.15
+OPERATION_CODE_KEY = 253
+JOIN_OPERATION_CODE = 2
+JOIN_SELF_ID_KEY = 0
+JOIN_SELF_NAME_KEY = 2
 
 
 @dataclass
@@ -73,7 +78,10 @@ class PartyRegistry:
         if packet is not None:
             self._observe_packet_once(packet)
             self._apply_target_request(message, packet)
-        if message.event_code is None or message.event_code != PARTY_EVENT_CODE:
+        if message.event_code is None:
+            self._apply_join_response(message)
+            return
+        if message.event_code != PARTY_EVENT_CODE:
             return
         try:
             event = decode_event_data(message.payload)
@@ -106,6 +114,21 @@ class PartyRegistry:
             self._party_ids.intersection_update(self._self_ids)
         else:
             self._party_ids.clear()
+
+    def _apply_join_response(self, message: PhotonMessage) -> None:
+        try:
+            response = decode_operation_response(message.payload)
+        except Protocol16Error:
+            return
+        op_code = response.parameters.get(OPERATION_CODE_KEY)
+        if op_code != JOIN_OPERATION_CODE:
+            return
+        entity_id = response.parameters.get(JOIN_SELF_ID_KEY)
+        if isinstance(entity_id, int) and entity_id > 0:
+            self.seed_self_ids([entity_id])
+        name = response.parameters.get(JOIN_SELF_NAME_KEY)
+        if isinstance(name, str) and name:
+            self.set_self_name(name, confirmed=True)
 
     def observe_packet(self, packet: RawPacket) -> None:
         self._last_packet_fingerprint = (

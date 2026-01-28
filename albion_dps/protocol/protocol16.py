@@ -42,6 +42,14 @@ class OperationRequest:
     parameters: dict[int, Any]
 
 
+@dataclass(frozen=True)
+class OperationResponse:
+    code: int
+    return_code: int
+    debug_message: str | None
+    parameters: dict[int, Any]
+
+
 def decode_event_data(payload: bytes) -> EventData:
     if not payload:
         raise Protocol16Error("Empty event payload")
@@ -58,6 +66,37 @@ def decode_operation_request(payload: bytes) -> OperationRequest:
     code = payload[0]
     parameters, _ = _decode_parameter_table(payload, 1)
     return OperationRequest(code=code, parameters=parameters)
+
+
+def decode_operation_response(payload: bytes) -> OperationResponse:
+    if not payload:
+        raise Protocol16Error("Empty operation response payload")
+    offset = 0
+    code, offset = _read_u8(payload, offset)
+    return_code, offset = _read_i16(payload, offset)
+    try:
+        debug_type, offset = _read_u8(payload, offset)
+        if debug_type in (TYPE_NULL, TYPE_UNKNOWN):
+            debug_message = None
+        else:
+            debug_message, offset = _decode_value(payload, offset, debug_type)
+        parameters, _ = _decode_parameter_table(payload, offset)
+        return OperationResponse(
+            code=code,
+            return_code=return_code,
+            debug_message=debug_message,
+            parameters=parameters,
+        )
+    except Protocol16Error:
+        offset = 3
+        debug_message, offset = _read_string(payload, offset)
+        parameters, _ = _decode_parameter_table(payload, offset)
+        return OperationResponse(
+            code=code,
+            return_code=return_code,
+            debug_message=debug_message,
+            parameters=parameters,
+        )
 
 
 def _decode_parameter_table(payload: bytes, offset: int) -> tuple[dict[int, Any], int]:
