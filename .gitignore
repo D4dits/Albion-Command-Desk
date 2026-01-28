@@ -27,6 +27,10 @@ albion_dps/artifacts/unknown/
 
 # Project-specific folders/files not meant for git
 wzor/
+wzor2/
+wzor3/
+wzor4/
+tmp/
 AGENTS.md
 
 # Editor / OS noise
