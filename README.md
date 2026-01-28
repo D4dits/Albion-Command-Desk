@@ -6,16 +6,21 @@ It reads UDP traffic only (PCAP replay or live capture); no client hooks, overla
 Core safety rule: the meter aggregates only the local player and party members (never unrelated nearby players).
 
 <p align="center">
-  <img src="assets/DPS.png" alt="">
-</p>
-
-<p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey">
   <img src="https://img.shields.io/badge/Game-Albion%20Online-orange">
 </p>
 
 ---
+
+## Screenshots
+<p align="center">
+  <img src="assets/DPS_GUI.png" alt="Qt GUI">
+</p>
+
+<p align="center">
+  <img src="assets/DPS.png" alt="Textual TUI">
+</p>
 
 ## Support the project
 
@@ -155,6 +160,42 @@ GUI keys:
 - `q` quit
 - `b` battle mode, `z` zone mode, `m` manual mode
 - `1` dps sort, `2` dmg sort, `3` hps sort, `4` heal sort
+
+PySide6/QML desktop UI: see `docs/PYSIDE6_PLAN.md` for architecture notes.
+
+## GUI (PySide6/QML)
+Install Qt GUI extras:
+```
+python -m pip install -e ".[gui-qt]"
+```
+Run Qt GUI:
+```
+albion-dps qt live
+albion-dps qt replay .\path\to\file.pcap
+```
+Qt keys:
+- `q` quit
+- `b` battle mode, `z` zone mode, `m` manual mode
+- `1` dps sort, `2` dmg sort, `3` hps sort, `4` heal sort
+
+## Weapon-based role colors (optional)
+Role colors can be driven by equipped weapon instead of pure damage/heal heuristics.
+Provide item databases locally (not committed):
+- `indexedItems.json` (maps item index -> UniqueName, from game files)
+- optional `items.json` (UniqueName -> shopsubcategory1)
+- optional `item_category_mapping.json` / `item_category_mapping.py` (UniqueName -> category)
+If `items.json` is missing, the category mapping is used as a fallback.
+
+Default search paths:
+- `data/indexedItems.json`, `data/items.json`
+- `data/item_category_mapping.json`, `data/item_category_mapping.py`
+
+Or set environment variables:
+```
+$env:ALBION_DPS_INDEXED_ITEMS="C:\path\to\indexedItems.json"
+$env:ALBION_DPS_ITEMS_JSON="C:\path\to\items.json"
+$env:ALBION_DPS_ITEM_CATEGORY_MAPPING="C:\path\to\item_category_mapping.py"
+```
 
 ## Modes (what "session" means)
 - `battle` (default): creates a session when you enter combat state and ends it when you leave combat state.

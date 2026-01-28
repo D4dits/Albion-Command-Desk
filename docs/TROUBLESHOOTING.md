@@ -44,3 +44,9 @@ Log lines for unknown payloads are printed only in `--debug`, but files are stil
 ## Permission issues (Windows)
 Npcap capture can require elevated permissions depending on configuration.
 If capture fails, try running the terminal as Administrator and ensure Npcap is installed correctly.
+
+## Qt GUI fails to load (qtquick2plugin.dll missing)
+This usually means Qt's DLLs are not found:
+- Ensure the venv is active and PySide6 is installed: `python -m pip install -e ".[gui-qt]"`
+- Restart the terminal after install so PATH updates are picked up.
+- If it still fails, install the Microsoft VC++ Redistributable (x64).
