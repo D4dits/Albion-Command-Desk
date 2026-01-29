@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from pcap_fixtures import resolve_pcap
 
 import pytest
 
@@ -13,7 +14,7 @@ from albion_dps.protocol.registry import default_registry
 
 
 def test_pcap32_party_history_merges_to_four_fights() -> None:
-    pcap_path = Path("albion_dps/artifacts/pcaps/albion_combat_32_party.pcap")
+    pcap_path = resolve_pcap("albion_combat_32_party.pcap")
     if not pcap_path.exists():
         pytest.skip(f"Missing PCAP fixture: {pcap_path}")
 

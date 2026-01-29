@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from pcap_fixtures import resolve_pcap
 
 import pytest
 
@@ -19,8 +20,8 @@ def test_pcap24_includes_heal_and_hps_in_snapshots_and_history() -> None:
     party = PartyRegistry()
     fame = FameTracker()
     meter = SessionMeter(mode="battle", history_limit=20, name_lookup=names.lookup)
-    pcap_path = Path(
-        "albion_dps/artifacts/pcaps/albion_combat_24_walka_3_przeciwnik_leczenie_portal.pcap"
+    pcap_path = resolve_pcap(
+        "albion_combat_24_walka_3_przeciwnik_leczenie_portal.pcap"
     )
     if not pcap_path.exists():
         pytest.skip(f"Missing PCAP fixture: {pcap_path}")

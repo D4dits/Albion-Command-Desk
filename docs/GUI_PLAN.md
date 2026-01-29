@@ -1,7 +1,7 @@
 # GUI plan (Textual TUI)
 
 Status: implemented in this branch (Textual TUI).
-Modern desktop UI plan: `docs/PYSIDE6_PLAN.md`.
+Modern desktop UI notes (implemented): `docs/PYSIDE6_PLAN.md`.
 
 ## Selected stack
 - Textual (Python TUI): pure Python, no native binaries, works on Windows/Linux/macOS.
@@ -11,7 +11,7 @@ Modern desktop UI plan: `docs/PYSIDE6_PLAN.md`.
 - Header with mode, zone, timestamp, fame/h.
 - Scoreboard table with DPS/HPS and horizontal bars scaled by sort.
 - History panel with recent fights.
-- Role colors (tank/dps/heal) with fallback palette.
+- Role colors (tank/dps/heal) with fallback palette; per-weapon colors when item DBs are present.
 - Keys: `q` quit, `b/z/m` modes, `1-4` sort (dps/dmg/hps/heal).
 
 ## Integration

@@ -12,6 +12,7 @@ from albion_dps.protocol.protocol16 import (
     decode_operation_request,
     decode_operation_response,
 )
+from albion_dps.protocol.map_index import extract_map_index_from_response
 
 PARTY_EVENT_CODE = 1
 PARTY_SUBTYPE_KEY = 252
@@ -43,6 +44,7 @@ TARGET_LINK_WINDOW_SECONDS = 2.0
 TARGET_LINK_REORDER_SECONDS = 0.15
 OPERATION_CODE_KEY = 253
 JOIN_OPERATION_CODE = 2
+CHANGE_CLUSTER_OPERATION_CODE = 35
 JOIN_SELF_ID_KEY = 0
 JOIN_SELF_NAME_KEY = 2
 
@@ -72,7 +74,8 @@ class PartyRegistry:
         default_factory=lambda: deque(maxlen=500)
     )
     _last_packet_fingerprint: tuple[float, str, int, str, int, int] | None = None
-    _zone_key: tuple[str, int] | None = None
+    _zone_key: str | None = None
+    _map_index: str | None = None
 
     def observe(self, message: PhotonMessage, packet: RawPacket | None = None) -> None:
         if packet is not None:
@@ -120,15 +123,20 @@ class PartyRegistry:
             response = decode_operation_response(message.payload)
         except Protocol16Error:
             return
-        op_code = response.parameters.get(OPERATION_CODE_KEY)
-        if op_code != JOIN_OPERATION_CODE:
+        op_code = response.parameters.get(OPERATION_CODE_KEY, response.code)
+        if op_code == JOIN_OPERATION_CODE:
+            entity_id = response.parameters.get(JOIN_SELF_ID_KEY)
+            if isinstance(entity_id, int) and entity_id > 0:
+                self.seed_self_ids([entity_id])
+            name = response.parameters.get(JOIN_SELF_NAME_KEY)
+            if isinstance(name, str) and name:
+                self.set_self_name(name, confirmed=True)
+        elif op_code != CHANGE_CLUSTER_OPERATION_CODE:
             return
-        entity_id = response.parameters.get(JOIN_SELF_ID_KEY)
-        if isinstance(entity_id, int) and entity_id > 0:
-            self.seed_self_ids([entity_id])
-        name = response.parameters.get(JOIN_SELF_NAME_KEY)
-        if isinstance(name, str) and name:
-            self.set_self_name(name, confirmed=True)
+
+        map_index = extract_map_index_from_response(response)
+        if map_index:
+            self._set_map_index(map_index, allow_reset=op_code == CHANGE_CLUSTER_OPERATION_CODE)
 
     def observe_packet(self, packet: RawPacket) -> None:
         self._last_packet_fingerprint = (
@@ -466,6 +474,8 @@ class PartyRegistry:
         self.observe_packet(packet)
 
     def _update_zone_key(self, packet: RawPacket) -> None:
+        if self._map_index is not None:
+            return
         zone_key = _infer_zone_key(packet)
         if zone_key is None:
             return
@@ -474,18 +484,35 @@ class PartyRegistry:
             return
         if zone_key != self._zone_key:
             self._zone_key = zone_key
-            self._target_ids.clear()
-            self._recent_target_ids.clear()
-            self._recent_outbound_ts.clear()
-            self._target_request_ts.clear()
-            self._self_candidate_scores.clear()
-            self._self_candidate_last_ts.clear()
-            self._self_candidate_link_hits.clear()
-            self._self_candidate_combat_hits.clear()
-            self._party_ids.difference_update(self._self_ids)
-            self._self_ids.clear()
-            self._primary_self_id = None
-            self._combat_ids_seen.clear()
+            self._reset_for_zone_change()
+
+    def _set_map_index(self, map_index: str, *, allow_reset: bool) -> None:
+        if not map_index:
+            return
+        if self._map_index is None:
+            self._map_index = map_index
+            self._zone_key = map_index
+            return
+        if map_index == self._map_index:
+            return
+        self._map_index = map_index
+        self._zone_key = map_index
+        if allow_reset:
+            self._reset_for_zone_change()
+
+    def _reset_for_zone_change(self) -> None:
+        self._target_ids.clear()
+        self._recent_target_ids.clear()
+        self._recent_outbound_ts.clear()
+        self._target_request_ts.clear()
+        self._self_candidate_scores.clear()
+        self._self_candidate_last_ts.clear()
+        self._self_candidate_link_hits.clear()
+        self._self_candidate_combat_hits.clear()
+        self._party_ids.difference_update(self._self_ids)
+        self._self_ids.clear()
+        self._primary_self_id = None
+        self._combat_ids_seen.clear()
 
     def _clear_party(self) -> None:
         self._party_names.clear()
@@ -496,11 +523,11 @@ class PartyRegistry:
             self._party_ids.clear()
 
 
-def _infer_zone_key(packet: RawPacket) -> tuple[str, int] | None:
+def _infer_zone_key(packet: RawPacket) -> str | None:
     if packet.src_port in ZONE_PORTS:
-        return packet.src_ip, packet.src_port
+        return f"{packet.src_ip}:{packet.src_port}"
     if packet.dst_port in ZONE_PORTS:
-        return packet.dst_ip, packet.dst_port
+        return f"{packet.dst_ip}:{packet.dst_port}"
     return None
 
 

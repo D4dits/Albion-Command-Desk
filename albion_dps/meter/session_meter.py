@@ -5,7 +5,8 @@ from dataclasses import dataclass, field
 from typing import Callable, Deque
 
 from albion_dps.meter.aggregate import RollingMeter
-from albion_dps.models import CombatEvent, MeterSnapshot, RawPacket
+from albion_dps.models import CombatEvent, MeterSnapshot, PhotonMessage, RawPacket
+from albion_dps.protocol.map_index import extract_map_index
 
 ZONE_PORTS = {5056, 5058}
 COMBAT_END_GRACE_SECONDS = 0.25
@@ -53,8 +54,10 @@ class SessionMeter:
     _last_seen_ts: float | None = None
     _active: bool = False
     _manual_active: bool = False
-    _zone_key: tuple[str, int] | None = None
+    _zone_key: str | None = None
     _zone_label: str | None = None
+    _zone_socket: str | None = None
+    _map_index: str | None = None
     _combatants: set[int] = field(default_factory=set)
     _seen_sources: set[int] = field(default_factory=set)
     _combat_end_ts: float | None = None
@@ -114,28 +117,35 @@ class SessionMeter:
                 return
         self._end_session(end_ts, "stream_end")
 
+    def observe_message(self, message: PhotonMessage, packet: RawPacket | None = None) -> None:
+        map_index = extract_map_index(message)
+        if not map_index:
+            return
+        timestamp = packet.timestamp if packet is not None else (self._last_seen_ts or self._last_event_ts or 0.0)
+        if self._map_index is None:
+            self._map_index = map_index
+            if self._zone_key is None:
+                self._set_zone_key(map_index, timestamp)
+            else:
+                self._zone_key = map_index
+                self._zone_label = self._format_zone_label()
+            return
+        if map_index != self._map_index:
+            self._map_index = map_index
+            self._set_zone_key(map_index, timestamp)
+
     def observe_packet(self, packet: RawPacket) -> None:
         self._last_seen_ts = packet.timestamp
-        zone_key = _infer_zone_key(packet)
-        if zone_key is not None:
-            if self._zone_key is None:
-                self._zone_key = zone_key
-                self._zone_label = f"{zone_key[0]}:{zone_key[1]}"
-                if self.mode == "zone":
-                    self._start_session(packet.timestamp)
-            elif zone_key != self._zone_key:
-                previous_label = self._zone_label
-                self._zone_key = zone_key
-                self._zone_label = f"{zone_key[0]}:{zone_key[1]}"
-                if self.mode == "zone":
-                    if self._active:
-                        self._end_session(
-                            packet.timestamp, "zone_change", label_override=previous_label
-                        )
-                    self._start_session(packet.timestamp)
-            elif zone_key != self._zone_key:
-                self._zone_key = zone_key
-                self._zone_label = f"{zone_key[0]}:{zone_key[1]}"
+        zone_socket = _infer_zone_key(packet)
+        if zone_socket is not None:
+            if zone_socket != self._zone_socket:
+                self._zone_socket = zone_socket
+                if self._map_index is None:
+                    self._set_zone_key(zone_socket, packet.timestamp)
+                else:
+                    self._zone_label = self._format_zone_label()
+            elif self._map_index is None and self._zone_key is None:
+                self._set_zone_key(zone_socket, packet.timestamp)
 
         last_activity_ts = self._last_combat_event_ts
         if (
@@ -159,6 +169,31 @@ class SessionMeter:
 
         if self._active:
             self._meter.touch(packet.timestamp)
+
+    def _set_zone_key(self, zone_key: str, timestamp: float) -> None:
+        if self._zone_key is None:
+            self._zone_key = zone_key
+            self._zone_label = self._format_zone_label()
+            if self.mode == "zone":
+                self._start_session(timestamp)
+            return
+        if zone_key != self._zone_key:
+            previous_label = self._zone_label
+            self._zone_key = zone_key
+            self._zone_label = self._format_zone_label()
+            if self.mode == "zone":
+                if self._active:
+                    self._end_session(
+                        timestamp, "zone_change", label_override=previous_label
+                    )
+                self._start_session(timestamp)
+
+    def _format_zone_label(self) -> str | None:
+        if self._map_index and self._zone_socket:
+            return f"{self._map_index}@{self._zone_socket}"
+        if self._map_index:
+            return self._map_index
+        return self._zone_socket
 
     def push(self, event: CombatEvent) -> None:
         if self.mode == "manual" and not self._manual_active:
@@ -407,9 +442,9 @@ def _build_entries_from_grouped(
     return entries
 
 
-def _infer_zone_key(packet: RawPacket) -> tuple[str, int] | None:
+def _infer_zone_key(packet: RawPacket) -> str | None:
     if packet.src_port in ZONE_PORTS:
-        return packet.src_ip, packet.src_port
+        return f"{packet.src_ip}:{packet.src_port}"
     if packet.dst_port in ZONE_PORTS:
-        return packet.dst_ip, packet.dst_port
+        return f"{packet.dst_ip}:{packet.dst_port}"
     return None

@@ -85,6 +85,27 @@ class ItemResolver:
             return "dps"
         return None
 
+    def subcategory_for_items(self, item_ids: Iterable[int]) -> str | None:
+        unique = self._mainhand_unique(item_ids)
+        if not unique:
+            return None
+        subcategory = self.unique_to_subcategory.get(unique)
+        if not subcategory:
+            subcategory = self.unique_to_category.get(unique)
+        if not subcategory:
+            subcategory = _infer_subcategory_from_unique(unique)
+        if not subcategory:
+            return None
+        return subcategory.lower()
+
+    def weapon_category_for_items(self, item_ids: Iterable[int]) -> str | None:
+        subcategory = self.subcategory_for_items(item_ids)
+        if not subcategory:
+            return None
+        if subcategory in WEAPON_CATEGORIES:
+            return subcategory
+        return None
+
     def _mainhand_unique(self, item_ids: Iterable[int]) -> str | None:
         for item_id in item_ids:
             if not isinstance(item_id, int) or item_id <= 0:

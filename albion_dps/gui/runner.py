@@ -37,7 +37,11 @@ def run_gui(args: argparse.Namespace) -> int:
     item_resolver = load_item_resolver(logger=logging.getLogger(__name__))
 
     def role_lookup(entity_id: int) -> str | None:
-        return item_resolver.role_for_items(names.items_for(entity_id))
+        items = names.items_for(entity_id)
+        weapon = item_resolver.weapon_category_for_items(items)
+        if weapon:
+            return weapon
+        return item_resolver.role_for_items(items)
 
     if args.gui_command == "live":
         if args.list_interfaces:

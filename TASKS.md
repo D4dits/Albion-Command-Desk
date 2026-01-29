@@ -49,3 +49,8 @@
 - [x] Textual app with table, bars, and history panel
 - [x] role coloring + fallback palette
 - [x] headless smoke test
+
+## Milestone M10 - Item DBs + weapon colors
+- [x] per-weapon color palette
+- [x] item resolver reads indexedItems/items
+- [x] local extractor tool to generate JSON from game files

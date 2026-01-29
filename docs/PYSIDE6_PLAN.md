@@ -1,4 +1,4 @@
-# PySide6 + QML plan (branch: PySide6)
+# PySide6 + QML implementation notes
 
 Goal: a modern, cross-platform desktop UI (Windows/Linux/macOS) with real-time stats,
 history cards, copy-to-clipboard, fame totals, and key legend. Passive only (no overlay).
@@ -17,7 +17,7 @@ Why this stack:
 ## Architecture
 1) Pipeline produces MeterSnapshot + SessionMeter history (existing logic).
 2) Qt bridge layer exposes:
-   - Snapshot model (player rows: damage/heal/dps/hps, role colors).
+   - Snapshot model (player rows: damage/heal/dps/hps, role colors, per-weapon colors when item DBs are present).
    - History model (entries with copy text).
    - Fame counters and mode/zone labels.
 3) QML renders:

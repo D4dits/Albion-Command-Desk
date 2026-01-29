@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from pcap_fixtures import resolve_pcap
 
 import pytest
 
@@ -11,7 +12,7 @@ from albion_dps.protocol.registry import default_registry
 
 
 def test_pcap39_party_disband_clears_roster() -> None:
-    pcap_path = Path("albion_dps/artifacts/pcaps/albion_combat_39_party_withD4dits.pcap")
+    pcap_path = resolve_pcap("albion_combat_39_party_withD4dits.pcap")
     if not pcap_path.exists():
         pytest.skip(f"Missing PCAP fixture: {pcap_path}")
 

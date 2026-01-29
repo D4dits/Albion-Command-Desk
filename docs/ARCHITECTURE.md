@@ -13,12 +13,14 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (CLI + GUI, live + PCAP 
   - `NameRegistry`: best-effort `entity_id -> name` mapping.
   - `PartyRegistry`: "self + party only" filter and self/party inference; late IDs can be accepted once names resolve.
   - `FameTracker`: fame counters (optional UI stat).
+- Item resolver enriches UI:
+  - `ItemResolver`: maps equipment item IDs -> weapon subcategory for per-weapon colors.
 - Meter aggregates events and yields snapshots + session history:
   - `SessionMeter` owns session boundaries (`battle`/`zone`/`manual`) and history.
   - `RollingMeter` owns totals + rolling DPS/HPS window.
 
-## Qt UI (planned in PySide6 branch)
-- Qt runner bridges snapshots to QAbstractListModel models.
+## Qt UI (PySide6/QML)
+- Implemented in main: Qt runner bridges snapshots to QAbstractListModel models.
 - QML renders scoreboard, history cards, key legend, and fame stats.
 
 ## Module boundaries (intended)
@@ -37,3 +39,7 @@ The meter must never attribute damage/heal to unrelated nearby players:
 - Session + history: `albion_dps/meter/session_meter.py`
 - Aggregation window: `albion_dps/meter/aggregate.py`
 - Party/self filtering: `albion_dps/domain/party_registry.py`
+- Item resolver + weapon colors: `albion_dps/domain/item_resolver.py`, `albion_dps/domain/weapon_colors.py`
+- Qt runner: `albion_dps/qt/runner.py`
+- Qt models: `albion_dps/qt/models.py`
+- Qt QML UI: `albion_dps/qt/ui/Main.qml`

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from pcap_fixtures import resolve_pcap
 
 import pytest
 
@@ -19,7 +20,7 @@ def test_pcap26_zone_mode_does_not_flip_between_5055_and_5056() -> None:
     party = PartyRegistry()
     fame = FameTracker()
     meter = SessionMeter(mode="zone", history_limit=50, name_lookup=names.lookup)
-    pcap_path = Path("albion_dps/artifacts/pcaps/albion_combat_26_walka_bzm_dluga.pcap")
+    pcap_path = resolve_pcap("albion_combat_26_walka_bzm_dluga.pcap")
     if not pcap_path.exists():
         pytest.skip(f"Missing PCAP fixture: {pcap_path}")
 

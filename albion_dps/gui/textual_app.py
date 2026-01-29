@@ -10,11 +10,17 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import DataTable, Static
 
 from albion_dps.models import MeterSnapshot
+from albion_dps.domain.weapon_colors import WEAPON_COLORS
 
 
 SORT_FIELD = {"dmg": "damage", "dps": "dps", "heal": "heal", "hps": "hps"}
 BAR_WIDTH = 24
-ROLE_COLORS = {"tank": "#4fb3ff", "dps": "#ff7a59", "heal": "#6de38f"}
+ROLE_COLORS = {
+    "tank": "#4fb3ff",
+    "dps": "#ff7a59",
+    "heal": "#6de38f",
+    **WEAPON_COLORS,
+}
 FALLBACK_PALETTE = ["#ffd166", "#06d6a0", "#118ab2", "#ef476f", "#a39dff"]
 
 

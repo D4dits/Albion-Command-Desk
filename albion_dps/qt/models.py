@@ -15,6 +15,7 @@ from PySide6.QtCore import (
 )
 
 from albion_dps.meter.session_meter import SessionEntry, SessionSummary
+from albion_dps.domain.weapon_colors import WEAPON_COLORS
 
 
 SORT_KEY_MAP = {
@@ -28,6 +29,7 @@ ROLE_COLORS = {
     "dps": "#ea5d5d",
     "heal": "#5deaa1",
     "tank": "#5da1ea",
+    **WEAPON_COLORS,
 }
 FALLBACK_PALETTE = [
     "#7dd3fc",

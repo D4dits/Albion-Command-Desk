@@ -104,13 +104,13 @@ See `docs/TROUBLESHOOTING.md`.
 ## Run
 After installing (provides the `albion-dps` command):
 ```
-albion-dps replay albion_dps/artifacts/pcaps/albion_combat_12_party.pcap
+albion-dps replay artifacts/pcaps/albion_combat_12_party.pcap
 albion-dps live
 ```
 
 Without installing (runs directly from the repo checkout):
 ```
-python -m albion_dps replay albion_dps/artifacts/pcaps/albion_combat_12_party.pcap
+python -m albion_dps replay artifacts/pcaps/albion_combat_12_party.pcap
 python -m albion_dps live
 ```
 
@@ -197,6 +197,18 @@ $env:ALBION_DPS_ITEMS_JSON="C:\path\to\items.json"
 $env:ALBION_DPS_ITEM_CATEGORY_MAPPING="C:\path\to\item_category_mapping.py"
 ```
 
+## Generate item databases (Windows)
+To enable per-weapon colors, generate `indexedItems.json` and `items.json` from your local Albion Online files.
+The repo includes a small extractor wrapper that uses the `wzor` sources:
+```
+.\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files\Albion Online"
+```
+This writes:
+- `data/indexedItems.json`
+- `data/items.json`
+
+Game root must contain `game\Albion-Online_Data\StreamingAssets\GameData\items.bin`.
+
 ## Modes (what "session" means)
 - `battle` (default): creates a session when you enter combat state and ends it when you leave combat state.
   Fallback: if combat state is not observed, it can still end by `--battle-timeout` inactivity.
@@ -255,6 +267,11 @@ Late party IDs are accepted once names resolve, so history can update as mapping
 
 ## Tests
 Some integration tests use PCAP fixtures; if you do not have them locally, those tests will be skipped.
+By default, tests look in `artifacts/pcaps` (or `albion_dps/artifacts/pcaps`).
+You can override with:
+```
+$env:ALBION_DPS_PCAP_DIR="C:\\path\\to\\pcaps"
+```
 ```
 python -m pip install -e ".[test]"
 python -m pytest -q

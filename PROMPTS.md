@@ -40,3 +40,12 @@ Dodaj flagi: --sort, --top, --snapshot."
 - Identify Photon header (peerId, flags, commandCount, timestamp, challenge).
 - For each new event/op code, save a hex sample and add a regression test.
 - Update registry entries and parsers; unknown -> artifacts/unknown/{ts}_{hash}.bin.
+
+---
+
+## Item DB generation (colors)
+If per-weapon colors are needed, generate local item databases:
+```
+.\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files\Albion Online"
+```
+Outputs: `data/indexedItems.json` and `data/items.json` (local-only).

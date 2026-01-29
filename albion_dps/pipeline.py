@@ -122,6 +122,11 @@ def stream_snapshots(
                     party_registry.sync_id_names(name_registry)
             if fame_tracker is not None:
                 fame_tracker.observe(message, packet)
+            if hasattr(meter, "observe_message"):
+                try:
+                    meter.observe_message(message, packet)
+                except TypeError:
+                    meter.observe_message(message)
         _flush_or_trim_pending(
             meter,
             packet.timestamp,

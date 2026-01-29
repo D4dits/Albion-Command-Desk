@@ -18,6 +18,8 @@ tmp/
 dist/
 build/
 *.egg-info/
+bin/
+obj/
 
 # Local artifacts (captures, dumps)
 artifacts/
@@ -40,9 +42,12 @@ wzor/
 wzor2/
 wzor3/
 wzor4/
-<<<<<<< HEAD
-tmp/
 AGENTS.md
+
+# Local temp dirs created by tests/tools
+_tmp/
+_tmppytest/
+UsersUsersDocumentsDPS_MasterDPS_Meter_AO_tmppytest/
 
 # Editor / OS noise
 .vscode/

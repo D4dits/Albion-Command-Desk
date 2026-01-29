@@ -41,9 +41,38 @@ albion-dps live --self-id 123456
 Unknown payloads are saved to `artifacts/unknown/` to support protocol updates.
 Log lines for unknown payloads are printed only in `--debug`, but files are still written.
 
+## Weapon colors do not match equipped weapons
+Per-weapon colors require local item databases:
+- `data/indexedItems.json` (required)
+- `data/items.json` (recommended)
+If those files are missing, the UI falls back to role/heuristic colors.
+Generate them with:
+```
+.\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files\Albion Online"
+```
+
 ## Permission issues (Windows)
 Npcap capture can require elevated permissions depending on configuration.
 If capture fails, try running the terminal as Administrator and ensure Npcap is installed correctly.
+
+## Pytest fails with PermissionError in TEMP (Windows)
+If pytest crashes with errors like `PermissionError` under `C:\\Users\\...\\AppData\\Local\\Temp`,
+set a writable temp dir before running tests:
+```
+$env:TEMP="$PWD\\artifacts\\tmp"
+$env:TMP=$env:TEMP
+python -m pytest -q -rs
+```
+If you still see errors, try running the terminal as Administrator.
+
+## `python` points to Windows Store Python
+If `python --version` fails or shows a Windows Store path (`WindowsApps`),
+install Python from python.org and recreate the venv:
+```
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install -e ".[test]"
+```
 
 ## Qt GUI fails to load (qtquick2plugin.dll missing)
 This usually means Qt's DLLs are not found:

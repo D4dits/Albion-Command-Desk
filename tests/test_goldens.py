@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from pcap_fixtures import resolve_pcap
 
 import pytest
 
@@ -24,7 +25,7 @@ GOLDENS = [
 def test_golden_outputs(name: str) -> None:
     golden_path = Path("tests/golden") / f"{name}.json"
     expected = json.loads(golden_path.read_text(encoding="utf-8"))
-    pcap_path = Path(f"albion_dps/artifacts/pcaps/{name}.pcap")
+    pcap_path = resolve_pcap(name)
     if not pcap_path.exists():
         pytest.skip(f"Missing PCAP fixture: {pcap_path}")
 
