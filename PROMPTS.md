@@ -49,3 +49,9 @@ If per-weapon colors are needed, generate local item databases:
 .\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files\Albion Online"
 ```
 Outputs: `data/indexedItems.json` and `data/items.json` (local-only).
+
+Map names:
+```
+./tools/extract_items/run_extract_items.sh --game-root "/path/to/Albion Online"
+```
+Outputs `data/map_index.json` (local-only).

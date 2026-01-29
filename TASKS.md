@@ -54,3 +54,7 @@
 - [x] per-weapon color palette
 - [x] item resolver reads indexedItems/items
 - [x] local extractor tool to generate JSON from game files
+
+## Milestone M11 - Map names
+- [x] map index resolver + zone label mapping
+- [x] local extractor generates map_index.json

@@ -8,7 +8,7 @@ Modern desktop UI notes (implemented): `docs/PYSIDE6_PLAN.md`.
 - Rich is pulled by Textual and provides progress bars and colors.
 
 ## Current UI behavior
-- Header with mode, zone, timestamp, fame/h.
+- Header with mode, zone (map name), timestamp, fame/h.
 - Scoreboard table with DPS/HPS and horizontal bars scaled by sort.
 - History panel with recent fights.
 - Role colors (tank/dps/heal) with fallback palette; per-weapon colors when item DBs are present.

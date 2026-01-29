@@ -21,7 +21,7 @@ Why this stack:
    - History model (entries with copy text).
    - Fame counters and mode/zone labels.
 3) QML renders:
-   - Header (mode, zone, time, fame, fame/h)
+   - Header (mode, zone name, time, fame, fame/h)
    - Scoreboard list with horizontal bars
    - History cards (copy button)
    - Key legend panel

@@ -200,6 +200,7 @@ $env:ALBION_DPS_INDEXED_ITEMS="C:\path\to\indexedItems.json"
 $env:ALBION_DPS_ITEMS_JSON="C:\path\to\items.json"
 $env:ALBION_DPS_ITEM_CATEGORY_MAPPING="C:\path\to\item_category_mapping.py"
 $env:ALBION_DPS_MAP_INDEX="C:\path\to\map_index.json"
+$env:ALBION_DPS_GAME_ROOT="C:\Program Files\Albion Online"
 ```
 
 ## Generate item databases (Windows)

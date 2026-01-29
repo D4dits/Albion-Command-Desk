@@ -18,6 +18,8 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (CLI + GUI, live + PCAP 
 - Meter aggregates events and yields snapshots + session history:
   - `SessionMeter` owns session boundaries (`battle`/`zone`/`manual`) and history.
   - `RollingMeter` owns totals + rolling DPS/HPS window.
+- Map resolver enriches zone labels:
+  - `MapResolver`: maps map indices to localized names (from `map_index.json`).
 
 ## Qt UI (PySide6/QML)
 - Implemented in main: Qt runner bridges snapshots to QAbstractListModel models.
@@ -40,6 +42,7 @@ The meter must never attribute damage/heal to unrelated nearby players:
 - Aggregation window: `albion_dps/meter/aggregate.py`
 - Party/self filtering: `albion_dps/domain/party_registry.py`
 - Item resolver + weapon colors: `albion_dps/domain/item_resolver.py`, `albion_dps/domain/weapon_colors.py`
+- Map resolver: `albion_dps/domain/map_resolver.py`
 - Qt runner: `albion_dps/qt/runner.py`
 - Qt models: `albion_dps/qt/models.py`
 - Qt QML UI: `albion_dps/qt/ui/Main.qml`

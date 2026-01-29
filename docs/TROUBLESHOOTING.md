@@ -58,8 +58,8 @@ On Linux/macOS use:
 If you run the GUI from a terminal and no game root is set, it will prompt for a path.
 Default Steam/Application install paths are auto-detected when possible.
 
-## Zone label shows only numbers/IP
-If you see `2000@x.x.x.x:5056`, the map index database is missing.
+## Zone label shows only numbers
+If you see `2000`, the map index database is missing.
 Generate it with the same extractor (creates `data/map_index.json`), or set `ALBION_DPS_MAP_INDEX`.
 
 ## Permission issues (Windows)
