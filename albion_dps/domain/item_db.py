@@ -124,27 +124,43 @@ def _is_valid_game_root(path: Path) -> bool:
 
 def _run_extractor(game_root: Path, *, logger) -> bool:
     repo_root = Path(__file__).resolve().parents[2]
-    script = repo_root / "tools" / "extract_items" / "run_extract_items.ps1"
-    if not script.exists():
-        logger.error("Extractor script missing: %s", script)
-        return False
-
     env = os.environ.copy()
     env["DOTNET_CLI_HOME"] = str(repo_root / "artifacts" / "dotnet")
     env["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1"
     env["NUGET_PACKAGES"] = str(repo_root / "artifacts" / "nuget")
 
-    cmd = [
-        "powershell",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        str(script),
-        "-GameRoot",
-        str(game_root),
-        "-OutputDir",
-        str(repo_root / "data"),
-    ]
+    if sys.platform == "win32":
+        script = repo_root / "tools" / "extract_items" / "run_extract_items.ps1"
+        if not script.exists():
+            logger.error("Extractor script missing: %s", script)
+            return False
+        cmd = [
+            "powershell",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(script),
+            "-GameRoot",
+            str(game_root),
+            "-OutputDir",
+            str(repo_root / "data"),
+        ]
+    else:
+        script = repo_root / "tools" / "extract_items" / "run_extract_items.sh"
+        if not script.exists():
+            logger.error("Extractor script missing: %s", script)
+            return False
+        cmd = [
+            "bash",
+            str(script),
+            "--game-root",
+            str(game_root),
+            "--output",
+            str(repo_root / "data"),
+            "--server",
+            "live",
+        ]
+
     result = subprocess.run(cmd, env=env, cwd=repo_root)
     if result.returncode != 0:
         logger.error("Extractor failed with code %s", result.returncode)

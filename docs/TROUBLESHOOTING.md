@@ -51,6 +51,10 @@ Generate them with:
 .\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files\Albion Online"
 ```
 Alternatively set `ALBION_DPS_GAME_ROOT` and launch the GUI to be prompted.
+On Linux/macOS use:
+```
+./tools/extract_items/run_extract_items.sh --game-root "/path/to/Albion Online"
+```
 
 ## Zone label shows only numbers/IP
 If you see `2000@x.x.x.x:5056`, the map index database is missing.

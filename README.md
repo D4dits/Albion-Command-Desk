@@ -215,7 +215,13 @@ This writes:
 
 Game root must contain `game\Albion-Online_Data\StreamingAssets\GameData\items.bin`.
 If item DBs are missing, the GUI will prompt to select the game folder (Windows only).
-When `map_index.json` is available, the zone label shows map names (e.g. `Lazygrass Plain@ip:port`).
+When `map_index.json` is available, the zone label shows map names (e.g. `Lazygrass Plain`).
+
+## Generate item databases (Linux/macOS)
+```
+./tools/extract_items/run_extract_items.sh --game-root "/path/to/Albion Online"
+```
+This writes the same `data/*.json` files locally.
 
 ## Modes (what "session" means)
 - `battle` (default): creates a session when you enter combat state and ends it when you leave combat state.
