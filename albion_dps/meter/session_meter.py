@@ -196,8 +196,6 @@ class SessionMeter:
                 map_label = self.map_lookup(self._map_index)
             if not map_label:
                 map_label = self._map_index
-        if map_label and self._zone_socket:
-            return f"{map_label}@{self._zone_socket}"
         if map_label:
             return map_label
         return self._zone_socket
