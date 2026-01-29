@@ -14,16 +14,24 @@ ENV_ITEMS_JSON = "ALBION_DPS_ITEMS_JSON"
 ENV_CATEGORY_MAPPING = "ALBION_DPS_ITEM_CATEGORY_MAPPING"
 ENV_ICON_BASE = "ALBION_DPS_ICON_BASE"
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = REPO_ROOT / "data"
+
 DEFAULT_INDEXED_PATHS = (
+    DATA_DIR / "indexedItems.json",
+    DATA_DIR / "indexed_items.json",
     Path("data/indexedItems.json"),
     Path("data/indexed_items.json"),
     Path("indexedItems.json"),
 )
 DEFAULT_ITEMS_PATHS = (
+    DATA_DIR / "items.json",
     Path("data/items.json"),
     Path("items.json"),
 )
 DEFAULT_CATEGORY_PATHS = (
+    DATA_DIR / "item_category_mapping.json",
+    DATA_DIR / "item_category_mapping.py",
     Path("data/item_category_mapping.json"),
     Path("data/item_category_mapping.py"),
     Path("item_category_mapping.json"),

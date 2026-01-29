@@ -7,7 +7,10 @@ internal class ItemData : IDisposable
 {
     public static async Task CreateItemDataAsync(string mainGameFolder, LocalizationData localizationData, string outputFolderPath, string outputFileNameWithExtension = "indexedItems.json")
     {
-        var itemBinPath = Path.Combine(mainGameFolder, ".\\Albion-Online_Data\\StreamingAssets\\GameData\\items.bin");
+        var itemBinPath = Path.Combine(
+            ExtractorUtilities.GetBinFilePath(mainGameFolder),
+            "items.bin"
+        );
         var itemDataByteArray = await BinaryDecrypter.DecryptAndDecompressAsync(itemBinPath);
 
         ExtractFromByteArray(itemDataByteArray.ToArray(), GetExportStream(outputFolderPath, outputFileNameWithExtension), localizationData);

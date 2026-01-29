@@ -14,8 +14,9 @@ internal static class MapData
         string outputFileNameWithExtension = "map_index.json")
     {
         var worldBinPath = Path.Combine(
-            mainGameFolder,
-            ".\\Albion-Online_Data\\StreamingAssets\\GameData\\cluster\\world.bin"
+            ExtractorUtilities.GetBinFilePath(mainGameFolder),
+            "cluster",
+            "world.bin"
         );
 
         var worldDataByteArray = await BinaryDecrypter.DecryptAndDecompressAsync(worldBinPath);

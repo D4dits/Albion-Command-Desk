@@ -53,10 +53,32 @@ if [[ -z "$OUTPUT_DIR" ]]; then
   OUTPUT_DIR="$REPO_ROOT/data"
 fi
 
-export DOTNET_CLI_HOME="$REPO_ROOT/artifacts/dotnet"
+if [[ -z "${DOTNET_CLI_HOME:-}" ]]; then
+  export DOTNET_CLI_HOME="$REPO_ROOT/artifacts/dotnet"
+fi
 export DOTNET_CLI_UI_LANGUAGE="en"
 export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
-export NUGET_PACKAGES="$REPO_ROOT/artifacts/nuget"
+if [[ -z "${NUGET_PACKAGES:-}" ]]; then
+  export NUGET_PACKAGES="$REPO_ROOT/artifacts/nuget"
+fi
 
-dotnet build "$TOOL_PROJECT" -c Release
-dotnet run --project "$TOOL_PROJECT" -c Release -- --game-root "$GAME_ROOT" --output "$OUTPUT_DIR" --server "$SERVER"
+DOTNET_BIN="dotnet"
+if [[ -n "${DOTNET_ROOT:-}" && -x "${DOTNET_ROOT}/dotnet" ]]; then
+  DOTNET_BIN="${DOTNET_ROOT}/dotnet"
+elif [[ -x "${HOME}/.dotnet/dotnet" ]]; then
+  DOTNET_BIN="${HOME}/.dotnet/dotnet"
+fi
+
+BUILD_PROPS=()
+OBJ_DIR="$REPO_ROOT/tools/extract_items/obj"
+if [[ ! -w "$OBJ_DIR" ]]; then
+  INTERMEDIATE_ROOT="${EXTRACT_ITEMS_INTERMEDIATE:-/tmp/extract_items_obj}"
+  OUTPUT_ROOT="${EXTRACT_ITEMS_OUTPUT:-/tmp/extract_items_bin}"
+  mkdir -p "$INTERMEDIATE_ROOT" "$OUTPUT_ROOT"
+  BUILD_PROPS+=("-p:BaseIntermediateOutputPath=$INTERMEDIATE_ROOT/")
+  BUILD_PROPS+=("-p:IntermediateOutputPath=$INTERMEDIATE_ROOT/")
+  BUILD_PROPS+=("-p:BaseOutputPath=$OUTPUT_ROOT/")
+fi
+
+"$DOTNET_BIN" build "$TOOL_PROJECT" -c Release "${BUILD_PROPS[@]}"
+"$DOTNET_BIN" run --project "$TOOL_PROJECT" -c Release --no-build "${BUILD_PROPS[@]}" -- --game-root "$GAME_ROOT" --output "$OUTPUT_DIR" --server "$SERVER"

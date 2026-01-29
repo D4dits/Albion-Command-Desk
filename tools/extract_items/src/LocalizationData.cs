@@ -14,7 +14,10 @@ internal class LocalizationData : IDisposable
 
     public async Task LoadDataAsync(string mainGameFolder)
     {
-        var localizationBinFilePath = Path.Combine(mainGameFolder, ".\\Albion-Online_Data\\StreamingAssets\\GameData\\localization.bin");
+        var localizationBinFilePath = Path.Combine(
+            ExtractorUtilities.GetBinFilePath(mainGameFolder),
+            "localization.bin"
+        );
 
         try
         {

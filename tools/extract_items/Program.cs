@@ -75,6 +75,8 @@ if (!Extractor.IsValidMainGameFolder(gameRoot, serverType))
     Console.WriteLine("Invalid game root. Expected structure:");
     Console.WriteLine(@"  <game-root>\game\Albion-Online_Data\StreamingAssets\GameData\items.bin");
     Console.WriteLine(@"  <game-root>\game\Albion-Online_Data\StreamingAssets\GameData\localization.bin");
+    Console.WriteLine(@"  <game-root>/game_x64/Albion-Online_Data/StreamingAssets/GameData/items.bin");
+    Console.WriteLine(@"  <game-root>/game_x64/Albion-Online_Data/StreamingAssets/GameData/localization.bin");
     return 2;
 }
 

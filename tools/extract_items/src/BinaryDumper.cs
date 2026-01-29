@@ -9,11 +9,6 @@ internal class BinaryDumper
     public static async Task ExtractAsJsonAsync(string mainGameFolder, string outputFolderPath, string[] binFileNamesToExtract)
     {
         var allFiles = GetBinFilePaths(mainGameFolder, binFileNamesToExtract);
-        var outFiles = (string[]) allFiles.Clone();
-        for (var i = 0; i < outFiles.Length; i++)
-        {
-            outFiles[i] = outFiles[i].Remove(0, outFiles[i].LastIndexOf("GameData\\", StringComparison.Ordinal) + "GameData\\".Length);
-        }
 
         foreach (string binFilePath in allFiles)
         {
@@ -24,11 +19,6 @@ internal class BinaryDumper
     public static async Task ExtractAsXmlAsync(string mainGameFolder, string outputFolderPath, string[] binFileNamesToExtract)
     {
         var allFiles = GetBinFilePaths(mainGameFolder, binFileNamesToExtract);
-        var outFiles = (string[]) allFiles.Clone();
-        for (var i = 0; i < outFiles.Length; i++)
-        {
-            outFiles[i] = outFiles[i].Remove(0, outFiles[i].LastIndexOf("GameData\\", StringComparison.Ordinal) + "GameData\\".Length);
-        }
 
         foreach (string binFilePath in allFiles)
         {

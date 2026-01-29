@@ -9,7 +9,7 @@ public class Extractor
 
     public Extractor(string mainGameFolder, ServerType serverType)
     {
-        string mainGameFolderString = Path.Combine(mainGameFolder, GetServerTypeString(serverType));
+        string mainGameFolderString = ExtractorUtilities.ResolveMainGameFolder(mainGameFolder, serverType);
         _mainGameServerFolderString = mainGameFolderString.Replace("'", "");
     }
 
@@ -49,23 +49,11 @@ public class Extractor
         await BinaryDumper.ExtractAsXmlAsync(_mainGameServerFolderString, outputDirPath, binFileNamesToExtract);
     }
 
-    private static string GetServerTypeString(ServerType serverType)
-    {
-        string serverTypeString = serverType switch
-        {
-            ServerType.Staging => "staging",
-            ServerType.Playground => "playground",
-            _ => "game"
-        };
-
-        return serverTypeString;
-    }
-
     public static bool IsBinFileNewer(string toolFilePath, string mainGameFolder, ServerType serverType, string binFileName)
     {
         try
         {
-            string mainGameFolderPath = Path.Combine(mainGameFolder, GetServerTypeString(serverType));
+            string mainGameFolderPath = ExtractorUtilities.ResolveMainGameFolder(mainGameFolder, serverType);
             var binFilePath = Path.Combine(ExtractorUtilities.GetBinFilePath(mainGameFolderPath), $"{binFileName}.bin");
             var toolFileDateTime = File.GetLastWriteTime(toolFilePath);
 
@@ -96,7 +84,7 @@ public class Extractor
 
     public static bool IsValidMainGameFolder(string mainGameFolder, ServerType serverType)
     {
-        string mainGameFolderPath = Path.Combine(mainGameFolder, GetServerTypeString(serverType));
+        string mainGameFolderPath = ExtractorUtilities.ResolveMainGameFolder(mainGameFolder, serverType);
 
         var itemsBinFilePath = Path.Combine(ExtractorUtilities.GetBinFilePath(mainGameFolderPath), "items.bin");
         var mobsBinFilePath = Path.Combine(ExtractorUtilities.GetBinFilePath(mainGameFolderPath), "mobs.bin");

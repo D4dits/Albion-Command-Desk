@@ -9,7 +9,10 @@ from typing import Any, Iterable
 
 
 ENV_MAP_INDEX = "ALBION_DPS_MAP_INDEX"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = REPO_ROOT / "data"
 DEFAULT_MAP_PATHS = (
+    DATA_DIR / "map_index.json",
     Path("data/map_index.json"),
     Path("map_index.json"),
 )
