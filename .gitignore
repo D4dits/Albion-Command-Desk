@@ -45,6 +45,7 @@ wzor2/
 wzor3/
 wzor4/
 AGENTS.md
+PROMPTS.md
 
 # Local temp dirs created by tests/tools
 _tmp/
