@@ -15,6 +15,7 @@ if ([string]::IsNullOrWhiteSpace($OutputDir)) {
 }
 
 $env:DOTNET_CLI_HOME = Join-Path $repoRoot "artifacts\\dotnet"
+$env:DOTNET_CLI_UI_LANGUAGE = "en"
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = "1"
 $env:NUGET_PACKAGES = Join-Path $repoRoot "artifacts\\nuget"
 

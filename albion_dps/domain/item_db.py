@@ -175,6 +175,7 @@ def _run_extractor(game_root: Path, *, logger) -> bool:
     repo_root = Path(__file__).resolve().parents[2]
     env = os.environ.copy()
     env["DOTNET_CLI_HOME"] = str(repo_root / "artifacts" / "dotnet")
+    env["DOTNET_CLI_UI_LANGUAGE"] = "en"
     env["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1"
     env["NUGET_PACKAGES"] = str(repo_root / "artifacts" / "nuget")
 

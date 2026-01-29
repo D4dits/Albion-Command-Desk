@@ -226,6 +226,7 @@ ApplicationWindow {
                             spacing: 12
 
                             Text { text: "Name"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 140 }
+                            Text { text: "Weapon"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
                             Text { text: "DMG"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
                             Text { text: "HEAL"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
                             Text { text: "DPS"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
@@ -255,6 +256,38 @@ ApplicationWindow {
                                     font.pixelSize: 12
                                     elide: Text.ElideRight
                                     Layout.preferredWidth: 140
+                                }
+                                Item {
+                                    Layout.preferredWidth: 90
+                                    height: 24
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        spacing: 4
+                                        Image {
+                                            source: weaponIcon
+                                            width: 20
+                                            height: 20
+                                            Layout.preferredWidth: 20
+                                            Layout.preferredHeight: 20
+                                            sourceSize.width: 20
+                                            sourceSize.height: 20
+                                            fillMode: Image.PreserveAspectFit
+                                            visible: weaponIcon && weaponIcon.length > 0
+                                        }
+                                        Text {
+                                            text: weaponTier && weaponTier.length > 0 ? weaponTier : "-"
+                                            color: mutedColor
+                                            font.pixelSize: 11
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                    ToolTip.visible: weaponHover.containsMouse && weaponName && weaponName.length > 0
+                                    ToolTip.text: weaponName
+                                    MouseArea {
+                                        id: weaponHover
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                    }
                                 }
                                 Text { text: damage; color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
                                 Text { text: heal; color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }

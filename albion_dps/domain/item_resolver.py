@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass, field
+import re
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -11,6 +12,7 @@ from typing import Any, Iterable
 ENV_INDEXED_ITEMS = "ALBION_DPS_INDEXED_ITEMS"
 ENV_ITEMS_JSON = "ALBION_DPS_ITEMS_JSON"
 ENV_CATEGORY_MAPPING = "ALBION_DPS_ITEM_CATEGORY_MAPPING"
+ENV_ICON_BASE = "ALBION_DPS_ICON_BASE"
 
 DEFAULT_INDEXED_PATHS = (
     Path("data/indexedItems.json"),
@@ -27,6 +29,8 @@ DEFAULT_CATEGORY_PATHS = (
     Path("item_category_mapping.json"),
     Path("item_category_mapping.py"),
 )
+DEFAULT_ICON_BASE = "https://render.albiononline.com/v1/item"
+DEFAULT_ICON_SIZE = 64
 
 ROLE_BY_SUBCATEGORY = {
     "holystaff": "heal",
@@ -64,6 +68,7 @@ WEAPON_CATEGORIES = {subcategory for _, subcategory in SUBCATEGORY_PATTERNS} | s
 @dataclass
 class ItemResolver:
     index_to_unique: dict[int, str] = field(default_factory=dict)
+    index_to_name: dict[int, str] = field(default_factory=dict)
     unique_to_subcategory: dict[str, str] = field(default_factory=dict)
     unique_to_category: dict[str, str] = field(default_factory=dict)
 
@@ -106,6 +111,25 @@ class ItemResolver:
             return subcategory
         return None
 
+    def weapon_info_for_items(self, item_ids: Iterable[int]) -> "WeaponInfo | None":
+        for item_id in item_ids:
+            if not isinstance(item_id, int) or item_id <= 0:
+                continue
+            unique = self.index_to_unique.get(item_id)
+            if not unique:
+                continue
+            name = self.index_to_name.get(item_id)
+            tier, enchant = _parse_tier_enchant(unique)
+            icon = _build_icon_url(unique)
+            return WeaponInfo(
+                unique=unique,
+                name=name,
+                tier=tier,
+                enchant=enchant,
+                icon_url=icon,
+            )
+        return None
+
     def _mainhand_unique(self, item_ids: Iterable[int]) -> str | None:
         for item_id in item_ids:
             if not isinstance(item_id, int) or item_id <= 0:
@@ -128,7 +152,9 @@ def load_item_resolver(
 
     indexed = _resolve_path(indexed_path, ENV_INDEXED_ITEMS, DEFAULT_INDEXED_PATHS)
     if indexed:
-        resolver.index_to_unique = _load_indexed_items(indexed, logger=logger)
+        index_map, name_map = _load_indexed_items(indexed, logger=logger)
+        resolver.index_to_unique = index_map
+        resolver.index_to_name = name_map
     else:
         logger.debug("No indexed items database found (indexedItems.json).")
 
@@ -165,24 +191,30 @@ def _resolve_path(
     return None
 
 
-def _load_indexed_items(path: Path, *, logger: logging.Logger) -> dict[int, str]:
+def _load_indexed_items(
+    path: Path, *, logger: logging.Logger
+) -> tuple[dict[int, str], dict[int, str]]:
     data = _load_json(path, logger=logger)
     index_map: dict[int, str] = {}
+    name_map: dict[int, str] = {}
     for record in _iter_records(data):
         if not isinstance(record, dict):
             continue
         lower = {str(k).lower(): v for k, v in record.items()}
         unique = lower.get("uniquename")
         index = lower.get("index")
+        name = _pick_localized_name(lower.get("localizednames") or lower.get("localizedname"))
         if isinstance(unique, str) and unique and index is not None:
             try:
                 index_value = int(index)
             except (TypeError, ValueError):
                 continue
             index_map[index_value] = unique
+            if isinstance(name, str) and name:
+                name_map[index_value] = name
     if not index_map:
         logger.warning("Indexed items file loaded but produced no entries: %s", path)
-    return index_map
+    return index_map, name_map
 
 
 def _load_items(path: Path, *, logger: logging.Logger) -> dict[str, str]:
@@ -274,6 +306,63 @@ def _load_python_mapping(path: Path, *, logger: logging.Logger) -> dict[str, str
                         }
     logger.warning("Python mapping does not define `mapping`: %s", path)
     return {}
+
+
+def _pick_localized_name(value: object) -> str | None:
+    if isinstance(value, str) and value:
+        return value
+    if isinstance(value, dict):
+        for key in ("en-us", "en-gb", "en"):
+            entry = value.get(key) or value.get(key.upper())
+            if isinstance(entry, str) and entry:
+                return entry
+        for entry in value.values():
+            if isinstance(entry, str) and entry:
+                return entry
+    return None
+
+
+_TIER_RE = re.compile(r"^T(\d+)_")
+
+
+def _parse_tier_enchant(unique: str) -> tuple[int | None, int | None]:
+    if not unique:
+        return None, None
+    base = unique
+    enchant = 0
+    if "@" in unique:
+        base, suffix = unique.split("@", 1)
+        try:
+            enchant = int(suffix)
+        except ValueError:
+            enchant = 0
+    match = _TIER_RE.match(base)
+    if not match:
+        return None, enchant
+    try:
+        tier = int(match.group(1))
+    except ValueError:
+        return None, enchant
+    return tier, enchant
+
+
+def _build_icon_url(unique: str) -> str | None:
+    if not unique:
+        return None
+    base = os.environ.get(ENV_ICON_BASE, DEFAULT_ICON_BASE).strip()
+    if not base:
+        return None
+    base = base.rstrip("/")
+    return f"{base}/{unique}?size={DEFAULT_ICON_SIZE}"
+
+
+@dataclass(frozen=True)
+class WeaponInfo:
+    unique: str
+    name: str | None
+    tier: int | None
+    enchant: int | None
+    icon_url: str | None
 
 
 def _infer_subcategory_from_unique(unique: str) -> str | None:

@@ -54,6 +54,7 @@ if [[ -z "$OUTPUT_DIR" ]]; then
 fi
 
 export DOTNET_CLI_HOME="$REPO_ROOT/artifacts/dotnet"
+export DOTNET_CLI_UI_LANGUAGE="en"
 export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 export NUGET_PACKAGES="$REPO_ROOT/artifacts/nuget"
 

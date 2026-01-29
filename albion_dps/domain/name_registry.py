@@ -17,6 +17,7 @@ NAME_SUBTYPE_ENTITY_ALT_ID_KEY = 4
 NAME_SUBTYPE_ENTITY_NAME_KEY = 5
 NAME_SUBTYPE_UNIT_INFO = 29
 NAME_SUBTYPE_UNIT_NAME_KEY = 1
+NAME_UNIT_EQUIPMENT_LIST_KEY = 40
 NAME_SUBTYPE_CHARACTER_INFO = 30
 NAME_SUBTYPE_CHARACTER_NAME_KEY = 5
 NAME_SUBTYPE_EQUIPMENT = 90
@@ -99,6 +100,12 @@ class NameRegistry:
             name = parameters.get(NAME_SUBTYPE_UNIT_NAME_KEY)
             if isinstance(name, str) and name:
                 self._store(parameters.get(NAME_SUBTYPE_ENTITY_ID_KEY), name)
+            entity_id = parameters.get(NAME_SUBTYPE_ENTITY_ID_KEY)
+            items = parameters.get(NAME_UNIT_EQUIPMENT_LIST_KEY)
+            if isinstance(entity_id, int) and isinstance(items, list):
+                filtered = [item for item in items if isinstance(item, int) and item > 0]
+                if filtered:
+                    self._entity_items[entity_id] = filtered
         if subtype == NAME_SUBTYPE_CHARACTER_INFO:
             name = parameters.get(NAME_SUBTYPE_CHARACTER_NAME_KEY)
             if isinstance(name, str) and name:

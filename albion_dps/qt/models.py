@@ -57,6 +57,9 @@ class PlayerRow:
     bar_ratio: float
     role: str
     color: str
+    weapon_name: str
+    weapon_tier: str
+    weapon_icon: str
 
 
 @dataclass(frozen=True)
@@ -76,6 +79,9 @@ class PlayerModel(QAbstractListModel):
     BarRole = Qt.UserRole + 6
     RoleRole = Qt.UserRole + 7
     BarColorRole = Qt.UserRole + 8
+    WeaponNameRole = Qt.UserRole + 9
+    WeaponTierRole = Qt.UserRole + 10
+    WeaponIconRole = Qt.UserRole + 11
 
     def __init__(self) -> None:
         super().__init__()
@@ -107,6 +113,12 @@ class PlayerModel(QAbstractListModel):
             return item.role
         if role == self.BarColorRole:
             return item.color
+        if role == self.WeaponNameRole:
+            return item.weapon_name
+        if role == self.WeaponTierRole:
+            return item.weapon_tier
+        if role == self.WeaponIconRole:
+            return item.weapon_icon
         return None
 
     def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
@@ -119,6 +131,9 @@ class PlayerModel(QAbstractListModel):
             self.BarRole: b"barRatio",
             self.RoleRole: b"role",
             self.BarColorRole: b"barColor",
+            self.WeaponNameRole: b"weaponName",
+            self.WeaponTierRole: b"weaponTier",
+            self.WeaponIconRole: b"weaponIcon",
         }
 
     def set_items(self, items: list[PlayerRow]) -> None:
@@ -191,6 +206,7 @@ class UiState(QObject):
         history_limit: int,
         set_mode_callback: Callable[[str], None] | None = None,
         role_lookup: Callable[[int], str | None] | None = None,
+        weapon_lookup: Callable[[int], object | None] | None = None,
     ) -> None:
         super().__init__()
         self._mode = "battle"
@@ -208,6 +224,7 @@ class UiState(QObject):
         self._last_names: dict[int, str] = {}
         self._last_history: list[SessionSummary] = []
         self._role_lookup = role_lookup
+        self._weapon_lookup = weapon_lookup
 
     @Property(str, notify=modeChanged)
     def mode(self) -> str:
@@ -261,6 +278,7 @@ class UiState(QObject):
                     sort_key=self._sort_key,
                     top_n=self._top_n,
                     role_lookup=self._role_lookup,
+                    weapon_lookup=self._weapon_lookup,
                 )
             )
 
@@ -308,6 +326,7 @@ class UiState(QObject):
                 sort_key=self._sort_key,
                 top_n=self._top_n,
                 role_lookup=self._role_lookup,
+                weapon_lookup=self._weapon_lookup,
             )
         )
         self._history.set_items(
@@ -346,6 +365,7 @@ def _build_player_rows(
     sort_key: str,
     top_n: int,
     role_lookup: Callable[[int], str | None] | None = None,
+    weapon_lookup: Callable[[int], object | None] | None = None,
 ) -> list[PlayerRow]:
     rows: list[PlayerRow] = []
     metric = SORT_KEY_MAP.get(sort_key, "dps")
@@ -362,6 +382,20 @@ def _build_player_rows(
             role = role_lookup(source_id)
         if not role:
             role = _infer_role(damage, heal, max_damage=max_damage, max_heal=max_heal)
+        weapon_name = ""
+        weapon_tier = ""
+        weapon_icon = ""
+        if weapon_lookup is not None:
+            info = weapon_lookup(source_id)
+            if info is not None:
+                weapon_name = str(getattr(info, "name", "") or getattr(info, "unique", "") or "")
+                tier = getattr(info, "tier", None)
+                enchant = getattr(info, "enchant", None)
+                if isinstance(tier, int):
+                    if not isinstance(enchant, int):
+                        enchant = 0
+                    weapon_tier = f"{tier}.{enchant}"
+                weapon_icon = str(getattr(info, "icon_url", "") or "")
         color = _color_for_label(label, role)
         rows.append(
             PlayerRow(
@@ -373,6 +407,9 @@ def _build_player_rows(
                 bar_ratio=0.0,
                 role=role or "",
                 color=color,
+                weapon_name=weapon_name,
+                weapon_tier=weapon_tier,
+                weapon_icon=weapon_icon,
             )
         )
     rows.sort(key=lambda item: _metric_value(item, metric), reverse=True)
@@ -393,6 +430,9 @@ def _build_player_rows(
                 bar_ratio=ratio,
                 role=item.role,
                 color=item.color,
+                weapon_name=item.weapon_name,
+                weapon_tier=item.weapon_tier,
+                weapon_icon=item.weapon_icon,
             )
         )
     return with_ratio

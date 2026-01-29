@@ -53,6 +53,10 @@ def run_qt(args: argparse.Namespace) -> int:
         if weapon:
             return weapon
         return item_resolver.role_for_items(items)
+
+    def weapon_lookup(entity_id: int):
+        items = names.items_for(entity_id)
+        return item_resolver.weapon_info_for_items(items)
     snapshots = _build_snapshot_stream(args, names, party, fame, meter, decoder, mapper)
     if snapshots is None:
         return 1
@@ -87,6 +91,7 @@ def run_qt(args: argparse.Namespace) -> int:
         history_limit=max(args.history, 1),
         set_mode_callback=meter.set_mode,
         role_lookup=role_lookup,
+        weapon_lookup=weapon_lookup,
     )
     engine.rootContext().setContextProperty("uiState", state)
     engine.load(str(qml_path))
