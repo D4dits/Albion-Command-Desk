@@ -37,10 +37,10 @@ Every contribution helps - thank you!
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 ```
-2) Install this repo (editable) + live capture deps:
+2) Install this repo (editable) with all optional extras:
 ```
 python -m pip install -U pip
-python -m pip install -e ".[capture]"
+python -m pip install -e ".[all]"
 ```
 3) Replay a PCAP (your capture or a shared fixture):
 ```
@@ -57,10 +57,10 @@ albion-dps live
 python -m venv venv
 source venv/bin/activate
 ```
-2) Install this repo (editable) + live capture deps:
+2) Install this repo (editable) with all optional extras:
 ```
 python -m pip install -U pip
-python -m pip install -e ".[capture]"
+python -m pip install -e ".[all]"
 ```
 3) Replay a PCAP:
 ```
@@ -96,6 +96,7 @@ Optional extras:
 ```
 python -m pip install -e ".[capture]"
 python -m pip install -e ".[test]"
+python -m pip install -e ".[all]"
 ```
 
 If `albion-dps` is not recognized, you likely forgot to activate the venv or install the project.
