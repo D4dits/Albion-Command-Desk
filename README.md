@@ -1,6 +1,6 @@
-# Albion DPS Meter (CLI)
+# Albion DPS Meter
 
-Passive DPS/HPS meter for Albion Online (CLI-only).
+Passive DPS/HPS meter for Albion Online with a Qt desktop UI, terminal UI, and CLI.
 It reads UDP traffic only (PCAP replay or live capture); no client hooks, overlays, or modifications.
 
 Core safety rule: the meter aggregates only the local player and party members (never unrelated nearby players).
@@ -14,6 +14,10 @@ Core safety rule: the meter aggregates only the local player and party members (
 ---
 
 ## Screenshots
+<p align="center">
+  <img src="assets/gui_meter.png" alt="Qt GUI (current)">
+</p>
+
 <p align="center">
   <img src="assets/DPS_GUI.png" alt="Qt GUI">
 </p>
@@ -165,8 +169,6 @@ GUI keys:
 - `b` battle mode, `z` zone mode, `m` manual mode
 - `1` dps sort, `2` dmg sort, `3` hps sort, `4` heal sort
 
-PySide6/QML desktop UI: see `docs/PYSIDE6_PLAN.md` for architecture notes.
-
 ## GUI (PySide6/QML)
 Install Qt GUI extras:
 ```
@@ -279,8 +281,6 @@ Late party IDs are accepted once names resolve, so history can update as mapping
 ## Project docs
 - Architecture overview: `docs/ARCHITECTURE.md`
 - Troubleshooting: `docs/TROUBLESHOOTING.md`
-- GUI work plan: `docs/GUI_PLAN.md`
-- Reverse-engineering workflow notes: `PROMPTS.md`
 
 ## Tests
 Some integration tests use PCAP fixtures; if you do not have them locally, those tests will be skipped.
