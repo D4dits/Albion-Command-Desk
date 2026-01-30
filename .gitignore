@@ -46,6 +46,7 @@ wzor3/
 wzor4/
 AGENTS.md
 PROMPTS.md
+dotnet-install.sh
 
 # Local temp dirs created by tests/tools
 _tmp/

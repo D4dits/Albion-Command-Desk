@@ -37,6 +37,19 @@ or
 albion-dps live --self-id 123456
 ```
 
+## Cross-platform setup pitfalls (Windows/Linux/macOS)
+Common issues when running on a different OS or machine:
+
+- **.NET SDK version (extractor):** the item/map extractor targets .NET 10. Make sure `dotnet --info` shows SDK `10.x`.
+- **`dotnet` on PATH:** if multiple SDKs exist (system vs user), ensure `DOTNET_ROOT` and `PATH` point to the SDK you want.
+- **NuGet restore blocked:** extractor build needs access to `https://api.nuget.org`. If you're offline or blocked, restore/build will fail.
+- **Permissions on build/artifacts:** if `tools/extract_items/obj` or `artifacts/` were created as root, `dotnet` may fail to write. Fix with:
+  ```
+  sudo chown -R "$USER:$USER" tools/extract_items/obj tools/extract_items/bin artifacts
+  ```
+- **Game root path differs:** on Linux installs (including custom paths), the actual data is often under `game_x64/Albion-Online_Data/...`. The extractor accepts either the base install folder or the specific `game_x64` folder.
+- **Missing `items.json`:** if you see `Items catalog loaded but produced no entries`, re-run the extractor and confirm it generated `data/items.json`.
+
 ## Too many "unknown payload" files
 Unknown payloads are saved to `artifacts/unknown/` to support protocol updates.
 Log lines for unknown payloads are printed only in `--debug`, but files are still written.
