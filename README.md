@@ -19,11 +19,7 @@ Core safety rule: the meter aggregates only the local player and party members (
 </p>
 
 <p align="center">
-  <img src="assets/DPS_GUI.png" alt="Qt GUI">
-</p>
-
-<p align="center">
-  <img src="assets/DPS.png" alt="Textual TUI">
+  <img src="assets/tui_meter.png" alt="Textual TUI">
 </p>
 
 ## Support the project
