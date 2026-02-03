@@ -17,8 +17,11 @@ from albion_dps.protocol.map_index import extract_map_index_from_response
 PARTY_EVENT_CODE = 1
 PARTY_SUBTYPE_KEY = 252
 PARTY_SUBTYPE_NAME_KEYS = {
+    212: 5,
     227: 13,
     229: 6,
+    214: 2,
+    221: 0,
 }
 PARTY_SUBTYPE_DISBAND = 213
 SELF_SUBTYPE_NAME_KEYS = {

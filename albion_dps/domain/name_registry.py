@@ -25,6 +25,10 @@ NAME_EQUIPMENT_ENTITY_ID_KEY = 0
 NAME_EQUIPMENT_ITEM_LIST_KEY = 2
 NAME_EQUIPMENT_MIN_MATCHES = 3
 NAME_EQUIPMENT_MIN_RATIO = 2.0
+NAME_PARTY_JOINED_SUBTYPE = 212
+NAME_PARTY_PLAYER_JOINED_SUBTYPE = 214
+NAME_PARTY_JOINED_GUID_KEYS = (3, 4)
+NAME_PARTY_JOINED_NAME_KEYS = (5, 6)
 
 
 @dataclass
@@ -181,16 +185,32 @@ class NameRegistry:
 
     def _apply_party_roster(self, parameters: dict[int, object]) -> None:
         subtype = parameters.get(252)
-        if subtype == 229:
-            guids = parameters.get(5)
-            names = parameters.get(6)
-        elif subtype == 227:
-            guids = parameters.get(12)
-            names = parameters.get(13)
-        else:
+        if subtype == NAME_PARTY_PLAYER_JOINED_SUBTYPE:
+            guid = parameters.get(1)
+            name = parameters.get(2)
+            if _is_guid(guid) and isinstance(name, str) and name:
+                self._guid_names[bytes(guid)] = name
             return
 
-        if not isinstance(guids, list) or not isinstance(names, list):
+        if subtype not in (227, 229, NAME_PARTY_JOINED_SUBTYPE):
+            return
+
+        if subtype == NAME_PARTY_JOINED_SUBTYPE:
+            guid_keys = NAME_PARTY_JOINED_GUID_KEYS
+            name_keys = NAME_PARTY_JOINED_NAME_KEYS
+        elif subtype == 227:
+            guid_keys = (12,)
+            name_keys = (13,)
+        else:
+            guid_keys = (5,)
+            name_keys = (6,)
+
+        guids, names = _extract_party_roster_lists(
+            parameters,
+            guid_keys=guid_keys,
+            name_keys=name_keys,
+        )
+        if not guids or not names:
             return
         for guid, name in zip(guids, names):
             if _is_guid(guid) and isinstance(name, str) and name:
@@ -225,3 +245,27 @@ def _is_guid(value: object) -> bool:
     if isinstance(value, (bytes, bytearray)) and len(value) == 16:
         return True
     return False
+
+
+def _extract_party_roster_lists(
+    parameters: dict[int, object],
+    *,
+    guid_keys: tuple[int, ...],
+    name_keys: tuple[int, ...],
+) -> tuple[list[bytes] | None, list[str] | None]:
+    for guid_key in guid_keys:
+        guid_values = parameters.get(guid_key)
+        if not isinstance(guid_values, list) or not guid_values:
+            continue
+        if not all(_is_guid(value) for value in guid_values):
+            continue
+        for name_key in name_keys:
+            name_values = parameters.get(name_key)
+            if not isinstance(name_values, list) or not name_values:
+                continue
+            if not all(isinstance(value, str) for value in name_values):
+                continue
+            if len(name_values) != len(guid_values):
+                continue
+            return guid_values, name_values
+    return None, None
