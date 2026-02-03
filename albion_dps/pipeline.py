@@ -114,6 +114,7 @@ def stream_snapshots(
             if party_registry is not None:
                 party_registry.observe(message, packet)
                 if name_registry is not None:
+                    party_registry.sync_guids(name_registry)
                     party_registry.sync_names(name_registry)
                     party_registry.infer_self_name_from_targets(name_registry)
                 party_registry.try_resolve_self_id(name_registry)

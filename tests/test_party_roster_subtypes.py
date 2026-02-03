@@ -94,3 +94,30 @@ def test_party_player_joined_subtype_maps_guid_name() -> None:
     guid_names = names.snapshot_guid_names()
     assert guid_names[guid] == "Carol"
     assert "Carol" in party.snapshot_names()
+
+
+def test_party_player_left_removes_member() -> None:
+    guid_a = b"\x01" * 16
+    guid_b = b"\x02" * 16
+    joined_params = [
+        _enc_param(252, TYPE_INTEGER, _enc_i32(212)),
+        _enc_param(4, TYPE_ARRAY, _enc_array(TYPE_BYTE_ARRAY, [guid_a, guid_b])),
+        _enc_param(5, TYPE_STRING_ARRAY, _enc_string_array(["Alice", "Bob"])),
+    ]
+    left_params = [
+        _enc_param(252, TYPE_INTEGER, _enc_i32(216)),
+        _enc_param(1, TYPE_BYTE_ARRAY, _enc_byte_array(guid_b)),
+    ]
+    joined_message = PhotonMessage(
+        opcode=1, event_code=1, payload=_build_event_payload(1, joined_params)
+    )
+    left_message = PhotonMessage(
+        opcode=1, event_code=1, payload=_build_event_payload(1, left_params)
+    )
+
+    party = PartyRegistry()
+    party.observe(joined_message)
+    party.observe(left_message)
+
+    assert guid_b not in party.snapshot_guids()
+    assert "Bob" not in party.snapshot_names()

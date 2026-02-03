@@ -23,7 +23,10 @@ PARTY_SUBTYPE_NAME_KEYS = {
     214: 2,
     221: 0,
 }
+PARTY_SUBTYPE_ROSTER = {212, 227, 229}
 PARTY_SUBTYPE_DISBAND = 213
+PARTY_SUBTYPE_PLAYER_LEFT = 216
+PARTY_SUBTYPE_PLAYER_JOINED = 214
 SELF_SUBTYPE_NAME_KEYS = {
     228: 1,
     238: 0,
@@ -58,6 +61,8 @@ class PartyRegistry:
     _party_names: set[str] = field(default_factory=set)
     _party_ids: set[int] = field(default_factory=set)
     _resolved_party_names: set[str] = field(default_factory=set)
+    _party_guids: set[bytes] = field(default_factory=set)
+    _party_guid_names: dict[bytes, str] = field(default_factory=dict)
     _combat_ids_seen: set[int] = field(default_factory=set)
     _target_ids: set[int] = field(default_factory=set)
     _self_ids: set[int] = field(default_factory=set)
@@ -103,6 +108,21 @@ class PartyRegistry:
         if subtype == COMBAT_TARGET_SUBTYPE:
             self._apply_target_link(event.parameters, packet)
             return
+        if subtype == PARTY_SUBTYPE_PLAYER_LEFT:
+            guid = _coerce_guid(event.parameters.get(1))
+            if guid is not None:
+                self._remove_party_guid(guid)
+            return
+        if subtype == PARTY_SUBTYPE_PLAYER_JOINED:
+            guid = _coerce_guid(event.parameters.get(1))
+            names = _coerce_names(event.parameters.get(PARTY_SUBTYPE_NAME_KEYS.get(subtype)))
+            self._add_party_member(guid, names[0] if names else None)
+            return
+        if subtype in PARTY_SUBTYPE_ROSTER:
+            guids, names = _extract_party_roster(event.parameters, subtype)
+            if guids is not None:
+                self._set_party_roster(guids, names)
+                return
         name_key = PARTY_SUBTYPE_NAME_KEYS.get(subtype)
         if name_key is None:
             name_key = SELF_SUBTYPE_NAME_KEYS.get(subtype)
@@ -115,11 +135,7 @@ class PartyRegistry:
             self.set_self_name(names[0], confirmed=False)
             return
         self._party_names.update(names)
-        self._resolved_party_names.clear()
-        if self._self_ids:
-            self._party_ids.intersection_update(self._self_ids)
-        else:
-            self._party_ids.clear()
+        self._reset_party_ids_after_roster_change()
 
     def _apply_join_response(self, message: PhotonMessage) -> None:
         try:
@@ -248,6 +264,9 @@ class PartyRegistry:
     def snapshot_ids(self) -> set[int]:
         return set(self._party_ids)
 
+    def snapshot_guids(self) -> set[bytes]:
+        return set(self._party_guids)
+
     def snapshot_self_ids(self) -> set[int]:
         return set(self._self_ids)
 
@@ -284,6 +303,23 @@ class PartyRegistry:
             self._resolved_party_names.add(name)
         if mapped_ids:
             self._party_ids.update(mapped_ids)
+
+    def sync_guids(self, name_registry: NameRegistry) -> None:
+        if not self._party_guids:
+            return
+        snapshot = name_registry.snapshot_guid_names()
+        updated = False
+        for guid in list(self._party_guids):
+            name = snapshot.get(guid)
+            if not name:
+                continue
+            if self._party_guid_names.get(guid) != name:
+                self._party_guid_names[guid] = name
+                if name not in self._party_names:
+                    self._party_names.add(name)
+                    updated = True
+        if updated:
+            self._reset_party_ids_after_roster_change()
 
     def infer_self_name_from_targets(self, name_registry: NameRegistry) -> None:
         if self._self_name_confirmed:
@@ -520,10 +556,50 @@ class PartyRegistry:
     def _clear_party(self) -> None:
         self._party_names.clear()
         self._resolved_party_names.clear()
+        self._party_guids.clear()
+        self._party_guid_names.clear()
         if self._self_ids:
             self._party_ids.intersection_update(self._self_ids)
         else:
             self._party_ids.clear()
+
+    def _reset_party_ids_after_roster_change(self) -> None:
+        self._resolved_party_names.clear()
+        if self._self_ids:
+            self._party_ids.intersection_update(self._self_ids)
+        else:
+            self._party_ids.clear()
+
+    def _set_party_roster(self, guids: list[bytes], names: list[str] | None) -> None:
+        self._party_guids = set(guids)
+        self._party_guid_names.clear()
+        self._party_names.clear()
+        if names:
+            for guid, name in zip(guids, names):
+                if name:
+                    self._party_guid_names[guid] = name
+                    self._party_names.add(name)
+        self._reset_party_ids_after_roster_change()
+
+    def _add_party_member(self, guid: bytes | None, name: str | None) -> None:
+        if guid is not None:
+            self._party_guids.add(guid)
+        if name:
+            self._party_names.add(name)
+        if guid is not None and name:
+            self._party_guid_names[guid] = name
+        self._reset_party_ids_after_roster_change()
+
+    def _remove_party_guid(self, guid: bytes) -> None:
+        if guid not in self._party_guids:
+            return
+        self._party_guids.discard(guid)
+        name = self._party_guid_names.pop(guid, None)
+        if name is not None:
+            if name not in self._party_guid_names.values():
+                self._party_names.discard(name)
+                self._resolved_party_names.discard(name)
+        self._reset_party_ids_after_roster_change()
 
 
 def _infer_zone_key(packet: RawPacket) -> str | None:
@@ -540,6 +616,47 @@ def _coerce_names(value: object) -> list[str]:
     if isinstance(value, list):
         return [item for item in value if isinstance(item, str) and item]
     return []
+
+
+def _coerce_guid(value: object) -> bytes | None:
+    if isinstance(value, (bytes, bytearray)) and len(value) == 16:
+        return bytes(value)
+    return None
+
+
+def _coerce_guid_list(value: object) -> list[bytes] | None:
+    if _coerce_guid(value) is not None:
+        return [bytes(value)]
+    if isinstance(value, list) and value:
+        items = [bytes(item) for item in value if _coerce_guid(item) is not None]
+        return items if items else None
+    return None
+
+
+def _extract_party_roster(
+    parameters: dict[int, object],
+    subtype: int,
+) -> tuple[list[bytes] | None, list[str] | None]:
+    if subtype == 212:
+        guid_keys = (4, 3)
+        name_key = 5
+    elif subtype == 227:
+        guid_keys = (12,)
+        name_key = 13
+    else:
+        guid_keys = (5,)
+        name_key = 6
+
+    guids: list[bytes] | None = None
+    for key in guid_keys:
+        guids = _coerce_guid_list(parameters.get(key))
+        if guids:
+            break
+
+    names = _coerce_names(parameters.get(name_key))
+    if guids and names and len(names) != len(guids):
+        return None, None
+    return guids, names if names else None
 
 
 def _prune_deque(values: deque[float], now: float, window_seconds: float) -> None:
