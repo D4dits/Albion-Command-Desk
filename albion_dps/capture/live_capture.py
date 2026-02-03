@@ -5,7 +5,7 @@ from pathlib import Path
 import time
 
 from albion_dps.capture.raw_dump import dump_raw
-from albion_dps.capture.udp_decode import decode_udp_frame
+from albion_dps.capture.udp_decode import decode_udp_frame, is_photon_packet
 from albion_dps.models import RawPacket
 
 try:
@@ -22,7 +22,7 @@ def list_interfaces() -> list[str]:
 
 def auto_detect_interface(
     *,
-    bpf_filter: str = "udp and (port 5055 or port 5056 or port 5058)",
+    bpf_filter: str = "(ip or ip6) and udp",
     snaplen: int = 65535,
     promisc: bool = False,
     timeout_ms: int = 1000,
@@ -55,7 +55,7 @@ def auto_detect_interface(
 def live_capture(
     interface: str,
     *,
-    bpf_filter: str = "udp and (port 5055 or port 5056 or port 5058)",
+    bpf_filter: str = "(ip or ip6) and udp",
     snaplen: int = 65535,
     promisc: bool = False,
     timeout_ms: int = 1000,
@@ -75,7 +75,7 @@ def live_capture(
         ts_sec, ts_subsec = header.getts()
         timestamp = ts_sec + ts_subsec / 1_000_000
         raw = decode_udp_frame(frame, timestamp)
-        if raw is None:
+        if raw is None or not is_photon_packet(raw):
             continue
         if dump_raw_dir is not None:
             dump_raw(raw, output_dir=dump_raw_dir)
@@ -92,7 +92,8 @@ def _probe_capture(capture: object, probe_seconds: float, max_packets: int) -> b
         seen += 1
         ts_sec, ts_subsec = header.getts()
         timestamp = ts_sec + ts_subsec / 1_000_000
-        if decode_udp_frame(frame, timestamp) is not None:
+        raw = decode_udp_frame(frame, timestamp)
+        if raw is not None and is_photon_packet(raw):
             return True
     return False
 

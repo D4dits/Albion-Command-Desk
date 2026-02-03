@@ -53,7 +53,7 @@ def live_snapshots(
     decoder: PhotonDecoder,
     meter: Meter,
     *,
-    bpf_filter: str = "udp and (port 5055 or port 5056 or port 5058)",
+    bpf_filter: str = "(ip or ip6) and udp",
     snaplen: int = 65535,
     promisc: bool = False,
     timeout_ms: int = 1000,
