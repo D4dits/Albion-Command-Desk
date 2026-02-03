@@ -257,14 +257,15 @@ albion-dps live --interface "<name>"
 ```
 Advanced options:
 ```
---bpf "udp and (port 5055 or port 5056 or port 5058)"
+--bpf "(ip or ip6) and udp"
 --promisc
 --snaplen 65535
 --timeout-ms 1000
 --dump-raw artifacts/raw
 ```
 Note: `albion-dps live` auto-detects traffic; if no packets are seen yet, it falls back to the first non-loopback
-interface. Start the game to generate traffic.
+interface. Start the game to generate traffic. Live capture accepts UDP on the standard Albion ports or payloads
+that look like Photon (IPv4/IPv6).
 
 ## Party-only filtering (important)
 The meter aggregates only events from:
