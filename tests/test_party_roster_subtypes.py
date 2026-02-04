@@ -3,7 +3,7 @@ from __future__ import annotations
 import struct
 
 from albion_dps.domain import NameRegistry, PartyRegistry
-from albion_dps.models import PhotonMessage
+from albion_dps.models import CombatEvent, PhotonMessage
 
 TYPE_INTEGER = 105
 TYPE_STRING = 115
@@ -207,3 +207,56 @@ def test_party_disband_ignored_for_unexpected_shape() -> None:
     party.observe(disband_message)
 
     assert party.snapshot_names() == {"Bob"}
+
+
+def test_match_roster_inference_adds_friends() -> None:
+    roster_names = ["Alpha", "Bravo", "Charlie", "Delta", "Echo"]
+    params = [
+        _enc_param(252, TYPE_INTEGER, _enc_i32(120)),
+        _enc_param(2, TYPE_STRING_ARRAY, _enc_string_array(roster_names)),
+    ]
+    payload = _build_event_payload(1, params)
+    message = PhotonMessage(opcode=1, event_code=1, payload=payload)
+
+    names = NameRegistry()
+    party = PartyRegistry()
+    party.observe(message)
+    party.seed_self_ids([1])
+    party.set_self_name("Alpha", confirmed=True)
+    names.record(1, "Alpha")
+    names.record(2, "Bravo")
+    names.record(3, "Charlie")
+    names.record(4, "Delta")
+    names.record(5, "Echo")
+
+    party.observe_combat_event(
+        CombatEvent(timestamp=0.0, source_id=1, target_id=2, amount=100, kind="heal"),
+        names,
+    )
+    party.observe_combat_event(
+        CombatEvent(timestamp=1.0, source_id=1, target_id=5, amount=50, kind="damage"),
+        names,
+    )
+
+    assert 2 in party.snapshot_ids()
+    assert "Bravo" in party.snapshot_names()
+    assert 5 not in party.snapshot_ids()
+
+
+def test_match_roster_trims_to_self_team() -> None:
+    roster_names = ["A1", "A2", "A3", "A4", "A5", "B1", "B2", "B3", "B4", "B5"]
+    params = [
+        _enc_param(252, TYPE_INTEGER, _enc_i32(120)),
+        _enc_param(2, TYPE_STRING_ARRAY, _enc_string_array(roster_names)),
+    ]
+    payload = _build_event_payload(1, params)
+    message = PhotonMessage(opcode=1, event_code=1, payload=payload)
+
+    party = PartyRegistry()
+    party.seed_self_ids([1])
+    party.set_self_name("B3", confirmed=True)
+    party.observe(message)
+
+    names = party.snapshot_names()
+    assert names.issuperset({"B1", "B2", "B3", "B4", "B5"})
+    assert not names.intersection({"A1", "A2", "A3", "A4", "A5"})

@@ -149,7 +149,7 @@ def stream_snapshots(
                         and party_registry.strict
                         and not party_registry.has_ids()
                     ):
-                        party_registry.observe_combat_event(item)
+                        party_registry.observe_combat_event(item, name_registry)
                         party_registry.try_resolve_self_id(name_registry)
                     if _allow_event(item, party_registry, name_registry):
                         meter.push(item)
@@ -168,7 +168,7 @@ def stream_snapshots(
                     and party_registry.strict
                     and not party_registry.has_ids()
                 ):
-                    party_registry.observe_combat_event(event)
+                    party_registry.observe_combat_event(event, name_registry)
                     party_registry.try_resolve_self_id(name_registry)
                 if _allow_event(event, party_registry, name_registry):
                     meter.push(event)

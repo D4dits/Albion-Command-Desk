@@ -31,6 +31,10 @@ SELF_SUBTYPE_NAME_KEYS = {
     228: 1,
     238: 0,
 }
+MATCH_ROSTER_SUBTYPE = 120
+MATCH_ROSTER_NAME_KEY = 2
+MATCH_ROSTER_MIN_SIZE = 5
+MATCH_ROSTER_TTL_SECONDS = 120.0
 COMBAT_TARGET_SUBTYPE = 21
 COMBAT_TARGET_A_KEY = 0
 COMBAT_TARGET_B_KEY = 1
@@ -78,6 +82,13 @@ class PartyRegistry:
     _self_candidate_last_ts: dict[int, float] = field(default_factory=dict)
     _self_candidate_link_hits: dict[int, int] = field(default_factory=dict)
     _self_candidate_combat_hits: dict[int, int] = field(default_factory=dict)
+    _match_roster_names: set[str] = field(default_factory=set)
+    _match_roster_order: list[str] = field(default_factory=list)
+    _match_friend_ids: set[int] = field(default_factory=set)
+    _match_enemy_ids: set[int] = field(default_factory=set)
+    _match_pending_friend_ids: set[int] = field(default_factory=set)
+    _match_pending_enemy_ids: set[int] = field(default_factory=set)
+    _match_roster_seen_ts: float | None = None
     _recent_target_links: deque[tuple[float, int, int]] = field(
         default_factory=lambda: deque(maxlen=500)
     )
@@ -120,6 +131,11 @@ class PartyRegistry:
             if guid is None or not names:
                 return
             self._add_party_member(guid, names[0])
+            return
+        if subtype == MATCH_ROSTER_SUBTYPE:
+            names = _coerce_names(event.parameters.get(MATCH_ROSTER_NAME_KEY))
+            if len(names) >= MATCH_ROSTER_MIN_SIZE:
+                self._set_match_roster(names)
             return
         if subtype in PARTY_SUBTYPE_ROSTER:
             guids, names = _extract_party_roster(event.parameters, subtype)
@@ -181,8 +197,13 @@ class PartyRegistry:
             if ts < cutoff:
                 self._target_request_ts.pop(target_id, None)
 
-    def observe_combat_event(self, event: CombatEvent) -> None:
+    def observe_combat_event(
+        self,
+        event: CombatEvent,
+        name_registry: NameRegistry | None = None,
+    ) -> None:
         if self._primary_self_id is not None:
+            self._apply_match_roster_inference(event, name_registry)
             return
         if not isinstance(event.target_id, int) or not isinstance(event.source_id, int):
             return
@@ -195,6 +216,7 @@ class PartyRegistry:
         self._self_candidate_combat_hits[event.source_id] = (
             self._self_candidate_combat_hits.get(event.source_id, 0) + 1
         )
+        self._apply_match_roster_inference(event, name_registry)
 
     def try_resolve_self_id(self, name_registry: NameRegistry | None = None) -> None:
         if self._primary_self_id is not None:
@@ -255,11 +277,26 @@ class PartyRegistry:
         if confirmed:
             self._self_name = name
             self._self_name_confirmed = True
+            self._maybe_trim_match_roster()
             return
         if self._self_name_confirmed:
             return
         if self._self_name is None:
             self._self_name = name
+
+    def _maybe_trim_match_roster(self) -> None:
+        if not self._self_name or not self._match_roster_order:
+            return
+        roster = self._match_roster_order
+        if len(roster) < MATCH_ROSTER_MIN_SIZE * 2 or len(roster) % 2 != 0:
+            return
+        half = len(roster) // 2
+        first = roster[:half]
+        second = roster[half:]
+        if self._self_name in first:
+            self._set_match_roster(first)
+        elif self._self_name in second:
+            self._set_match_roster(second)
 
     def snapshot_names(self) -> set[str]:
         return set(self._party_names)
@@ -306,6 +343,7 @@ class PartyRegistry:
             self._resolved_party_names.add(name)
         if mapped_ids:
             self._party_ids.update(mapped_ids)
+        self._resolve_match_pending(name_registry)
 
     def sync_guids(self, name_registry: NameRegistry) -> None:
         if not self._party_guids:
@@ -551,6 +589,19 @@ class PartyRegistry:
         self._self_candidate_last_ts.clear()
         self._self_candidate_link_hits.clear()
         self._self_candidate_combat_hits.clear()
+        keep_match_roster = False
+        if self._match_roster_names and self._match_roster_seen_ts is not None:
+            now = self._last_packet_fingerprint[0] if self._last_packet_fingerprint else None
+            if now is not None and (now - self._match_roster_seen_ts) <= MATCH_ROSTER_TTL_SECONDS:
+                keep_match_roster = True
+        if not keep_match_roster:
+            self._match_roster_names.clear()
+            self._match_roster_order.clear()
+            self._match_friend_ids.clear()
+            self._match_enemy_ids.clear()
+            self._match_pending_friend_ids.clear()
+            self._match_pending_enemy_ids.clear()
+            self._match_roster_seen_ts = None
         if self._self_name_confirmed and self._self_ids:
             self._party_ids.intersection_update(self._self_ids)
             self._primary_self_id = None
@@ -565,6 +616,13 @@ class PartyRegistry:
         self._resolved_party_names.clear()
         self._party_guids.clear()
         self._party_guid_names.clear()
+        self._match_roster_names.clear()
+        self._match_roster_order.clear()
+        self._match_friend_ids.clear()
+        self._match_enemy_ids.clear()
+        self._match_pending_friend_ids.clear()
+        self._match_pending_enemy_ids.clear()
+        self._match_roster_seen_ts = None
         if self._self_ids:
             self._party_ids.intersection_update(self._self_ids)
         else:
@@ -607,6 +665,126 @@ class PartyRegistry:
                 self._party_names.discard(name)
                 self._resolved_party_names.discard(name)
         self._reset_party_ids_after_roster_change()
+
+    def _set_match_roster(self, names: list[str]) -> None:
+        roster = list(names)
+        trimmed = False
+        self._match_roster_order = roster
+        if (
+            self._self_name
+            and len(roster) >= MATCH_ROSTER_MIN_SIZE * 2
+            and len(roster) % 2 == 0
+        ):
+            half = len(roster) // 2
+            first = roster[:half]
+            second = roster[half:]
+            if self._self_name in first:
+                roster = first
+                trimmed = True
+            elif self._self_name in second:
+                roster = second
+                trimmed = True
+        self._match_roster_names = set(roster)
+        self._match_friend_ids.clear()
+        self._match_enemy_ids.clear()
+        self._match_pending_friend_ids.clear()
+        self._match_pending_enemy_ids.clear()
+        if (
+            self._self_name
+            and self._self_name in roster
+            and (trimmed or len(roster) <= MATCH_ROSTER_MIN_SIZE)
+        ):
+            if not self._party_names.issuperset(roster):
+                self._party_names.update(roster)
+                self._reset_party_ids_after_roster_change()
+        if self._last_packet_fingerprint is not None:
+            self._match_roster_seen_ts = self._last_packet_fingerprint[0]
+        else:
+            self._match_roster_seen_ts = None
+
+    def _apply_match_roster_inference(
+        self,
+        event: CombatEvent,
+        name_registry: NameRegistry | None,
+    ) -> None:
+        if not self._match_roster_names or name_registry is None:
+            return
+        if not isinstance(event.source_id, int) or not isinstance(event.target_id, int):
+            return
+        source_name = name_registry.lookup(event.source_id)
+        target_name = name_registry.lookup(event.target_id)
+        if (
+            source_name is not None
+            and source_name not in self._match_roster_names
+            and target_name is not None
+            and target_name not in self._match_roster_names
+        ):
+            return
+
+        source_is_party = event.source_id in self._party_ids or event.source_id in self._self_ids
+        target_is_party = event.target_id in self._party_ids or event.target_id in self._self_ids
+        if event.kind == "damage":
+            if source_is_party:
+                self._mark_match_enemy(event.target_id, target_name)
+            if target_is_party:
+                self._mark_match_enemy(event.source_id, source_name)
+        else:
+            if source_is_party:
+                self._mark_match_friend(event.target_id, target_name)
+            if target_is_party:
+                self._mark_match_friend(event.source_id, source_name)
+
+    def _mark_match_enemy(self, entity_id: int, name: str | None) -> None:
+        if not isinstance(entity_id, int):
+            return
+        if name is None:
+            self._match_pending_enemy_ids.add(entity_id)
+            return
+        if name is not None and name not in self._match_roster_names:
+            return
+        self._match_enemy_ids.add(entity_id)
+        if entity_id in self._match_friend_ids:
+            self._match_friend_ids.discard(entity_id)
+            self._party_ids.discard(entity_id)
+            if name and name in self._party_names:
+                self._party_names.discard(name)
+                self._resolved_party_names.discard(name)
+
+    def _mark_match_friend(self, entity_id: int, name: str | None) -> None:
+        if not isinstance(entity_id, int):
+            return
+        if name is None:
+            self._match_pending_friend_ids.add(entity_id)
+            return
+        if name is None or name not in self._match_roster_names:
+            return
+        if entity_id in self._match_enemy_ids:
+            return
+        if entity_id not in self._match_friend_ids:
+            self._match_friend_ids.add(entity_id)
+        if entity_id not in self._party_ids:
+            self._party_ids.add(entity_id)
+        if name not in self._party_names:
+            self._party_names.add(name)
+        self._resolved_party_names.add(name)
+
+    def _resolve_match_pending(self, name_registry: NameRegistry) -> None:
+        if not self._match_roster_names:
+            return
+        if self._match_pending_friend_ids:
+            for entity_id in list(self._match_pending_friend_ids):
+                name = name_registry.lookup(entity_id)
+                if name is None:
+                    continue
+                self._match_pending_friend_ids.discard(entity_id)
+                self._mark_match_friend(entity_id, name)
+        if self._match_pending_enemy_ids:
+            for entity_id in list(self._match_pending_enemy_ids):
+                name = name_registry.lookup(entity_id)
+                if name is None:
+                    continue
+                self._match_pending_enemy_ids.discard(entity_id)
+                self._mark_match_enemy(entity_id, name)
 
 
 def _infer_zone_key(packet: RawPacket) -> str | None:
