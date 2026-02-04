@@ -37,6 +37,14 @@ or
 albion-dps live --self-id 123456
 ```
 
+## Party members missing (only 1-2 players show)
+The meter needs at least one party roster update to learn party membership.
+If you started capture after the party was already formed, the roster might never arrive.
+Workarounds:
+- Leave and re-join the party after starting the capture.
+- Start capture before forming the party.
+- For PCAPs, avoid port-only filters and capture all UDP so roster events are included.
+
 ## Cross-platform setup pitfalls (Windows/Linux/macOS)
 Common issues when running on a different OS or machine:
 

@@ -103,7 +103,8 @@ class PartyRegistry:
         if not isinstance(subtype, int):
             return
         if subtype == PARTY_SUBTYPE_DISBAND:
-            self._clear_party()
+            if _looks_like_party_disband(event.parameters):
+                self._clear_party()
             return
         if subtype == COMBAT_TARGET_SUBTYPE:
             self._apply_target_link(event.parameters, packet)
@@ -116,7 +117,9 @@ class PartyRegistry:
         if subtype == PARTY_SUBTYPE_PLAYER_JOINED:
             guid = _coerce_guid(event.parameters.get(1))
             names = _coerce_names(event.parameters.get(PARTY_SUBTYPE_NAME_KEYS.get(subtype)))
-            self._add_party_member(guid, names[0] if names else None)
+            if guid is None or not names:
+                return
+            self._add_party_member(guid, names[0])
             return
         if subtype in PARTY_SUBTYPE_ROSTER:
             guids, names = _extract_party_roster(event.parameters, subtype)
@@ -548,9 +551,13 @@ class PartyRegistry:
         self._self_candidate_last_ts.clear()
         self._self_candidate_link_hits.clear()
         self._self_candidate_combat_hits.clear()
-        self._party_ids.difference_update(self._self_ids)
-        self._self_ids.clear()
-        self._primary_self_id = None
+        if self._self_name_confirmed and self._self_ids:
+            self._party_ids.intersection_update(self._self_ids)
+            self._primary_self_id = None
+        else:
+            self._party_ids.difference_update(self._self_ids)
+            self._self_ids.clear()
+            self._primary_self_id = None
         self._combat_ids_seen.clear()
 
     def _clear_party(self) -> None:
@@ -616,6 +623,13 @@ def _coerce_names(value: object) -> list[str]:
     if isinstance(value, list):
         return [item for item in value if isinstance(item, str) and item]
     return []
+
+
+def _looks_like_party_disband(parameters: dict[int, object]) -> bool:
+    extra_keys = set(parameters.keys()) - {1, 252}
+    if extra_keys:
+        return False
+    return isinstance(parameters.get(1), int)
 
 
 def _coerce_guid(value: object) -> bytes | None:

@@ -121,3 +121,89 @@ def test_party_player_left_removes_member() -> None:
 
     assert guid_b not in party.snapshot_guids()
     assert "Bob" not in party.snapshot_names()
+
+
+def test_guid_link_from_unit_info_subtype() -> None:
+    guid = b"\x22" * 16
+    params = [
+        _enc_param(252, TYPE_INTEGER, _enc_i32(29)),
+        _enc_param(0, TYPE_INTEGER, _enc_i32(1234)),
+        _enc_param(7, TYPE_BYTE_ARRAY, _enc_byte_array(guid)),
+    ]
+    payload = _build_event_payload(1, params)
+    message = PhotonMessage(opcode=1, event_code=1, payload=payload)
+
+    names = NameRegistry()
+    names.observe(message)
+
+    id_guids = names.snapshot_id_guids()
+    assert id_guids[1234] == guid
+
+
+def test_guid_link_from_subtype_308() -> None:
+    guid = b"\x33" * 16
+    params = [
+        _enc_param(252, TYPE_INTEGER, _enc_i32(308)),
+        _enc_param(0, TYPE_INTEGER, _enc_i32(5678)),
+        _enc_param(5, TYPE_BYTE_ARRAY, _enc_byte_array(guid)),
+    ]
+    payload = _build_event_payload(1, params)
+    message = PhotonMessage(opcode=1, event_code=1, payload=payload)
+
+    names = NameRegistry()
+    names.observe(message)
+
+    id_guids = names.snapshot_id_guids()
+    assert id_guids[5678] == guid
+
+
+def test_party_disband_requires_expected_shape() -> None:
+    guid = b"\x44" * 16
+    joined_params = [
+        _enc_param(252, TYPE_INTEGER, _enc_i32(227)),
+        _enc_param(12, TYPE_ARRAY, _enc_array(TYPE_BYTE_ARRAY, [guid])),
+        _enc_param(13, TYPE_STRING_ARRAY, _enc_string_array(["Alice"])),
+    ]
+    disband_params = [
+        _enc_param(252, TYPE_INTEGER, _enc_i32(213)),
+        _enc_param(1, TYPE_INTEGER, _enc_i32(14184)),
+    ]
+    joined_message = PhotonMessage(
+        opcode=1, event_code=1, payload=_build_event_payload(1, joined_params)
+    )
+    disband_message = PhotonMessage(
+        opcode=1, event_code=1, payload=_build_event_payload(1, disband_params)
+    )
+
+    party = PartyRegistry()
+    party.observe(joined_message)
+    assert party.snapshot_names() == {"Alice"}
+
+    party.observe(disband_message)
+    assert not party.snapshot_names()
+
+
+def test_party_disband_ignored_for_unexpected_shape() -> None:
+    guid = b"\x55" * 16
+    joined_params = [
+        _enc_param(252, TYPE_INTEGER, _enc_i32(227)),
+        _enc_param(12, TYPE_ARRAY, _enc_array(TYPE_BYTE_ARRAY, [guid])),
+        _enc_param(13, TYPE_STRING_ARRAY, _enc_string_array(["Bob"])),
+    ]
+    disband_params = [
+        _enc_param(252, TYPE_INTEGER, _enc_i32(213)),
+        _enc_param(0, TYPE_INTEGER, _enc_i32(584)),
+        _enc_param(3, TYPE_BYTE_ARRAY, _enc_byte_array(guid)),
+    ]
+    joined_message = PhotonMessage(
+        opcode=1, event_code=1, payload=_build_event_payload(1, joined_params)
+    )
+    disband_message = PhotonMessage(
+        opcode=1, event_code=1, payload=_build_event_payload(1, disband_params)
+    )
+
+    party = PartyRegistry()
+    party.observe(joined_message)
+    party.observe(disband_message)
+
+    assert party.snapshot_names() == {"Bob"}

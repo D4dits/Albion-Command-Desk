@@ -178,10 +178,29 @@ class NameRegistry:
         guid = parameters.get(3)
         entity_id = parameters.get(1)
         if not _is_guid(guid):
+            guid = None
+        if not isinstance(entity_id, int) or entity_id <= 0:
+            entity_id = None
+        if guid is not None and entity_id is not None:
+            self._id_guids[entity_id] = bytes(guid)
             return
-        if not isinstance(entity_id, int):
+
+        subtype = parameters.get(252)
+        candidates: list[tuple[int, int]] = []
+        if subtype in (11, 29):
+            candidates.append((0, 7))
+        if subtype == 308:
+            candidates.append((0, 5))
+            candidates.append((0, 9))
+        for id_key, guid_key in candidates:
+            candidate_id = parameters.get(id_key)
+            candidate_guid = parameters.get(guid_key)
+            if not isinstance(candidate_id, int) or candidate_id <= 0:
+                continue
+            if not _is_guid(candidate_guid):
+                continue
+            self._id_guids[candidate_id] = bytes(candidate_guid)
             return
-        self._id_guids[entity_id] = bytes(guid)
 
     def _apply_party_roster(self, parameters: dict[int, object]) -> None:
         subtype = parameters.get(252)
