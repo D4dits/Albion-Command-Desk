@@ -218,6 +218,37 @@ def test_party_registry_does_not_seed_ids_from_id_name_events() -> None:
     registry.observe(message)
 
     assert registry.snapshot_ids() == set()
+
+
+def test_party_registry_replaces_self_id_on_join() -> None:
+    registry = PartyRegistry()
+    registry.seed_self_ids([123])
+
+    registry._set_self_id(456, replace=True)
+
+    assert registry.snapshot_self_ids() == {456}
+    assert registry.snapshot_ids() == {456}
+
+
+def test_sync_self_name_does_not_override_confirmed() -> None:
+    registry = PartyRegistry()
+    registry.set_self_name("D4dits", confirmed=True)
+    registry.seed_self_ids([42])
+    names = NameRegistry()
+    names.record(42, "OtherPlayer")
+
+    registry.sync_self_name(names)
+
+    assert registry._self_name == "D4dits"
+
+
+def test_allows_self_by_name_without_ids() -> None:
+    registry = PartyRegistry()
+    registry.set_self_name("D4dits", confirmed=True)
+    names = NameRegistry()
+    names.record(101, "D4dits")
+
+    assert registry.allows(101, names)
     assert registry.snapshot_self_ids() == set()
 
 

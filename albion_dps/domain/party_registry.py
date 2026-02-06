@@ -165,7 +165,7 @@ class PartyRegistry:
         if op_code == JOIN_OPERATION_CODE:
             entity_id = response.parameters.get(JOIN_SELF_ID_KEY)
             if isinstance(entity_id, int) and entity_id > 0:
-                self.seed_self_ids([entity_id])
+                self._set_self_id(entity_id, replace=True)
             name = response.parameters.get(JOIN_SELF_NAME_KEY)
             if isinstance(name, str) and name:
                 self.set_self_name(name, confirmed=True)
@@ -266,10 +266,21 @@ class PartyRegistry:
     def seed_self_ids(self, ids: Iterable[int]) -> None:
         for entity_id in ids:
             if isinstance(entity_id, int):
-                self._party_ids.add(entity_id)
-                self._self_ids.add(entity_id)
-                if self._primary_self_id is None:
-                    self._primary_self_id = entity_id
+                self._set_self_id(entity_id, replace=False)
+
+    def _set_self_id(self, entity_id: int, *, replace: bool) -> None:
+        if not isinstance(entity_id, int):
+            return
+        if replace:
+            previous = set(self._self_ids)
+            self._self_ids.clear()
+            if previous:
+                self._party_ids.difference_update(previous)
+            self._primary_self_id = None
+        self._party_ids.add(entity_id)
+        self._self_ids.add(entity_id)
+        if self._primary_self_id is None:
+            self._primary_self_id = entity_id
 
     def set_self_name(self, name: str, *, confirmed: bool = False) -> None:
         if not isinstance(name, str) or not name:
@@ -412,6 +423,8 @@ class PartyRegistry:
         for entity_id in self._self_ids:
             mapped = name_registry.lookup(entity_id)
             if mapped:
+                if self._self_name_confirmed and self._self_name and mapped != self._self_name:
+                    continue
                 if self._self_name != mapped or not self._self_name_confirmed:
                     self.set_self_name(mapped, confirmed=True)
                 return
@@ -436,6 +449,14 @@ class PartyRegistry:
         self._combat_ids_seen.add(source_id)
         if self.strict:
             if not self._self_ids:
+                if name_registry is None:
+                    return False
+                name = name_registry.lookup(source_id)
+                if self._self_name_confirmed and self._self_name:
+                    if name == self._self_name:
+                        return True
+                if self._party_names:
+                    return name is not None and name in self._party_names
                 return False
             if source_id in self._party_ids or source_id in self._self_ids:
                 return True
@@ -604,10 +625,11 @@ class PartyRegistry:
             self._match_roster_seen_ts = None
         if self._self_name_confirmed and self._self_ids:
             self._party_ids.intersection_update(self._self_ids)
-            self._primary_self_id = None
         else:
-            self._party_ids.difference_update(self._self_ids)
+            previous = set(self._self_ids)
             self._self_ids.clear()
+            if previous:
+                self._party_ids.difference_update(previous)
             self._primary_self_id = None
         self._combat_ids_seen.clear()
 
