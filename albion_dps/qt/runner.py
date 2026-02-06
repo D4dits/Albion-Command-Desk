@@ -259,6 +259,8 @@ def _produce_snapshots(
             if stop_event.is_set():
                 break
             snapshot_queue.put(snapshot)
+    except Exception:
+        logging.getLogger(__name__).exception("Snapshot stream terminated unexpectedly")
     finally:
         snapshot_queue.put(None)
 

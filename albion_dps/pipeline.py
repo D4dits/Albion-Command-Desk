@@ -64,16 +64,18 @@ def live_snapshots(
     event_mapper: EventMapper | None = None,
     snapshot_interval: float = 1.0,
 ) -> Iterator[MeterSnapshot]:
-    packets = live_capture(
-        interface,
-        bpf_filter=bpf_filter,
-        snaplen=snaplen,
-        promisc=promisc,
-        timeout_ms=timeout_ms,
-        dump_raw_dir=dump_raw_dir,
-    )
+    def packet_iter() -> Iterator[RawPacket]:
+        yield from live_capture(
+            interface,
+            bpf_filter=bpf_filter,
+            snaplen=snaplen,
+            promisc=promisc,
+            timeout_ms=timeout_ms,
+            dump_raw_dir=dump_raw_dir,
+        )
+
     return stream_snapshots(
-        packets,
+        packet_iter(),
         decoder,
         meter,
         name_registry=name_registry,

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from pathlib import Path
+import logging
+import socket
 import time
 
 from albion_dps.capture.raw_dump import dump_raw
@@ -13,11 +15,24 @@ try:
 except ImportError:  # pragma: no cover
     pcapy = None
 
+LOGGER = logging.getLogger(__name__)
+
+
+def _system_interfaces() -> list[str]:
+    try:
+        return [name for _, name in socket.if_nameindex()]
+    except Exception:
+        return []
+
 
 def list_interfaces() -> list[str]:
     if pcapy is None:  # pragma: no cover
         raise RuntimeError("pcapy is required for live capture (install pcapy or pcapy-ng)")
-    return pcapy.findalldevs()
+    try:
+        return pcapy.findalldevs()
+    except Exception as exc:
+        LOGGER.warning("pcapy.findalldevs failed (%s); falling back to system interfaces", exc)
+        return _system_interfaces()
 
 
 def auto_detect_interface(
@@ -32,7 +47,11 @@ def auto_detect_interface(
     if pcapy is None:  # pragma: no cover
         raise RuntimeError("pcapy is required for live capture (install pcapy or pcapy-ng)")
 
-    interfaces = pcapy.findalldevs()
+    try:
+        interfaces = pcapy.findalldevs()
+    except Exception as exc:
+        LOGGER.warning("pcapy.findalldevs failed (%s); falling back to system interfaces", exc)
+        interfaces = _system_interfaces()
     if not interfaces:
         return None
     if len(interfaces) == 1:
