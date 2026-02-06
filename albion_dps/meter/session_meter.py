@@ -10,6 +10,7 @@ from albion_dps.protocol.map_index import extract_map_index
 
 ZONE_PORTS = {5056, 5058}
 COMBAT_END_GRACE_SECONDS = 0.25
+COMBAT_MERGE_GAP_SECONDS = 2.0
 
 
 @dataclass(frozen=True)
@@ -394,7 +395,38 @@ class SessionMeter:
             total_heal=total_heal,
             reason=reason,
         )
-        self._history.setdefault(self.mode, deque(maxlen=self.history_limit)).append(summary)
+        history = self._history.setdefault(self.mode, deque(maxlen=self.history_limit))
+        if self.mode == "battle" and history:
+            last = history[-1]
+            gap = start_ts - last.end_ts
+            if gap <= COMBAT_MERGE_GAP_SECONDS:
+                grouped: dict[str, tuple[float, float]] = {
+                    entry.label: (entry.damage, entry.heal) for entry in last.entries
+                }
+                for entry in summary.entries:
+                    damage, heal = grouped.get(entry.label, (0.0, 0.0))
+                    grouped[entry.label] = (damage + entry.damage, heal + entry.heal)
+                merged_start = last.start_ts
+                merged_end = summary.end_ts
+                merged_duration = max(merged_end - merged_start, 0.0)
+                merged_entries = _build_entries_from_grouped(grouped, merged_duration)
+                merged_total_damage = sum(entry.damage for entry in merged_entries)
+                merged_total_heal = sum(entry.heal for entry in merged_entries)
+                history[-1] = SessionSummary(
+                    mode=last.mode,
+                    start_ts=merged_start,
+                    end_ts=merged_end,
+                    duration=merged_duration,
+                    label=last.label,
+                    entries=merged_entries,
+                    total_damage=merged_total_damage,
+                    total_heal=merged_total_heal,
+                    reason=last.reason,
+                )
+            else:
+                history.append(summary)
+        else:
+            history.append(summary)
         self._meter = RollingMeter(window_seconds=self.window_seconds, session_timeout_seconds=None)
         self._session_start = None
         self._last_event_ts = None
