@@ -247,6 +247,18 @@ def test_sync_self_name_does_not_override_confirmed() -> None:
     assert registry._self_name == "D4dits"
 
 
+def test_sync_id_names_overrides_conflicting_name() -> None:
+    registry = PartyRegistry()
+    registry.set_self_name("D4dits", confirmed=True)
+    registry.seed_self_ids([42])
+    names = NameRegistry()
+    names.record(42, "OtherPlayer")
+
+    registry.sync_id_names(names)
+
+    assert names.lookup(42) == "D4dits"
+
+
 def test_allows_self_by_name_without_ids() -> None:
     registry = PartyRegistry()
     registry.set_self_name("D4dits", confirmed=True)

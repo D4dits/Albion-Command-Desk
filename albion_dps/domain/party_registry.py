@@ -428,9 +428,6 @@ class PartyRegistry:
         if not self._self_name or not self._self_name_confirmed:
             return
         for entity_id in self._self_ids:
-            current = name_registry.lookup(entity_id)
-            if current is not None and current != self._self_name:
-                continue
             name_registry.record(entity_id, self._self_name)
 
     def sync_self_name(self, name_registry: NameRegistry) -> None:
