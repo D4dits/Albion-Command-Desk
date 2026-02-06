@@ -370,6 +370,22 @@ class PartyRegistry:
                 if name not in self._party_names:
                     self._party_names.add(name)
                     updated = True
+        id_guids = name_registry.snapshot_id_guids()
+        mapped_ids: set[int] = set()
+        for entity_id, guid in id_guids.items():
+            if guid not in self._party_guids:
+                continue
+            if not isinstance(entity_id, int) or entity_id <= 0:
+                continue
+            mapped_ids.add(entity_id)
+            name = snapshot.get(guid) or self._party_guid_names.get(guid)
+            if name:
+                if name not in self._party_names:
+                    self._party_names.add(name)
+                    updated = True
+                self._resolved_party_names.add(name)
+        if mapped_ids:
+            self._party_ids.update(mapped_ids)
         if updated:
             self._reset_party_ids_after_roster_change()
 

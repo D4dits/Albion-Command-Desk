@@ -22,6 +22,11 @@ _TARGET_OP_REQUEST_PAYLOAD_HEX = (
 )
 _TARGET_LINK_PAYLOAD_HEX = "010006006900142e0c0169001445df026b0d34036201046200fc6b0015"
 _ID_NAME_PAYLOAD_HEX = "01000500690001498f02730006443464697473036f010569004a6154fc6b0113"
+_GUID_LINK_PAYLOAD_HEX = (
+    "01000c00690003afec01690003a8b9026c08de4f8905466936037800000010398e20f6875dd142"
+    "853b1783791e9e69056214066b01b60762040879000266c304c4a9c3b7b5da0966419a38340a"
+    "62020b6200fc6b0028"
+)
 
 
 def test_party_registry_extracts_names_subtype_229() -> None:
@@ -249,6 +254,17 @@ def test_allows_self_by_name_without_ids() -> None:
     names.record(101, "D4dits")
 
     assert registry.allows(101, names)
+
+
+def test_sync_guids_populates_party_ids_from_id_guids() -> None:
+    names = NameRegistry()
+    names.observe(PhotonMessage(opcode=1, event_code=1, payload=bytes.fromhex(_GUID_LINK_PAYLOAD_HEX)))
+
+    registry = PartyRegistry()
+    registry.observe(PhotonMessage(opcode=1, event_code=1, payload=bytes.fromhex(_PARTY_229_PAYLOAD_HEX)))
+    registry.sync_guids(names)
+
+    assert 239801 in registry.snapshot_ids()
     assert registry.snapshot_self_ids() == set()
 
 
