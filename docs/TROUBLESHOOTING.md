@@ -61,6 +61,15 @@ Common issues when running on a different OS or machine:
 ## Too many "unknown payload" files
 Unknown payloads are saved to `artifacts/unknown/` to support protocol updates.
 Log lines for unknown payloads are printed only in `--debug`, but files are still written.
+If you also enable raw dumps (`--debug` or `--dump-raw`), `artifacts/raw/` can grow quickly.
+Cleanup:
+```
+./tools/cleanup_artifacts.sh
+```
+Windows:
+```
+.\tools\cleanup_artifacts.ps1
+```
 
 ## Weapon colors do not match equipped weapons
 Per-weapon colors require local item databases:

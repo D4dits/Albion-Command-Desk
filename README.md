@@ -137,6 +137,17 @@ Optional item DB settings:
 $env:ALBION_DPS_GAME_ROOT="C:\Program Files\Albion Online"
 ```
 
+## Cleanup (artifacts)
+Debug runs can generate many files under `artifacts/raw` and `artifacts/unknown`.
+To remove them:
+```
+./tools/cleanup_artifacts.sh
+```
+Windows:
+```
+.\tools\cleanup_artifacts.ps1
+```
+
 ## GUI (Textual)
 Install GUI extras:
 ```
