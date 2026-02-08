@@ -37,6 +37,12 @@ or
 albion-dps live --self-id 123456
 ```
 
+## A mob appears as the top "player" (e.g., `@MOB_*`)
+This happens when self-name inference guesses from nearby targets.
+NPC names are now ignored for self inference, but if you still see this:
+- Provide `--self-name "YourName"` on startup.
+- Ensure you start capture before combat so the join/zone events are seen.
+
 ## Party members missing (only 1-2 players show)
 The meter needs at least one party roster update to learn party membership.
 If you started capture after the party was already formed, the roster might never arrive.
