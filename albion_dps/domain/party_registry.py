@@ -57,6 +57,8 @@ JOIN_OPERATION_CODE = 2
 CHANGE_CLUSTER_OPERATION_CODE = 35
 JOIN_SELF_ID_KEY = 0
 JOIN_SELF_NAME_KEY = 2
+NON_PLAYER_NAME_PREFIXES = ("@",)
+NON_PLAYER_NAMES = {"SYSTEM"}
 
 
 @dataclass
@@ -290,6 +292,8 @@ class PartyRegistry:
             self._self_name_confirmed = True
             self._maybe_trim_match_roster()
             return
+        if not _looks_like_player_name(name):
+            return
         if self._self_name_confirmed:
             return
         if self._self_name is None:
@@ -392,6 +396,8 @@ class PartyRegistry:
     def infer_self_name_from_targets(self, name_registry: NameRegistry) -> None:
         if self._self_name_confirmed:
             return
+        if self._party_names:
+            return
         if not self._recent_target_ids:
             return
 
@@ -403,7 +409,7 @@ class PartyRegistry:
             if ts < cutoff:
                 continue
             name = name_registry.lookup(entity_id)
-            if not name or name == "SYSTEM":
+            if not _looks_like_player_name(name):
                 continue
             counts[name] = counts.get(name, 0) + 1
             distinct_ids.setdefault(name, set()).add(entity_id)
@@ -431,15 +437,26 @@ class PartyRegistry:
             name_registry.record(entity_id, self._self_name)
 
     def sync_self_name(self, name_registry: NameRegistry) -> None:
-        if not self._self_ids:
-            return
-        for entity_id in self._self_ids:
-            mapped = name_registry.lookup(entity_id)
-            if mapped:
-                if self._self_name_confirmed and self._self_name and mapped != self._self_name:
-                    continue
-                if self._self_name != mapped or not self._self_name_confirmed:
-                    self.set_self_name(mapped, confirmed=True)
+        if self._self_ids:
+            for entity_id in self._self_ids:
+                mapped = name_registry.lookup(entity_id)
+                if mapped:
+                    if self._self_name_confirmed and self._self_name and mapped != self._self_name:
+                        continue
+                    if self._self_name != mapped or not self._self_name_confirmed:
+                        self.set_self_name(mapped, confirmed=True)
+                    return
+        if (
+            not self._self_ids
+            and self._self_name_confirmed
+            and self._self_name
+            and _looks_like_player_name(self._self_name)
+        ):
+            snapshot = name_registry.snapshot()
+            for entity_id, name in snapshot.items():
+                if name == self._self_name and isinstance(entity_id, int) and entity_id > 0:
+                    self._set_self_id(entity_id, replace=False)
+            if self._self_ids:
                 return
         if not self._party_names:
             return
@@ -884,6 +901,16 @@ def _extract_party_roster(
     if guids and names and len(names) != len(guids):
         return None, None
     return guids, names if names else None
+
+
+def _looks_like_player_name(name: str | None) -> bool:
+    if not isinstance(name, str) or not name:
+        return False
+    if name in NON_PLAYER_NAMES:
+        return False
+    if name.startswith(NON_PLAYER_NAME_PREFIXES):
+        return False
+    return True
 
 
 def _prune_deque(values: deque[float], now: float, window_seconds: float) -> None:

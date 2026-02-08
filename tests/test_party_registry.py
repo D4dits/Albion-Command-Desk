@@ -395,3 +395,26 @@ def test_party_registry_infers_self_name_from_repeated_targets() -> None:
     registry.sync_id_names(names)
 
     assert names.lookup(1328607) == "D4dits"
+
+
+def test_party_registry_ignores_mob_names_for_self_inference() -> None:
+    registry = PartyRegistry()
+    names = NameRegistry()
+    names.record(42, "@MOB_WOLF")
+    for idx in range(10):
+        registry._recent_target_ids.append((float(idx), 42))
+
+    registry.infer_self_name_from_targets(names)
+
+    assert registry._self_name is None
+
+
+def test_party_registry_resolves_self_id_from_confirmed_name() -> None:
+    registry = PartyRegistry()
+    names = NameRegistry()
+    registry.set_self_name("SocialFur10", confirmed=True)
+    names.record(101, "SocialFur10")
+
+    registry.sync_self_name(names)
+
+    assert registry.snapshot_self_ids() == {101}
