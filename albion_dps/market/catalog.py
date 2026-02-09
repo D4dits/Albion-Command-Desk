@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import json
+import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from albion_dps.market.models import ItemRef, Recipe, RecipeComponent, RecipeOutput
+
+
+DEFAULT_RECIPES_PATH = Path(__file__).resolve().parent / "data" / "recipes.json"
+_TIER_PATTERN = re.compile(r"^T(?P<tier>\d+)")
 
 
 def _to_item_ref(payload: dict[str, object], fallback_name: str = "") -> ItemRef:
@@ -23,6 +29,12 @@ def _to_int_or_none(value: object) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+@dataclass(frozen=True)
+class CatalogIssue:
+    recipe_id: str
+    message: str
 
 
 class RecipeCatalog:
@@ -59,6 +71,10 @@ class RecipeCatalog:
             )
         return cls(recipes=recipes)
 
+    @classmethod
+    def from_default(cls) -> "RecipeCatalog":
+        return cls.from_json(DEFAULT_RECIPES_PATH)
+
     def get(self, unique_name: str) -> Recipe | None:
         return self._recipes.get(unique_name)
 
@@ -68,8 +84,99 @@ class RecipeCatalog:
     def items(self) -> list[str]:
         return sorted(self._recipes.keys())
 
+    def first(self) -> Recipe | None:
+        if not self._recipes:
+            return None
+        first_key = min(self._recipes.keys())
+        return self._recipes.get(first_key)
+
+    def validate_integrity(self) -> list[CatalogIssue]:
+        issues: list[CatalogIssue] = []
+        if not self._recipes:
+            issues.append(CatalogIssue(recipe_id="-", message="catalog is empty"))
+            return issues
+
+        for recipe_id, recipe in self._recipes.items():
+            if not recipe.station.strip():
+                issues.append(CatalogIssue(recipe_id, "station is empty"))
+            if recipe.focus_per_craft < 0:
+                issues.append(CatalogIssue(recipe_id, "focus_per_craft must be >= 0"))
+            if not recipe.components:
+                issues.append(CatalogIssue(recipe_id, "components are empty"))
+            if not recipe.outputs:
+                issues.append(CatalogIssue(recipe_id, "outputs are empty"))
+
+            _check_item_meta(recipe.item, recipe_id, issues)
+
+            component_ids: set[str] = set()
+            for comp in recipe.components:
+                if comp.quantity <= 0:
+                    issues.append(
+                        CatalogIssue(
+                            recipe_id,
+                            f"component {comp.item.unique_name} quantity must be > 0",
+                        )
+                    )
+                if comp.item.unique_name in component_ids:
+                    issues.append(
+                        CatalogIssue(
+                            recipe_id,
+                            f"duplicate component {comp.item.unique_name}",
+                        )
+                    )
+                component_ids.add(comp.item.unique_name)
+                _check_item_meta(comp.item, recipe_id, issues)
+
+            for output in recipe.outputs:
+                if output.quantity <= 0:
+                    issues.append(
+                        CatalogIssue(
+                            recipe_id,
+                            f"output {output.item.unique_name} quantity must be > 0",
+                        )
+                    )
+                _check_item_meta(output.item, recipe_id, issues)
+
+        return issues
+
     def __len__(self) -> int:
         return len(self._recipes)
+
+
+def _check_item_meta(item: ItemRef, recipe_id: str, issues: list[CatalogIssue]) -> None:
+    unique_name = item.unique_name.strip()
+    if not unique_name:
+        issues.append(CatalogIssue(recipe_id, "item unique_name is empty"))
+        return
+
+    tier_from_name = _parse_tier_from_unique_name(unique_name)
+    if item.tier is not None:
+        if item.tier <= 0:
+            issues.append(CatalogIssue(recipe_id, f"{unique_name} has invalid tier {item.tier}"))
+        if tier_from_name is not None and item.tier != tier_from_name:
+            issues.append(
+                CatalogIssue(
+                    recipe_id,
+                    f"{unique_name} tier mismatch (meta={item.tier}, name={tier_from_name})",
+                )
+            )
+    if item.enchantment is not None and (item.enchantment < 0 or item.enchantment > 4):
+        issues.append(
+            CatalogIssue(
+                recipe_id,
+                f"{unique_name} has invalid enchantment {item.enchantment}",
+            )
+        )
+
+
+def _parse_tier_from_unique_name(unique_name: str) -> int | None:
+    match = _TIER_PATTERN.match(unique_name)
+    if not match:
+        return None
+    try:
+        return int(match.group("tier"))
+    except (TypeError, ValueError):
+        return None
 
 
 def _parse_components(payload: object) -> tuple[RecipeComponent, ...]:

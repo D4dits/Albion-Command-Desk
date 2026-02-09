@@ -6,12 +6,19 @@ pytest.importorskip("PySide6")
 
 from albion_dps.market.aod_client import MarketPriceRecord
 from albion_dps.market.models import MarketRegion
+from albion_dps.market.service import MarketFetchMeta
 from albion_dps.qt.market import MarketSetupState
 
 
 class _FakeMarketService:
     def __init__(self) -> None:
         self.calls = 0
+        self.last_prices_meta = MarketFetchMeta(
+            source="live",
+            record_count=0,
+            elapsed_ms=0.0,
+            cache_key="fake",
+        )
 
     def get_price_index(
         self,
@@ -43,6 +50,12 @@ class _FakeMarketService:
                     sell_price_min_date="",
                     buy_price_max_date="",
                 )
+        self.last_prices_meta = MarketFetchMeta(
+            source="live",
+            record_count=len(out),
+            elapsed_ms=4.0,
+            cache_key="fake",
+        )
         return out
 
     def close(self) -> None:
@@ -80,7 +93,7 @@ def test_market_setup_state_uses_service_and_manual_overrides() -> None:
     service = _FakeMarketService()
     state = MarketSetupState(service=service, auto_refresh_prices=False)
 
-    assert state.pricesSource == "ao_data"
+    assert state.pricesSource == "live"
     assert service.calls >= 1
 
     default_output = state.outputsTotalValue

@@ -24,5 +24,8 @@ where = ["."]
 include = ["albion_dps*"]
 exclude = ["wzor*", "tests*"]
 
+[tool.setuptools.package-data]
+"albion_dps.market" = ["data/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

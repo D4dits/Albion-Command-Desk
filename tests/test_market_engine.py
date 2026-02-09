@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from albion_dps.market.aod_client import MarketPriceRecord
-from albion_dps.market.engine import build_craft_run, compute_run_profit
+from albion_dps.market.engine import (
+    BatchCraftRequest,
+    build_craft_run,
+    build_craft_runs_batch,
+    compute_batch_profit,
+    compute_run_profit,
+    effective_return_fraction,
+)
 from albion_dps.market.models import (
     CraftSetup,
     ItemRef,
@@ -119,3 +126,49 @@ def test_compute_run_profit_uses_costs_and_fees() -> None:
     assert breakdown.market_tax > 0
     assert breakdown.focus_used == 200.0
 
+
+def test_effective_return_fraction_uses_premium_and_city_bonus() -> None:
+    recipe = _build_recipe()
+    setup = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Bridgewatch",
+        default_buy_city="Bridgewatch",
+        default_sell_city="Bridgewatch",
+        premium=True,
+        return_rate_percent=0.0,
+        daily_bonus_percent=0.0,
+        hideout_power_percent=0.0,
+    )
+    fraction = effective_return_fraction(setup=setup, recipe=recipe)
+    # Premium 5% + matching city bonus 15% = 20%
+    assert round(fraction, 2) == 0.20
+
+
+def test_build_craft_runs_batch_and_aggregate_profit() -> None:
+    recipe = _build_recipe()
+    setup = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Bridgewatch",
+        default_buy_city="Bridgewatch",
+        default_sell_city="Bridgewatch",
+        station_fee_percent=6.0,
+        market_tax_percent=4.0,
+        quality=1,
+    )
+    requests = [
+        BatchCraftRequest(recipe=recipe, quantity=2),
+        BatchCraftRequest(recipe=recipe, quantity=3),
+    ]
+    runs = build_craft_runs_batch(
+        setup=setup,
+        requests=requests,
+        price_index=_build_price_index(),
+    )
+    assert len(runs) == 2
+    assert runs[0].quantity == 2
+    assert runs[1].quantity == 3
+
+    total = compute_batch_profit(runs)
+    assert total.input_cost > 0
+    assert total.output_value > 0
+    assert total.focus_used == float((2 + 3) * recipe.focus_per_craft)

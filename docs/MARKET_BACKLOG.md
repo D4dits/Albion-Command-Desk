@@ -7,6 +7,9 @@
   - Completed now: UI Market w `Main.qml` dla Setup + Inputs (formularz setup, tabela inputs, live total).
   - Completed now: preview Outputs + Results w `Main.qml` (tabela output + KPI net profit/margin/focus/SPF) podlaczone do `marketSetupState`.
   - Completed now: AO Data price loading with cache/fallback + manual price mode per-item in Inputs/Outputs feeding Results.
+  - Completed now: recipe/data pipeline (pakietowy dataset recipes.json + integrity validation) and market state bootstrapped from catalog.
+  - Completed now: AO Data resilience (retry/backoff) and telemetry in service/client (source, elapsed ms, record count).
+  - Completed now: engine extensions (improved return-rate model and batch craft/run profit API).
 
 ## 1) Cel
 Wdrozyc w projekcie nowy modul kalkulatora craftingu (AFM-like) z zakladkami:
@@ -61,8 +64,8 @@ Zakres obejmuje tylko ekonomie craftingu/refiningu, bez zmian w logice DPS meter
 - [x] A3. Wczytywanie katalogu itemow/recipe:
   - parser lokalnego katalogu (JSON/yaml) z wersjonowaniem.
   - mapowanie item_id <-> unique_name <-> display_name.
-- [ ] A4. Migracja/konwersja danych recipe z obecnych zasobow projektu.
-- [ ] A5. Walidacja integralnosci datasetu (brakujace itemy, zle tier/enchant).
+- [~] A4. Migracja/konwersja danych recipe z obecnych zasobow projektu.
+- [x] A5. Walidacja integralnosci datasetu (brakujace itemy, zle tier/enchant).
 
 Definition of Done:
 - testy jednostkowe modeli + walidacji przechodza.
@@ -72,13 +75,13 @@ Definition of Done:
 - [x] B1. Klient HTTP AO Data:
   - endpointy `stats/prices` i `stats/charts`.
   - region host: `west/east/europe`.
-- [ ] B2. Retry policy + timeout + backoff.
+- [x] B2. Retry policy + timeout + backoff.
 - [x] B3. Cache SQLite:
   - klucz: endpoint + parametry.
   - TTL osobno dla prices i charts.
   - fallback do stale cache przy bledach sieci.
 - [x] B4. Normalizacja odpowiedzi API do modelu wewnetrznego.
-- [ ] B5. Telemetria techniczna:
+- [x] B5. Telemetria techniczna:
   - czas odpowiedzi, source (live/cache), liczba rekordow.
 
 Definition of Done:
@@ -99,7 +102,7 @@ Definition of Done:
   - ilosc outputow, net sell value po oplatach.
 - [x] C6. Result model:
   - total cost, revenue, gross/net profit, margin %, fame proxy.
-- [ ] C7. Batch mode:
+- [x] C7. Batch mode:
   - wiele craftow na raz, wspolny wynik.
 
 Definition of Done:

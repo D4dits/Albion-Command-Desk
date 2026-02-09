@@ -52,6 +52,7 @@ ApplicationWindow {
                             : (scannerView
                                 ? "Scanner status: " + scannerState.statusText + "  |  Updates: " + scannerState.updateText
                                 : "Market setup  |  Region: " + marketSetupState.region
+                                  + "  |  Recipe: " + marketSetupState.recipeDisplayName
                                   + "  |  Inputs: " + marketSetupState.inputsTotalCost.toFixed(0)
                                   + "  |  Net: " + marketSetupState.netProfitValue.toFixed(0))
                         color: mutedColor

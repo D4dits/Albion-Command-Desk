@@ -7,16 +7,14 @@ from typing import Any
 from PySide6.QtCore import QAbstractListModel, QModelIndex, QObject, Property, Qt, Signal, Slot
 
 from albion_dps.market.aod_client import MarketPriceRecord
+from albion_dps.market.catalog import RecipeCatalog
 from albion_dps.market.engine import build_craft_run, compute_run_profit
 from albion_dps.market.models import (
     CraftSetup,
-    ItemRef,
     MarketRegion,
     PriceType,
     ProfitBreakdown,
     Recipe,
-    RecipeComponent,
-    RecipeOutput,
 )
 from albion_dps.market.service import MarketDataService
 from albion_dps.market.setup import sanitized_setup, validate_setup
@@ -180,6 +178,7 @@ class MarketSetupState(QObject):
         service: MarketDataService | None = None,
         logger: logging.Logger | None = None,
         auto_refresh_prices: bool = True,
+        recipe_id: str = "T4_MAIN_SWORD",
     ) -> None:
         super().__init__()
         self._service = service
@@ -200,14 +199,16 @@ class MarketSetupState(QObject):
         self._craft_runs = 10
         self._inputs_model = MarketInputsModel()
         self._outputs_model = MarketOutputsModel()
-        self._recipe = self._build_recipe()
+        self._catalog = self._load_catalog()
+        self._recipe = self._resolve_recipe(recipe_id)
         self._breakdown = ProfitBreakdown()
         self._input_price_types: dict[str, PriceType] = {
-            "T4_METALBAR": PriceType.SELL_ORDER,
-            "T4_PLANKS": PriceType.SELL_ORDER,
+            component.item.unique_name: PriceType.SELL_ORDER
+            for component in self._recipe.components
         }
         self._output_price_types: dict[str, PriceType] = {
-            "T4_MAIN_SWORD": PriceType.BUY_ORDER,
+            output.item.unique_name: PriceType.BUY_ORDER
+            for output in self._recipe.outputs
         }
         self._manual_input_prices: dict[str, int] = {}
         self._manual_output_prices: dict[str, int] = {}
@@ -266,6 +267,14 @@ class MarketSetupState(QObject):
     @Property(int, notify=setupChanged)
     def craftRuns(self) -> int:
         return self._craft_runs
+
+    @Property(str, notify=setupChanged)
+    def recipeId(self) -> str:
+        return self._recipe.item.unique_name
+
+    @Property(str, notify=setupChanged)
+    def recipeDisplayName(self) -> str:
+        return self._recipe.item.display_name or self._recipe.item.unique_name
 
     @Property(str, notify=pricesChanged)
     def pricesSource(self) -> str:
@@ -579,10 +588,13 @@ class MarketSetupState(QObject):
                 allow_stale=True,
             )
             if index:
+                meta = self._service.last_prices_meta
                 self._price_index = index
                 self._price_context_key = context_key
-                self._prices_source = "ao_data"
-                self._prices_status_text = f"Loaded {len(index)} price rows (live/cache)."
+                self._prices_source = meta.source
+                self._prices_status_text = (
+                    f"{meta.source}: {meta.record_count} rows in {meta.elapsed_ms:.0f} ms"
+                )
                 self.pricesChanged.emit()
                 return self._price_index
             self._set_fallback_status("AO Data returned no price rows. Using bundled fallback prices.")
@@ -633,26 +645,36 @@ class MarketSetupState(QObject):
             return PriceType.MANUAL
         return None
 
+    def _load_catalog(self) -> RecipeCatalog:
+        try:
+            catalog = RecipeCatalog.from_default()
+        except Exception as exc:
+            self._log.warning("Market recipe catalog load failed: %s", exc)
+            return RecipeCatalog(recipes={})
+        issues = catalog.validate_integrity()
+        if issues:
+            self._log.warning("Market recipe catalog integrity issues: %d", len(issues))
+            for issue in issues[:5]:
+                self._log.warning("Recipe issue [%s]: %s", issue.recipe_id, issue.message)
+        return catalog
+
+    def _resolve_recipe(self, recipe_id: str) -> Recipe:
+        recipe = self._catalog.get(recipe_id)
+        if recipe is not None:
+            return recipe
+        recipe = self._catalog.first()
+        if recipe is not None:
+            return recipe
+        self._log.warning("Market catalog empty, using builtin fallback recipe.")
+        return self._build_builtin_recipe()
+
     @staticmethod
-    def _build_recipe() -> Recipe:
-        sword = ItemRef(
-            unique_name="T4_MAIN_SWORD",
-            display_name="Broadsword",
-            tier=4,
-            enchantment=0,
-        )
-        bars = ItemRef(
-            unique_name="T4_METALBAR",
-            display_name="Metal Bar",
-            tier=4,
-            enchantment=0,
-        )
-        planks = ItemRef(
-            unique_name="T4_PLANKS",
-            display_name="Planks",
-            tier=4,
-            enchantment=0,
-        )
+    def _build_builtin_recipe() -> Recipe:
+        from albion_dps.market.models import ItemRef, RecipeComponent, RecipeOutput
+
+        sword = ItemRef(unique_name="T4_MAIN_SWORD", display_name="Broadsword", tier=4, enchantment=0)
+        bars = ItemRef(unique_name="T4_METALBAR", display_name="Metal Bar", tier=4, enchantment=0)
+        planks = ItemRef(unique_name="T4_PLANKS", display_name="Planks", tier=4, enchantment=0)
         return Recipe(
             item=sword,
             station="Warrior Forge",
@@ -665,8 +687,8 @@ class MarketSetupState(QObject):
             focus_per_craft=200,
         )
 
-    @staticmethod
     def _build_fallback_price_index(
+        self,
         setup: CraftSetup,
     ) -> dict[tuple[str, str, int], MarketPriceRecord]:
         locations = {
@@ -675,11 +697,7 @@ class MarketSetupState(QObject):
             setup.default_sell_city.strip(),
             "Bridgewatch",
         }
-        prices = {
-            "T4_METALBAR": (900, 1000),
-            "T4_PLANKS": (500, 600),
-            "T4_MAIN_SWORD": (15000, 15500),
-        }
+        prices = self._estimate_fallback_prices()
         index: dict[tuple[str, str, int], MarketPriceRecord] = {}
         for location in locations:
             if not location:
@@ -705,6 +723,54 @@ class MarketSetupState(QObject):
                         buy_price_max_date="",
                     )
         return index
+
+    def _estimate_fallback_prices(self) -> dict[str, tuple[int, int]]:
+        known_prices: dict[str, tuple[int, int]] = {
+            "T4_METALBAR": (900, 1000),
+            "T4_PLANKS": (500, 600),
+            "T4_CLOTH": (540, 620),
+            "T4_LEATHER": (560, 640),
+        }
+        prices: dict[str, tuple[int, int]] = {}
+        for component in self._recipe.components:
+            item_id = component.item.unique_name
+            prices[item_id] = known_prices.get(item_id, self._price_by_tier(component.item.tier))
+
+        component_sell_total = 0.0
+        for component in self._recipe.components:
+            buy_price, sell_price = prices.get(
+                component.item.unique_name,
+                self._price_by_tier(component.item.tier),
+            )
+            _ = buy_price
+            component_sell_total += sell_price * component.quantity
+
+        outputs = self._recipe.outputs or ()
+        total_output_qty = sum(max(0.01, x.quantity) for x in outputs)
+        if outputs and component_sell_total > 0:
+            estimated_sell = int((component_sell_total / total_output_qty) * 1.30)
+        else:
+            estimated_sell = 1200
+        estimated_buy = int(max(1, estimated_sell * 0.95))
+        for output in outputs:
+            prices[output.item.unique_name] = (estimated_buy, estimated_sell)
+        return prices
+
+    @staticmethod
+    def _price_by_tier(tier: int | None) -> tuple[int, int]:
+        value_by_tier = {
+            2: 80,
+            3: 220,
+            4: 600,
+            5: 1800,
+            6: 5200,
+            7: 14500,
+            8: 42000,
+        }
+        tier_value = value_by_tier.get(int(tier or 4), value_by_tier[4])
+        buy_price = int(max(1, tier_value * 0.92))
+        sell_price = int(max(1, tier_value))
+        return buy_price, sell_price
 
 
 def _parse_price(raw_value: str) -> int:

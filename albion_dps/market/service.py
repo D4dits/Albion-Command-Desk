@@ -2,12 +2,22 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
 from albion_dps.market.aod_client import AODataClient, MarketChartPoint, MarketPriceRecord
 from albion_dps.market.cache import SQLiteCache
 from albion_dps.market.models import MarketRegion
+
+
+@dataclass(frozen=True)
+class MarketFetchMeta:
+    source: str
+    record_count: int
+    elapsed_ms: float
+    cache_key: str
 
 
 class MarketDataService:
@@ -19,6 +29,26 @@ class MarketDataService:
     ) -> None:
         self.client = client or AODataClient()
         self.cache = cache
+        self._last_prices_meta = MarketFetchMeta(
+            source="none",
+            record_count=0,
+            elapsed_ms=0.0,
+            cache_key="",
+        )
+        self._last_charts_meta = MarketFetchMeta(
+            source="none",
+            record_count=0,
+            elapsed_ms=0.0,
+            cache_key="",
+        )
+
+    @property
+    def last_prices_meta(self) -> MarketFetchMeta:
+        return self._last_prices_meta
+
+    @property
+    def last_charts_meta(self) -> MarketFetchMeta:
+        return self._last_charts_meta
 
     @classmethod
     def with_default_cache(
@@ -43,6 +73,7 @@ class MarketDataService:
         ttl_seconds: float = 120.0,
         allow_stale: bool = True,
     ) -> list[MarketPriceRecord]:
+        started = time.perf_counter()
         cache_key = _cache_key(
             prefix="prices",
             payload={
@@ -54,9 +85,17 @@ class MarketDataService:
         )
         cached = self._get_cached(cache_key, allow_stale=allow_stale)
         if cached is not None:
-            return [_to_price(x) for x in cached if isinstance(x, dict)]
+            payload_raw, source = cached
+            rows = [_to_price(x) for x in payload_raw if isinstance(x, dict)]
+            self._last_prices_meta = MarketFetchMeta(
+                source=source,
+                record_count=len(rows),
+                elapsed_ms=(time.perf_counter() - started) * 1000.0,
+                cache_key=cache_key,
+            )
+            return rows
 
-        payload = self.client.fetch_prices(
+        rows = self.client.fetch_prices(
             region=region,
             item_ids=item_ids,
             locations=locations,
@@ -64,10 +103,16 @@ class MarketDataService:
         )
         self._put_cached(
             cache_key,
-            [x.__dict__ for x in payload],
+            [x.__dict__ for x in rows],
             ttl_seconds=ttl_seconds,
         )
-        return payload
+        self._last_prices_meta = MarketFetchMeta(
+            source="live",
+            record_count=len(rows),
+            elapsed_ms=(time.perf_counter() - started) * 1000.0,
+            cache_key=cache_key,
+        )
+        return rows
 
     def get_price_index(
         self,
@@ -106,6 +151,7 @@ class MarketDataService:
         ttl_seconds: float = 600.0,
         allow_stale: bool = True,
     ) -> list[MarketChartPoint]:
+        started = time.perf_counter()
         cache_key = _cache_key(
             prefix="charts",
             payload={
@@ -120,9 +166,17 @@ class MarketDataService:
         )
         cached = self._get_cached(cache_key, allow_stale=allow_stale)
         if cached is not None:
-            return [_to_chart(x) for x in cached if isinstance(x, dict)]
+            payload_raw, source = cached
+            rows = [_to_chart(x) for x in payload_raw if isinstance(x, dict)]
+            self._last_charts_meta = MarketFetchMeta(
+                source=source,
+                record_count=len(rows),
+                elapsed_ms=(time.perf_counter() - started) * 1000.0,
+                cache_key=cache_key,
+            )
+            return rows
 
-        payload = self.client.fetch_charts(
+        rows = self.client.fetch_charts(
             region=region,
             item_id=item_id,
             location=location,
@@ -133,19 +187,31 @@ class MarketDataService:
         )
         self._put_cached(
             cache_key,
-            [x.__dict__ for x in payload],
+            [x.__dict__ for x in rows],
             ttl_seconds=ttl_seconds,
         )
-        return payload
+        self._last_charts_meta = MarketFetchMeta(
+            source="live",
+            record_count=len(rows),
+            elapsed_ms=(time.perf_counter() - started) * 1000.0,
+            cache_key=cache_key,
+        )
+        return rows
 
-    def _get_cached(self, key: str, *, allow_stale: bool) -> list[object] | None:
+    def _get_cached(
+        self,
+        key: str,
+        *,
+        allow_stale: bool,
+    ) -> tuple[list[object], str] | None:
         if self.cache is None:
             return None
         entry = self.cache.get_entry(key, allow_expired=allow_stale)
         if entry is None:
             return None
         if isinstance(entry.payload, list):
-            return entry.payload
+            source = "stale_cache" if entry.expired else "cache"
+            return entry.payload, source
         return None
 
     def _put_cached(self, key: str, payload: list[object], *, ttl_seconds: float) -> None:
@@ -178,3 +244,4 @@ def _to_chart(row: dict[str, object]) -> MarketChartPoint:
         item_count=int(row.get("item_count") or 0),
         avg_price=int(row.get("avg_price") or 0),
     )
+

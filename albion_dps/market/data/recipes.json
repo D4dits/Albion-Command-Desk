@@ -1,0 +1,170 @@
+[
+  {
+    "item": {
+      "unique_name": "T4_MAIN_SWORD",
+      "display_name": "Broadsword",
+      "tier": 4,
+      "enchantment": 0
+    },
+    "station": "Warrior Forge",
+    "city_bonus": "Bridgewatch",
+    "focus_per_craft": 200,
+    "components": [
+      {
+        "item": {
+          "unique_name": "T4_METALBAR",
+          "display_name": "Metal Bar",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 16.0
+      },
+      {
+        "item": {
+          "unique_name": "T4_PLANKS",
+          "display_name": "Planks",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 8.0
+      }
+    ],
+    "outputs": [
+      {
+        "item": {
+          "unique_name": "T4_MAIN_SWORD",
+          "display_name": "Broadsword",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 1.0
+      }
+    ]
+  },
+  {
+    "item": {
+      "unique_name": "T4_2H_BOW",
+      "display_name": "War Bow",
+      "tier": 4,
+      "enchantment": 0
+    },
+    "station": "Hunter's Lodge",
+    "city_bonus": "Lymhurst",
+    "focus_per_craft": 220,
+    "components": [
+      {
+        "item": {
+          "unique_name": "T4_PLANKS",
+          "display_name": "Planks",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 20.0
+      },
+      {
+        "item": {
+          "unique_name": "T4_CLOTH",
+          "display_name": "Cloth",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 4.0
+      }
+    ],
+    "outputs": [
+      {
+        "item": {
+          "unique_name": "T4_2H_BOW",
+          "display_name": "War Bow",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 1.0
+      }
+    ]
+  },
+  {
+    "item": {
+      "unique_name": "T4_2H_CROSSBOW",
+      "display_name": "Crossbow",
+      "tier": 4,
+      "enchantment": 0
+    },
+    "station": "Hunter's Lodge",
+    "city_bonus": "Martlock",
+    "focus_per_craft": 210,
+    "components": [
+      {
+        "item": {
+          "unique_name": "T4_METALBAR",
+          "display_name": "Metal Bar",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 12.0
+      },
+      {
+        "item": {
+          "unique_name": "T4_PLANKS",
+          "display_name": "Planks",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 10.0
+      }
+    ],
+    "outputs": [
+      {
+        "item": {
+          "unique_name": "T4_2H_CROSSBOW",
+          "display_name": "Crossbow",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 1.0
+      }
+    ]
+  },
+  {
+    "item": {
+      "unique_name": "T4_BAG",
+      "display_name": "Bag",
+      "tier": 4,
+      "enchantment": 0
+    },
+    "station": "Toolmaker",
+    "city_bonus": "Fort Sterling",
+    "focus_per_craft": 180,
+    "components": [
+      {
+        "item": {
+          "unique_name": "T4_LEATHER",
+          "display_name": "Leather",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 16.0
+      },
+      {
+        "item": {
+          "unique_name": "T4_CLOTH",
+          "display_name": "Cloth",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 8.0
+      }
+    ],
+    "outputs": [
+      {
+        "item": {
+          "unique_name": "T4_BAG",
+          "display_name": "Bag",
+          "tier": 4,
+          "enchantment": 0
+        },
+        "quantity": 1.0
+      }
+    ]
+  }
+]

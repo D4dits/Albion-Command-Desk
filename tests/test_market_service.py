@@ -54,6 +54,9 @@ def test_service_caches_price_payload() -> None:
     assert len(first) == 1
     assert len(second) == 1
     assert call_count["value"] == 1
+    # First call is live fetch, second should be cache hit.
+    assert service.last_prices_meta.source == "cache"
+    assert service.last_prices_meta.record_count == 1
 
 
 def test_service_uses_stale_cache_when_enabled() -> None:
@@ -98,3 +101,4 @@ def test_service_uses_stale_cache_when_enabled() -> None:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
     assert call_count["value"] == 1
+    assert service.last_prices_meta.source == "stale_cache"

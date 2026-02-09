@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from albion_dps.market.aod_client import MarketPriceRecord
 from albion_dps.market.models import (
     CraftRun,
@@ -11,6 +13,18 @@ from albion_dps.market.models import (
     Recipe,
 )
 from albion_dps.market.pricing import choose_unit_price
+
+
+@dataclass(frozen=True)
+class BatchCraftRequest:
+    recipe: Recipe
+    quantity: int
+    input_cities: dict[str, str] | None = None
+    output_cities: dict[str, str] | None = None
+    input_price_types: dict[str, PriceType] | None = None
+    output_price_types: dict[str, PriceType] | None = None
+    manual_input_prices: dict[str, int] | None = None
+    manual_output_prices: dict[str, int] | None = None
 
 
 def build_craft_run(
@@ -55,6 +69,31 @@ def build_craft_run(
     )
 
 
+def build_craft_runs_batch(
+    *,
+    setup: CraftSetup,
+    requests: list[BatchCraftRequest],
+    price_index: dict[tuple[str, str, int], MarketPriceRecord],
+) -> tuple[CraftRun, ...]:
+    runs: list[CraftRun] = []
+    for request in requests:
+        runs.append(
+            build_craft_run(
+                recipe=request.recipe,
+                quantity=request.quantity,
+                setup=setup,
+                price_index=price_index,
+                input_cities=request.input_cities,
+                output_cities=request.output_cities,
+                input_price_types=request.input_price_types,
+                output_price_types=request.output_price_types,
+                manual_input_prices=request.manual_input_prices,
+                manual_output_prices=request.manual_output_prices,
+            )
+        )
+    return tuple(runs)
+
+
 def build_input_lines(
     *,
     recipe: Recipe,
@@ -66,7 +105,7 @@ def build_input_lines(
     manual_input_prices: dict[str, int],
 ) -> list[InputLine]:
     lines: list[InputLine] = []
-    return_fraction = _effective_return_fraction(setup)
+    return_fraction = effective_return_fraction(setup=setup, recipe=recipe)
     for component in recipe.components:
         city = (
             input_cities.get(component.item.unique_name)
@@ -172,11 +211,34 @@ def compute_run_profit(run: CraftRun) -> ProfitBreakdown:
     )
 
 
-def _effective_return_fraction(setup: CraftSetup) -> float:
-    base = max(0.0, setup.return_rate_percent / 100.0)
-    bonus = max(0.0, setup.daily_bonus_percent / 100.0)
-    hideout = max(0.0, setup.hideout_power_percent / 100.0)
-    return min(0.95, base + bonus + hideout)
+def compute_batch_profit(runs: list[CraftRun] | tuple[CraftRun, ...]) -> ProfitBreakdown:
+    summary = ProfitBreakdown()
+    for run in runs:
+        breakdown = compute_run_profit(run)
+        summary.input_cost += breakdown.input_cost
+        summary.output_value += breakdown.output_value
+        summary.station_fee += breakdown.station_fee
+        summary.market_tax += breakdown.market_tax
+        summary.focus_used += breakdown.focus_used
+    return summary
+
+
+def effective_return_fraction(*, setup: CraftSetup, recipe: Recipe | None = None) -> float:
+    explicit_percent = max(0.0, min(95.0, setup.return_rate_percent))
+    computed_percent = 0.0
+    if setup.premium:
+        computed_percent += 5.0
+    computed_percent += max(0.0, min(100.0, setup.daily_bonus_percent))
+    computed_percent += max(0.0, min(100.0, setup.hideout_power_percent))
+    if (
+        recipe is not None
+        and recipe.city_bonus.strip()
+        and setup.craft_city.strip()
+        and recipe.city_bonus.strip().lower() == setup.craft_city.strip().lower()
+    ):
+        computed_percent += 15.0
+    applied_percent = max(explicit_percent, computed_percent)
+    return min(0.95, applied_percent / 100.0)
 
 
 def _pick_quote(

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import time
 from dataclasses import dataclass
 from datetime import date
 from typing import Callable
@@ -35,6 +37,16 @@ class MarketChartPoint:
     avg_price: int
 
 
+@dataclass(frozen=True)
+class AODataRequestStats:
+    endpoint: str
+    url: str
+    attempts: int
+    elapsed_ms: float
+    success: bool
+    error: str
+
+
 class AODataClient:
     def __init__(
         self,
@@ -42,10 +54,34 @@ class AODataClient:
         timeout_seconds: float = 12.0,
         user_agent: str = "albion-dps-market/0.1",
         fetch_json: Callable[[str, float, str], object] | None = None,
+        max_retries: int = 2,
+        retry_backoff_initial_seconds: float = 0.20,
+        retry_backoff_factor: float = 2.0,
+        retry_backoff_max_seconds: float = 2.0,
+        sleeper: Callable[[float], None] | None = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         self._timeout_seconds = timeout_seconds
         self._user_agent = user_agent
         self._fetch_json = fetch_json or _default_fetch_json
+        self._max_retries = max(0, int(max_retries))
+        self._retry_backoff_initial_seconds = max(0.0, float(retry_backoff_initial_seconds))
+        self._retry_backoff_factor = max(1.0, float(retry_backoff_factor))
+        self._retry_backoff_max_seconds = max(0.0, float(retry_backoff_max_seconds))
+        self._sleep = sleeper or time.sleep
+        self._log = logger or logging.getLogger(__name__)
+        self._last_request_stats = AODataRequestStats(
+            endpoint="",
+            url="",
+            attempts=0,
+            elapsed_ms=0.0,
+            success=False,
+            error="",
+        )
+
+    @property
+    def last_request_stats(self) -> AODataRequestStats:
+        return self._last_request_stats
 
     def fetch_prices(
         self,
@@ -66,7 +102,7 @@ class AODataClient:
             "qualities": ",".join(str(x) for x in (qualities or [1])),
         }
         url = f"{base}/api/v2/stats/prices/{ids}.json?{urlencode(params)}"
-        data = self._fetch_json(url, self._timeout_seconds, self._user_agent)
+        data = self._fetch_with_retry(url=url, endpoint="prices")
         return _normalize_prices(data)
 
     def fetch_charts(
@@ -91,12 +127,62 @@ class AODataClient:
         if date_to is not None:
             params["end_date"] = date_to.isoformat()
         url = f"{base}/api/v2/stats/charts/{item_id}.json?{urlencode(params)}"
-        data = self._fetch_json(url, self._timeout_seconds, self._user_agent)
+        data = self._fetch_with_retry(url=url, endpoint="charts")
         return _normalize_charts(data)
 
     def _base_url(self, region: MarketRegion) -> str:
         host = REGION_HOSTS[region]
         return f"https://{host}"
+
+    def _fetch_with_retry(self, *, url: str, endpoint: str) -> object:
+        max_attempts = self._max_retries + 1
+        started = time.perf_counter()
+        attempt = 0
+        last_error: Exception | None = None
+        backoff_seconds = self._retry_backoff_initial_seconds
+
+        while attempt < max_attempts:
+            attempt += 1
+            try:
+                payload = self._fetch_json(url, self._timeout_seconds, self._user_agent)
+                self._last_request_stats = AODataRequestStats(
+                    endpoint=endpoint,
+                    url=url,
+                    attempts=attempt,
+                    elapsed_ms=(time.perf_counter() - started) * 1000.0,
+                    success=True,
+                    error="",
+                )
+                return payload
+            except Exception as exc:
+                last_error = exc
+                if attempt >= max_attempts:
+                    break
+                if backoff_seconds > 0:
+                    self._sleep(backoff_seconds)
+                    backoff_seconds = min(
+                        self._retry_backoff_max_seconds,
+                        backoff_seconds * self._retry_backoff_factor,
+                    )
+                self._log.debug(
+                    "AO Data request retry (%s), attempt %d/%d, url=%s, error=%s",
+                    endpoint,
+                    attempt + 1,
+                    max_attempts,
+                    url,
+                    exc,
+                )
+
+        error_message = str(last_error) if last_error is not None else "unknown fetch error"
+        self._last_request_stats = AODataRequestStats(
+            endpoint=endpoint,
+            url=url,
+            attempts=max_attempts,
+            elapsed_ms=(time.perf_counter() - started) * 1000.0,
+            success=False,
+            error=error_message,
+        )
+        raise RuntimeError(f"AO Data {endpoint} request failed after {max_attempts} attempts: {error_message}")
 
 
 def _normalize_prices(payload: object) -> list[MarketPriceRecord]:
