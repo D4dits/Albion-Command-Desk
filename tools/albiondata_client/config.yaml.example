@@ -1,0 +1,6 @@
+# Template copied from albiondata-client reference project (wzor5).
+# Keep this file local if you want to enable websocket relay in their client.
+#
+# EnableWebsockets: False
+# AllowedWebsocketHosts:
+#   - www.example.com

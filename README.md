@@ -198,10 +198,12 @@ Qt tabs:
   - `Check updates` (compare local clone vs GitHub HEAD)
   - `Sync repo` (clone/pull `ao-data/albiondata-client`)
   - `Start scanner` / `Stop scanner` (runs local binary or `go run .`)
+  - runtime flags: `Disable upload (-d)`, `Public ingest (-i)`, `Listen devices (-l)`
   - live log output
 
 Scanner local path:
 - `artifacts/albiondata-client`
+- optional template copied from `wzor5`: `tools/albiondata_client/config.yaml.example`
 
 ## Weapon-based role colors (optional)
 Role colors can be driven by equipped weapon instead of pure damage/heal heuristics.

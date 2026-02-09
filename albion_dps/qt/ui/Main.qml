@@ -451,6 +451,46 @@ ApplicationWindow {
                         }
 
                         RowLayout {
+                            spacing: 10
+                            CheckBox {
+                                id: disableUploadBox
+                                text: "Disable upload (-d)"
+                                checked: scannerState.disableUpload
+                                onToggled: scannerState.setDisableUpload(checked)
+                            }
+                            Text {
+                                text: "Listen devices (-l):"
+                                color: mutedColor
+                                font.pixelSize: 11
+                            }
+                            TextField {
+                                id: listenDevicesField
+                                Layout.preferredWidth: 260
+                                placeholderText: "eth0,wlan0 or MAC list"
+                                text: scannerState.listenDevices
+                                color: textColor
+                                onEditingFinished: scannerState.setListenDevices(text)
+                            }
+                        }
+
+                        RowLayout {
+                            spacing: 10
+                            Text {
+                                text: "Public ingest (-i):"
+                                color: mutedColor
+                                font.pixelSize: 11
+                            }
+                            TextField {
+                                id: ingestField
+                                Layout.fillWidth: true
+                                placeholderText: "https+pow://albion-online-data.com"
+                                text: scannerState.publicIngestUrl
+                                color: textColor
+                                onEditingFinished: scannerState.setPublicIngestUrl(text)
+                            }
+                        }
+
+                        RowLayout {
                             spacing: 8
                             Button {
                                 text: "Check updates"

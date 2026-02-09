@@ -18,6 +18,7 @@ class ScannerState(QObject):
     updateChanged = Signal()
     logChanged = Signal()
     runningChanged = Signal()
+    configChanged = Signal()
 
     _statusSignal = Signal(str)
     _updateSignal = Signal(str)
@@ -34,6 +35,9 @@ class ScannerState(QObject):
         self._update_text = "not checked"
         self._log_lines: deque[str] = deque(maxlen=800)
         self._running = False
+        self._disable_upload = True
+        self._public_ingest_url = "https+pow://albion-online-data.com"
+        self._listen_devices = ""
         self._process: subprocess.Popen[str] | None = None
         self._process_lock = threading.Lock()
         self._op_lock = threading.Lock()
@@ -62,6 +66,18 @@ class ScannerState(QObject):
     def running(self) -> bool:
         return self._running
 
+    @Property(bool, notify=configChanged)
+    def disableUpload(self) -> bool:
+        return self._disable_upload
+
+    @Property(str, notify=configChanged)
+    def publicIngestUrl(self) -> str:
+        return self._public_ingest_url
+
+    @Property(str, notify=configChanged)
+    def listenDevices(self) -> str:
+        return self._listen_devices
+
     @Property(str, constant=True)
     def clientDir(self) -> str:
         return str(self._client_dir)
@@ -70,6 +86,31 @@ class ScannerState(QObject):
     def clearLog(self) -> None:
         self._log_lines.clear()
         self.logChanged.emit()
+
+    @Slot(bool)
+    def setDisableUpload(self, value: bool) -> None:
+        if value == self._disable_upload:
+            return
+        self._disable_upload = value
+        self.configChanged.emit()
+
+    @Slot(str)
+    def setPublicIngestUrl(self, value: str) -> None:
+        val = value.strip()
+        if not val:
+            val = "https+pow://albion-online-data.com"
+        if val == self._public_ingest_url:
+            return
+        self._public_ingest_url = val
+        self.configChanged.emit()
+
+    @Slot(str)
+    def setListenDevices(self, value: str) -> None:
+        val = value.strip()
+        if val == self._listen_devices:
+            return
+        self._listen_devices = val
+        self.configChanged.emit()
 
     @Slot()
     def checkForUpdates(self) -> None:
@@ -90,6 +131,7 @@ class ScannerState(QObject):
         if command is None:
             self._append_log("No scanner executable found. Sync repository first, then build tool.")
             return
+        command = self._build_runtime_command(command)
 
         self._client_dir.mkdir(parents=True, exist_ok=True)
         self._append_log(f"Starting scanner: {' '.join(command)}")
@@ -263,6 +305,16 @@ class ScannerState(QObject):
         if go_path and self._client_dir.exists():
             return [go_path, "run", "."]
         return None
+
+    def _build_runtime_command(self, command: list[str]) -> list[str]:
+        args = list(command)
+        if self._disable_upload:
+            args.append("-d")
+        if self._public_ingest_url:
+            args.extend(["-i", self._public_ingest_url])
+        if self._listen_devices:
+            args.extend(["-l", self._listen_devices])
+        return args
 
     def _git_local_head(self) -> str | None:
         if not (self._client_dir / ".git").exists():
