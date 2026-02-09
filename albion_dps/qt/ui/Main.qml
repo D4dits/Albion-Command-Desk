@@ -50,130 +50,6 @@ ApplicationWindow {
                         color: mutedColor
                         font.pixelSize: 12
                     }
-                    RowLayout {
-                        visible: meterView
-                        spacing: 8
-                        Button {
-                            id: battleButton
-                            text: "Battle"
-                            checkable: true
-                            checked: uiState.mode === "battle"
-                            onClicked: uiState.setMode("battle")
-                            background: Rectangle {
-                                radius: 6
-                                color: battleButton.checked ? accentColor : "#0f1620"
-                                border.color: battleButton.checked ? accentColor : borderColor
-                            }
-                            contentItem: Text {
-                                text: battleButton.text
-                                color: battleButton.checked ? "#0b0f14" : textColor
-                                font.pixelSize: 11
-                            }
-                        }
-                        Button {
-                            id: zoneButton
-                            text: "Zone"
-                            checkable: true
-                            checked: uiState.mode === "zone"
-                            onClicked: uiState.setMode("zone")
-                            background: Rectangle {
-                                radius: 6
-                                color: zoneButton.checked ? accentColor : "#0f1620"
-                                border.color: zoneButton.checked ? accentColor : borderColor
-                            }
-                            contentItem: Text {
-                                text: zoneButton.text
-                                color: zoneButton.checked ? "#0b0f14" : textColor
-                                font.pixelSize: 11
-                            }
-                        }
-                        Button {
-                            id: manualButton
-                            text: "Manual"
-                            checkable: true
-                            checked: uiState.mode === "manual"
-                            onClicked: uiState.setMode("manual")
-                            background: Rectangle {
-                                radius: 6
-                                color: manualButton.checked ? accentColor : "#0f1620"
-                                border.color: manualButton.checked ? accentColor : borderColor
-                            }
-                            contentItem: Text {
-                                text: manualButton.text
-                                color: manualButton.checked ? "#0b0f14" : textColor
-                                font.pixelSize: 11
-                            }
-                        }
-                        Item { width: 16 }
-                        Button {
-                            id: sortDpsButton
-                            text: "DPS"
-                            checkable: true
-                            checked: uiState.sortKey === "dps"
-                            onClicked: uiState.setSortKey("dps")
-                            background: Rectangle {
-                                radius: 6
-                                color: sortDpsButton.checked ? accentColor : "#0f1620"
-                                border.color: sortDpsButton.checked ? accentColor : borderColor
-                            }
-                            contentItem: Text {
-                                text: sortDpsButton.text
-                                color: sortDpsButton.checked ? "#0b0f14" : textColor
-                                font.pixelSize: 11
-                            }
-                        }
-                        Button {
-                            id: sortDmgButton
-                            text: "DMG"
-                            checkable: true
-                            checked: uiState.sortKey === "dmg"
-                            onClicked: uiState.setSortKey("dmg")
-                            background: Rectangle {
-                                radius: 6
-                                color: sortDmgButton.checked ? accentColor : "#0f1620"
-                                border.color: sortDmgButton.checked ? accentColor : borderColor
-                            }
-                            contentItem: Text {
-                                text: sortDmgButton.text
-                                color: sortDmgButton.checked ? "#0b0f14" : textColor
-                                font.pixelSize: 11
-                            }
-                        }
-                        Button {
-                            id: sortHpsButton
-                            text: "HPS"
-                            checkable: true
-                            checked: uiState.sortKey === "hps"
-                            onClicked: uiState.setSortKey("hps")
-                            background: Rectangle {
-                                radius: 6
-                                color: sortHpsButton.checked ? accentColor : "#0f1620"
-                                border.color: sortHpsButton.checked ? accentColor : borderColor
-                            }
-                            contentItem: Text {
-                                text: sortHpsButton.text
-                                color: sortHpsButton.checked ? "#0b0f14" : textColor
-                                font.pixelSize: 11
-                            }
-                        }
-                        Button {
-                            id: sortHealButton
-                            text: "HEAL"
-                            checkable: true
-                            checked: uiState.sortKey === "heal"
-                            onClicked: uiState.setSortKey("heal")
-                            background: Rectangle {
-                                radius: 6
-                                color: sortHealButton.checked ? accentColor : "#0f1620"
-                                border.color: sortHealButton.checked ? accentColor : borderColor
-                            }
-                            contentItem: Text {
-                                text: sortHealButton.text
-                                color: sortHealButton.checked ? "#0b0f14" : textColor
-                                font.pixelSize: 11
-                            }
-                        }
-                    }
                 }
 
                 ColumnLayout {
@@ -267,6 +143,154 @@ ApplicationWindow {
                                 color: textColor
                                 font.pixelSize: 14
                                 font.bold: true
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 62
+                                color: "#0f1620"
+                                radius: 6
+                                border.color: "#1f2a37"
+
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 6
+                                    spacing: 6
+
+                                    RowLayout {
+                                        spacing: 8
+                                        Text {
+                                            text: "Mode:"
+                                            color: mutedColor
+                                            font.pixelSize: 11
+                                        }
+                                        Button {
+                                            id: battleButton
+                                            text: "Battle"
+                                            checkable: true
+                                            checked: uiState.mode === "battle"
+                                            onClicked: uiState.setMode("battle")
+                                            background: Rectangle {
+                                                radius: 6
+                                                color: battleButton.checked ? accentColor : "#101923"
+                                                border.color: battleButton.checked ? accentColor : borderColor
+                                            }
+                                            contentItem: Text {
+                                                text: battleButton.text
+                                                color: battleButton.checked ? "#0b0f14" : textColor
+                                                font.pixelSize: 11
+                                            }
+                                        }
+                                        Button {
+                                            id: zoneButton
+                                            text: "Zone"
+                                            checkable: true
+                                            checked: uiState.mode === "zone"
+                                            onClicked: uiState.setMode("zone")
+                                            background: Rectangle {
+                                                radius: 6
+                                                color: zoneButton.checked ? accentColor : "#101923"
+                                                border.color: zoneButton.checked ? accentColor : borderColor
+                                            }
+                                            contentItem: Text {
+                                                text: zoneButton.text
+                                                color: zoneButton.checked ? "#0b0f14" : textColor
+                                                font.pixelSize: 11
+                                            }
+                                        }
+                                        Button {
+                                            id: manualButton
+                                            text: "Manual"
+                                            checkable: true
+                                            checked: uiState.mode === "manual"
+                                            onClicked: uiState.setMode("manual")
+                                            background: Rectangle {
+                                                radius: 6
+                                                color: manualButton.checked ? accentColor : "#101923"
+                                                border.color: manualButton.checked ? accentColor : borderColor
+                                            }
+                                            contentItem: Text {
+                                                text: manualButton.text
+                                                color: manualButton.checked ? "#0b0f14" : textColor
+                                                font.pixelSize: 11
+                                            }
+                                        }
+                                        Item { Layout.fillWidth: true }
+                                        Text {
+                                            text: "Sort:"
+                                            color: mutedColor
+                                            font.pixelSize: 11
+                                        }
+                                        Button {
+                                            id: sortDpsButton
+                                            text: "DPS"
+                                            checkable: true
+                                            checked: uiState.sortKey === "dps"
+                                            onClicked: uiState.setSortKey("dps")
+                                            background: Rectangle {
+                                                radius: 6
+                                                color: sortDpsButton.checked ? accentColor : "#101923"
+                                                border.color: sortDpsButton.checked ? accentColor : borderColor
+                                            }
+                                            contentItem: Text {
+                                                text: sortDpsButton.text
+                                                color: sortDpsButton.checked ? "#0b0f14" : textColor
+                                                font.pixelSize: 11
+                                            }
+                                        }
+                                        Button {
+                                            id: sortDmgButton
+                                            text: "DMG"
+                                            checkable: true
+                                            checked: uiState.sortKey === "dmg"
+                                            onClicked: uiState.setSortKey("dmg")
+                                            background: Rectangle {
+                                                radius: 6
+                                                color: sortDmgButton.checked ? accentColor : "#101923"
+                                                border.color: sortDmgButton.checked ? accentColor : borderColor
+                                            }
+                                            contentItem: Text {
+                                                text: sortDmgButton.text
+                                                color: sortDmgButton.checked ? "#0b0f14" : textColor
+                                                font.pixelSize: 11
+                                            }
+                                        }
+                                        Button {
+                                            id: sortHpsButton
+                                            text: "HPS"
+                                            checkable: true
+                                            checked: uiState.sortKey === "hps"
+                                            onClicked: uiState.setSortKey("hps")
+                                            background: Rectangle {
+                                                radius: 6
+                                                color: sortHpsButton.checked ? accentColor : "#101923"
+                                                border.color: sortHpsButton.checked ? accentColor : borderColor
+                                            }
+                                            contentItem: Text {
+                                                text: sortHpsButton.text
+                                                color: sortHpsButton.checked ? "#0b0f14" : textColor
+                                                font.pixelSize: 11
+                                            }
+                                        }
+                                        Button {
+                                            id: sortHealButton
+                                            text: "HEAL"
+                                            checkable: true
+                                            checked: uiState.sortKey === "heal"
+                                            onClicked: uiState.setSortKey("heal")
+                                            background: Rectangle {
+                                                radius: 6
+                                                color: sortHealButton.checked ? accentColor : "#101923"
+                                                border.color: sortHealButton.checked ? accentColor : borderColor
+                                            }
+                                            contentItem: Text {
+                                                text: sortHealButton.text
+                                                color: sortHealButton.checked ? "#0b0f14" : textColor
+                                                font.pixelSize: 11
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             Rectangle {

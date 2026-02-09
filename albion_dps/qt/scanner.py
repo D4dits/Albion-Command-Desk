@@ -15,6 +15,9 @@ DEFAULT_REPO_URL = "https://github.com/ao-data/albiondata-client.git"
 _ALBION_LOG_RE = re.compile(
     r"^[A-Z]{4,5}\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^\]]*\]\s"
 )
+_ANSI_ESC_RE = re.compile(r"\x1b\[[0-9;]*m")
+_ANSI_BARE_RE = re.compile(r"\[[0-9;]{1,6}m")
+_LOGRUS_RE = re.compile(r'^time="([^"]+)"\s+level=([a-zA-Z]+)\s+msg="(.*)"$')
 
 
 class ScannerState(QObject):
@@ -281,7 +284,9 @@ class ScannerState(QObject):
                 for line in process.stdout:
                     text = line.rstrip()
                     if text:
-                        self._logSignal.emit(self._normalize_external_line(text))
+                        normalized = self._normalize_external_line(text)
+                        if normalized:
+                            self._logSignal.emit(normalized)
         finally:
             exit_code = process.wait()
             self._processExitSignal.emit(exit_code)
@@ -396,18 +401,33 @@ class ScannerState(QObject):
         self.logChanged.emit()
 
     def _normalize_external_line(self, message: str) -> str:
-        if self._looks_like_external_log(message):
-            return message
-        return self._format_line("INFO", message)
+        cleaned = self._clean_ansi(message)
+        if not cleaned:
+            return ""
+        if self._looks_like_external_log(cleaned):
+            return cleaned
+        parsed = _LOGRUS_RE.match(cleaned)
+        if parsed:
+            timestamp, level, msg = parsed.groups()
+            level_map = {"warning": "WARN", "warn": "WARN", "error": "ERROR", "info": "INFO"}
+            normalized_level = level_map.get(level.lower(), level.upper())
+            return f"{normalized_level}[{timestamp}] {msg}"
+        return self._format_line("INFO", cleaned)
 
     def _format_line(self, level: str, message: str) -> str:
-        if self._looks_like_external_log(message):
-            return message
+        cleaned = self._clean_ansi(message)
+        if self._looks_like_external_log(cleaned):
+            return cleaned
         timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
-        return f"{level}[{timestamp}] {message}"
+        return f"{level}[{timestamp}] {cleaned}"
 
     def _looks_like_external_log(self, line: str) -> bool:
         return bool(_ALBION_LOG_RE.match(line))
+
+    def _clean_ansi(self, text: str) -> str:
+        cleaned = _ANSI_ESC_RE.sub("", text)
+        cleaned = _ANSI_BARE_RE.sub("", cleaned)
+        return cleaned.strip()
 
     def _set_status_text(self, text: str) -> None:
         if text == self._status_text:
