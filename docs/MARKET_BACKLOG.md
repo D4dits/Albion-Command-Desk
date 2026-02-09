@@ -1,5 +1,11 @@
 # Market Module Backlog (AFM-like)
 
+## Status update (2026-02-09)
+- Sprint 1 (A+B): done in branch `market` (scaffold, AO Data client, cache SQLite, service, testy).
+- Sprint 2: in progress.
+  - Completed now: core kalkulacji dla Setup+Inputs (C1/C2/C4/C5/C6), walidacja Setup (D1/D2), generacja Inputs z manual override (E1/E3), testy.
+  - Completed now: UI Market w `Main.qml` dla Setup + Inputs (formularz setup, tabela inputs, live total).
+
 ## 1) Cel
 Wdrozyc w projekcie nowy modul kalkulatora craftingu (AFM-like) z zakladkami:
 - Setup
@@ -45,32 +51,32 @@ Zakres obejmuje tylko ekonomie craftingu/refiningu, bez zmian w logice DPS meter
 
 ## 4) Backlog techniczny (epiki i taski)
 ## EPIC A - Fundament i dane
-- A1. Utworzyc strukture katalogow `albion_dps/market/*`.
-- A2. Dodac modele domenowe:
+- [x] A1. Utworzyc strukture katalogow `albion_dps/market/*`.
+- [x] A2. Dodac modele domenowe:
   - `MarketRegion`, `City`, `PriceType`, `Quality`, `ItemRef`.
   - `CraftSetup`, `InputLine`, `OutputLine`, `CraftRun`.
   - `ProfitBreakdown`, `ShoppingEntry`, `SellingEntry`.
-- A3. Wczytywanie katalogu itemow/recipe:
+- [x] A3. Wczytywanie katalogu itemow/recipe:
   - parser lokalnego katalogu (JSON/yaml) z wersjonowaniem.
   - mapowanie item_id <-> unique_name <-> display_name.
-- A4. Migracja/konwersja danych recipe z obecnych zasobow projektu.
-- A5. Walidacja integralnosci datasetu (brakujace itemy, zle tier/enchant).
+- [ ] A4. Migracja/konwersja danych recipe z obecnych zasobow projektu.
+- [ ] A5. Walidacja integralnosci datasetu (brakujace itemy, zle tier/enchant).
 
 Definition of Done:
 - testy jednostkowe modeli + walidacji przechodza.
 - blad danych nie wywala aplikacji, tylko trafia do loga i UI warning.
 
 ## EPIC B - AO Data API + cache
-- B1. Klient HTTP AO Data:
+- [x] B1. Klient HTTP AO Data:
   - endpointy `stats/prices` i `stats/charts`.
   - region host: `west/east/europe`.
-- B2. Retry policy + timeout + backoff.
-- B3. Cache SQLite:
+- [ ] B2. Retry policy + timeout + backoff.
+- [x] B3. Cache SQLite:
   - klucz: endpoint + parametry.
   - TTL osobno dla prices i charts.
   - fallback do stale cache przy bledach sieci.
-- B4. Normalizacja odpowiedzi API do modelu wewnetrznego.
-- B5. Telemetria techniczna:
+- [x] B4. Normalizacja odpowiedzi API do modelu wewnetrznego.
+- [ ] B5. Telemetria techniczna:
   - czas odpowiedzi, source (live/cache), liczba rekordow.
 
 Definition of Done:
@@ -78,20 +84,20 @@ Definition of Done:
 - mozna pracowac offline na cache (read-only mode).
 
 ## EPIC C - Silnik kalkulacji (core)
-- C1. Koszt materialow:
+- [x] C1. Koszt materialow:
   - buy order / sell order / average / manual.
   - osobna lokalizacja zakupu per material.
-- C2. Koszt craftingu:
+- [x] C2. Koszt craftingu:
   - station fee, tax, premium, no-tax toggles.
-- C3. Return rate model:
+- [~] C3. Return rate model:
   - city bonus, hideout, daily bonus, quality/zone.
-- C4. Focus:
+- [x] C4. Focus:
   - focus required, focus saved, SPF (silver per focus).
-- C5. Output model:
+- [x] C5. Output model:
   - ilosc outputow, net sell value po oplatach.
-- C6. Result model:
+- [x] C6. Result model:
   - total cost, revenue, gross/net profit, margin %, fame proxy.
-- C7. Batch mode:
+- [ ] C7. Batch mode:
   - wiele craftow na raz, wspolny wynik.
 
 Definition of Done:
@@ -99,26 +105,26 @@ Definition of Done:
 - deterministyczny wynik (ta sama konfiguracja = ten sam wynik).
 
 ## EPIC D - Setup tab
-- D1. Pola:
+- [~] D1. Pola:
   - region, tier/enchant, quality, quantity/runs.
   - craft location, bonus city, hideout level/power.
   - premium, daily bonus, fee, tax.
   - tryb cen (buy/sell/avg/manual).
-- D2. Walidacje i wartosci domyslne.
-- D3. Presety (np. city profile).
-- D4. Powiazanie Setup -> Inputs/Outputs recalculation.
+- [x] D2. Walidacje i wartosci domyslne.
+- [ ] D3. Presety (np. city profile).
+- [x] D4. Powiazanie Setup -> Inputs/Outputs recalculation.
 
 Definition of Done:
 - zmiana kazdego parametru triggeruje przeliczenie bez restartu.
 - walidacje blokuja niepoprawne konfiguracje.
 
 ## EPIC E - Inputs tab
-- E1. Generacja listy materialow z recipe.
-- E2. Pobieranie cen i fallback:
+- [x] E1. Generacja listy materialow z recipe.
+- [x] E2. Pobieranie cen i fallback:
   - live -> cache -> manual.
-- E3. Manual override per material.
-- E4. Leftovers i stock (opcjonalnie MVP+).
-- E5. Widok tabelaryczny:
+- [x] E3. Manual override per material.
+- [ ] E4. Leftovers i stock (opcjonalnie MVP+).
+- [x] E5. Widok tabelaryczny:
   - material, qty, city, price type, unit cost, line cost.
 
 Definition of Done:
@@ -167,7 +173,7 @@ Definition of Done:
 - selling list jest spojna z Outputs (po agregacji batch).
 
 ## EPIC J - UI/UX (Qt)
-- J1. Dodac glowna zakladke `Market` obok `Meter`/`Scanner`.
+- [x] J1. Dodac glowna zakladke `Market` obok `Meter`/`Scanner`.
 - J2. W `Market` dodac 6 podzakladek.
 - J3. Wydajny model tabel:
   - sort/filter bez freezowania UI.
@@ -184,7 +190,7 @@ Definition of Done:
 - K2. Integration tests:
   - klient AO Data + cache behavior.
 - K3. Snapshot tests wynikow (znane konfiguracje).
-- K4. Smoke test QML dla nowej zakladki Market.
+- [x] K4. Smoke test QML dla nowej zakladki Market.
 - K5. Testy regresji po zmianie datasetu recipe.
 
 Definition of Done:

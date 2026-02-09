@@ -16,6 +16,8 @@ ApplicationWindow {
     property color panelColor: "#131a22"
     property color borderColor: "#1f2a37"
     property bool meterView: viewTabs.currentIndex === 0
+    property bool scannerView: viewTabs.currentIndex === 1
+    property bool marketView: viewTabs.currentIndex === 2
 
     ColumnLayout {
         anchors.fill: parent
@@ -46,7 +48,9 @@ ApplicationWindow {
                     Text {
                         text: meterView
                             ? "Mode: " + uiState.mode + "  |  Zone: " + uiState.zone
-                            : "Scanner status: " + scannerState.statusText + "  |  Updates: " + scannerState.updateText
+                            : (scannerView
+                                ? "Scanner status: " + scannerState.statusText + "  |  Updates: " + scannerState.updateText
+                                : "Market setup  |  Region: " + marketSetupState.region + "  |  Inputs total: " + marketSetupState.inputsTotalCost.toFixed(0))
                         color: mutedColor
                         font.pixelSize: 12
                     }
@@ -109,6 +113,23 @@ ApplicationWindow {
                 contentItem: Text {
                     text: scannerTab.text
                     color: scannerTab.checked ? "#0b0f14" : textColor
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.bold: true
+                }
+            }
+            TabButton {
+                id: marketTab
+                text: "Market"
+                height: viewTabs.height
+                background: Rectangle {
+                    radius: 5
+                    color: marketTab.checked ? accentColor : "#0f1620"
+                    border.color: marketTab.checked ? accentColor : borderColor
+                }
+                contentItem: Text {
+                    text: marketTab.text
+                    color: marketTab.checked ? "#0b0f14" : textColor
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     font.bold: true
@@ -562,6 +583,305 @@ ApplicationWindow {
                                     font.family: "Consolas"
                                     font.pixelSize: 11
                                     selectByMouse: true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Item {
+                Rectangle {
+                    anchors.fill: parent
+                    color: panelColor
+                    radius: 8
+                    border.color: borderColor
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 10
+
+                        Text {
+                            text: "Market Setup + Inputs"
+                            color: textColor
+                            font.pixelSize: 14
+                            font.bold: true
+                        }
+
+                        Text {
+                            text: marketSetupState.validationText.length === 0
+                                ? "Configuration valid."
+                                : "Validation: " + marketSetupState.validationText
+                            color: marketSetupState.validationText.length === 0 ? "#7ee787" : "#ff7b72"
+                            font.pixelSize: 11
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            spacing: 12
+
+                            Rectangle {
+                                Layout.preferredWidth: 420
+                                Layout.fillHeight: true
+                                radius: 6
+                                color: "#0f1620"
+                                border.color: "#1f2a37"
+
+                                ScrollView {
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    clip: true
+
+                                    ColumnLayout {
+                                        width: parent.width
+                                        spacing: 8
+
+                                        Text {
+                                            text: "Setup"
+                                            color: textColor
+                                            font.pixelSize: 12
+                                            font.bold: true
+                                        }
+
+                                        GridLayout {
+                                            columns: 2
+                                            columnSpacing: 8
+                                            rowSpacing: 8
+                                            width: parent.width
+
+                                            Text { text: "Region"; color: mutedColor; font.pixelSize: 11 }
+                                            ComboBox {
+                                                Layout.fillWidth: true
+                                                model: ["europe", "west", "east"]
+                                                currentIndex: Math.max(0, model.indexOf(marketSetupState.region))
+                                                onActivated: marketSetupState.setRegion(currentText)
+                                            }
+
+                                            Text { text: "Craft City"; color: mutedColor; font.pixelSize: 11 }
+                                            ComboBox {
+                                                Layout.fillWidth: true
+                                                model: ["Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien"]
+                                                currentIndex: Math.max(0, model.indexOf(marketSetupState.craftCity))
+                                                onActivated: marketSetupState.setCraftCity(currentText)
+                                            }
+
+                                            Text { text: "Buy City"; color: mutedColor; font.pixelSize: 11 }
+                                            ComboBox {
+                                                Layout.fillWidth: true
+                                                model: ["Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien"]
+                                                currentIndex: Math.max(0, model.indexOf(marketSetupState.defaultBuyCity))
+                                                onActivated: marketSetupState.setDefaultBuyCity(currentText)
+                                            }
+
+                                            Text { text: "Sell City"; color: mutedColor; font.pixelSize: 11 }
+                                            ComboBox {
+                                                Layout.fillWidth: true
+                                                model: ["Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien"]
+                                                currentIndex: Math.max(0, model.indexOf(marketSetupState.defaultSellCity))
+                                                onActivated: marketSetupState.setDefaultSellCity(currentText)
+                                            }
+
+                                            Text { text: "Premium"; color: mutedColor; font.pixelSize: 11 }
+                                            CheckBox {
+                                                checked: marketSetupState.premium
+                                                text: checked ? "Enabled" : "Disabled"
+                                                onToggled: marketSetupState.setPremium(checked)
+                                            }
+
+                                            Text { text: "Craft Runs"; color: mutedColor; font.pixelSize: 11 }
+                                            SpinBox {
+                                                Layout.fillWidth: true
+                                                from: 1
+                                                to: 10000
+                                                editable: true
+                                                value: marketSetupState.craftRuns
+                                                onValueChanged: marketSetupState.setCraftRuns(value)
+                                            }
+
+                                            Text { text: "Quality"; color: mutedColor; font.pixelSize: 11 }
+                                            SpinBox {
+                                                Layout.fillWidth: true
+                                                from: 1
+                                                to: 5
+                                                editable: true
+                                                value: marketSetupState.quality
+                                                onValueChanged: marketSetupState.setQuality(value)
+                                            }
+
+                                            Text { text: "Station Fee %"; color: mutedColor; font.pixelSize: 11 }
+                                            SpinBox {
+                                                Layout.fillWidth: true
+                                                from: 0
+                                                to: 1000
+                                                stepSize: 1
+                                                editable: true
+                                                value: Math.round(marketSetupState.stationFeePercent * 10)
+                                                textFromValue: function(v) { return (v / 10.0).toFixed(1) }
+                                                valueFromText: function(t, _locale) {
+                                                    var p = parseFloat(t)
+                                                    return isNaN(p) ? value : Math.round(p * 10)
+                                                }
+                                                onValueChanged: marketSetupState.setStationFeePercent(value / 10.0)
+                                            }
+
+                                            Text { text: "Market Tax %"; color: mutedColor; font.pixelSize: 11 }
+                                            SpinBox {
+                                                Layout.fillWidth: true
+                                                from: 0
+                                                to: 1000
+                                                stepSize: 1
+                                                editable: true
+                                                value: Math.round(marketSetupState.marketTaxPercent * 10)
+                                                textFromValue: function(v) { return (v / 10.0).toFixed(1) }
+                                                valueFromText: function(t, _locale) {
+                                                    var p = parseFloat(t)
+                                                    return isNaN(p) ? value : Math.round(p * 10)
+                                                }
+                                                onValueChanged: marketSetupState.setMarketTaxPercent(value / 10.0)
+                                            }
+
+                                            Text { text: "Daily Bonus %"; color: mutedColor; font.pixelSize: 11 }
+                                            SpinBox {
+                                                Layout.fillWidth: true
+                                                from: 0
+                                                to: 1000
+                                                stepSize: 1
+                                                editable: true
+                                                value: Math.round(marketSetupState.dailyBonusPercent * 10)
+                                                textFromValue: function(v) { return (v / 10.0).toFixed(1) }
+                                                valueFromText: function(t, _locale) {
+                                                    var p = parseFloat(t)
+                                                    return isNaN(p) ? value : Math.round(p * 10)
+                                                }
+                                                onValueChanged: marketSetupState.setDailyBonusPercent(value / 10.0)
+                                            }
+
+                                            Text { text: "Return Rate %"; color: mutedColor; font.pixelSize: 11 }
+                                            SpinBox {
+                                                Layout.fillWidth: true
+                                                from: 0
+                                                to: 1000
+                                                stepSize: 1
+                                                editable: true
+                                                value: Math.round(marketSetupState.returnRatePercent * 10)
+                                                textFromValue: function(v) { return (v / 10.0).toFixed(1) }
+                                                valueFromText: function(t, _locale) {
+                                                    var p = parseFloat(t)
+                                                    return isNaN(p) ? value : Math.round(p * 10)
+                                                }
+                                                onValueChanged: marketSetupState.setReturnRatePercent(value / 10.0)
+                                            }
+
+                                            Text { text: "Hideout Power %"; color: mutedColor; font.pixelSize: 11 }
+                                            SpinBox {
+                                                Layout.fillWidth: true
+                                                from: 0
+                                                to: 1000
+                                                stepSize: 1
+                                                editable: true
+                                                value: Math.round(marketSetupState.hideoutPowerPercent * 10)
+                                                textFromValue: function(v) { return (v / 10.0).toFixed(1) }
+                                                valueFromText: function(t, _locale) {
+                                                    var p = parseFloat(t)
+                                                    return isNaN(p) ? value : Math.round(p * 10)
+                                                }
+                                                onValueChanged: marketSetupState.setHideoutPowerPercent(value / 10.0)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                radius: 6
+                                color: "#0f1620"
+                                border.color: "#1f2a37"
+
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 10
+                                    spacing: 8
+
+                                    Text {
+                                        text: "Inputs"
+                                        color: textColor
+                                        font.pixelSize: 12
+                                        font.bold: true
+                                    }
+
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        height: 24
+                                        radius: 4
+                                        color: "#111b28"
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 4
+                                            spacing: 10
+
+                                            Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 170 }
+                                            Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                            Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 120 }
+                                            Text { text: "Price"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                            Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                            Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                        }
+                                    }
+
+                                    ListView {
+                                        Layout.fillWidth: true
+                                        Layout.fillHeight: true
+                                        clip: true
+                                        model: marketSetupState.inputsModel
+
+                                        delegate: Rectangle {
+                                            width: ListView.view.width
+                                            height: 28
+                                            color: index % 2 === 0 ? "#0f1620" : "#101924"
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 4
+                                                spacing: 10
+
+                                                Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: 170; elide: Text.ElideRight }
+                                                Text { text: Number(quantity).toFixed(2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                                Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 120; elide: Text.ElideRight }
+                                                Text { text: priceType; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90; elide: Text.ElideRight }
+                                                Text { text: Number(unitPrice).toFixed(0); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                                Text { text: Number(totalCost).toFixed(0); color: textColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        Layout.fillWidth: true
+                                        height: 28
+                                        radius: 4
+                                        color: "#111b28"
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 6
+                                            spacing: 8
+                                            Text {
+                                                text: "Total input cost"
+                                                color: mutedColor
+                                                font.pixelSize: 11
+                                            }
+                                            Item { Layout.fillWidth: true }
+                                            Text {
+                                                text: Number(marketSetupState.inputsTotalCost).toFixed(0)
+                                                color: textColor
+                                                font.pixelSize: 12
+                                                font.bold: true
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
