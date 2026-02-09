@@ -36,6 +36,7 @@ indexedItems.json
 items.json
 map_index.json
 game_root.txt
+market_cache.sqlite3*
 # Allow the shared category mapping to be tracked.
 !data/item_category_mapping.py
 

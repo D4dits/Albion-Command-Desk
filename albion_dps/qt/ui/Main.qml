@@ -15,6 +15,7 @@ ApplicationWindow {
     property color accentColor: "#4aa3ff"
     property color panelColor: "#131a22"
     property color borderColor: "#1f2a37"
+    property int compactControlHeight: 26
     property bool meterView: viewTabs.currentIndex === 0
     property bool scannerView: viewTabs.currentIndex === 1
     property bool marketView: viewTabs.currentIndex === 2
@@ -633,6 +634,7 @@ ApplicationWindow {
 
                             Button {
                                 text: "Refresh prices"
+                                implicitHeight: compactControlHeight
                                 onClicked: marketSetupState.refreshPrices()
                             }
                         }
@@ -674,6 +676,8 @@ ApplicationWindow {
                                             Text { text: "Region"; color: mutedColor; font.pixelSize: 11 }
                                             ComboBox {
                                                 Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
                                                 model: ["europe", "west", "east"]
                                                 currentIndex: Math.max(0, model.indexOf(marketSetupState.region))
                                                 onActivated: marketSetupState.setRegion(currentText)
@@ -682,6 +686,8 @@ ApplicationWindow {
                                             Text { text: "Craft City"; color: mutedColor; font.pixelSize: 11 }
                                             ComboBox {
                                                 Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
                                                 model: ["Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien"]
                                                 currentIndex: Math.max(0, model.indexOf(marketSetupState.craftCity))
                                                 onActivated: marketSetupState.setCraftCity(currentText)
@@ -690,6 +696,8 @@ ApplicationWindow {
                                             Text { text: "Buy City"; color: mutedColor; font.pixelSize: 11 }
                                             ComboBox {
                                                 Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
                                                 model: ["Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien"]
                                                 currentIndex: Math.max(0, model.indexOf(marketSetupState.defaultBuyCity))
                                                 onActivated: marketSetupState.setDefaultBuyCity(currentText)
@@ -698,6 +706,8 @@ ApplicationWindow {
                                             Text { text: "Sell City"; color: mutedColor; font.pixelSize: 11 }
                                             ComboBox {
                                                 Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
                                                 model: ["Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien"]
                                                 currentIndex: Math.max(0, model.indexOf(marketSetupState.defaultSellCity))
                                                 onActivated: marketSetupState.setDefaultSellCity(currentText)
@@ -705,6 +715,7 @@ ApplicationWindow {
 
                                             Text { text: "Premium"; color: mutedColor; font.pixelSize: 11 }
                                             CheckBox {
+                                                implicitHeight: compactControlHeight
                                                 checked: marketSetupState.premium
                                                 text: checked ? "Enabled" : "Disabled"
                                                 onToggled: marketSetupState.setPremium(checked)
@@ -713,6 +724,8 @@ ApplicationWindow {
                                             Text { text: "Craft Runs"; color: mutedColor; font.pixelSize: 11 }
                                             SpinBox {
                                                 Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
                                                 from: 1
                                                 to: 10000
                                                 editable: true
@@ -723,6 +736,8 @@ ApplicationWindow {
                                             Text { text: "Quality"; color: mutedColor; font.pixelSize: 11 }
                                             SpinBox {
                                                 Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
                                                 from: 1
                                                 to: 5
                                                 editable: true
@@ -733,6 +748,8 @@ ApplicationWindow {
                                             Text { text: "Station Fee %"; color: mutedColor; font.pixelSize: 11 }
                                             SpinBox {
                                                 Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
                                                 from: 0
                                                 to: 1000
                                                 stepSize: 1
@@ -749,6 +766,8 @@ ApplicationWindow {
                                             Text { text: "Market Tax %"; color: mutedColor; font.pixelSize: 11 }
                                             SpinBox {
                                                 Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
                                                 from: 0
                                                 to: 1000
                                                 stepSize: 1
@@ -765,6 +784,8 @@ ApplicationWindow {
                                             Text { text: "Daily Bonus %"; color: mutedColor; font.pixelSize: 11 }
                                             SpinBox {
                                                 Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
                                                 from: 0
                                                 to: 1000
                                                 stepSize: 1
@@ -781,6 +802,8 @@ ApplicationWindow {
                                             Text { text: "Return Rate %"; color: mutedColor; font.pixelSize: 11 }
                                             SpinBox {
                                                 Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
                                                 from: 0
                                                 to: 1000
                                                 stepSize: 1
@@ -797,6 +820,8 @@ ApplicationWindow {
                                             Text { text: "Hideout Power %"; color: mutedColor; font.pixelSize: 11 }
                                             SpinBox {
                                                 Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
                                                 from: 0
                                                 to: 1000
                                                 stepSize: 1
@@ -856,8 +881,8 @@ ApplicationWindow {
 
                                     ListView {
                                         Layout.fillWidth: true
-                                        Layout.fillHeight: true
-                                        Layout.preferredHeight: 220
+                                        Layout.preferredHeight: 130
+                                        Layout.maximumHeight: 180
                                         clip: true
                                         model: marketSetupState.inputsModel
 
@@ -876,12 +901,16 @@ ApplicationWindow {
                                                 Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 100; elide: Text.ElideRight }
                                                 ComboBox {
                                                     Layout.preferredWidth: 95
+                                                    implicitHeight: compactControlHeight
+                                                    font.pixelSize: 11
                                                     model: ["sell_order", "buy_order", "average", "manual"]
                                                     currentIndex: Math.max(0, model.indexOf(priceType))
                                                     onActivated: marketSetupState.setInputPriceType(itemId, currentText)
                                                 }
                                                 TextField {
                                                     Layout.preferredWidth: 70
+                                                    implicitHeight: compactControlHeight
+                                                    font.pixelSize: 11
                                                     text: manualPrice > 0 ? String(manualPrice) : ""
                                                     placeholderText: "-"
                                                     enabled: priceType === "manual"
@@ -921,6 +950,8 @@ ApplicationWindow {
                                     Rectangle {
                                         Layout.fillWidth: true
                                         Layout.fillHeight: true
+                                        Layout.minimumHeight: 250
+                                        Layout.preferredHeight: 290
                                         radius: 4
                                         color: "transparent"
 
@@ -987,12 +1018,16 @@ ApplicationWindow {
                                                                 Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90; elide: Text.ElideRight }
                                                                 ComboBox {
                                                                     Layout.preferredWidth: 95
+                                                                    implicitHeight: compactControlHeight
+                                                                    font.pixelSize: 11
                                                                     model: ["buy_order", "sell_order", "average", "manual"]
                                                                     currentIndex: Math.max(0, model.indexOf(priceType))
                                                                     onActivated: marketSetupState.setOutputPriceType(itemId, currentText)
                                                                 }
                                                                 TextField {
                                                                     Layout.preferredWidth: 70
+                                                                    implicitHeight: compactControlHeight
+                                                                    font.pixelSize: 11
                                                                     text: manualPrice > 0 ? String(manualPrice) : ""
                                                                     placeholderText: "-"
                                                                     enabled: priceType === "manual"
@@ -1029,7 +1064,8 @@ ApplicationWindow {
                                             }
 
                                             Rectangle {
-                                                Layout.preferredWidth: 280
+                                                Layout.preferredWidth: 300
+                                                Layout.minimumWidth: 300
                                                 Layout.fillHeight: true
                                                 radius: 4
                                                 color: "#111b28"
