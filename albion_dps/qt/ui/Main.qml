@@ -15,6 +15,7 @@ ApplicationWindow {
     property color accentColor: "#4aa3ff"
     property color panelColor: "#131a22"
     property color borderColor: "#1f2a37"
+    property bool meterView: viewTabs.currentIndex === 0
 
     ColumnLayout {
         anchors.fill: parent
@@ -43,11 +44,14 @@ ApplicationWindow {
                         font.bold: true
                     }
                     Text {
-                        text: "Mode: " + uiState.mode + "  |  Zone: " + uiState.zone
+                        text: meterView
+                            ? "Mode: " + uiState.mode + "  |  Zone: " + uiState.zone
+                            : "Scanner status: " + scannerState.statusText + "  |  Updates: " + scannerState.updateText
                         color: mutedColor
                         font.pixelSize: 12
                     }
                     RowLayout {
+                        visible: meterView
                         spacing: 8
                         Button {
                             id: battleButton
@@ -173,6 +177,7 @@ ApplicationWindow {
                 }
 
                 ColumnLayout {
+                    visible: meterView
                     spacing: 4
                     Text {
                         text: uiState.timeText
@@ -193,13 +198,44 @@ ApplicationWindow {
         TabBar {
             id: viewTabs
             Layout.fillWidth: true
+            implicitHeight: 42
             background: Rectangle {
                 color: panelColor
                 radius: 6
                 border.color: borderColor
             }
-            TabButton { text: "Meter" }
-            TabButton { text: "Scanner" }
+            TabButton {
+                id: meterTab
+                text: "Meter"
+                background: Rectangle {
+                    radius: 5
+                    color: meterTab.checked ? accentColor : "#0f1620"
+                    border.color: meterTab.checked ? accentColor : borderColor
+                }
+                contentItem: Text {
+                    text: meterTab.text
+                    color: meterTab.checked ? "#0b0f14" : textColor
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.bold: true
+                }
+            }
+            TabButton {
+                id: scannerTab
+                text: "Scanner"
+                background: Rectangle {
+                    radius: 5
+                    color: scannerTab.checked ? accentColor : "#0f1620"
+                    border.color: scannerTab.checked ? accentColor : borderColor
+                }
+                contentItem: Text {
+                    text: scannerTab.text
+                    color: scannerTab.checked ? "#0b0f14" : textColor
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    font.bold: true
+                }
+            }
         }
 
         StackLayout {

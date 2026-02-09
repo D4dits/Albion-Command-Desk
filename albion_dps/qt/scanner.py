@@ -6,11 +6,15 @@ import threading
 from collections import deque
 from datetime import datetime
 from pathlib import Path
+import re
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
 
 
 DEFAULT_REPO_URL = "https://github.com/ao-data/albiondata-client.git"
+_ALBION_LOG_RE = re.compile(
+    r"^[A-Z]{4,5}\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^\]]*\]\s"
+)
 
 
 class ScannerState(QObject):
@@ -124,12 +128,14 @@ class ScannerState(QObject):
     def startScanner(self) -> None:
         with self._process_lock:
             if self._process is not None:
-                self._append_log("Scanner already running.")
+                self._append_warn("Scanner already running.")
                 return
 
         command = self._resolve_start_command()
         if command is None:
-            self._append_log("No scanner executable found. Sync repository first, then build tool.")
+            self._append_error(
+                "No scanner executable found. Sync repository first, then build tool."
+            )
             return
         command = self._build_runtime_command(command)
 
@@ -147,7 +153,7 @@ class ScannerState(QObject):
                 bufsize=1,
             )
         except Exception as exc:
-            self._append_log(f"Failed to start scanner: {exc}")
+            self._append_error(f"Failed to start scanner: {exc}")
             return
 
         with self._process_lock:
@@ -164,7 +170,7 @@ class ScannerState(QObject):
         with self._process_lock:
             process = self._process
         if process is None:
-            self._append_log("Scanner is not running.")
+            self._append_warn("Scanner is not running.")
             return
         self._append_log("Stopping scanner...")
         process.terminate()
@@ -183,7 +189,7 @@ class ScannerState(QObject):
 
     def _run_async(self, target, action_name: str) -> None:
         if not self._op_lock.acquire(blocking=False):
-            self._append_log("Another scanner operation is already running.")
+            self._append_warn("Another scanner operation is already running.")
             return
 
         self._append_log(f"Starting operation: {action_name}")
@@ -201,7 +207,7 @@ class ScannerState(QObject):
         if not git_path:
             self._statusSignal.emit("git not found")
             self._updateSignal.emit("unknown")
-            self._append_log("Git is not available in PATH.")
+            self._append_error("Git is not available in PATH.")
             return
 
         remote_head = self._git_remote_head()
@@ -214,7 +220,7 @@ class ScannerState(QObject):
         if local_head is None:
             self._statusSignal.emit("scanner repo missing")
             self._updateSignal.emit("not installed")
-            self._append_log("Local albiondata-client repository is not present.")
+            self._append_warn("Local albiondata-client repository is not present.")
             return
 
         short_local = local_head[:8]
@@ -232,7 +238,7 @@ class ScannerState(QObject):
         git_path = shutil.which("git")
         if not git_path:
             self._statusSignal.emit("git not found")
-            self._append_log("Git is not available in PATH.")
+            self._append_error("Git is not available in PATH.")
             return
 
         self._client_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -275,7 +281,7 @@ class ScannerState(QObject):
                 for line in process.stdout:
                     text = line.rstrip()
                     if text:
-                        self._logSignal.emit(text)
+                        self._logSignal.emit(self._normalize_external_line(text))
         finally:
             exit_code = process.wait()
             self._processExitSignal.emit(exit_code)
@@ -289,7 +295,7 @@ class ScannerState(QObject):
             self._append_log("Scanner exited normally.")
         else:
             self._statusSignal.emit(f"scanner exited ({code})")
-            self._append_log(f"Scanner exited with code {code}.")
+            self._append_error(f"Scanner exited with code {code}.")
 
     def _resolve_start_command(self) -> list[str] | None:
         binary_name = "albiondata-client.exe" if _is_windows() else "albiondata-client"
@@ -357,30 +363,51 @@ class ScannerState(QObject):
                 check=False,
             )
         except Exception as exc:
-            self._append_log(f"Command failed: {' '.join(command)}")
-            self._append_log(str(exc))
+            self._append_error(f"Command failed: {' '.join(command)}")
+            self._append_error(str(exc))
             return None
 
         stdout = (result.stdout or "").strip()
         stderr = (result.stderr or "").strip()
         if stdout:
-            self._append_log(stdout)
+            for line in stdout.splitlines():
+                self._append_log(line)
         if stderr:
-            self._append_log(stderr)
+            for line in stderr.splitlines():
+                self._append_warn(line)
         if result.returncode != 0:
-            self._append_log(
+            self._append_error(
                 f"Command exited with code {result.returncode}: {' '.join(command)}"
             )
             return None
         return stdout
 
     def _append_log(self, message: str) -> None:
-        self._logSignal.emit(message)
+        self._logSignal.emit(self._format_line("INFO", message))
+
+    def _append_warn(self, message: str) -> None:
+        self._logSignal.emit(self._format_line("WARN", message))
+
+    def _append_error(self, message: str) -> None:
+        self._logSignal.emit(self._format_line("ERROR", message))
 
     def _append_log_line(self, message: str) -> None:
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        self._log_lines.append(f"[{timestamp}] {message}")
+        self._log_lines.append(message)
         self.logChanged.emit()
+
+    def _normalize_external_line(self, message: str) -> str:
+        if self._looks_like_external_log(message):
+            return message
+        return self._format_line("INFO", message)
+
+    def _format_line(self, level: str, message: str) -> str:
+        if self._looks_like_external_log(message):
+            return message
+        timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
+        return f"{level}[{timestamp}] {message}"
+
+    def _looks_like_external_log(self, line: str) -> bool:
+        return bool(_ALBION_LOG_RE.match(line))
 
     def _set_status_text(self, text: str) -> None:
         if text == self._status_text:
