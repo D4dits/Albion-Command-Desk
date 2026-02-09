@@ -43,7 +43,6 @@ FALLBACK_PALETTE = [
 ]
 FALLBACK_COLOR = "#9aa4af"
 
-HISTORY_MAX_PLAYERS = 5
 HISTORY_LABEL_LIMIT = 14
 
 
@@ -65,9 +64,10 @@ class PlayerRow:
 @dataclass(frozen=True)
 class HistoryRow:
     label: str
-    totals: str
+    meta: str
     players: str
     copy_text: str
+    selected: bool
 
 
 class PlayerModel(QAbstractListModel):
@@ -144,9 +144,10 @@ class PlayerModel(QAbstractListModel):
 
 class HistoryModel(QAbstractListModel):
     LabelRole = Qt.UserRole + 1
-    TotalsRole = Qt.UserRole + 2
+    MetaRole = Qt.UserRole + 2
     PlayersRole = Qt.UserRole + 3
     CopyRole = Qt.UserRole + 4
+    SelectedRole = Qt.UserRole + 5
 
     def __init__(self) -> None:
         super().__init__()
@@ -164,20 +165,23 @@ class HistoryModel(QAbstractListModel):
         item = self._items[row]
         if role == self.LabelRole:
             return item.label
-        if role == self.TotalsRole:
-            return item.totals
+        if role == self.MetaRole:
+            return item.meta
         if role == self.PlayersRole:
             return item.players
         if role == self.CopyRole:
             return item.copy_text
+        if role == self.SelectedRole:
+            return item.selected
         return None
 
     def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
         return {
             self.LabelRole: b"label",
-            self.TotalsRole: b"totals",
+            self.MetaRole: b"meta",
             self.PlayersRole: b"players",
             self.CopyRole: b"copyText",
+            self.SelectedRole: b"selected",
         }
 
     def set_items(self, items: list[HistoryRow]) -> None:
@@ -197,6 +201,7 @@ class UiState(QObject):
     timeChanged = Signal()
     fameChanged = Signal()
     sortChanged = Signal()
+    historySelectionChanged = Signal()
 
     def __init__(
         self,
@@ -225,6 +230,8 @@ class UiState(QObject):
         self._last_history: list[SessionSummary] = []
         self._role_lookup = role_lookup
         self._weapon_lookup = weapon_lookup
+        self._selected_history_index = -1
+        self._selected_history_key: tuple[Any, ...] | None = None
 
     @Property(str, notify=modeChanged)
     def mode(self) -> str:
@@ -262,6 +269,10 @@ class UiState(QObject):
     def historyLimit(self) -> int:
         return self._history_limit
 
+    @Property(int, notify=historySelectionChanged)
+    def selectedHistoryIndex(self) -> int:
+        return self._selected_history_index
+
     @Slot(str)
     def setSortKey(self, key: str) -> None:
         if key not in SORT_KEY_MAP:
@@ -270,17 +281,7 @@ class UiState(QObject):
             return
         self._sort_key = key
         self.sortChanged.emit()
-        if self._last_snapshot is not None:
-            self._players.set_items(
-                _build_player_rows(
-                    self._last_snapshot.totals,
-                    names=self._last_names,
-                    sort_key=self._sort_key,
-                    top_n=self._top_n,
-                    role_lookup=self._role_lookup,
-                    weapon_lookup=self._weapon_lookup,
-                )
-            )
+        self._refresh_player_table()
 
     @Slot(str)
     def setMode(self, mode: str) -> None:
@@ -301,6 +302,28 @@ class UiState(QObject):
         if clipboard:
             clipboard.setText(text)
 
+    @Slot(int)
+    def selectHistory(self, index: int) -> None:
+        if index < 0 or index >= len(self._last_history):
+            return
+        if index == self._selected_history_index:
+            self.clearHistorySelection()
+            return
+        summary = self._last_history[index]
+        self._selected_history_key = _summary_key(summary)
+        self._set_selected_history_index(index)
+        self._refresh_player_table()
+        self._refresh_history_table()
+
+    @Slot()
+    def clearHistorySelection(self) -> None:
+        if self._selected_history_index < 0 and self._selected_history_key is None:
+            return
+        self._selected_history_key = None
+        self._set_selected_history_index(-1)
+        self._refresh_player_table()
+        self._refresh_history_table()
+
     def update(
         self,
         snapshot,
@@ -319,19 +342,9 @@ class UiState(QObject):
         self._set_zone(zone or "-")
         self._set_time(snapshot.timestamp)
         self._set_fame(fame_total, fame_per_hour)
-        self._players.set_items(
-            _build_player_rows(
-                snapshot.totals,
-                names=names,
-                sort_key=self._sort_key,
-                top_n=self._top_n,
-                role_lookup=self._role_lookup,
-                weapon_lookup=self._weapon_lookup,
-            )
-        )
-        self._history.set_items(
-            _build_history_rows(history, names=names, limit=self._history_limit)
-        )
+        self._sync_selected_history_index()
+        self._refresh_player_table()
+        self._refresh_history_table()
 
     def _set_mode(self, mode: str) -> None:
         if mode != self._mode:
@@ -357,6 +370,77 @@ class UiState(QObject):
             self._fame_per_hour_text = per_hour_text
             self.fameChanged.emit()
 
+    def _set_selected_history_index(self, index: int) -> None:
+        if index == self._selected_history_index:
+            return
+        self._selected_history_index = index
+        self.historySelectionChanged.emit()
+
+    def _sync_selected_history_index(self) -> None:
+        if self._selected_history_key is None:
+            self._set_selected_history_index(-1)
+            return
+        for idx, summary in enumerate(self._last_history):
+            if _summary_key(summary) == self._selected_history_key:
+                self._set_selected_history_index(idx)
+                return
+        self._selected_history_key = None
+        self._set_selected_history_index(-1)
+
+    def _refresh_player_table(self) -> None:
+        if self._selected_history_index >= 0 and self._selected_history_index < len(self._last_history):
+            summary = self._last_history[self._selected_history_index]
+            if summary.totals_by_id:
+                label_overrides = {
+                    int(entry.source_id): entry.label
+                    for entry in summary.entries
+                    if entry.source_id is not None and entry.label
+                }
+                self._players.set_items(
+                    _build_player_rows(
+                        summary.totals_by_id,
+                        names=self._last_names,
+                        sort_key=self._sort_key,
+                        top_n=self._top_n,
+                        role_lookup=self._role_lookup,
+                        weapon_lookup=self._weapon_lookup,
+                        label_overrides=label_overrides,
+                    )
+                )
+                return
+            self._players.set_items(
+                _build_player_rows_from_entries(
+                    summary.entries,
+                    sort_key=self._sort_key,
+                    top_n=self._top_n,
+                    names=self._last_names,
+                )
+            )
+            return
+        if self._last_snapshot is None:
+            self._players.set_items([])
+            return
+        self._players.set_items(
+            _build_player_rows(
+                self._last_snapshot.totals,
+                names=self._last_names,
+                sort_key=self._sort_key,
+                top_n=self._top_n,
+                role_lookup=self._role_lookup,
+                weapon_lookup=self._weapon_lookup,
+            )
+        )
+
+    def _refresh_history_table(self) -> None:
+        self._history.set_items(
+            _build_history_rows(
+                self._last_history,
+                names=self._last_names,
+                limit=self._history_limit,
+                selected_index=self._selected_history_index,
+            )
+        )
+
 
 def _build_player_rows(
     totals: dict[int, dict[str, float]],
@@ -366,13 +450,18 @@ def _build_player_rows(
     top_n: int,
     role_lookup: Callable[[int], str | None] | None = None,
     weapon_lookup: Callable[[int], object | None] | None = None,
+    label_overrides: dict[int, str] | None = None,
 ) -> list[PlayerRow]:
     rows: list[PlayerRow] = []
     metric = SORT_KEY_MAP.get(sort_key, "dps")
     max_damage = max((stats.get("damage", 0.0) for stats in totals.values()), default=0.0)
     max_heal = max((stats.get("heal", 0.0) for stats in totals.values()), default=0.0)
     for source_id, stats in totals.items():
-        label = names.get(source_id) or str(source_id)
+        label = (
+            (label_overrides or {}).get(source_id)
+            or names.get(source_id)
+            or str(source_id)
+        )
         damage = float(stats.get("damage", 0.0))
         heal = float(stats.get("heal", 0.0))
         dps = float(stats.get("dps", 0.0))
@@ -473,22 +562,25 @@ def _build_history_rows(
     *,
     names: dict[int, str],
     limit: int,
+    selected_index: int = -1,
 ) -> list[HistoryRow]:
     rows: list[HistoryRow] = []
-    for summary in history[: max(limit, 1)]:
+    for index, summary in enumerate(history[: max(limit, 1)]):
         label = summary.mode
         if summary.mode == "zone" and summary.label:
             label = f"zone {summary.label}"
         duration = _format_duration(summary.duration)
         totals = _format_totals(summary.total_damage, summary.total_heal)
-        players = _format_players(summary.entries, names=names, max_players=3)
+        players_count = len(summary.entries)
+        players = _format_players_preview(summary.entries, names=names, max_players=3)
         copy_text = _format_history_copy(summary, names=names)
         rows.append(
             HistoryRow(
                 label=f"{label} {duration}",
-                totals=totals,
+                meta=f"{totals} | players {players_count}",
                 players=players,
                 copy_text=copy_text,
+                selected=index == selected_index,
             )
         )
     return rows
@@ -506,7 +598,7 @@ def _format_totals(total_damage: float, total_heal: float) -> str:
     return f"total dmg {_format_int(total_damage)} heal {_format_int(total_heal)}"
 
 
-def _format_players(
+def _format_players_preview(
     entries: list[SessionEntry],
     *,
     names: dict[int, str],
@@ -529,10 +621,14 @@ def _format_history_copy(summary: SessionSummary, *, names: dict[int, str]) -> s
         label = f"zone {summary.label}"
     duration = _format_duration(summary.duration)
     totals = _format_totals(summary.total_damage, summary.total_heal)
-    players_text = _format_players(
-        summary.entries, names=names, max_players=HISTORY_MAX_PLAYERS
-    )
-    return f"{label} {duration} | {totals} | {players_text}"
+    header = f"{label} {duration} | {totals} | players {len(summary.entries)}"
+    lines = [header]
+    for idx, entry in enumerate(summary.entries, start=1):
+        resolved = _resolve_label(entry.label, names)
+        lines.append(
+            f"{idx:02d}. {resolved} | dmg {_format_int(entry.damage)} | heal {_format_int(entry.heal)} | dps {entry.dps:.1f} | hps {entry.hps:.1f}"
+        )
+    return "\n".join(lines)
 
 
 def _format_int(value: float) -> int:
@@ -553,3 +649,69 @@ def _shorten_label(label: str, limit: int = HISTORY_LABEL_LIMIT) -> str:
     if limit <= 3:
         return label[:limit]
     return f"{label[: limit - 3]}..."
+
+
+def _build_player_rows_from_entries(
+    entries: list[SessionEntry],
+    *,
+    sort_key: str,
+    top_n: int,
+    names: dict[int, str],
+) -> list[PlayerRow]:
+    metric = SORT_KEY_MAP.get(sort_key, "dps")
+    max_damage = max((entry.damage for entry in entries), default=0.0)
+    max_heal = max((entry.heal for entry in entries), default=0.0)
+    rows: list[PlayerRow] = []
+    for entry in entries:
+        label = _resolve_label(entry.label, names)
+        role = _infer_role(entry.damage, entry.heal, max_damage=max_damage, max_heal=max_heal) or ""
+        rows.append(
+            PlayerRow(
+                name=label,
+                damage=entry.damage,
+                heal=entry.heal,
+                dps=entry.dps,
+                hps=entry.hps,
+                bar_ratio=0.0,
+                role=role,
+                color=_color_for_label(label, role),
+                weapon_name="",
+                weapon_tier="",
+                weapon_icon="",
+            )
+        )
+    rows.sort(key=lambda item: _metric_value(item, metric), reverse=True)
+    rows = rows[: max(top_n, 1)]
+    max_value = max((_metric_value(item, metric) for item in rows), default=0.0)
+    if max_value <= 0:
+        return rows
+    out: list[PlayerRow] = []
+    for item in rows:
+        ratio = _metric_value(item, metric) / max_value if max_value else 0.0
+        out.append(
+            PlayerRow(
+                name=item.name,
+                damage=item.damage,
+                heal=item.heal,
+                dps=item.dps,
+                hps=item.hps,
+                bar_ratio=ratio,
+                role=item.role,
+                color=item.color,
+                weapon_name=item.weapon_name,
+                weapon_tier=item.weapon_tier,
+                weapon_icon=item.weapon_icon,
+            )
+        )
+    return out
+
+
+def _summary_key(summary: SessionSummary) -> tuple[Any, ...]:
+    return (
+        summary.mode,
+        round(summary.start_ts, 3),
+        round(summary.end_ts, 3),
+        round(summary.duration, 3),
+        summary.label or "",
+        summary.reason,
+    )

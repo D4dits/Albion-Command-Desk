@@ -20,6 +20,7 @@ class SessionEntry:
     heal: float
     dps: float
     hps: float
+    source_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class SessionSummary:
     total_damage: float
     total_heal: float
     reason: str
+    totals_by_id: dict[int, dict[str, float]] = field(default_factory=dict)
 
 
 @dataclass
@@ -279,6 +281,36 @@ class SessionMeter:
                 or event.timestamp > (summary.end_ts + COMBAT_END_GRACE_SECONDS)
             ):
                 continue
+            if summary.totals_by_id:
+                totals_by_id = _clone_totals(summary.totals_by_id)
+                stats = totals_by_id.setdefault(
+                    event.source_id,
+                    {"damage": 0.0, "heal": 0.0, "dps": 0.0, "hps": 0.0},
+                )
+                if event.kind == "damage":
+                    stats["damage"] = float(stats.get("damage", 0.0)) + event.amount
+                else:
+                    stats["heal"] = float(stats.get("heal", 0.0)) + event.amount
+                entries = _build_entries_from_totals_by_id(
+                    totals_by_id,
+                    summary.duration,
+                    self.name_lookup,
+                )
+                total_damage = sum(entry.damage for entry in entries)
+                total_heal = sum(entry.heal for entry in entries)
+                history[idx] = SessionSummary(
+                    mode=summary.mode,
+                    start_ts=summary.start_ts,
+                    end_ts=summary.end_ts,
+                    duration=summary.duration,
+                    label=summary.label,
+                    entries=entries,
+                    total_damage=total_damage,
+                    total_heal=total_heal,
+                    reason=summary.reason,
+                    totals_by_id=totals_by_id,
+                )
+                return True
             grouped: dict[str, tuple[float, float]] = {
                 entry.label: (entry.damage, entry.heal) for entry in summary.entries
             }
@@ -301,6 +333,7 @@ class SessionMeter:
                 total_damage=total_damage,
                 total_heal=total_heal,
                 reason=summary.reason,
+                totals_by_id=summary.totals_by_id,
             )
             return True
         return False
@@ -314,6 +347,30 @@ class SessionMeter:
         changed = False
         for idx in range(len(history)):
             summary = history[idx]
+            if summary.totals_by_id:
+                old_labels = [entry.label for entry in summary.entries]
+                entries = _build_entries_from_totals_by_id(
+                    summary.totals_by_id,
+                    summary.duration,
+                    self.name_lookup,
+                )
+                total_damage = sum(entry.damage for entry in entries)
+                total_heal = sum(entry.heal for entry in entries)
+                if [entry.label for entry in entries] != old_labels:
+                    changed = True
+                history[idx] = SessionSummary(
+                    mode=summary.mode,
+                    start_ts=summary.start_ts,
+                    end_ts=summary.end_ts,
+                    duration=summary.duration,
+                    label=summary.label,
+                    entries=entries,
+                    total_damage=total_damage,
+                    total_heal=total_heal,
+                    reason=summary.reason,
+                    totals_by_id=summary.totals_by_id,
+                )
+                continue
             grouped: dict[str, tuple[float, float]] = {}
             changed_local = False
             for entry in summary.entries:
@@ -342,6 +399,7 @@ class SessionMeter:
                 total_damage=total_damage,
                 total_heal=total_heal,
                 reason=summary.reason,
+                totals_by_id=summary.totals_by_id,
             )
         return changed
 
@@ -374,6 +432,7 @@ class SessionMeter:
         duration = max(end_ts - start_ts, 0.0)
         snapshot = self._meter.snapshot(now=end_ts)
         entries = _build_entries(snapshot, duration, self.name_lookup)
+        totals_by_id = _clone_totals(snapshot.totals)
         if not entries:
             self._meter = RollingMeter(window_seconds=self.window_seconds, session_timeout_seconds=None)
             self._session_start = None
@@ -394,6 +453,7 @@ class SessionMeter:
             total_damage=total_damage,
             total_heal=total_heal,
             reason=reason,
+            totals_by_id=totals_by_id,
         )
         history = self._history.setdefault(self.mode, deque(maxlen=self.history_limit))
         if self.mode == "battle" and history:
@@ -442,17 +502,7 @@ def _build_entries(
     duration: float,
     name_lookup: Callable[[int], str | None] | None,
 ) -> list[SessionEntry]:
-    grouped: dict[str, tuple[float, float]] = {}
-    for source_id, stats in snapshot.totals.items():
-        damage = float(stats.get("damage", 0.0))
-        heal = float(stats.get("heal", 0.0))
-        label = name_lookup(source_id) if name_lookup else None
-        if not label:
-            label = str(source_id)
-        current_damage, current_heal = grouped.get(label, (0.0, 0.0))
-        grouped[label] = (current_damage + damage, current_heal + heal)
-
-    return _build_entries_from_grouped(grouped, duration)
+    return _build_entries_from_totals_by_id(snapshot.totals, duration, name_lookup)
 
 
 def _build_entries_from_grouped(
@@ -473,10 +523,55 @@ def _build_entries_from_grouped(
                 heal=heal,
                 dps=dps,
                 hps=hps,
+                source_id=None,
             )
         )
     entries.sort(key=lambda item: item.damage, reverse=True)
     return entries
+
+
+def _build_entries_from_totals_by_id(
+    totals: dict[int, dict[str, float]],
+    duration: float,
+    name_lookup: Callable[[int], str | None] | None,
+) -> list[SessionEntry]:
+    entries: list[SessionEntry] = []
+    for source_id, stats in totals.items():
+        damage = float(stats.get("damage", 0.0))
+        heal = float(stats.get("heal", 0.0))
+        if duration > 0:
+            dps = damage / duration
+            hps = heal / duration
+        else:
+            dps = 0.0
+            hps = 0.0
+        label = name_lookup(source_id) if name_lookup else None
+        if not label:
+            label = str(source_id)
+        entries.append(
+            SessionEntry(
+                label=label,
+                damage=damage,
+                heal=heal,
+                dps=dps,
+                hps=hps,
+                source_id=source_id,
+            )
+        )
+    entries.sort(key=lambda item: item.damage, reverse=True)
+    return entries
+
+
+def _clone_totals(totals: dict[int, dict[str, float]]) -> dict[int, dict[str, float]]:
+    cloned: dict[int, dict[str, float]] = {}
+    for source_id, stats in totals.items():
+        cloned[source_id] = {
+            "damage": float(stats.get("damage", 0.0)),
+            "heal": float(stats.get("heal", 0.0)),
+            "dps": float(stats.get("dps", 0.0)),
+            "hps": float(stats.get("hps", 0.0)),
+        }
+    return cloned
 
 
 def _infer_zone_key(packet: RawPacket) -> str | None:

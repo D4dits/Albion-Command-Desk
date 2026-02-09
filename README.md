@@ -192,6 +192,17 @@ Qt keys:
 - `b` battle mode, `z` zone mode, `m` manual mode
 - `1` dps sort, `2` dmg sort, `3` hps sort, `4` heal sort
 
+Qt tabs:
+- `Meter`: live/replay DPS meter with selectable history snapshots.
+- `Scanner`: optional AlbionData client helper tab with:
+  - `Check updates` (compare local clone vs GitHub HEAD)
+  - `Sync repo` (clone/pull `ao-data/albiondata-client`)
+  - `Start scanner` / `Stop scanner` (runs local binary or `go run .`)
+  - live log output
+
+Scanner local path:
+- `artifacts/albiondata-client`
+
 ## Weapon-based role colors (optional)
 Role colors can be driven by equipped weapon instead of pure damage/heal heuristics.
 Provide item databases locally (not committed):

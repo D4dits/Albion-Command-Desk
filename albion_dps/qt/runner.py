@@ -40,6 +40,7 @@ def run_qt(args: argparse.Namespace) -> int:
         return 1
 
     from albion_dps.qt.models import UiState
+    from albion_dps.qt.scanner import ScannerState
 
     names, party, fame, meter, decoder, mapper = _build_runtime(args)
     ensure_game_databases(logger=logging.getLogger(__name__), interactive=True)
@@ -93,7 +94,9 @@ def run_qt(args: argparse.Namespace) -> int:
         role_lookup=role_lookup,
         weapon_lookup=weapon_lookup,
     )
+    scanner_state = ScannerState()
     engine.rootContext().setContextProperty("uiState", state)
+    engine.rootContext().setContextProperty("scannerState", scanner_state)
     engine.load(str(qml_path))
     if not engine.rootObjects():
         logging.getLogger(__name__).error(
@@ -115,6 +118,7 @@ def run_qt(args: argparse.Namespace) -> int:
     timer.setInterval(100)
     timer.timeout.connect(drain_queue)
     timer.start()
+    app.aboutToQuit.connect(scanner_state.shutdown)
     app.aboutToQuit.connect(stop_event.set)
     app.exec()
     return 0

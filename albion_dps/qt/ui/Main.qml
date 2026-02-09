@@ -190,122 +190,229 @@ ApplicationWindow {
             }
         }
 
-        RowLayout {
+        TabBar {
+            id: viewTabs
+            Layout.fillWidth: true
+            background: Rectangle {
+                color: panelColor
+                radius: 6
+                border.color: borderColor
+            }
+            TabButton { text: "Meter" }
+            TabButton { text: "Scanner" }
+        }
+
+        StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 12
+            currentIndex: viewTabs.currentIndex
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                color: panelColor
-                radius: 8
-                border.color: borderColor
-
-                ColumnLayout {
+            Item {
+                RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
-
-                    Text {
-                        text: "Scoreboard (sorted by " + uiState.sortKey + ")"
-                        color: textColor
-                        font.pixelSize: 14
-                        font.bold: true
-                    }
+                    spacing: 12
 
                     Rectangle {
                         Layout.fillWidth: true
-                        height: 26
-                        color: "#0f1620"
-                        radius: 4
+                        Layout.fillHeight: true
+                        color: panelColor
+                        radius: 8
+                        border.color: borderColor
 
-                        RowLayout {
+                        ColumnLayout {
                             anchors.fill: parent
-                            anchors.margins: 6
-                            spacing: 12
+                            anchors.margins: 12
+                            spacing: 8
 
-                            Text { text: "Name"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 140 }
-                            Text { text: "Weapon"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
-                            Text { text: "DMG"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                            Text { text: "HEAL"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                            Text { text: "DPS"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                            Text { text: "HPS"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                            Text { text: "BAR"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                            Text {
+                                text: uiState.selectedHistoryIndex >= 0
+                                    ? "Scoreboard (history #" + (uiState.selectedHistoryIndex + 1) + ", sorted by " + uiState.sortKey + ")"
+                                    : "Scoreboard (live, sorted by " + uiState.sortKey + ")"
+                                color: textColor
+                                font.pixelSize: 14
+                                font.bold: true
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 26
+                                color: "#0f1620"
+                                radius: 4
+
+                                RowLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 6
+                                    spacing: 12
+
+                                    Text { text: "Name"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 140 }
+                                    Text { text: "Weapon"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                    Text { text: "DMG"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "HEAL"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "DPS"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "HPS"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "BAR"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                }
+                            }
+
+                            ListView {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+                                model: uiState.playersModel
+                                delegate: Rectangle {
+                                    width: ListView.view.width
+                                    height: 34
+                                    color: "transparent"
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 4
+                                        spacing: 12
+
+                                        Text {
+                                            text: name
+                                            color: "#e6edf3"
+                                            font.pixelSize: 12
+                                            elide: Text.ElideRight
+                                            Layout.preferredWidth: 140
+                                        }
+                                        Item {
+                                            Layout.preferredWidth: 90
+                                            height: 24
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                spacing: 4
+                                                Image {
+                                                    source: weaponIcon
+                                                    width: 20
+                                                    height: 20
+                                                    Layout.preferredWidth: 20
+                                                    Layout.preferredHeight: 20
+                                                    sourceSize.width: 20
+                                                    sourceSize.height: 20
+                                                    fillMode: Image.PreserveAspectFit
+                                                    visible: weaponIcon && weaponIcon.length > 0
+                                                }
+                                                Text {
+                                                    text: weaponTier && weaponTier.length > 0 ? weaponTier : "-"
+                                                    color: mutedColor
+                                                    font.pixelSize: 11
+                                                    elide: Text.ElideRight
+                                                }
+                                            }
+                                            ToolTip.visible: weaponHover.containsMouse && weaponName && weaponName.length > 0
+                                            ToolTip.text: weaponName
+                                            MouseArea {
+                                                id: weaponHover
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                            }
+                                        }
+                                        Text { text: damage; color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                                        Text { text: heal; color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                                        Text { text: dps.toFixed(1); color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                                        Text { text: hps.toFixed(1); color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
+
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 10
+                                            radius: 4
+                                            color: "#0f1620"
+                                            border.color: "#1f2a37"
+                                            Rectangle {
+                                                height: parent.height
+                                                width: Math.max(4, parent.width * barRatio)
+                                                radius: 4
+                                                color: barColor
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
 
-                    ListView {
-                        Layout.fillWidth: true
+                    Rectangle {
+                        Layout.preferredWidth: 360
                         Layout.fillHeight: true
-                        clip: true
-                        model: uiState.playersModel
-                        delegate: Rectangle {
-                            width: ListView.view.width
-                            height: 34
-                            color: "transparent"
+                        color: panelColor
+                        radius: 8
+                        border.color: borderColor
 
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.margins: 4
-                                spacing: 12
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 8
 
-                                Text {
-                                    text: name
-                                    color: "#e6edf3"
-                                    font.pixelSize: 12
-                                    elide: Text.ElideRight
-                                    Layout.preferredWidth: 140
-                                }
-                                Item {
-                                    Layout.preferredWidth: 90
-                                    height: 24
-                                    RowLayout {
+                            Text {
+                                text: "History"
+                                color: textColor
+                                font.pixelSize: 14
+                                font.bold: true
+                            }
+
+                            Button {
+                                visible: uiState.selectedHistoryIndex >= 0
+                                text: "Back to live"
+                                onClicked: uiState.clearHistorySelection()
+                            }
+
+                            ListView {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+                                model: uiState.historyModel
+                                delegate: Rectangle {
+                                    width: ListView.view.width
+                                    height: 92
+                                    radius: 6
+                                    color: selected ? "#162231" : "#0f1620"
+                                    border.color: selected ? "#4aa3ff" : "#1f2a37"
+                                    border.width: 1
+                                    TapHandler {
+                                        onTapped: uiState.selectHistory(index)
+                                    }
+
+                                    ColumnLayout {
                                         anchors.fill: parent
+                                        anchors.margins: 8
                                         spacing: 4
-                                        Image {
-                                            source: weaponIcon
-                                            width: 20
-                                            height: 20
-                                            Layout.preferredWidth: 20
-                                            Layout.preferredHeight: 20
-                                            sourceSize.width: 20
-                                            sourceSize.height: 20
-                                            fillMode: Image.PreserveAspectFit
-                                            visible: weaponIcon && weaponIcon.length > 0
+
+                                        RowLayout {
+                                            Layout.fillWidth: true
+                                            Text { text: label; color: textColor; font.pixelSize: 12; font.bold: true }
+                                            Item { Layout.fillWidth: true }
+                                            Button {
+                                                text: "Copy full"
+                                                onClicked: uiState.copyHistory(index)
+                                            }
                                         }
+                                        Text { text: meta; color: mutedColor; font.pixelSize: 11 }
                                         Text {
-                                            text: weaponTier && weaponTier.length > 0 ? weaponTier : "-"
-                                            color: mutedColor
+                                            text: players
+                                            color: textColor
                                             font.pixelSize: 11
+                                            wrapMode: Text.NoWrap
                                             elide: Text.ElideRight
                                         }
                                     }
-                                    ToolTip.visible: weaponHover.containsMouse && weaponName && weaponName.length > 0
-                                    ToolTip.text: weaponName
-                                    MouseArea {
-                                        id: weaponHover
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                    }
                                 }
-                                Text { text: damage; color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
-                                Text { text: heal; color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
-                                Text { text: dps.toFixed(1); color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
-                                Text { text: hps.toFixed(1); color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                            }
 
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    height: 10
-                                    radius: 4
-                                    color: "#0f1620"
-                                    border.color: "#1f2a37"
-                                    Rectangle {
-                                        height: parent.height
-                                        width: Math.max(4, parent.width * barRatio)
-                                        radius: 4
-                                        color: barColor
-                                    }
+                            Rectangle {
+                                Layout.fillWidth: true
+                                height: 120
+                                radius: 6
+                                color: "#0f1620"
+                                border.color: "#1f2a37"
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+                                    spacing: 4
+                                    Text { text: "Legend"; color: textColor; font.pixelSize: 12; font.bold: true }
+                                    Text { text: "q: quit  |  b/z/m: mode  |  1-4: sort"; color: mutedColor; font.pixelSize: 11 }
+                                    Text { text: "space: manual start/stop  |  n: archive  |  r: fame reset"; color: mutedColor; font.pixelSize: 11 }
+                                    Text { text: "1-9: copy history entry"; color: mutedColor; font.pixelSize: 11 }
                                 }
                             }
                         }
@@ -313,77 +420,82 @@ ApplicationWindow {
                 }
             }
 
-            Rectangle {
-                Layout.preferredWidth: 360
-                Layout.fillHeight: true
-                color: panelColor
-                radius: 8
-                border.color: borderColor
-
-                ColumnLayout {
+            Item {
+                Rectangle {
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 8
+                    color: panelColor
+                    radius: 8
+                    border.color: borderColor
 
-                    Text {
-                        text: "History"
-                        color: textColor
-                        font.pixelSize: 14
-                        font.bold: true
-                    }
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 12
+                        spacing: 8
 
-                    ListView {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        clip: true
-                        model: uiState.historyModel
-                        delegate: Rectangle {
-                            width: ListView.view.width
-                            height: 86
+                        Text {
+                            text: "AlbionData Scanner"
+                            color: textColor
+                            font.pixelSize: 14
+                            font.bold: true
+                        }
+                        Text {
+                            text: "Status: " + scannerState.statusText + "  |  Updates: " + scannerState.updateText
+                            color: mutedColor
+                            font.pixelSize: 11
+                        }
+                        Text {
+                            text: "Local repo: " + scannerState.clientDir
+                            color: mutedColor
+                            font.pixelSize: 11
+                            elide: Text.ElideRight
+                        }
+
+                        RowLayout {
+                            spacing: 8
+                            Button {
+                                text: "Check updates"
+                                onClicked: scannerState.checkForUpdates()
+                            }
+                            Button {
+                                text: "Sync repo"
+                                onClicked: scannerState.syncClientRepo()
+                            }
+                            Button {
+                                text: "Start scanner"
+                                enabled: !scannerState.running
+                                onClicked: scannerState.startScanner()
+                            }
+                            Button {
+                                text: "Stop scanner"
+                                enabled: scannerState.running
+                                onClicked: scannerState.stopScanner()
+                            }
+                            Button {
+                                text: "Clear log"
+                                onClicked: scannerState.clearLog()
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
                             radius: 6
                             color: "#0f1620"
                             border.color: "#1f2a37"
-                            border.width: 1
 
-                            ColumnLayout {
+                            ScrollView {
                                 anchors.fill: parent
                                 anchors.margins: 8
-                                spacing: 4
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Text { text: label; color: textColor; font.pixelSize: 12; font.bold: true }
-                                    Item { Layout.fillWidth: true }
-                                    Button {
-                                        text: "Copy"
-                                        onClicked: uiState.copyHistory(index)
-                                    }
-                                }
-                                Text { text: totals; color: mutedColor; font.pixelSize: 11 }
-                                Text {
-                                    text: players
+                                TextArea {
+                                    text: scannerState.logText
+                                    readOnly: true
+                                    wrapMode: Text.NoWrap
                                     color: textColor
+                                    font.family: "Consolas"
                                     font.pixelSize: 11
-                                    wrapMode: Text.WordWrap
+                                    selectByMouse: true
                                 }
                             }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 120
-                        radius: 6
-                        color: "#0f1620"
-                        border.color: "#1f2a37"
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 8
-                            spacing: 4
-                            Text { text: "Legend"; color: textColor; font.pixelSize: 12; font.bold: true }
-                            Text { text: "q: quit  |  b/z/m: mode  |  1-4: sort"; color: mutedColor; font.pixelSize: 11 }
-                            Text { text: "space: manual start/stop  |  n: archive  |  r: fame reset"; color: mutedColor; font.pixelSize: 11 }
-                            Text { text: "1-9: copy history entry"; color: mutedColor; font.pixelSize: 11 }
                         }
                     }
                 }

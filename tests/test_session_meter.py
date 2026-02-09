@@ -114,7 +114,6 @@ def test_combat_state_ignored_until_source_seen() -> None:
 
     assert meter.history() == []
 
-
 def test_battle_mode_merges_short_gaps() -> None:
     meter = SessionMeter(battle_timeout_seconds=1.0, history_limit=5, mode="battle")
 
@@ -128,3 +127,18 @@ def test_battle_mode_merges_short_gaps() -> None:
     history = meter.history()
     assert len(history) == 1
     assert history[0].total_damage == 15.0
+
+
+def test_history_preserves_source_ids_for_replay_view() -> None:
+    meter = SessionMeter(history_limit=5, mode="battle")
+    meter.push(CombatEvent(0.0, 111, 2, 100, "damage"))
+    meter.push(CombatEvent(0.5, 222, 2, 40, "damage"))
+    meter.observe_packet(_packet(30.0))
+
+    history = meter.history()
+    assert len(history) == 1
+    summary = history[0]
+    assert 111 in summary.totals_by_id
+    assert 222 in summary.totals_by_id
+    assert any(entry.source_id == 111 for entry in summary.entries)
+    assert any(entry.source_id == 222 for entry in summary.entries)
