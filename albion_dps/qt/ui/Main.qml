@@ -74,15 +74,16 @@ ApplicationWindow {
         TabBar {
             id: viewTabs
             Layout.fillWidth: true
-            implicitHeight: 42
+            implicitHeight: 34
+            padding: 0
             background: Rectangle {
-                color: panelColor
-                radius: 6
-                border.color: borderColor
+                color: "transparent"
+                border.width: 0
             }
             TabButton {
                 id: meterTab
                 text: "Meter"
+                height: viewTabs.height
                 background: Rectangle {
                     radius: 5
                     color: meterTab.checked ? accentColor : "#0f1620"
@@ -99,6 +100,7 @@ ApplicationWindow {
             TabButton {
                 id: scannerTab
                 text: "Scanner"
+                height: viewTabs.height
                 background: Rectangle {
                     radius: 5
                     color: scannerTab.checked ? accentColor : "#0f1620"
@@ -510,66 +512,10 @@ ApplicationWindow {
                             elide: Text.ElideRight
                         }
 
-                        RowLayout {
-                            spacing: 10
-                            CheckBox {
-                                id: disableUploadBox
-                                text: "Disable upload (-d)"
-                                checked: scannerState.disableUpload
-                                onToggled: scannerState.setDisableUpload(checked)
-                                indicator: Rectangle {
-                                    implicitWidth: 14
-                                    implicitHeight: 14
-                                    radius: 3
-                                    border.color: disableUploadBox.checked ? accentColor : "#3a4b60"
-                                    color: disableUploadBox.checked ? accentColor : "#101923"
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        width: 6
-                                        height: 6
-                                        radius: 2
-                                        color: "#0b0f14"
-                                        visible: disableUploadBox.checked
-                                    }
-                                }
-                                contentItem: Text {
-                                    text: disableUploadBox.text
-                                    color: "#ffd166"
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                    leftPadding: 6
-                                }
-                            }
-                            Text {
-                                text: "Listen devices (-l):"
-                                color: mutedColor
-                                font.pixelSize: 11
-                            }
-                            TextField {
-                                id: listenDevicesField
-                                Layout.preferredWidth: 260
-                                placeholderText: "eth0,wlan0 or MAC list"
-                                text: scannerState.listenDevices
-                                color: textColor
-                                onEditingFinished: scannerState.setListenDevices(text)
-                            }
-                        }
-
-                        RowLayout {
-                            spacing: 10
-                            Text {
-                                text: "Public ingest (-i):"
-                                color: mutedColor
-                                font.pixelSize: 11
-                            }
-                            TextField {
-                                id: ingestField
-                                Layout.fillWidth: true
-                                placeholderText: "https+pow://albion-online-data.com"
-                                text: scannerState.publicIngestUrl
-                                color: textColor
-                                onEditingFinished: scannerState.setPublicIngestUrl(text)
-                            }
+                        Text {
+                            text: "Scanner uses fixed runtime defaults (upload enabled, official public ingest endpoint)."
+                            color: mutedColor
+                            font.pixelSize: 11
                         }
 
                         RowLayout {
