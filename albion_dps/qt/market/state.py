@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any
 
@@ -17,26 +18,31 @@ from albion_dps.market.models import (
     RecipeComponent,
     RecipeOutput,
 )
+from albion_dps.market.service import MarketDataService
 from albion_dps.market.setup import sanitized_setup, validate_setup
 
 
 @dataclass(frozen=True)
 class InputPreviewRow:
+    item_id: str
     item: str
     quantity: float
     city: str
     price_type: str
+    manual_price: int
     unit_price: float
     total_cost: float
 
 
 class MarketInputsModel(QAbstractListModel):
-    ItemRole = Qt.UserRole + 1
-    QuantityRole = Qt.UserRole + 2
-    CityRole = Qt.UserRole + 3
-    PriceTypeRole = Qt.UserRole + 4
-    UnitPriceRole = Qt.UserRole + 5
-    TotalCostRole = Qt.UserRole + 6
+    ItemIdRole = Qt.UserRole + 1
+    ItemRole = Qt.UserRole + 2
+    QuantityRole = Qt.UserRole + 3
+    CityRole = Qt.UserRole + 4
+    PriceTypeRole = Qt.UserRole + 5
+    ManualPriceRole = Qt.UserRole + 6
+    UnitPriceRole = Qt.UserRole + 7
+    TotalCostRole = Qt.UserRole + 8
 
     def __init__(self) -> None:
         super().__init__()
@@ -52,6 +58,8 @@ class MarketInputsModel(QAbstractListModel):
         if row < 0 or row >= len(self._items):
             return None
         item = self._items[row]
+        if role == self.ItemIdRole:
+            return item.item_id
         if role == self.ItemRole:
             return item.item
         if role == self.QuantityRole:
@@ -60,6 +68,8 @@ class MarketInputsModel(QAbstractListModel):
             return item.city
         if role == self.PriceTypeRole:
             return item.price_type
+        if role == self.ManualPriceRole:
+            return item.manual_price
         if role == self.UnitPriceRole:
             return item.unit_price
         if role == self.TotalCostRole:
@@ -68,10 +78,12 @@ class MarketInputsModel(QAbstractListModel):
 
     def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
         return {
+            self.ItemIdRole: b"itemId",
             self.ItemRole: b"item",
             self.QuantityRole: b"quantity",
             self.CityRole: b"city",
             self.PriceTypeRole: b"priceType",
+            self.ManualPriceRole: b"manualPrice",
             self.UnitPriceRole: b"unitPrice",
             self.TotalCostRole: b"totalCost",
         }
@@ -84,21 +96,25 @@ class MarketInputsModel(QAbstractListModel):
 
 @dataclass(frozen=True)
 class OutputPreviewRow:
+    item_id: str
     item: str
     quantity: float
     city: str
     price_type: str
+    manual_price: int
     unit_price: float
     total_value: float
 
 
 class MarketOutputsModel(QAbstractListModel):
-    ItemRole = Qt.UserRole + 1
-    QuantityRole = Qt.UserRole + 2
-    CityRole = Qt.UserRole + 3
-    PriceTypeRole = Qt.UserRole + 4
-    UnitPriceRole = Qt.UserRole + 5
-    TotalValueRole = Qt.UserRole + 6
+    ItemIdRole = Qt.UserRole + 1
+    ItemRole = Qt.UserRole + 2
+    QuantityRole = Qt.UserRole + 3
+    CityRole = Qt.UserRole + 4
+    PriceTypeRole = Qt.UserRole + 5
+    ManualPriceRole = Qt.UserRole + 6
+    UnitPriceRole = Qt.UserRole + 7
+    TotalValueRole = Qt.UserRole + 8
 
     def __init__(self) -> None:
         super().__init__()
@@ -114,6 +130,8 @@ class MarketOutputsModel(QAbstractListModel):
         if row < 0 or row >= len(self._items):
             return None
         item = self._items[row]
+        if role == self.ItemIdRole:
+            return item.item_id
         if role == self.ItemRole:
             return item.item
         if role == self.QuantityRole:
@@ -122,6 +140,8 @@ class MarketOutputsModel(QAbstractListModel):
             return item.city
         if role == self.PriceTypeRole:
             return item.price_type
+        if role == self.ManualPriceRole:
+            return item.manual_price
         if role == self.UnitPriceRole:
             return item.unit_price
         if role == self.TotalValueRole:
@@ -130,10 +150,12 @@ class MarketOutputsModel(QAbstractListModel):
 
     def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
         return {
+            self.ItemIdRole: b"itemId",
             self.ItemRole: b"item",
             self.QuantityRole: b"quantity",
             self.CityRole: b"city",
             self.PriceTypeRole: b"priceType",
+            self.ManualPriceRole: b"manualPrice",
             self.UnitPriceRole: b"unitPrice",
             self.TotalValueRole: b"totalValue",
         }
@@ -147,12 +169,21 @@ class MarketOutputsModel(QAbstractListModel):
 class MarketSetupState(QObject):
     setupChanged = Signal()
     validationChanged = Signal()
+    pricesChanged = Signal()
     inputsChanged = Signal()
     outputsChanged = Signal()
     resultsChanged = Signal()
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        service: MarketDataService | None = None,
+        logger: logging.Logger | None = None,
+        auto_refresh_prices: bool = True,
+    ) -> None:
         super().__init__()
+        self._service = service
+        self._log = logger or logging.getLogger(__name__)
         self._setup = CraftSetup(
             region=MarketRegion.EUROPE,
             craft_city="Bridgewatch",
@@ -171,7 +202,22 @@ class MarketSetupState(QObject):
         self._outputs_model = MarketOutputsModel()
         self._recipe = self._build_recipe()
         self._breakdown = ProfitBreakdown()
-        self._rebuild_preview()
+        self._input_price_types: dict[str, PriceType] = {
+            "T4_METALBAR": PriceType.SELL_ORDER,
+            "T4_PLANKS": PriceType.SELL_ORDER,
+        }
+        self._output_price_types: dict[str, PriceType] = {
+            "T4_MAIN_SWORD": PriceType.BUY_ORDER,
+        }
+        self._manual_input_prices: dict[str, int] = {}
+        self._manual_output_prices: dict[str, int] = {}
+        self._price_index: dict[tuple[str, str, int], MarketPriceRecord] = {}
+        self._price_context_key: tuple[str, int, tuple[str, ...], tuple[str, ...]] | None = None
+        self._prices_source = "fallback"
+        self._prices_status_text = "Using bundled fallback prices."
+        if auto_refresh_prices and self._service is not None:
+            self._refresh_price_index(self.to_setup(), force=True)
+        self._rebuild_preview(force_price_refresh=False)
 
     @Property(str, notify=setupChanged)
     def region(self) -> str:
@@ -220,6 +266,14 @@ class MarketSetupState(QObject):
     @Property(int, notify=setupChanged)
     def craftRuns(self) -> int:
         return self._craft_runs
+
+    @Property(str, notify=pricesChanged)
+    def pricesSource(self) -> str:
+        return self._prices_source
+
+    @Property(str, notify=pricesChanged)
+    def pricesStatusText(self) -> str:
+        return self._prices_status_text
 
     @Property(QObject, constant=True)
     def inputsModel(self) -> QObject:
@@ -342,12 +396,58 @@ class MarketSetupState(QObject):
         if runs == self._craft_runs:
             return
         self._craft_runs = runs
-        self._rebuild_preview()
+        self._rebuild_preview(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
+    @Slot()
+    def refreshPrices(self) -> None:
+        self._rebuild_preview(force_price_refresh=True)
+
+    @Slot(str, str)
+    def setInputPriceType(self, item_id: str, price_type: str) -> None:
+        normalized = self._to_price_type(price_type)
+        if normalized is None:
+            return
+        if self._input_price_types.get(item_id) == normalized:
+            return
+        self._input_price_types[item_id] = normalized
+        self._rebuild_preview(force_price_refresh=False)
+
+    @Slot(str, str)
+    def setOutputPriceType(self, item_id: str, price_type: str) -> None:
+        normalized = self._to_price_type(price_type)
+        if normalized is None:
+            return
+        if self._output_price_types.get(item_id) == normalized:
+            return
+        self._output_price_types[item_id] = normalized
+        self._rebuild_preview(force_price_refresh=False)
+
+    @Slot(str, str)
+    def setInputManualPrice(self, item_id: str, raw_value: str) -> None:
+        price = _parse_price(raw_value)
+        if price <= 0:
+            self._manual_input_prices.pop(item_id, None)
+        else:
+            self._manual_input_prices[item_id] = price
+        self._rebuild_preview(force_price_refresh=False)
+
+    @Slot(str, str)
+    def setOutputManualPrice(self, item_id: str, raw_value: str) -> None:
+        price = _parse_price(raw_value)
+        if price <= 0:
+            self._manual_output_prices.pop(item_id, None)
+        else:
+            self._manual_output_prices[item_id] = price
+        self._rebuild_preview(force_price_refresh=False)
+
     def to_setup(self) -> CraftSetup:
         return sanitized_setup(self._setup)
+
+    def close(self) -> None:
+        if self._service is not None:
+            self._service.close()
 
     def _replace(self, **kwargs) -> None:
         setup = CraftSetup(
@@ -364,26 +464,23 @@ class MarketSetupState(QObject):
             quality=kwargs.get("quality", self._setup.quality),
         )
         self._setup = sanitized_setup(setup)
-        self._rebuild_preview()
+        self._rebuild_preview(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
-    def _rebuild_preview(self) -> None:
+    def _rebuild_preview(self, *, force_price_refresh: bool) -> None:
         setup = self.to_setup()
-        price_index = self._build_price_index(setup)
+        price_index = self._current_price_index(setup, force_refresh=force_price_refresh)
         try:
             run = build_craft_run(
                 recipe=self._recipe,
                 quantity=self._craft_runs,
                 setup=setup,
                 price_index=price_index,
-                input_price_types={
-                    "T4_METALBAR": PriceType.SELL_ORDER,
-                    "T4_PLANKS": PriceType.SELL_ORDER,
-                },
-                output_price_types={
-                    self._recipe.item.unique_name: PriceType.BUY_ORDER,
-                },
+                input_price_types=dict(self._input_price_types),
+                output_price_types=dict(self._output_price_types),
+                manual_input_prices=dict(self._manual_input_prices),
+                manual_output_prices=dict(self._manual_output_prices),
             )
         except Exception:
             self._inputs_model.set_items([])
@@ -396,10 +493,12 @@ class MarketSetupState(QObject):
 
         input_rows = [
             InputPreviewRow(
-                item=line.item.unique_name,
+                item_id=line.item.unique_name,
+                item=line.item.display_name or line.item.unique_name,
                 quantity=float(line.quantity),
                 city=line.city,
                 price_type=line.price_type.value,
+                manual_price=self._manual_input_prices.get(line.item.unique_name, 0),
                 unit_price=float(line.unit_price),
                 total_cost=float(line.total_cost),
             )
@@ -407,10 +506,12 @@ class MarketSetupState(QObject):
         ]
         output_rows = [
             OutputPreviewRow(
-                item=line.item.unique_name,
+                item_id=line.item.unique_name,
+                item=line.item.display_name or line.item.unique_name,
                 quantity=float(line.quantity),
                 city=line.city,
                 price_type=line.price_type.value,
+                manual_price=self._manual_output_prices.get(line.item.unique_name, 0),
                 unit_price=float(line.unit_price),
                 total_value=float(line.total_value),
             )
@@ -422,6 +523,115 @@ class MarketSetupState(QObject):
         self.inputsChanged.emit()
         self.outputsChanged.emit()
         self.resultsChanged.emit()
+
+    def _current_price_index(
+        self,
+        setup: CraftSetup,
+        *,
+        force_refresh: bool,
+    ) -> dict[tuple[str, str, int], MarketPriceRecord]:
+        if force_refresh:
+            return self._refresh_price_index(setup, force=True)
+        context_key = self._price_key(setup)
+        if self._price_index and context_key == self._price_context_key:
+            return self._price_index
+        return self._refresh_price_index(setup, force=False)
+
+    def _refresh_price_index(
+        self,
+        setup: CraftSetup,
+        *,
+        force: bool,
+    ) -> dict[tuple[str, str, int], MarketPriceRecord]:
+        item_ids = sorted(
+            {
+                *(x.item.unique_name for x in self._recipe.components),
+                *(x.item.unique_name for x in self._recipe.outputs),
+            }
+        )
+        locations = sorted(
+            {
+                setup.craft_city.strip(),
+                setup.default_buy_city.strip(),
+                setup.default_sell_city.strip(),
+            }
+            - {""}
+        )
+        if not locations:
+            locations = ["Bridgewatch"]
+        context_key = self._price_key(setup)
+        if not force and self._price_index and context_key == self._price_context_key:
+            return self._price_index
+
+        if self._service is None:
+            self._set_fallback_status("AO Data client not configured. Using bundled fallback prices.")
+            self._price_index = self._build_fallback_price_index(setup)
+            self._price_context_key = context_key
+            return self._price_index
+
+        try:
+            index = self._service.get_price_index(
+                region=setup.region,
+                item_ids=item_ids,
+                locations=locations,
+                qualities=[setup.quality, 1] if setup.quality != 1 else [1],
+                ttl_seconds=120.0,
+                allow_stale=True,
+            )
+            if index:
+                self._price_index = index
+                self._price_context_key = context_key
+                self._prices_source = "ao_data"
+                self._prices_status_text = f"Loaded {len(index)} price rows (live/cache)."
+                self.pricesChanged.emit()
+                return self._price_index
+            self._set_fallback_status("AO Data returned no price rows. Using bundled fallback prices.")
+        except Exception as exc:
+            self._log.warning("AO Data fetch failed, using fallback prices: %s", exc)
+            self._set_fallback_status(f"AO Data fetch failed ({exc}). Using bundled fallback prices.")
+
+        self._price_index = self._build_fallback_price_index(setup)
+        self._price_context_key = context_key
+        return self._price_index
+
+    def _set_fallback_status(self, message: str) -> None:
+        self._prices_source = "fallback"
+        self._prices_status_text = message
+        self.pricesChanged.emit()
+
+    def _price_key(self, setup: CraftSetup) -> tuple[str, int, tuple[str, ...], tuple[str, ...]]:
+        item_ids = tuple(
+            sorted(
+                {
+                    *(x.item.unique_name for x in self._recipe.components),
+                    *(x.item.unique_name for x in self._recipe.outputs),
+                }
+            )
+        )
+        locations = tuple(
+            sorted(
+                {
+                    setup.craft_city.strip(),
+                    setup.default_buy_city.strip(),
+                    setup.default_sell_city.strip(),
+                }
+                - {""}
+            )
+        )
+        return (setup.region.value, int(setup.quality), item_ids, locations)
+
+    @staticmethod
+    def _to_price_type(value: str) -> PriceType | None:
+        normalized = value.strip().lower()
+        if normalized == PriceType.BUY_ORDER.value:
+            return PriceType.BUY_ORDER
+        if normalized == PriceType.SELL_ORDER.value:
+            return PriceType.SELL_ORDER
+        if normalized == PriceType.AVERAGE.value:
+            return PriceType.AVERAGE
+        if normalized == PriceType.MANUAL.value:
+            return PriceType.MANUAL
+        return None
 
     @staticmethod
     def _build_recipe() -> Recipe:
@@ -455,8 +665,8 @@ class MarketSetupState(QObject):
             focus_per_craft=200,
         )
 
-    def _build_price_index(
-        self,
+    @staticmethod
+    def _build_fallback_price_index(
         setup: CraftSetup,
     ) -> dict[tuple[str, str, int], MarketPriceRecord]:
         locations = {
@@ -475,7 +685,7 @@ class MarketSetupState(QObject):
             if not location:
                 continue
             for item_id, (buy_price, sell_price) in prices.items():
-                record = MarketPriceRecord(
+                index[(item_id, location, int(setup.quality))] = MarketPriceRecord(
                     item_id=item_id,
                     city=location,
                     quality=int(setup.quality),
@@ -484,7 +694,6 @@ class MarketSetupState(QObject):
                     sell_price_min_date="",
                     buy_price_max_date="",
                 )
-                index[(item_id, location, int(setup.quality))] = record
                 if int(setup.quality) != 1:
                     index[(item_id, location, 1)] = MarketPriceRecord(
                         item_id=item_id,
@@ -496,3 +705,14 @@ class MarketSetupState(QObject):
                         buy_price_max_date="",
                     )
         return index
+
+
+def _parse_price(raw_value: str) -> int:
+    text = raw_value.strip().replace(",", ".")
+    if not text:
+        return 0
+    try:
+        parsed = int(float(text))
+    except ValueError:
+        return 0
+    return max(0, parsed)

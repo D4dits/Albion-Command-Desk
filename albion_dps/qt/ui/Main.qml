@@ -621,6 +621,24 @@ ApplicationWindow {
 
                         RowLayout {
                             Layout.fillWidth: true
+                            spacing: 8
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Prices: " + marketSetupState.pricesSource + "  |  " + marketSetupState.pricesStatusText
+                                color: mutedColor
+                                font.pixelSize: 11
+                                elide: Text.ElideRight
+                            }
+
+                            Button {
+                                text: "Refresh prices"
+                                onClicked: marketSetupState.refreshPrices()
+                            }
+                        }
+
+                        RowLayout {
+                            Layout.fillWidth: true
                             Layout.fillHeight: true
                             spacing: 12
 
@@ -826,11 +844,12 @@ ApplicationWindow {
                                             anchors.margins: 4
                                             spacing: 10
 
-                                            Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 170 }
-                                            Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
-                                            Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 120 }
-                                            Text { text: "Price"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
-                                            Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                            Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 120 }
+                                            Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                            Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 100 }
+                                            Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 95 }
+                                            Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                            Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 80 }
                                             Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
                                         }
                                     }
@@ -852,11 +871,24 @@ ApplicationWindow {
                                                 anchors.margins: 4
                                                 spacing: 10
 
-                                                Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: 170; elide: Text.ElideRight }
-                                                Text { text: Number(quantity).toFixed(2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
-                                                Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 120; elide: Text.ElideRight }
-                                                Text { text: priceType; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90; elide: Text.ElideRight }
-                                                Text { text: Number(unitPrice).toFixed(0); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                                Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: 120; elide: Text.ElideRight }
+                                                Text { text: Number(quantity).toFixed(2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                                Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 100; elide: Text.ElideRight }
+                                                ComboBox {
+                                                    Layout.preferredWidth: 95
+                                                    model: ["sell_order", "buy_order", "average", "manual"]
+                                                    currentIndex: Math.max(0, model.indexOf(priceType))
+                                                    onActivated: marketSetupState.setInputPriceType(itemId, currentText)
+                                                }
+                                                TextField {
+                                                    Layout.preferredWidth: 70
+                                                    text: manualPrice > 0 ? String(manualPrice) : ""
+                                                    placeholderText: "-"
+                                                    enabled: priceType === "manual"
+                                                    inputMethodHints: Qt.ImhDigitsOnly
+                                                    onEditingFinished: marketSetupState.setInputManualPrice(itemId, text)
+                                                }
+                                                Text { text: Number(unitPrice).toFixed(0); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 80 }
                                                 Text { text: Number(totalCost).toFixed(0); color: textColor; font.pixelSize: 11; Layout.fillWidth: true }
                                             }
                                         }
@@ -925,11 +957,12 @@ ApplicationWindow {
                                                             anchors.fill: parent
                                                             anchors.margins: 4
                                                             spacing: 10
-                                                            Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 150 }
-                                                            Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 75 }
-                                                            Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 100 }
-                                                            Text { text: "Price"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 75 }
-                                                            Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 75 }
+                                                            Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 120 }
+                                                            Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                                            Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                                            Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 95 }
+                                                            Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                                            Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
                                                             Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
                                                         }
                                                     }
@@ -949,11 +982,24 @@ ApplicationWindow {
                                                                 anchors.fill: parent
                                                                 anchors.margins: 4
                                                                 spacing: 10
-                                                                Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: 150; elide: Text.ElideRight }
-                                                                Text { text: Number(quantity).toFixed(2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 75 }
-                                                                Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 100; elide: Text.ElideRight }
-                                                                Text { text: priceType; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 75; elide: Text.ElideRight }
-                                                                Text { text: Number(unitPrice).toFixed(0); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 75 }
+                                                                Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: 120; elide: Text.ElideRight }
+                                                                Text { text: Number(quantity).toFixed(2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                                                Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90; elide: Text.ElideRight }
+                                                                ComboBox {
+                                                                    Layout.preferredWidth: 95
+                                                                    model: ["buy_order", "sell_order", "average", "manual"]
+                                                                    currentIndex: Math.max(0, model.indexOf(priceType))
+                                                                    onActivated: marketSetupState.setOutputPriceType(itemId, currentText)
+                                                                }
+                                                                TextField {
+                                                                    Layout.preferredWidth: 70
+                                                                    text: manualPrice > 0 ? String(manualPrice) : ""
+                                                                    placeholderText: "-"
+                                                                    enabled: priceType === "manual"
+                                                                    inputMethodHints: Qt.ImhDigitsOnly
+                                                                    onEditingFinished: marketSetupState.setOutputManualPrice(itemId, text)
+                                                                }
+                                                                Text { text: Number(unitPrice).toFixed(0); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
                                                                 Text { text: Number(totalValue).toFixed(0); color: textColor; font.pixelSize: 11; Layout.fillWidth: true }
                                                             }
                                                         }

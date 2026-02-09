@@ -6,6 +6,7 @@
   - Completed now: core kalkulacji dla Setup+Inputs (C1/C2/C4/C5/C6), walidacja Setup (D1/D2), generacja Inputs z manual override (E1/E3), testy.
   - Completed now: UI Market w `Main.qml` dla Setup + Inputs (formularz setup, tabela inputs, live total).
   - Completed now: preview Outputs + Results w `Main.qml` (tabela output + KPI net profit/margin/focus/SPF) podlaczone do `marketSetupState`.
+  - Completed now: AO Data price loading with cache/fallback + manual price mode per-item in Inputs/Outputs feeding Results.
 
 ## 1) Cel
 Wdrozyc w projekcie nowy modul kalkulatora craftingu (AFM-like) z zakladkami:
@@ -132,17 +133,17 @@ Definition of Done:
 - suma line cost zgadza sie z total input cost w Results.
 
 ## EPIC F - Outputs tab
-- F1. Lista output itemow (zalezne od run/return).
-- F2. Cena sprzedazy:
+- [~] F1. Lista output itemow (zalezne od run/return).
+- [~] F2. Cena sprzedazy:
   - buy/sell/avg/manual.
 - F3. Sell location per output.
-- F4. Net revenue po tax/fee.
+- [~] F4. Net revenue po tax/fee.
 
 Definition of Done:
 - revenue z Outputs jest jedynym zrodlem revenue w Results.
 
 ## EPIC G - Results tab
-- G1. Kafelki KPI:
+- [~] G1. Kafelki KPI:
   - investment, revenue, net profit, margin, focus, SPF.
 - G2. Tabela per-item:
   - cost, revenue, profit, demand proxy.

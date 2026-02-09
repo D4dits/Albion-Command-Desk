@@ -12,6 +12,7 @@ from albion_dps.capture import auto_detect_interface, list_interfaces
 from albion_dps.domain import FameTracker, NameRegistry, PartyRegistry, load_item_resolver
 from albion_dps.domain.item_db import ensure_game_databases
 from albion_dps.domain.map_resolver import load_map_resolver
+from albion_dps.market.service import MarketDataService
 from albion_dps.meter.session_meter import SessionMeter
 from albion_dps.models import MeterSnapshot
 from albion_dps.pipeline import live_snapshots, replay_snapshots
@@ -96,7 +97,14 @@ def run_qt(args: argparse.Namespace) -> int:
         weapon_lookup=weapon_lookup,
     )
     scanner_state = ScannerState()
-    market_setup_state = MarketSetupState()
+    market_cache_path = Path("data") / "market_cache.sqlite3"
+    market_cache_path.parent.mkdir(parents=True, exist_ok=True)
+    market_service = MarketDataService.with_default_cache(cache_path=market_cache_path)
+    market_setup_state = MarketSetupState(
+        service=market_service,
+        logger=logging.getLogger(__name__),
+        auto_refresh_prices=True,
+    )
     engine.rootContext().setContextProperty("uiState", state)
     engine.rootContext().setContextProperty("scannerState", scanner_state)
     engine.rootContext().setContextProperty("marketSetupState", market_setup_state)
@@ -122,6 +130,7 @@ def run_qt(args: argparse.Namespace) -> int:
     timer.timeout.connect(drain_queue)
     timer.start()
     app.aboutToQuit.connect(scanner_state.shutdown)
+    app.aboutToQuit.connect(market_setup_state.close)
     app.aboutToQuit.connect(stop_event.set)
     app.exec()
     return 0
