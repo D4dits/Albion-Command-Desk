@@ -5,6 +5,7 @@
 - Sprint 2: in progress.
   - Completed now: core kalkulacji dla Setup+Inputs (C1/C2/C4/C5/C6), walidacja Setup (D1/D2), generacja Inputs z manual override (E1/E3), testy.
   - Completed now: UI Market w `Main.qml` dla Setup + Inputs (formularz setup, tabela inputs, live total).
+  - Completed now: preview Outputs + Results w `Main.qml` (tabela output + KPI net profit/margin/focus/SPF) podlaczone do `marketSetupState`.
 
 ## 1) Cel
 Wdrozyc w projekcie nowy modul kalkulatora craftingu (AFM-like) z zakladkami:

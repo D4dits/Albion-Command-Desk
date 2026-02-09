@@ -20,3 +20,15 @@ def test_market_setup_state_sanitizes_values() -> None:
     assert setup.market_tax_percent == 0.0
     assert setup.quality == 6
 
+
+def test_market_setup_state_builds_outputs_and_results() -> None:
+    state = MarketSetupState()
+    state.setCraftRuns(12)
+    state.setReturnRatePercent(10.0)
+
+    assert state.inputsModel.rowCount() >= 1
+    assert state.outputsModel.rowCount() >= 1
+    assert state.inputsTotalCost > 0
+    assert state.outputsTotalValue > 0
+    assert state.focusUsed > 0
+    assert isinstance(state.netProfitValue, float)
