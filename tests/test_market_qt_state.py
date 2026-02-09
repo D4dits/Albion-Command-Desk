@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import shutil
+import uuid
+from pathlib import Path
+
 import pytest
 
 pytest.importorskip("PySide6")
@@ -91,6 +95,12 @@ def test_market_setup_state_builds_outputs_and_results() -> None:
     assert state.recipeIndex >= 0
     assert state.recipeTier >= 0
     assert state.recipeEnchant >= 0
+    assert state.shoppingModel.rowCount() >= 1
+    assert state.sellingModel.rowCount() >= 1
+    assert state.resultsItemsModel.rowCount() >= 1
+    assert state.breakdownModel.rowCount() >= 1
+    assert "item_id" in state.shoppingCsv
+    assert "item_id" in state.sellingCsv
 
 
 def test_market_setup_state_uses_service_and_manual_overrides() -> None:
@@ -127,3 +137,35 @@ def test_market_setup_state_can_switch_recipe_by_index() -> None:
             switched = True
             break
     assert switched
+
+
+def test_market_setup_state_supports_output_city_and_results_sorting() -> None:
+    state = MarketSetupState()
+    if state.outputsModel.rowCount() <= 0:
+        return
+
+    idx = state.outputsModel.index(0, 0)
+    item_id = str(state.outputsModel.data(idx, state.outputsModel.ItemIdRole))
+    state.setOutputCity(item_id, "Caerleon")
+    city_after = str(state.outputsModel.data(idx, state.outputsModel.CityRole))
+    assert city_after == "Caerleon"
+
+    state.setResultsSortKey("margin")
+    assert state.resultsSortKey == "margin"
+
+
+def test_market_setup_state_can_export_csv_lists() -> None:
+    state = MarketSetupState()
+    tmp_dir = Path(f"tmp_market_qt_state_{uuid.uuid4().hex}")
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        shopping_path = tmp_dir / "shopping.csv"
+        selling_path = tmp_dir / "selling.csv"
+        state.exportShoppingCsv(str(shopping_path))
+        state.exportSellingCsv(str(selling_path))
+        assert shopping_path.exists()
+        assert selling_path.exists()
+        assert "item_id" in shopping_path.read_text(encoding="utf-8")
+        assert "item_id" in selling_path.read_text(encoding="utf-8")
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)

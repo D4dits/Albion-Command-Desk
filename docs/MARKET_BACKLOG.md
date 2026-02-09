@@ -12,6 +12,8 @@
   - Completed now: AO Data resilience (retry/backoff) and telemetry in service/client (source, elapsed ms, record count).
   - Completed now: engine extensions (improved return-rate model and batch craft/run profit API).
   - Completed now: Market sub-tabs in UI (Setup+Overview, Inputs, Outputs, Results, Shopping, Selling) with compact setup controls.
+  - Completed now: shopping/selling pipeline with grouped planner entries (city + price mode) and CSV copy/export in UI.
+  - Completed now: output city override per item + results per-item table with sorting and breakdown panel.
 
 ## 1) Cel
 Wdrozyc w projekcie nowy modul kalkulatora craftingu (AFM-like) z zakladkami:
@@ -141,7 +143,7 @@ Definition of Done:
 - [~] F1. Lista output itemow (zalezne od run/return).
 - [~] F2. Cena sprzedazy:
   - buy/sell/avg/manual.
-- F3. Sell location per output.
+- [x] F3. Sell location per output.
 - [~] F4. Net revenue po tax/fee.
 
 Definition of Done:
@@ -150,31 +152,31 @@ Definition of Done:
 ## EPIC G - Results tab
 - [~] G1. Kafelki KPI:
   - investment, revenue, net profit, margin, focus, SPF.
-- G2. Tabela per-item:
+- [x] G2. Tabela per-item:
   - cost, revenue, profit, demand proxy.
-- G3. Ranking i sortowanie.
-- G4. Breakdown:
+- [x] G3. Ranking i sortowanie.
+- [x] G4. Breakdown:
   - raw mats, artifacts, journals, fee, tax, focus impact.
 
 Definition of Done:
 - wszystkie KPI liczone z jednego modelu `ProfitBreakdown`.
 
 ## EPIC H - Shopping List tab
-- H1. Agregacja materialow do zakupu.
-- H2. Grupowanie po miescie i typie ceny.
-- H3. Kolumny:
+- [x] H1. Agregacja materialow do zakupu.
+- [x] H2. Grupowanie po miescie i typie ceny.
+- [x] H3. Kolumny:
   - item, qty, city, unit, total, weight.
-- H4. Copy/export CSV.
+- [x] H4. Copy/export CSV.
 
 Definition of Done:
 - shopping list jest spojna z Inputs (po agregacji batch).
 
 ## EPIC I - Selling List tab
-- I1. Agregacja outputow do sprzedazy.
-- I2. Grupowanie po miescie sprzedazy.
-- I3. Kolumny:
+- [x] I1. Agregacja outputow do sprzedazy.
+- [x] I2. Grupowanie po miescie sprzedazy.
+- [x] I3. Kolumny:
   - item, qty, city, expected unit, expected total.
-- I4. Copy/export CSV.
+- [x] I4. Copy/export CSV.
 
 Definition of Done:
 - selling list jest spojna z Outputs (po agregacji batch).

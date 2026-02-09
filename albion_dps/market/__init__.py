@@ -33,17 +33,29 @@ from albion_dps.market.models import (
     RecipeComponent,
     RecipeOutput,
 )
+from albion_dps.market.planner import (
+    SellingEntry,
+    ShoppingEntry,
+    aggregate_selling,
+    aggregate_shopping,
+    build_selling_entries,
+    build_shopping_entries,
+)
 from albion_dps.market.service import MarketDataService, MarketFetchMeta
 from albion_dps.market.setup import sanitized_setup, validate_setup
 
 __all__ = [
     "AODataClient",
     "AODataRequestStats",
+    "aggregate_selling",
+    "aggregate_shopping",
     "BatchCraftRequest",
     "build_craft_run",
     "build_craft_runs_batch",
     "build_input_lines",
     "build_output_lines",
+    "build_selling_entries",
+    "build_shopping_entries",
     "CacheEntry",
     "CatalogIssue",
     "compute_profit_breakdown",
@@ -69,6 +81,8 @@ __all__ = [
     "RecipeCatalog",
     "RecipeComponent",
     "RecipeOutput",
+    "SellingEntry",
+    "ShoppingEntry",
     "sanitized_setup",
     "SQLiteCache",
     "validate_setup",

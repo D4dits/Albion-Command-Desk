@@ -202,8 +202,25 @@ Qt tabs:
   - live log output
 - `Market`: crafting calculator workspace with sub-tabs:
   - `Setup + Overview` (region/cities/fees/runs + quick KPI view)
-  - `Inputs` and `Outputs` (per-item live/manual pricing modes)
-  - `Results`, `Shopping`, `Selling` (profit breakdown + execution lists)
+  - `Inputs` and `Outputs` (per-item live/manual pricing modes + output city override)
+  - `Results` (per-item profit table with sorting + cost/tax/focus breakdown)
+  - `Shopping` and `Selling` (grouped execution lists with CSV copy/export)
+  - bundled `albion_dps/market/data/recipes.json` is a small starter dataset
+
+Build full market recipe dataset:
+- put one or more source JSON files into `tools/market/sources/` (or pass explicit `--input`)
+- source can be normalized list or object with `recipes: [...]`
+- then run:
+```
+.\tools\market\run_build_recipes.ps1 -InputGlob "tools/market/sources/**/*.json" -Strict
+```
+Linux/macOS:
+```
+./tools/market/run_build_recipes.sh --input-glob "tools/market/sources/**/*.json" --strict
+```
+Outputs:
+- `albion_dps/market/data/recipes.json`
+- `artifacts/market/recipes_build_report.json`
 
 Scanner local path:
 - `artifacts/albiondata-client`

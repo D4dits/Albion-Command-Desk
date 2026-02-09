@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import csv
+import io
 import logging
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QAbstractListModel, QModelIndex, QObject, Property, Qt, Signal, Slot
@@ -16,6 +19,7 @@ from albion_dps.market.models import (
     ProfitBreakdown,
     Recipe,
 )
+from albion_dps.market.planner import build_selling_entries, build_shopping_entries
 from albion_dps.market.service import MarketDataService
 from albion_dps.market.setup import sanitized_setup, validate_setup
 
@@ -165,6 +169,274 @@ class MarketOutputsModel(QAbstractListModel):
 
 
 @dataclass(frozen=True)
+class ShoppingPreviewRow:
+    item_id: str
+    item: str
+    quantity: float
+    city: str
+    price_type: str
+    unit_price: float
+    total_cost: float
+
+
+class MarketShoppingModel(QAbstractListModel):
+    ItemIdRole = Qt.UserRole + 1
+    ItemRole = Qt.UserRole + 2
+    QuantityRole = Qt.UserRole + 3
+    CityRole = Qt.UserRole + 4
+    PriceTypeRole = Qt.UserRole + 5
+    UnitPriceRole = Qt.UserRole + 6
+    TotalCostRole = Qt.UserRole + 7
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._items: list[ShoppingPreviewRow] = []
+
+    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
+        return len(self._items)
+
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
+        if not index.isValid():
+            return None
+        row = index.row()
+        if row < 0 or row >= len(self._items):
+            return None
+        item = self._items[row]
+        if role == self.ItemIdRole:
+            return item.item_id
+        if role == self.ItemRole:
+            return item.item
+        if role == self.QuantityRole:
+            return item.quantity
+        if role == self.CityRole:
+            return item.city
+        if role == self.PriceTypeRole:
+            return item.price_type
+        if role == self.UnitPriceRole:
+            return item.unit_price
+        if role == self.TotalCostRole:
+            return item.total_cost
+        return None
+
+    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
+        return {
+            self.ItemIdRole: b"itemId",
+            self.ItemRole: b"item",
+            self.QuantityRole: b"quantity",
+            self.CityRole: b"city",
+            self.PriceTypeRole: b"priceType",
+            self.UnitPriceRole: b"unitPrice",
+            self.TotalCostRole: b"totalCost",
+        }
+
+    def set_items(self, rows: list[ShoppingPreviewRow]) -> None:
+        self.beginResetModel()
+        self._items = list(rows)
+        self.endResetModel()
+
+
+@dataclass(frozen=True)
+class SellingPreviewRow:
+    item_id: str
+    item: str
+    quantity: float
+    city: str
+    price_type: str
+    unit_price: float
+    total_value: float
+
+
+class MarketSellingModel(QAbstractListModel):
+    ItemIdRole = Qt.UserRole + 1
+    ItemRole = Qt.UserRole + 2
+    QuantityRole = Qt.UserRole + 3
+    CityRole = Qt.UserRole + 4
+    PriceTypeRole = Qt.UserRole + 5
+    UnitPriceRole = Qt.UserRole + 6
+    TotalValueRole = Qt.UserRole + 7
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._items: list[SellingPreviewRow] = []
+
+    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
+        return len(self._items)
+
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
+        if not index.isValid():
+            return None
+        row = index.row()
+        if row < 0 or row >= len(self._items):
+            return None
+        item = self._items[row]
+        if role == self.ItemIdRole:
+            return item.item_id
+        if role == self.ItemRole:
+            return item.item
+        if role == self.QuantityRole:
+            return item.quantity
+        if role == self.CityRole:
+            return item.city
+        if role == self.PriceTypeRole:
+            return item.price_type
+        if role == self.UnitPriceRole:
+            return item.unit_price
+        if role == self.TotalValueRole:
+            return item.total_value
+        return None
+
+    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
+        return {
+            self.ItemIdRole: b"itemId",
+            self.ItemRole: b"item",
+            self.QuantityRole: b"quantity",
+            self.CityRole: b"city",
+            self.PriceTypeRole: b"priceType",
+            self.UnitPriceRole: b"unitPrice",
+            self.TotalValueRole: b"totalValue",
+        }
+
+    def set_items(self, rows: list[SellingPreviewRow]) -> None:
+        self.beginResetModel()
+        self._items = list(rows)
+        self.endResetModel()
+
+
+@dataclass(frozen=True)
+class ResultItemRow:
+    item_id: str
+    item: str
+    city: str
+    quantity: float
+    unit_price: float
+    revenue: float
+    allocated_cost: float
+    fee_value: float
+    tax_value: float
+    profit: float
+    margin_percent: float
+    demand_proxy: float
+
+
+class MarketResultsItemsModel(QAbstractListModel):
+    ItemIdRole = Qt.UserRole + 1
+    ItemRole = Qt.UserRole + 2
+    CityRole = Qt.UserRole + 3
+    QuantityRole = Qt.UserRole + 4
+    UnitPriceRole = Qt.UserRole + 5
+    RevenueRole = Qt.UserRole + 6
+    CostRole = Qt.UserRole + 7
+    FeeRole = Qt.UserRole + 8
+    TaxRole = Qt.UserRole + 9
+    ProfitRole = Qt.UserRole + 10
+    MarginRole = Qt.UserRole + 11
+    DemandRole = Qt.UserRole + 12
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._items: list[ResultItemRow] = []
+
+    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
+        return len(self._items)
+
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
+        if not index.isValid():
+            return None
+        row = index.row()
+        if row < 0 or row >= len(self._items):
+            return None
+        item = self._items[row]
+        if role == self.ItemIdRole:
+            return item.item_id
+        if role == self.ItemRole:
+            return item.item
+        if role == self.CityRole:
+            return item.city
+        if role == self.QuantityRole:
+            return item.quantity
+        if role == self.UnitPriceRole:
+            return item.unit_price
+        if role == self.RevenueRole:
+            return item.revenue
+        if role == self.CostRole:
+            return item.allocated_cost
+        if role == self.FeeRole:
+            return item.fee_value
+        if role == self.TaxRole:
+            return item.tax_value
+        if role == self.ProfitRole:
+            return item.profit
+        if role == self.MarginRole:
+            return item.margin_percent
+        if role == self.DemandRole:
+            return item.demand_proxy
+        return None
+
+    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
+        return {
+            self.ItemIdRole: b"itemId",
+            self.ItemRole: b"item",
+            self.CityRole: b"city",
+            self.QuantityRole: b"quantity",
+            self.UnitPriceRole: b"unitPrice",
+            self.RevenueRole: b"revenue",
+            self.CostRole: b"cost",
+            self.FeeRole: b"feeValue",
+            self.TaxRole: b"taxValue",
+            self.ProfitRole: b"profit",
+            self.MarginRole: b"marginPercent",
+            self.DemandRole: b"demandProxy",
+        }
+
+    def set_items(self, rows: list[ResultItemRow]) -> None:
+        self.beginResetModel()
+        self._items = list(rows)
+        self.endResetModel()
+
+
+@dataclass(frozen=True)
+class BreakdownRow:
+    label: str
+    value: float
+
+
+class MarketBreakdownModel(QAbstractListModel):
+    LabelRole = Qt.UserRole + 1
+    ValueRole = Qt.UserRole + 2
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._items: list[BreakdownRow] = []
+
+    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
+        return len(self._items)
+
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
+        if not index.isValid():
+            return None
+        row = index.row()
+        if row < 0 or row >= len(self._items):
+            return None
+        item = self._items[row]
+        if role == self.LabelRole:
+            return item.label
+        if role == self.ValueRole:
+            return item.value
+        return None
+
+    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
+        return {
+            self.LabelRole: b"label",
+            self.ValueRole: b"value",
+        }
+
+    def set_items(self, rows: list[BreakdownRow]) -> None:
+        self.beginResetModel()
+        self._items = list(rows)
+        self.endResetModel()
+
+
+@dataclass(frozen=True)
 class RecipeOptionRow:
     recipe_id: str
     display_name: str
@@ -224,6 +496,8 @@ class MarketSetupState(QObject):
     inputsChanged = Signal()
     outputsChanged = Signal()
     resultsChanged = Signal()
+    listsChanged = Signal()
+    resultsDetailsChanged = Signal()
 
     def __init__(
         self,
@@ -252,6 +526,10 @@ class MarketSetupState(QObject):
         self._craft_runs = 10
         self._inputs_model = MarketInputsModel()
         self._outputs_model = MarketOutputsModel()
+        self._shopping_model = MarketShoppingModel()
+        self._selling_model = MarketSellingModel()
+        self._results_items_model = MarketResultsItemsModel()
+        self._breakdown_model = MarketBreakdownModel()
         self._recipe_options_model = RecipeOptionsModel()
         self._catalog = self._load_catalog()
         self._recipe = self._resolve_recipe(recipe_id)
@@ -267,10 +545,15 @@ class MarketSetupState(QObject):
         }
         self._manual_input_prices: dict[str, int] = {}
         self._manual_output_prices: dict[str, int] = {}
+        self._output_cities: dict[str, str] = {}
         self._price_index: dict[tuple[str, str, int], MarketPriceRecord] = {}
         self._price_context_key: tuple[str, int, tuple[str, ...], tuple[str, ...]] | None = None
         self._prices_source = "fallback"
         self._prices_status_text = "Using bundled fallback prices."
+        self._results_sort_key = "profit"
+        self._shopping_csv = ""
+        self._selling_csv = ""
+        self._list_action_text = ""
         if auto_refresh_prices and self._service is not None:
             self._refresh_price_index(self.to_setup(), force=True)
         self._rebuild_preview(force_price_refresh=False)
@@ -362,6 +645,38 @@ class MarketSetupState(QObject):
     @Property(QObject, constant=True)
     def recipeOptionsModel(self) -> QObject:
         return self._recipe_options_model
+
+    @Property(QObject, constant=True)
+    def shoppingModel(self) -> QObject:
+        return self._shopping_model
+
+    @Property(QObject, constant=True)
+    def sellingModel(self) -> QObject:
+        return self._selling_model
+
+    @Property(QObject, constant=True)
+    def resultsItemsModel(self) -> QObject:
+        return self._results_items_model
+
+    @Property(QObject, constant=True)
+    def breakdownModel(self) -> QObject:
+        return self._breakdown_model
+
+    @Property(str, notify=listsChanged)
+    def shoppingCsv(self) -> str:
+        return self._shopping_csv
+
+    @Property(str, notify=listsChanged)
+    def sellingCsv(self) -> str:
+        return self._selling_csv
+
+    @Property(str, notify=listsChanged)
+    def listActionText(self) -> str:
+        return self._list_action_text
+
+    @Property(str, notify=resultsDetailsChanged)
+    def resultsSortKey(self) -> str:
+        return self._results_sort_key
 
     @Property(float, notify=inputsChanged)
     def inputsTotalCost(self) -> float:
@@ -455,6 +770,7 @@ class MarketSetupState(QObject):
         }
         self._manual_input_prices = {}
         self._manual_output_prices = {}
+        self._output_cities = {}
         self._price_index = {}
         self._price_context_key = None
         self._rebuild_preview(force_price_refresh=False)
@@ -536,6 +852,16 @@ class MarketSetupState(QObject):
         self._rebuild_preview(force_price_refresh=False)
 
     @Slot(str, str)
+    def setOutputCity(self, item_id: str, city: str) -> None:
+        city_value = city.strip()
+        if not city_value:
+            city_value = self._setup.default_sell_city or self._setup.craft_city
+        if self._output_cities.get(item_id, "") == city_value:
+            return
+        self._output_cities[item_id] = city_value
+        self._rebuild_preview(force_price_refresh=False)
+
+    @Slot(str, str)
     def setInputManualPrice(self, item_id: str, raw_value: str) -> None:
         price = _parse_price(raw_value)
         if price <= 0:
@@ -552,6 +878,53 @@ class MarketSetupState(QObject):
         else:
             self._manual_output_prices[item_id] = price
         self._rebuild_preview(force_price_refresh=False)
+
+    @Slot(str)
+    def setResultsSortKey(self, key: str) -> None:
+        normalized = key.strip().lower()
+        if normalized not in {"profit", "margin", "revenue"}:
+            return
+        if normalized == self._results_sort_key:
+            return
+        self._results_sort_key = normalized
+        self._rebuild_preview(force_price_refresh=False)
+        self.resultsDetailsChanged.emit()
+
+    @Slot()
+    def copyShoppingCsv(self) -> None:
+        if not self._shopping_csv:
+            self._set_list_action_text("Shopping CSV is empty.")
+            return
+        from PySide6.QtGui import QGuiApplication
+
+        clipboard = QGuiApplication.clipboard()
+        if clipboard is None:
+            self._set_list_action_text("Clipboard is not available.")
+            return
+        clipboard.setText(self._shopping_csv)
+        self._set_list_action_text("Shopping CSV copied to clipboard.")
+
+    @Slot()
+    def copySellingCsv(self) -> None:
+        if not self._selling_csv:
+            self._set_list_action_text("Selling CSV is empty.")
+            return
+        from PySide6.QtGui import QGuiApplication
+
+        clipboard = QGuiApplication.clipboard()
+        if clipboard is None:
+            self._set_list_action_text("Clipboard is not available.")
+            return
+        clipboard.setText(self._selling_csv)
+        self._set_list_action_text("Selling CSV copied to clipboard.")
+
+    @Slot(str)
+    def exportShoppingCsv(self, raw_path: str) -> None:
+        self._export_csv(raw_path=raw_path, payload=self._shopping_csv, label="Shopping")
+
+    @Slot(str)
+    def exportSellingCsv(self, raw_path: str) -> None:
+        self._export_csv(raw_path=raw_path, payload=self._selling_csv, label="Selling")
 
     def to_setup(self) -> CraftSetup:
         return sanitized_setup(self._setup)
@@ -589,6 +962,7 @@ class MarketSetupState(QObject):
                 setup=setup,
                 price_index=price_index,
                 input_price_types=dict(self._input_price_types),
+                output_cities=dict(self._output_cities),
                 output_price_types=dict(self._output_price_types),
                 manual_input_prices=dict(self._manual_input_prices),
                 manual_output_prices=dict(self._manual_output_prices),
@@ -596,10 +970,18 @@ class MarketSetupState(QObject):
         except Exception:
             self._inputs_model.set_items([])
             self._outputs_model.set_items([])
+            self._shopping_model.set_items([])
+            self._selling_model.set_items([])
+            self._results_items_model.set_items([])
+            self._breakdown_model.set_items([])
+            self._shopping_csv = ""
+            self._selling_csv = ""
             self._breakdown = ProfitBreakdown(notes=["preview build failed"])
             self.inputsChanged.emit()
             self.outputsChanged.emit()
             self.resultsChanged.emit()
+            self.listsChanged.emit()
+            self.resultsDetailsChanged.emit()
             return
 
         input_rows = [
@@ -631,9 +1013,166 @@ class MarketSetupState(QObject):
         self._inputs_model.set_items(input_rows)
         self._outputs_model.set_items(output_rows)
         self._breakdown = compute_run_profit(run)
+
+        shopping_rows = [
+            ShoppingPreviewRow(
+                item_id=entry.item_id,
+                item=entry.item_name,
+                quantity=float(entry.quantity),
+                city=entry.city,
+                price_type=entry.price_type,
+                unit_price=float(entry.unit_price),
+                total_cost=float(entry.total_cost),
+            )
+            for entry in build_shopping_entries(list(run.inputs))
+        ]
+        selling_rows = [
+            SellingPreviewRow(
+                item_id=entry.item_id,
+                item=entry.item_name,
+                quantity=float(entry.quantity),
+                city=entry.city,
+                price_type=entry.price_type,
+                unit_price=float(entry.unit_price),
+                total_value=float(entry.total_value),
+            )
+            for entry in build_selling_entries(list(run.outputs))
+        ]
+
+        self._shopping_model.set_items(shopping_rows)
+        self._selling_model.set_items(selling_rows)
+        self._shopping_csv = self._rows_to_csv(
+            header=["item_id", "item_name", "quantity", "city", "price_type", "unit_price", "total_cost"],
+            rows=[
+                [
+                    row.item_id,
+                    row.item,
+                    f"{row.quantity:.4f}",
+                    row.city,
+                    row.price_type,
+                    f"{row.unit_price:.2f}",
+                    f"{row.total_cost:.2f}",
+                ]
+                for row in shopping_rows
+            ],
+        )
+        self._selling_csv = self._rows_to_csv(
+            header=["item_id", "item_name", "quantity", "city", "price_type", "unit_price", "total_value"],
+            rows=[
+                [
+                    row.item_id,
+                    row.item,
+                    f"{row.quantity:.4f}",
+                    row.city,
+                    row.price_type,
+                    f"{row.unit_price:.2f}",
+                    f"{row.total_value:.2f}",
+                ]
+                for row in selling_rows
+            ],
+        )
+
+        results_rows = self._build_results_rows(output_rows)
+        self._results_items_model.set_items(results_rows)
+        breakdown_rows = self._build_breakdown_rows()
+        self._breakdown_model.set_items(breakdown_rows)
+
         self.inputsChanged.emit()
         self.outputsChanged.emit()
         self.resultsChanged.emit()
+        self.listsChanged.emit()
+        self.resultsDetailsChanged.emit()
+
+    def _build_results_rows(self, output_rows: list[OutputPreviewRow]) -> list[ResultItemRow]:
+        total_revenue = max(0.0, sum(row.total_value for row in output_rows))
+        input_total = float(self.inputsTotalCost)
+        rows: list[ResultItemRow] = []
+        for output in output_rows:
+            share = (output.total_value / total_revenue) if total_revenue > 0 else 0.0
+            allocated_cost = input_total * share
+            fee_value = float(self._breakdown.station_fee) * share
+            tax_value = float(self._breakdown.market_tax) * share
+            profit = output.total_value - allocated_cost - fee_value - tax_value
+            margin = (profit / allocated_cost * 100.0) if allocated_cost > 0 else 0.0
+            rows.append(
+                ResultItemRow(
+                    item_id=output.item_id,
+                    item=output.item,
+                    city=output.city,
+                    quantity=float(output.quantity),
+                    unit_price=float(output.unit_price),
+                    revenue=float(output.total_value),
+                    allocated_cost=float(allocated_cost),
+                    fee_value=float(fee_value),
+                    tax_value=float(tax_value),
+                    profit=float(profit),
+                    margin_percent=float(margin),
+                    demand_proxy=float(
+                        self._demand_proxy_percent(
+                            item_id=output.item_id,
+                            city=output.city,
+                            quality=self._setup.quality,
+                        )
+                    ),
+                )
+            )
+
+        if self._results_sort_key == "margin":
+            rows.sort(key=lambda x: x.margin_percent, reverse=True)
+        elif self._results_sort_key == "revenue":
+            rows.sort(key=lambda x: x.revenue, reverse=True)
+        else:
+            rows.sort(key=lambda x: x.profit, reverse=True)
+        return rows
+
+    def _build_breakdown_rows(self) -> list[BreakdownRow]:
+        focus_impact = 0.0
+        if self._breakdown.focus_used > 0:
+            focus_impact = float(self._breakdown.net_profit / self._breakdown.focus_used)
+        return [
+            BreakdownRow(label="Raw materials", value=float(self._breakdown.input_cost)),
+            BreakdownRow(label="Station fee", value=float(self._breakdown.station_fee)),
+            BreakdownRow(label="Market tax", value=float(self._breakdown.market_tax)),
+            BreakdownRow(label="Net profit", value=float(self._breakdown.net_profit)),
+            BreakdownRow(label="Focus impact (silver/focus)", value=float(focus_impact)),
+        ]
+
+    def _demand_proxy_percent(self, *, item_id: str, city: str, quality: int) -> float:
+        quote = self._price_index.get((item_id, city, quality)) or self._price_index.get((item_id, city, 1))
+        if quote is None:
+            return 0.0
+        if quote.sell_price_min <= 0 or quote.buy_price_max <= 0:
+            return 0.0
+        return (float(quote.buy_price_max) / float(quote.sell_price_min)) * 100.0
+
+    def _set_list_action_text(self, text: str) -> None:
+        self._list_action_text = text
+        self.listsChanged.emit()
+
+    def _export_csv(self, *, raw_path: str, payload: str, label: str) -> None:
+        path_text = raw_path.strip()
+        if not path_text:
+            self._set_list_action_text(f"{label} export path is empty.")
+            return
+        if not payload:
+            self._set_list_action_text(f"{label} CSV is empty.")
+            return
+        try:
+            path = Path(path_text)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(payload, encoding="utf-8")
+        except Exception as exc:
+            self._set_list_action_text(f"{label} export failed: {exc}")
+            return
+        self._set_list_action_text(f"{label} CSV exported to {path}.")
+
+    @staticmethod
+    def _rows_to_csv(*, header: list[str], rows: list[list[str]]) -> str:
+        buf = io.StringIO()
+        writer = csv.writer(buf, lineterminator="\n")
+        writer.writerow(header)
+        writer.writerows(rows)
+        return buf.getvalue()
 
     def _current_price_index(
         self,
