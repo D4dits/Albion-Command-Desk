@@ -19,6 +19,7 @@ from albion_dps.market.engine import (
     compute_run_profit,
     effective_return_fraction,
 )
+from albion_dps.market.migration import convert_legacy_recipe_rows, migrate_recipe_file
 from albion_dps.market.models import (
     CraftRun,
     CraftSetup,
@@ -48,6 +49,7 @@ __all__ = [
     "compute_profit_breakdown",
     "compute_batch_profit",
     "compute_run_profit",
+    "convert_legacy_recipe_rows",
     "CraftRun",
     "CraftSetup",
     "DEFAULT_RECIPES_PATH",
@@ -59,6 +61,7 @@ __all__ = [
     "MarketFetchMeta",
     "MarketPriceRecord",
     "MarketRegion",
+    "migrate_recipe_file",
     "OutputLine",
     "PriceType",
     "ProfitBreakdown",

@@ -164,6 +164,59 @@ class MarketOutputsModel(QAbstractListModel):
         self.endResetModel()
 
 
+@dataclass(frozen=True)
+class RecipeOptionRow:
+    recipe_id: str
+    display_name: str
+
+
+class RecipeOptionsModel(QAbstractListModel):
+    RecipeIdRole = Qt.UserRole + 1
+    DisplayNameRole = Qt.UserRole + 2
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._items: list[RecipeOptionRow] = []
+
+    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
+        return len(self._items)
+
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
+        if not index.isValid():
+            return None
+        row = index.row()
+        if row < 0 or row >= len(self._items):
+            return None
+        item = self._items[row]
+        if role == self.RecipeIdRole:
+            return item.recipe_id
+        if role == self.DisplayNameRole:
+            return item.display_name
+        return None
+
+    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
+        return {
+            self.RecipeIdRole: b"recipeId",
+            self.DisplayNameRole: b"displayName",
+        }
+
+    def set_items(self, rows: list[RecipeOptionRow]) -> None:
+        self.beginResetModel()
+        self._items = list(rows)
+        self.endResetModel()
+
+    def recipe_id_at(self, index: int) -> str | None:
+        if index < 0 or index >= len(self._items):
+            return None
+        return self._items[index].recipe_id
+
+    def index_of_recipe(self, recipe_id: str) -> int:
+        for idx, item in enumerate(self._items):
+            if item.recipe_id == recipe_id:
+                return idx
+        return -1
+
+
 class MarketSetupState(QObject):
     setupChanged = Signal()
     validationChanged = Signal()
@@ -199,8 +252,10 @@ class MarketSetupState(QObject):
         self._craft_runs = 10
         self._inputs_model = MarketInputsModel()
         self._outputs_model = MarketOutputsModel()
+        self._recipe_options_model = RecipeOptionsModel()
         self._catalog = self._load_catalog()
         self._recipe = self._resolve_recipe(recipe_id)
+        self._recipe_options_model.set_items(self._build_recipe_options())
         self._breakdown = ProfitBreakdown()
         self._input_price_types: dict[str, PriceType] = {
             component.item.unique_name: PriceType.SELL_ORDER
@@ -276,6 +331,18 @@ class MarketSetupState(QObject):
     def recipeDisplayName(self) -> str:
         return self._recipe.item.display_name or self._recipe.item.unique_name
 
+    @Property(int, notify=setupChanged)
+    def recipeTier(self) -> int:
+        return int(self._recipe.item.tier or 0)
+
+    @Property(int, notify=setupChanged)
+    def recipeEnchant(self) -> int:
+        return int(self._recipe.item.enchantment or 0)
+
+    @Property(int, notify=setupChanged)
+    def recipeIndex(self) -> int:
+        return self._recipe_options_model.index_of_recipe(self.recipeId)
+
     @Property(str, notify=pricesChanged)
     def pricesSource(self) -> str:
         return self._prices_source
@@ -291,6 +358,10 @@ class MarketSetupState(QObject):
     @Property(QObject, constant=True)
     def outputsModel(self) -> QObject:
         return self._outputs_model
+
+    @Property(QObject, constant=True)
+    def recipeOptionsModel(self) -> QObject:
+        return self._recipe_options_model
 
     @Property(float, notify=inputsChanged)
     def inputsTotalCost(self) -> float:
@@ -358,6 +429,37 @@ class MarketSetupState(QObject):
         if value_norm not in mapping:
             return
         self._replace(region=mapping[value_norm])
+
+    @Slot(int)
+    def setRecipeIndex(self, index: int) -> None:
+        recipe_id = self._recipe_options_model.recipe_id_at(int(index))
+        if recipe_id is None:
+            return
+        self.setRecipeId(recipe_id)
+
+    @Slot(str)
+    def setRecipeId(self, recipe_id: str) -> None:
+        recipe = self._catalog.get(recipe_id)
+        if recipe is None:
+            return
+        if recipe.item.unique_name == self._recipe.item.unique_name:
+            return
+        self._recipe = recipe
+        self._input_price_types = {
+            component.item.unique_name: PriceType.SELL_ORDER
+            for component in self._recipe.components
+        }
+        self._output_price_types = {
+            output.item.unique_name: PriceType.BUY_ORDER
+            for output in self._recipe.outputs
+        }
+        self._manual_input_prices = {}
+        self._manual_output_prices = {}
+        self._price_index = {}
+        self._price_context_key = None
+        self._rebuild_preview(force_price_refresh=False)
+        self.setupChanged.emit()
+        self.validationChanged.emit()
 
     @Slot(str)
     def setCraftCity(self, value: str) -> None:
@@ -657,6 +759,21 @@ class MarketSetupState(QObject):
             for issue in issues[:5]:
                 self._log.warning("Recipe issue [%s]: %s", issue.recipe_id, issue.message)
         return catalog
+
+    def _build_recipe_options(self) -> list[RecipeOptionRow]:
+        rows: list[RecipeOptionRow] = []
+        for recipe_id in self._catalog.items():
+            recipe = self._catalog.get(recipe_id)
+            if recipe is None:
+                continue
+            rows.append(
+                RecipeOptionRow(
+                    recipe_id=recipe.item.unique_name,
+                    display_name=recipe.item.display_name or recipe.item.unique_name,
+                )
+            )
+        rows.sort(key=lambda row: row.display_name.lower())
+        return rows
 
     def _resolve_recipe(self, recipe_id: str) -> Recipe:
         recipe = self._catalog.get(recipe_id)

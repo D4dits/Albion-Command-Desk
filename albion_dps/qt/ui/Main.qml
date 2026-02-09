@@ -15,7 +15,7 @@ ApplicationWindow {
     property color accentColor: "#4aa3ff"
     property color panelColor: "#131a22"
     property color borderColor: "#1f2a37"
-    property int compactControlHeight: 26
+    property int compactControlHeight: 24
     property bool meterView: viewTabs.currentIndex === 0
     property bool scannerView: viewTabs.currentIndex === 1
     property bool marketView: viewTabs.currentIndex === 2
@@ -607,7 +607,7 @@ ApplicationWindow {
                         spacing: 10
 
                         Text {
-                            text: "Market Setup + Inputs"
+                            text: "Market"
                             color: textColor
                             font.pixelSize: 14
                             font.bold: true
@@ -635,18 +635,142 @@ ApplicationWindow {
 
                             Button {
                                 text: "Refresh prices"
-                                implicitHeight: compactControlHeight
+                                implicitHeight: 24
                                 onClicked: marketSetupState.refreshPrices()
+                            }
+                        }
+
+                        TabBar {
+                            id: marketTabs
+                            Layout.fillWidth: true
+                            implicitHeight: 30
+                            spacing: 6
+                            padding: 0
+                            background: Rectangle {
+                                color: "transparent"
+                                border.width: 0
+                            }
+
+                            TabButton {
+                                id: marketOverviewTab
+                                text: "Setup + Overview"
+                                height: marketTabs.height
+                                background: Rectangle {
+                                    radius: 5
+                                    color: marketOverviewTab.checked ? accentColor : "#0f1620"
+                                    border.color: marketOverviewTab.checked ? accentColor : borderColor
+                                }
+                                contentItem: Text {
+                                    text: marketOverviewTab.text
+                                    color: marketOverviewTab.checked ? "#0b0f14" : textColor
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+                            }
+                            TabButton {
+                                id: marketInputsTab
+                                text: "Inputs"
+                                height: marketTabs.height
+                                background: Rectangle {
+                                    radius: 5
+                                    color: marketInputsTab.checked ? accentColor : "#0f1620"
+                                    border.color: marketInputsTab.checked ? accentColor : borderColor
+                                }
+                                contentItem: Text {
+                                    text: marketInputsTab.text
+                                    color: marketInputsTab.checked ? "#0b0f14" : textColor
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+                            }
+                            TabButton {
+                                id: marketOutputsTab
+                                text: "Outputs"
+                                height: marketTabs.height
+                                background: Rectangle {
+                                    radius: 5
+                                    color: marketOutputsTab.checked ? accentColor : "#0f1620"
+                                    border.color: marketOutputsTab.checked ? accentColor : borderColor
+                                }
+                                contentItem: Text {
+                                    text: marketOutputsTab.text
+                                    color: marketOutputsTab.checked ? "#0b0f14" : textColor
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+                            }
+                            TabButton {
+                                id: marketResultsTab
+                                text: "Results"
+                                height: marketTabs.height
+                                background: Rectangle {
+                                    radius: 5
+                                    color: marketResultsTab.checked ? accentColor : "#0f1620"
+                                    border.color: marketResultsTab.checked ? accentColor : borderColor
+                                }
+                                contentItem: Text {
+                                    text: marketResultsTab.text
+                                    color: marketResultsTab.checked ? "#0b0f14" : textColor
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+                            }
+                            TabButton {
+                                id: marketShoppingTab
+                                text: "Shopping"
+                                height: marketTabs.height
+                                background: Rectangle {
+                                    radius: 5
+                                    color: marketShoppingTab.checked ? accentColor : "#0f1620"
+                                    border.color: marketShoppingTab.checked ? accentColor : borderColor
+                                }
+                                contentItem: Text {
+                                    text: marketShoppingTab.text
+                                    color: marketShoppingTab.checked ? "#0b0f14" : textColor
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+                            }
+                            TabButton {
+                                id: marketSellingTab
+                                text: "Selling"
+                                height: marketTabs.height
+                                background: Rectangle {
+                                    radius: 5
+                                    color: marketSellingTab.checked ? accentColor : "#0f1620"
+                                    border.color: marketSellingTab.checked ? accentColor : borderColor
+                                }
+                                contentItem: Text {
+                                    text: marketSellingTab.text
+                                    color: marketSellingTab.checked ? "#0b0f14" : textColor
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
                             }
                         }
 
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
+                            visible: marketTabs.currentIndex === 0
                             spacing: 12
 
                             Rectangle {
-                                Layout.preferredWidth: 420
+                                Layout.preferredWidth: 276
+                                Layout.minimumWidth: 260
+                                Layout.maximumWidth: 300
                                 Layout.fillHeight: true
                                 radius: 6
                                 color: "#0f1620"
@@ -673,6 +797,23 @@ ApplicationWindow {
                                             columnSpacing: 8
                                             rowSpacing: 8
                                             width: parent.width
+
+                                            Text { text: "Recipe"; color: mutedColor; font.pixelSize: 11 }
+                                            ComboBox {
+                                                Layout.fillWidth: true
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
+                                                model: marketSetupState.recipeOptionsModel
+                                                textRole: "displayName"
+                                                currentIndex: marketSetupState.recipeIndex
+                                                onActivated: marketSetupState.setRecipeIndex(currentIndex)
+                                            }
+
+                                            Text { text: "Tier"; color: mutedColor; font.pixelSize: 11 }
+                                            Text { text: String(marketSetupState.recipeTier); color: textColor; font.pixelSize: 11 }
+
+                                            Text { text: "Enchant"; color: mutedColor; font.pixelSize: 11 }
+                                            Text { text: String(marketSetupState.recipeEnchant); color: textColor; font.pixelSize: 11 }
 
                                             Text { text: "Region"; color: mutedColor; font.pixelSize: 11 }
                                             ComboBox {
@@ -953,6 +1094,7 @@ ApplicationWindow {
                                         Layout.fillHeight: true
                                         Layout.minimumHeight: 250
                                         Layout.preferredHeight: 290
+                                        visible: false
                                         radius: 4
                                         color: "transparent"
 
@@ -1203,6 +1345,484 @@ ApplicationWindow {
                                                 }
                                             }
                                         }
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: marketTabs.currentIndex === 1
+                            radius: 6
+                            color: "#0f1620"
+                            border.color: "#1f2a37"
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 10
+                                spacing: 8
+
+                                Text {
+                                    text: "Inputs"
+                                    color: textColor
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 24
+                                    radius: 4
+                                    color: "#111b28"
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 4
+                                        spacing: 8
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 180 }
+                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 110 }
+                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 95 }
+                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                    }
+                                }
+
+                                ListView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    model: marketSetupState.inputsModel
+
+                                    delegate: Rectangle {
+                                        width: ListView.view.width
+                                        height: 28
+                                        color: index % 2 === 0 ? "#0f1620" : "#101924"
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 4
+                                            spacing: 8
+                                            Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: 180; elide: Text.ElideRight }
+                                            Text { text: Number(quantity).toFixed(2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                            Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 110; elide: Text.ElideRight }
+                                            ComboBox {
+                                                Layout.preferredWidth: 95
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
+                                                model: ["sell_order", "buy_order", "average", "manual"]
+                                                currentIndex: Math.max(0, model.indexOf(priceType))
+                                                onActivated: marketSetupState.setInputPriceType(itemId, currentText)
+                                            }
+                                            TextField {
+                                                Layout.preferredWidth: 70
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
+                                                text: manualPrice > 0 ? String(manualPrice) : ""
+                                                placeholderText: "-"
+                                                enabled: priceType === "manual"
+                                                inputMethodHints: Qt.ImhDigitsOnly
+                                                onEditingFinished: marketSetupState.setInputManualPrice(itemId, text)
+                                            }
+                                            Text { text: Number(unitPrice).toFixed(0); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                            Text { text: Number(totalCost).toFixed(0); color: textColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Total input cost"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: Number(marketSetupState.inputsTotalCost).toFixed(0); color: textColor; font.pixelSize: 12; font.bold: true }
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: marketTabs.currentIndex === 2
+                            radius: 6
+                            color: "#0f1620"
+                            border.color: "#1f2a37"
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 10
+                                spacing: 8
+
+                                Text {
+                                    text: "Outputs"
+                                    color: textColor
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 24
+                                    radius: 4
+                                    color: "#111b28"
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 4
+                                        spacing: 8
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 180 }
+                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 110 }
+                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 95 }
+                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                    }
+                                }
+
+                                ListView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    model: marketSetupState.outputsModel
+
+                                    delegate: Rectangle {
+                                        width: ListView.view.width
+                                        height: 28
+                                        color: index % 2 === 0 ? "#0f1620" : "#101924"
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 4
+                                            spacing: 8
+                                            Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: 180; elide: Text.ElideRight }
+                                            Text { text: Number(quantity).toFixed(2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                            Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 110; elide: Text.ElideRight }
+                                            ComboBox {
+                                                Layout.preferredWidth: 95
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
+                                                model: ["buy_order", "sell_order", "average", "manual"]
+                                                currentIndex: Math.max(0, model.indexOf(priceType))
+                                                onActivated: marketSetupState.setOutputPriceType(itemId, currentText)
+                                            }
+                                            TextField {
+                                                Layout.preferredWidth: 70
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
+                                                text: manualPrice > 0 ? String(manualPrice) : ""
+                                                placeholderText: "-"
+                                                enabled: priceType === "manual"
+                                                inputMethodHints: Qt.ImhDigitsOnly
+                                                onEditingFinished: marketSetupState.setOutputManualPrice(itemId, text)
+                                            }
+                                            Text { text: Number(unitPrice).toFixed(0); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                            Text { text: Number(totalValue).toFixed(0); color: textColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Total output value"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: Number(marketSetupState.outputsTotalValue).toFixed(0); color: textColor; font.pixelSize: 12; font.bold: true }
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: marketTabs.currentIndex === 3
+                            radius: 6
+                            color: "#0f1620"
+                            border.color: "#1f2a37"
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 10
+                                spacing: 8
+
+                                Text {
+                                    text: "Results"
+                                    color: textColor
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Investment"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: Number(marketSetupState.inputsTotalCost).toFixed(0); color: textColor; font.pixelSize: 11 }
+                                    }
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Revenue"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: Number(marketSetupState.outputsTotalValue).toFixed(0); color: textColor; font.pixelSize: 11 }
+                                    }
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Station fee"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: Number(marketSetupState.stationFeeValue).toFixed(0); color: textColor; font.pixelSize: 11 }
+                                    }
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Market tax"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: Number(marketSetupState.marketTaxValue).toFixed(0); color: textColor; font.pixelSize: 11 }
+                                    }
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Net profit"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text {
+                                            text: Number(marketSetupState.netProfitValue).toFixed(0)
+                                            color: marketSetupState.netProfitValue >= 0 ? "#7ee787" : "#ff7b72"
+                                            font.pixelSize: 11
+                                        }
+                                    }
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Margin %"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text {
+                                            text: Number(marketSetupState.marginPercent).toFixed(2)
+                                            color: marketSetupState.marginPercent >= 0 ? "#7ee787" : "#ff7b72"
+                                            font.pixelSize: 11
+                                        }
+                                    }
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Focus used"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: Number(marketSetupState.focusUsed).toFixed(0); color: textColor; font.pixelSize: 11 }
+                                    }
+                                }
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Silver per focus"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text {
+                                            text: Number(marketSetupState.silverPerFocus).toFixed(2)
+                                            color: marketSetupState.silverPerFocus >= 0 ? "#7ee787" : "#ff7b72"
+                                            font.pixelSize: 11
+                                        }
+                                    }
+                                }
+                                Item { Layout.fillHeight: true }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: marketTabs.currentIndex === 4
+                            radius: 6
+                            color: "#0f1620"
+                            border.color: "#1f2a37"
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 10
+                                spacing: 8
+
+                                Text { text: "Shopping List"; color: textColor; font.pixelSize: 12; font.bold: true }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 24
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 4
+                                        spacing: 8
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 240 }
+                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 130 }
+                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                    }
+                                }
+
+                                ListView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    model: marketSetupState.inputsModel
+
+                                    delegate: Rectangle {
+                                        width: ListView.view.width
+                                        height: 28
+                                        color: index % 2 === 0 ? "#0f1620" : "#101924"
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 4
+                                            spacing: 8
+                                            Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: 240; elide: Text.ElideRight }
+                                            Text { text: Number(quantity).toFixed(2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                            Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 130; elide: Text.ElideRight }
+                                            Text { text: Number(unitPrice).toFixed(0); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                            Text { text: Number(totalCost).toFixed(0); color: textColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Shopping total"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: Number(marketSetupState.inputsTotalCost).toFixed(0); color: textColor; font.pixelSize: 12; font.bold: true }
+                                    }
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            visible: marketTabs.currentIndex === 5
+                            radius: 6
+                            color: "#0f1620"
+                            border.color: "#1f2a37"
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 10
+                                spacing: 8
+
+                                Text { text: "Selling List"; color: textColor; font.pixelSize: 12; font.bold: true }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 24
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 4
+                                        spacing: 8
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 240 }
+                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 130 }
+                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                    }
+                                }
+
+                                ListView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    model: marketSetupState.outputsModel
+
+                                    delegate: Rectangle {
+                                        width: ListView.view.width
+                                        height: 28
+                                        color: index % 2 === 0 ? "#0f1620" : "#101924"
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 4
+                                            spacing: 8
+                                            Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: 240; elide: Text.ElideRight }
+                                            Text { text: Number(quantity).toFixed(2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                            Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 130; elide: Text.ElideRight }
+                                            Text { text: Number(unitPrice).toFixed(0); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                            Text { text: Number(totalValue).toFixed(0); color: textColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Selling total"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text { text: Number(marketSetupState.outputsTotalValue).toFixed(0); color: textColor; font.pixelSize: 12; font.bold: true }
                                     }
                                 }
                             }

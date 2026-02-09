@@ -8,8 +8,10 @@
   - Completed now: preview Outputs + Results w `Main.qml` (tabela output + KPI net profit/margin/focus/SPF) podlaczone do `marketSetupState`.
   - Completed now: AO Data price loading with cache/fallback + manual price mode per-item in Inputs/Outputs feeding Results.
   - Completed now: recipe/data pipeline (pakietowy dataset recipes.json + integrity validation) and market state bootstrapped from catalog.
+  - Completed now: recipe migration helpers (legacy -> normalized catalog schema).
   - Completed now: AO Data resilience (retry/backoff) and telemetry in service/client (source, elapsed ms, record count).
   - Completed now: engine extensions (improved return-rate model and batch craft/run profit API).
+  - Completed now: Market sub-tabs in UI (Setup+Overview, Inputs, Outputs, Results, Shopping, Selling) with compact setup controls.
 
 ## 1) Cel
 Wdrozyc w projekcie nowy modul kalkulatora craftingu (AFM-like) z zakladkami:
@@ -64,7 +66,7 @@ Zakres obejmuje tylko ekonomie craftingu/refiningu, bez zmian w logice DPS meter
 - [x] A3. Wczytywanie katalogu itemow/recipe:
   - parser lokalnego katalogu (JSON/yaml) z wersjonowaniem.
   - mapowanie item_id <-> unique_name <-> display_name.
-- [~] A4. Migracja/konwersja danych recipe z obecnych zasobow projektu.
+- [x] A4. Migracja/konwersja danych recipe z obecnych zasobow projektu.
 - [x] A5. Walidacja integralnosci datasetu (brakujace itemy, zle tier/enchant).
 
 Definition of Done:
@@ -110,7 +112,7 @@ Definition of Done:
 - deterministyczny wynik (ta sama konfiguracja = ten sam wynik).
 
 ## EPIC D - Setup tab
-- [~] D1. Pola:
+- [x] D1. Pola:
   - region, tier/enchant, quality, quantity/runs.
   - craft location, bonus city, hideout level/power.
   - premium, daily bonus, fee, tax.
@@ -179,7 +181,7 @@ Definition of Done:
 
 ## EPIC J - UI/UX (Qt)
 - [x] J1. Dodac glowna zakladke `Market` obok `Meter`/`Scanner`.
-- J2. W `Market` dodac 6 podzakladek.
+- [x] J2. W `Market` dodac 6 podzakladek.
 - J3. Wydajny model tabel:
   - sort/filter bez freezowania UI.
 - J4. Stany:

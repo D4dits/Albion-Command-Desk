@@ -200,6 +200,10 @@ Qt tabs:
   - `Start scanner` / `Stop scanner` (runs local binary or `go run .`)
   - uses fixed runtime defaults (upload enabled, official public ingest endpoint)
   - live log output
+- `Market`: crafting calculator workspace with sub-tabs:
+  - `Setup + Overview` (region/cities/fees/runs + quick KPI view)
+  - `Inputs` and `Outputs` (per-item live/manual pricing modes)
+  - `Results`, `Shopping`, `Selling` (profit breakdown + execution lists)
 
 Scanner local path:
 - `artifacts/albiondata-client`

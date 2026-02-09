@@ -87,6 +87,10 @@ def test_market_setup_state_builds_outputs_and_results() -> None:
     assert state.outputsTotalValue > 0
     assert state.focusUsed > 0
     assert isinstance(state.netProfitValue, float)
+    assert state.recipeOptionsModel.rowCount() >= 1
+    assert state.recipeIndex >= 0
+    assert state.recipeTier >= 0
+    assert state.recipeEnchant >= 0
 
 
 def test_market_setup_state_uses_service_and_manual_overrides() -> None:
@@ -109,3 +113,17 @@ def test_market_setup_state_uses_service_and_manual_overrides() -> None:
     previous_calls = service.calls
     state.refreshPrices()
     assert service.calls > previous_calls
+
+
+def test_market_setup_state_can_switch_recipe_by_index() -> None:
+    state = MarketSetupState()
+    before = state.recipeId
+    if state.recipeOptionsModel.rowCount() < 2:
+        return
+    switched = False
+    for idx in range(state.recipeOptionsModel.rowCount()):
+        state.setRecipeIndex(idx)
+        if state.recipeId != before:
+            switched = True
+            break
+    assert switched
