@@ -42,7 +42,7 @@ class ScannerState(QObject):
         self._update_text = "not checked"
         self._log_lines: deque[str] = deque(maxlen=800)
         self._running = False
-        self._disable_upload = True
+        self._disable_upload = False
         self._public_ingest_url = "https+pow://albion-online-data.com"
         self._listen_devices = ""
         self._process: subprocess.Popen[str] | None = None

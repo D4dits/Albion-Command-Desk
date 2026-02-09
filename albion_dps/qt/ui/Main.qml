@@ -517,6 +517,28 @@ ApplicationWindow {
                                 text: "Disable upload (-d)"
                                 checked: scannerState.disableUpload
                                 onToggled: scannerState.setDisableUpload(checked)
+                                indicator: Rectangle {
+                                    implicitWidth: 14
+                                    implicitHeight: 14
+                                    radius: 3
+                                    border.color: disableUploadBox.checked ? accentColor : "#3a4b60"
+                                    color: disableUploadBox.checked ? accentColor : "#101923"
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        width: 6
+                                        height: 6
+                                        radius: 2
+                                        color: "#0b0f14"
+                                        visible: disableUploadBox.checked
+                                    }
+                                }
+                                contentItem: Text {
+                                    text: disableUploadBox.text
+                                    color: "#ffd166"
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                    leftPadding: 6
+                                }
                             }
                             Text {
                                 text: "Listen devices (-l):"
