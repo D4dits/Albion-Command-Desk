@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import os
+import re
 import shutil
 import subprocess
+import sys
 import threading
 from collections import deque
 from datetime import datetime
 from pathlib import Path
-import re
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
 
@@ -45,6 +47,7 @@ class ScannerState(QObject):
         self._process: subprocess.Popen[str] | None = None
         self._process_lock = threading.Lock()
         self._op_lock = threading.Lock()
+        self._capability_hint_shown = False
 
         self._statusSignal.connect(self._set_status_text)
         self._updateSignal.connect(self._set_update_text)
@@ -89,43 +92,11 @@ class ScannerState(QObject):
 
     @Slot()
     def startScanner(self) -> None:
-        with self._process_lock:
-            if self._process is not None:
-                self._append_warn("Scanner already running.")
-                return
+        self._start_scanner(use_sudo=False)
 
-        command = self._resolve_start_command()
-        if command is None:
-            self._append_error(
-                "No scanner executable found. Sync repository first, then build tool."
-            )
-            return
-        command = self._build_runtime_command(command)
-
-        self._client_dir.mkdir(parents=True, exist_ok=True)
-        self._append_log(f"Starting scanner: {' '.join(command)}")
-        try:
-            process = subprocess.Popen(
-                command,
-                cwd=str(self._client_dir),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                bufsize=1,
-            )
-        except Exception as exc:
-            self._append_error(f"Failed to start scanner: {exc}")
-            return
-
-        with self._process_lock:
-            self._process = process
-        self._runningSignal.emit(True)
-        self._statusSignal.emit("scanner running")
-
-        reader = threading.Thread(target=self._read_process_output, args=(process,), daemon=True)
-        reader.start()
+    @Slot()
+    def startScannerSudo(self) -> None:
+        self._start_scanner(use_sudo=True)
 
     @Slot()
     def stopScanner(self) -> None:
@@ -276,6 +247,112 @@ class ScannerState(QObject):
         if go_path and self._client_dir.exists():
             return [go_path, "run", "."]
         return None
+
+    def _start_scanner(self, *, use_sudo: bool) -> None:
+        with self._process_lock:
+            if self._process is not None:
+                self._append_warn("Scanner already running.")
+                return
+
+        command = self._resolve_start_command()
+        if command is None:
+            if (self._client_dir / ".git").exists():
+                self._append_error(
+                    "No scanner executable found. Build with: go build -o albiondata-client ."
+                )
+                if not shutil.which("go"):
+                    self._append_warn("Go is not available in PATH.")
+            else:
+                self._append_error(
+                    "No scanner executable found. Sync repository first, then build tool."
+                )
+            return
+
+        if use_sudo:
+            if not shutil.which("sudo"):
+                self._append_error("sudo is not available in PATH.")
+                return
+            if len(command) > 1 and Path(command[0]).name == "go":
+                self._append_error(
+                    "Sudo start requires a built scanner binary. Build with: go build -o albiondata-client ."
+                )
+                return
+        else:
+            self._maybe_log_capability_hint(command)
+
+        command = self._build_runtime_command(command)
+        if use_sudo:
+            command = self._sudo_prefix() + command
+
+        self._client_dir.mkdir(parents=True, exist_ok=True)
+        self._append_log(f"Starting scanner: {' '.join(command)}")
+        try:
+            process = subprocess.Popen(
+                command,
+                cwd=str(self._client_dir),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,
+            )
+        except Exception as exc:
+            self._append_error(f"Failed to start scanner: {exc}")
+            return
+
+        with self._process_lock:
+            self._process = process
+        self._runningSignal.emit(True)
+        self._statusSignal.emit("scanner running")
+
+        reader = threading.Thread(target=self._read_process_output, args=(process,), daemon=True)
+        reader.start()
+
+    def _sudo_prefix(self) -> list[str]:
+        if sys.stdin.isatty() and sys.stdout.isatty():
+            return ["sudo"]
+        self._append_warn("No TTY detected; using sudo -n (non-interactive).")
+        self._append_warn("If sudo fails, run `sudo -v` in a terminal and try again.")
+        return ["sudo", "-n"]
+
+    def _maybe_log_capability_hint(self, command: list[str]) -> None:
+        if self._capability_hint_shown:
+            return
+        if _is_windows():
+            return
+        if os.geteuid() == 0:
+            return
+        if len(command) != 1:
+            return
+        binary = Path(command[0])
+        if not binary.exists():
+            return
+        getcap = shutil.which("getcap")
+        if getcap:
+            try:
+                result = subprocess.run(
+                    [getcap, str(binary)],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=5,
+                    check=False,
+                )
+            except Exception:
+                result = None
+            if result and result.returncode == 0:
+                output = (result.stdout or "").strip()
+                if "cap_net_raw" in output and "cap_net_admin" in output:
+                    self._capability_hint_shown = True
+                    return
+        self._append_warn(
+            "Scanner capture may require permissions. If you see 'Operation not permitted', grant capabilities."
+        )
+        self._append_warn(f"Run: sudo setcap cap_net_raw,cap_net_admin=eip {binary}")
+        self._append_warn("Or use the 'Start scanner (sudo)' button.")
+        self._capability_hint_shown = True
 
     def _build_runtime_command(self, command: list[str]) -> list[str]:
         args = list(command)

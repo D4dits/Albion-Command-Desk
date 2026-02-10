@@ -621,6 +621,11 @@ ApplicationWindow {
                                 onClicked: scannerState.startScanner()
                             }
                             Button {
+                                text: "Start scanner (sudo)"
+                                enabled: !scannerState.running
+                                onClicked: scannerState.startScannerSudo()
+                            }
+                            Button {
                                 text: "Stop scanner"
                                 enabled: scannerState.running
                                 onClicked: scannerState.stopScanner()
