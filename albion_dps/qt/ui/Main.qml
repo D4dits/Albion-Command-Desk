@@ -1400,14 +1400,14 @@ ApplicationWindow {
                                         anchors.fill: parent
                                         anchors.margins: 4
                                         spacing: 6
-                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 150 }
-                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
-                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 105 }
-                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 85 }
-                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
-                                        Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 150; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 105; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 85; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; horizontalAlignment: Text.AlignLeft }
                                     }
                                 }
 
@@ -1443,7 +1443,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -1484,7 +1484,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -1496,7 +1496,7 @@ ApplicationWindow {
                                                 color: adpAgeColor(priceAgeText)
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 60
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -1508,7 +1508,7 @@ ApplicationWindow {
                                                 color: textColor
                                                 font.pixelSize: 11
                                                 Layout.fillWidth: true
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -1580,16 +1580,16 @@ ApplicationWindow {
                                         anchors.fill: parent
                                         anchors.margins: 4
                                         spacing: 6
-                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 135 }
-                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 50 }
-                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 85 }
-                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 80 }
-                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
-                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
-                                        Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                        Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 50 }
-                                        Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 50 }
-                                        Text { text: "Net"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 135; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 50; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 85; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 80; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 50; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 50; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Net"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; horizontalAlignment: Text.AlignLeft }
                                     }
                                 }
 
@@ -1625,7 +1625,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 50
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -1666,7 +1666,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -1678,7 +1678,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 60
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -1690,7 +1690,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 50
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -1702,7 +1702,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 50
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -1714,7 +1714,7 @@ ApplicationWindow {
                                                 color: textColor
                                                 font.pixelSize: 11
                                                 Layout.fillWidth: true
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
