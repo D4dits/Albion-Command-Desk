@@ -72,6 +72,7 @@ class MarketDataService:
         qualities: list[int] | None = None,
         ttl_seconds: float = 120.0,
         allow_stale: bool = True,
+        allow_cache: bool = True,
     ) -> list[MarketPriceRecord]:
         started = time.perf_counter()
         cache_key = _cache_key(
@@ -83,17 +84,18 @@ class MarketDataService:
                 "qualities": sorted(qualities or [1]),
             },
         )
-        cached = self._get_cached(cache_key, allow_stale=allow_stale)
-        if cached is not None:
-            payload_raw, source = cached
-            rows = [_to_price(x) for x in payload_raw if isinstance(x, dict)]
-            self._last_prices_meta = MarketFetchMeta(
-                source=source,
-                record_count=len(rows),
-                elapsed_ms=(time.perf_counter() - started) * 1000.0,
-                cache_key=cache_key,
-            )
-            return rows
+        if allow_cache:
+            cached = self._get_cached(cache_key, allow_stale=allow_stale)
+            if cached is not None:
+                payload_raw, source = cached
+                rows = [_to_price(x) for x in payload_raw if isinstance(x, dict)]
+                self._last_prices_meta = MarketFetchMeta(
+                    source=source,
+                    record_count=len(rows),
+                    elapsed_ms=(time.perf_counter() - started) * 1000.0,
+                    cache_key=cache_key,
+                )
+                return rows
 
         rows = self.client.fetch_prices(
             region=region,
@@ -123,6 +125,7 @@ class MarketDataService:
         qualities: list[int] | None = None,
         ttl_seconds: float = 120.0,
         allow_stale: bool = True,
+        allow_cache: bool = True,
     ) -> dict[tuple[str, str, int], MarketPriceRecord]:
         rows = self.get_prices(
             region=region,
@@ -131,6 +134,7 @@ class MarketDataService:
             qualities=qualities,
             ttl_seconds=ttl_seconds,
             allow_stale=allow_stale,
+            allow_cache=allow_cache,
         )
         index: dict[tuple[str, str, int], MarketPriceRecord] = {}
         for row in rows:
@@ -244,4 +248,3 @@ def _to_chart(row: dict[str, object]) -> MarketChartPoint:
         item_count=int(row.get("item_count") or 0),
         avg_price=int(row.get("avg_price") or 0),
     )
-

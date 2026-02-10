@@ -1868,7 +1868,8 @@ class MarketSetupState(QObject):
                 locations=locations,
                 qualities=[setup.quality, 1] if setup.quality != 1 else [1],
                 ttl_seconds=120.0,
-                allow_stale=True,
+                allow_stale=not force,
+                allow_cache=not force,
             )
             if index:
                 meta = self._service.last_prices_meta
