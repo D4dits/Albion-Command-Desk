@@ -9,10 +9,11 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlencode
 
 from PySide6.QtCore import QAbstractListModel, QModelIndex, QObject, Property, Qt, Signal, Slot
 
-from albion_dps.market.aod_client import MarketPriceRecord
+from albion_dps.market.aod_client import MarketPriceRecord, REGION_HOSTS
 from albion_dps.market.catalog import RecipeCatalog
 from albion_dps.market.engine import (
     build_craft_run,
@@ -1166,6 +1167,23 @@ class MarketSetupState(QObject):
     def refreshPrices(self) -> None:
         self._rebuild_preview(force_price_refresh=True)
 
+    @Slot()
+    def showAoDataRaw(self) -> None:
+        url = self._build_aodata_url()
+        if not url:
+            return
+        try:
+            from PySide6.QtCore import QUrl
+            from PySide6.QtGui import QDesktopServices
+        except Exception as exc:  # pragma: no cover - optional
+            self._set_list_action_text(f"Failed to open AOData URL: {exc}")
+            return
+        opened = QDesktopServices.openUrl(QUrl(url))
+        if opened:
+            self._set_list_action_text("Opened AOData prices in browser.")
+        else:
+            self._set_list_action_text(f"AOData URL: {url}")
+
     @Slot(str, str)
     def setInputPriceType(self, item_id: str, price_type: str) -> None:
         normalized = self._to_price_type(price_type)
@@ -1799,6 +1817,30 @@ class MarketSetupState(QObject):
     def _set_list_action_text(self, text: str) -> None:
         self._list_action_text = text
         self.listsChanged.emit()
+
+    def _build_aodata_url(self) -> str | None:
+        setup = self.to_setup()
+        item_ids = self._collect_pricing_item_ids()
+        if not item_ids:
+            self._set_list_action_text("Select a recipe in Craft Plan to build AOData URL.")
+            return None
+        locations = self._collect_locations(setup)
+        if not locations:
+            self._set_list_action_text("No market locations selected.")
+            return None
+        qualities = [setup.quality, 1] if setup.quality != 1 else [1]
+        params = urlencode(
+            {
+                "locations": ",".join(locations),
+                "qualities": ",".join(str(x) for x in qualities),
+            }
+        )
+        host = REGION_HOSTS.get(setup.region)
+        if not host:
+            self._set_list_action_text("Unknown AOData region.")
+            return None
+        joined_ids = ",".join(item_ids)
+        return f"https://{host}/api/v2/stats/prices/{joined_ids}.json?{params}"
 
     def _export_csv(self, *, raw_path: str, payload: str, label: str) -> None:
         path_text = raw_path.strip()

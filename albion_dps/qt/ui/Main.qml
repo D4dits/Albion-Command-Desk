@@ -724,6 +724,11 @@ ApplicationWindow {
                                 implicitHeight: 24
                                 onClicked: marketSetupState.refreshPrices()
                             }
+                            Button {
+                                text: "Show raw AOData"
+                                implicitHeight: 24
+                                onClicked: marketSetupState.showAoDataRaw()
+                            }
                         }
 
                         Text {
