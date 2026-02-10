@@ -23,12 +23,14 @@ class ItemRef:
     display_name: str = ""
     tier: int | None = None
     enchantment: int | None = None
+    item_value: int | None = None
 
 
 @dataclass(frozen=True)
 class RecipeComponent:
     item: ItemRef
     quantity: float
+    returnable: bool = True
 
 
 @dataclass(frozen=True)
@@ -54,6 +56,7 @@ class CraftSetup:
     default_buy_city: str = ""
     default_sell_city: str = ""
     premium: bool = True
+    focus_enabled: bool = False
     station_fee_percent: float = 0.0
     market_tax_percent: float = 0.0
     daily_bonus_percent: float = 0.0

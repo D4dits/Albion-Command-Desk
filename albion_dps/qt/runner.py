@@ -231,7 +231,22 @@ def _ensure_pyside6_paths() -> None:
             pass
     os.environ.setdefault("QML2_IMPORT_PATH", str(qml_path))
     os.environ.setdefault("QT_PLUGIN_PATH", str(plugins_path))
-    os.environ.setdefault("QT_QUICK_CONTROLS_STYLE", "Basic")
+    # Force a non-native style so custom backgrounds in Main.qml are applied
+    # consistently and do not spam runtime warnings on some platforms.
+    os.environ["QT_QUICK_CONTROLS_STYLE"] = "Basic"
+    _append_qt_logging_rule("qt.qpa.mime=false")
+
+
+def _append_qt_logging_rule(rule: str) -> None:
+    current = os.environ.get("QT_LOGGING_RULES", "").strip()
+    if not current:
+        os.environ["QT_LOGGING_RULES"] = rule
+        return
+    parts = [part.strip() for part in current.split(";") if part.strip()]
+    if rule in parts:
+        return
+    parts.append(rule)
+    os.environ["QT_LOGGING_RULES"] = ";".join(parts)
 
 
 def _build_runtime(

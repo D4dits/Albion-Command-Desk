@@ -53,6 +53,8 @@ dotnet-install.sh
 _tmp/
 _tmppytest/
 UsersUsersDocumentsDPS_MasterDPS_Meter_AO_tmppytest/
+tools/market/sources/*.json
+!tools/market/sources/.gitkeep
 
 # Editor / OS noise
 .vscode/

@@ -10,10 +10,12 @@ from albion_dps.market.cache import CacheEntry, SQLiteCache
 from albion_dps.market.catalog import CatalogIssue, DEFAULT_RECIPES_PATH, RecipeCatalog
 from albion_dps.market.engine import (
     BatchCraftRequest,
+    OutputValuation,
     build_craft_run,
     build_craft_runs_batch,
     build_input_lines,
     build_output_lines,
+    compute_output_valuations,
     compute_batch_profit,
     compute_profit_breakdown,
     compute_run_profit,
@@ -41,6 +43,12 @@ from albion_dps.market.planner import (
     build_selling_entries,
     build_shopping_entries,
 )
+from albion_dps.market.recipes_from_items import (
+    RecipesFromItemsReport,
+    extract_recipes_from_items_json,
+    extract_recipes_from_items_payload,
+    load_display_names,
+)
 from albion_dps.market.service import MarketDataService, MarketFetchMeta
 from albion_dps.market.setup import sanitized_setup, validate_setup
 
@@ -60,14 +68,18 @@ __all__ = [
     "CatalogIssue",
     "compute_profit_breakdown",
     "compute_batch_profit",
+    "compute_output_valuations",
     "compute_run_profit",
     "convert_legacy_recipe_rows",
     "CraftRun",
     "CraftSetup",
     "DEFAULT_RECIPES_PATH",
     "effective_return_fraction",
+    "extract_recipes_from_items_json",
+    "extract_recipes_from_items_payload",
     "InputLine",
     "ItemRef",
+    "load_display_names",
     "MarketChartPoint",
     "MarketDataService",
     "MarketFetchMeta",
@@ -75,12 +87,14 @@ __all__ = [
     "MarketRegion",
     "migrate_recipe_file",
     "OutputLine",
+    "OutputValuation",
     "PriceType",
     "ProfitBreakdown",
     "Recipe",
     "RecipeCatalog",
     "RecipeComponent",
     "RecipeOutput",
+    "RecipesFromItemsReport",
     "SellingEntry",
     "ShoppingEntry",
     "sanitized_setup",

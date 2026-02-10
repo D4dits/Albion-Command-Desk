@@ -244,6 +244,22 @@ def _load_items(path: Path, *, logger: logging.Logger) -> dict[str, str]:
         if isinstance(subcategory, str) and subcategory:
             mapping[unique] = subcategory.lower()
     if not mapping:
+        # Support extractor output where items are nested under many node types
+        # and fields use "@uniquename"/"@shopsubcategory1" xml-json keys.
+        root = data.get("items") if isinstance(data, dict) else data
+        for node in _iter_nested_item_nodes(root):
+            unique = node.get("@uniquename") or node.get("UniqueName")
+            if not isinstance(unique, str) or not unique:
+                continue
+            subcategory = (
+                node.get("@shopsubcategory1")
+                or node.get("shopsubcategory1")
+                or node.get("@shopsubcategory")
+                or node.get("shopsubcategory")
+            )
+            if isinstance(subcategory, str) and subcategory:
+                mapping[unique] = subcategory.lower()
+    if not mapping:
         logger.warning("Items catalog loaded but produced no entries: %s", path)
     return mapping
 
@@ -276,6 +292,21 @@ def _iter_records(data: Any) -> Iterable[Any]:
                 records.append(record)
         return records
     return []
+
+
+def _iter_nested_item_nodes(node: Any) -> Iterable[dict[str, Any]]:
+    if isinstance(node, dict):
+        if "@uniquename" in node or "UniqueName" in node:
+            yield node
+        for key, value in node.items():
+            if key.startswith("@"):
+                continue
+            if isinstance(value, (dict, list)):
+                yield from _iter_nested_item_nodes(value)
+    elif isinstance(node, list):
+        for value in node:
+            if isinstance(value, (dict, list)):
+                yield from _iter_nested_item_nodes(value)
 
 
 def _load_json(path: Path, *, logger: logging.Logger) -> Any:
