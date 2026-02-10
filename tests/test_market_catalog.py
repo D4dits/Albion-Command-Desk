@@ -5,7 +5,7 @@ import shutil
 import uuid
 from pathlib import Path
 
-from albion_dps.market.catalog import RecipeCatalog
+from albion_dps.market.catalog import RecipeCatalog, _resolve_item_value
 
 
 def test_recipe_catalog_default_dataset_loads() -> None:
@@ -63,3 +63,26 @@ def test_recipe_catalog_integrity_detects_tier_mismatch() -> None:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
     assert any("tier mismatch" in issue.message for issue in issues)
+
+
+def test_resolve_item_value_handles_enchant_and_level_suffix() -> None:
+    item_values = {
+        "T5_MAIN_SPEAR": 1234,
+        "T6_MAIN_CROSSBOW": 4321,
+    }
+    assert (
+        _resolve_item_value(
+            unique_name="T5_MAIN_SPEAR@2",
+            explicit_value=None,
+            item_values=item_values,
+        )
+        == 1234
+    )
+    assert (
+        _resolve_item_value(
+            unique_name="T6_MAIN_CROSSBOW_LEVEL3",
+            explicit_value=None,
+            item_values=item_values,
+        )
+        == 4321
+    )

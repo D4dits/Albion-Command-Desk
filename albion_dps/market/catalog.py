@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from functools import lru_cache
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -9,16 +10,29 @@ from albion_dps.market.models import ItemRef, Recipe, RecipeComponent, RecipeOut
 
 
 DEFAULT_RECIPES_PATH = Path(__file__).resolve().parent / "data" / "recipes.json"
+DEFAULT_ITEMS_PATH = Path(__file__).resolve().parents[2] / "data" / "items.json"
 _TIER_PATTERN = re.compile(r"^T(?P<tier>\d+)")
+_LEVEL_SUFFIX_RE = re.compile(r"_LEVEL\d+$")
 
 
-def _to_item_ref(payload: dict[str, object], fallback_name: str = "") -> ItemRef:
+def _to_item_ref(
+    payload: dict[str, object],
+    fallback_name: str = "",
+    item_values: dict[str, int] | None = None,
+) -> ItemRef:
     unique_name = str(payload.get("unique_name") or fallback_name).strip()
+    explicit_item_value = _to_int_or_none(payload.get("item_value"))
+    derived_item_value = _resolve_item_value(
+        unique_name=unique_name,
+        explicit_value=explicit_item_value,
+        item_values=item_values or {},
+    )
     return ItemRef(
         unique_name=unique_name,
         display_name=str(payload.get("display_name") or ""),
         tier=_to_int_or_none(payload.get("tier")),
         enchantment=_to_int_or_none(payload.get("enchantment")),
+        item_value=derived_item_value,
     )
 
 
@@ -28,7 +42,34 @@ def _to_int_or_none(value: object) -> int | None:
     try:
         return int(value)
     except (TypeError, ValueError):
-        return None
+        try:
+            return int(float(str(value).strip().replace(",", ".")))
+        except (TypeError, ValueError):
+            return None
+
+
+def _resolve_item_value(
+    *,
+    unique_name: str,
+    explicit_value: int | None,
+    item_values: dict[str, int],
+) -> int | None:
+    if explicit_value is not None:
+        return int(explicit_value)
+    direct = item_values.get(unique_name)
+    if direct is not None:
+        return int(direct)
+    if "@" in unique_name:
+        base = unique_name.split("@", 1)[0]
+        direct = item_values.get(base)
+        if direct is not None:
+            return int(direct)
+    no_level = _LEVEL_SUFFIX_RE.sub("", unique_name)
+    if no_level != unique_name:
+        direct = item_values.get(no_level)
+        if direct is not None:
+            return int(direct)
+    return None
 
 
 @dataclass(frozen=True)
@@ -46,6 +87,7 @@ class RecipeCatalog:
         raw = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(raw, list):
             raise ValueError(f"Recipe file must contain a JSON array: {path}")
+        item_values = _load_item_values(DEFAULT_ITEMS_PATH)
         recipes: dict[str, Recipe] = {}
         for row in raw:
             if not isinstance(row, dict):
@@ -53,14 +95,14 @@ class RecipeCatalog:
             item_payload = row.get("item")
             if not isinstance(item_payload, dict):
                 continue
-            item = _to_item_ref(item_payload)
+            item = _to_item_ref(item_payload, item_values=item_values)
             if not item.unique_name:
                 continue
             station = str(row.get("station") or "")
             city_bonus = str(row.get("city_bonus") or "")
             focus_per_craft = _to_int_or_none(row.get("focus_per_craft")) or 0
-            components = _parse_components(row.get("components"))
-            outputs = _parse_outputs(row.get("outputs"), item)
+            components = _parse_components(row.get("components"), item_values=item_values)
+            outputs = _parse_outputs(row.get("outputs"), item, item_values=item_values)
             recipes[item.unique_name] = Recipe(
                 item=item,
                 station=station,
@@ -167,6 +209,13 @@ def _check_item_meta(item: ItemRef, recipe_id: str, issues: list[CatalogIssue]) 
                 f"{unique_name} has invalid enchantment {item.enchantment}",
             )
         )
+    if item.item_value is not None and item.item_value < 0:
+        issues.append(
+            CatalogIssue(
+                recipe_id,
+                f"{unique_name} has invalid item_value {item.item_value}",
+            )
+        )
 
 
 def _parse_tier_from_unique_name(unique_name: str) -> int | None:
@@ -179,7 +228,11 @@ def _parse_tier_from_unique_name(unique_name: str) -> int | None:
         return None
 
 
-def _parse_components(payload: object) -> tuple[RecipeComponent, ...]:
+def _parse_components(
+    payload: object,
+    *,
+    item_values: dict[str, int] | None = None,
+) -> tuple[RecipeComponent, ...]:
     if not isinstance(payload, list):
         return ()
     out: list[RecipeComponent] = []
@@ -189,17 +242,45 @@ def _parse_components(payload: object) -> tuple[RecipeComponent, ...]:
         item_data = row.get("item")
         if not isinstance(item_data, dict):
             continue
-        item = _to_item_ref(item_data)
+        item = _to_item_ref(item_data, item_values=item_values)
         if not item.unique_name:
             continue
         quantity = float(row.get("quantity") or 0.0)
         if quantity <= 0:
             continue
-        out.append(RecipeComponent(item=item, quantity=quantity))
+        returnable_raw = row.get("returnable")
+        if isinstance(returnable_raw, bool):
+            returnable = returnable_raw
+        elif returnable_raw is None:
+            returnable = _infer_component_returnable(item.unique_name)
+        else:
+            returnable = str(returnable_raw).strip().lower() not in {"0", "false", "no"}
+        out.append(RecipeComponent(item=item, quantity=quantity, returnable=returnable))
     return tuple(out)
 
 
-def _parse_outputs(payload: object, fallback_item: ItemRef) -> tuple[RecipeOutput, ...]:
+def _infer_component_returnable(unique_name: str) -> bool:
+    name = unique_name.strip().upper()
+    non_returnable_markers = (
+        "_ARTEFACT",
+        "_RELIC",
+        "_SOUL",
+        "_RUNE",
+        "_AVALON",
+        "_MORGANA",
+        "_KEEPER",
+        "_UNDEAD",
+        "_DEMON",
+    )
+    return not any(marker in name for marker in non_returnable_markers)
+
+
+def _parse_outputs(
+    payload: object,
+    fallback_item: ItemRef,
+    *,
+    item_values: dict[str, int] | None = None,
+) -> tuple[RecipeOutput, ...]:
     if not isinstance(payload, list):
         return (RecipeOutput(item=fallback_item, quantity=1.0),)
     out: list[RecipeOutput] = []
@@ -209,7 +290,11 @@ def _parse_outputs(payload: object, fallback_item: ItemRef) -> tuple[RecipeOutpu
         item_data = row.get("item")
         if not isinstance(item_data, dict):
             continue
-        item = _to_item_ref(item_data, fallback_name=fallback_item.unique_name)
+        item = _to_item_ref(
+            item_data,
+            fallback_name=fallback_item.unique_name,
+            item_values=item_values,
+        )
         if not item.unique_name:
             continue
         quantity = float(row.get("quantity") or 0.0)
@@ -220,3 +305,36 @@ def _parse_outputs(payload: object, fallback_item: ItemRef) -> tuple[RecipeOutpu
         return (RecipeOutput(item=fallback_item, quantity=1.0),)
     return tuple(out)
 
+
+@lru_cache(maxsize=1)
+def _load_item_values(path: Path) -> dict[str, int]:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+    root = payload.get("items")
+    if not isinstance(root, dict):
+        return {}
+
+    out: dict[str, int] = {}
+    stack: list[object] = [root]
+    while stack:
+        current = stack.pop()
+        if isinstance(current, dict):
+            unique_name = str(current.get("@uniquename") or "").strip()
+            item_value = _to_int_or_none(current.get("@itemvalue"))
+            if unique_name and item_value is not None:
+                out[unique_name] = int(item_value)
+            for key, value in current.items():
+                if key.startswith("@"):
+                    continue
+                if isinstance(value, (dict, list)):
+                    stack.append(value)
+        elif isinstance(current, list):
+            for value in current:
+                if isinstance(value, (dict, list)):
+                    stack.append(value)
+    return out

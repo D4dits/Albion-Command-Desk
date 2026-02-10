@@ -1,6 +1,6 @@
 # Market Module Backlog (AFM-like)
 
-## Status update (2026-02-09)
+## Status update (2026-02-10)
 - Sprint 1 (A+B): done in branch `market` (scaffold, AO Data client, cache SQLite, service, testy).
 - Sprint 2: in progress.
   - Completed now: core kalkulacji dla Setup+Inputs (C1/C2/C4/C5/C6), walidacja Setup (D1/D2), generacja Inputs z manual override (E1/E3), testy.
@@ -11,9 +11,11 @@
   - Completed now: recipe migration helpers (legacy -> normalized catalog schema).
   - Completed now: AO Data resilience (retry/backoff) and telemetry in service/client (source, elapsed ms, record count).
   - Completed now: engine extensions (improved return-rate model and batch craft/run profit API).
-  - Completed now: Market sub-tabs in UI (Setup+Overview, Inputs, Outputs, Results, Shopping, Selling) with compact setup controls.
-  - Completed now: shopping/selling pipeline with grouped planner entries (city + price mode) and CSV copy/export in UI.
+  - Completed now: Market sub-tabs in UI (Setup+Overview, Inputs, Outputs, Results) with compact setup controls.
+  - Completed now: shopping/selling aggregation retained in backend, while dedicated UI tables were removed (simpler Inputs/Outputs flow).
   - Completed now: output city override per item + results per-item table with sorting and breakdown panel.
+  - Completed now: full recipes ingestion from local game `data/items.json` (3376 normalized recipes) with strict catalog validation.
+  - Completed now: output valuation engine (gross/fee/tax/net per output row) wired into Outputs + Results tabs.
 
 ## 1) Cel
 Wdrozyc w projekcie nowy modul kalkulatora craftingu (AFM-like) z zakladkami:
@@ -21,8 +23,6 @@ Wdrozyc w projekcie nowy modul kalkulatora craftingu (AFM-like) z zakladkami:
 - Inputs
 - Outputs
 - Results
-- Shopping List
-- Selling List
 
 Zakres obejmuje tylko ekonomie craftingu/refiningu, bez zmian w logice DPS metera.
 
@@ -36,8 +36,6 @@ Zakres obejmuje tylko ekonomie craftingu/refiningu, bez zmian w logice DPS meter
 - Lokalny cache danych
 
 ### Full (druga dostawa)
-- Shopping List
-- Selling List
 - Profile konfiguracji
 - Export CSV/JSON
 - Zaawansowane filtry i rankingi
@@ -56,7 +54,7 @@ Zakres obejmuje tylko ekonomie craftingu/refiningu, bez zmian w logice DPS meter
   - `state.py` (stan i komendy QML)
   - modele list/tablic do QML
 - `albion_dps/qt/ui/`:
-  - nowy ekran/zakladka `Market` z 6 podzakladkami
+  - nowy ekran/zakladka `Market` z 4 podzakladkami
 
 ## 4) Backlog techniczny (epiki i taski)
 ## EPIC A - Fundament i dane
@@ -140,11 +138,11 @@ Definition of Done:
 - suma line cost zgadza sie z total input cost w Results.
 
 ## EPIC F - Outputs tab
-- [~] F1. Lista output itemow (zalezne od run/return).
-- [~] F2. Cena sprzedazy:
+- [x] F1. Lista output itemow (zalezne od run/return).
+- [x] F2. Cena sprzedazy:
   - buy/sell/avg/manual.
 - [x] F3. Sell location per output.
-- [~] F4. Net revenue po tax/fee.
+- [x] F4. Net revenue po tax/fee.
 
 Definition of Done:
 - revenue z Outputs jest jedynym zrodlem revenue w Results.
@@ -161,29 +159,18 @@ Definition of Done:
 Definition of Done:
 - wszystkie KPI liczone z jednego modelu `ProfitBreakdown`.
 
-## EPIC H - Shopping List tab
-- [x] H1. Agregacja materialow do zakupu.
+## EPIC H - Shopping/Selling execution lists
+- [x] H1. Agregacja materialow do zakupu oraz outputow do sprzedazy.
 - [x] H2. Grupowanie po miescie i typie ceny.
-- [x] H3. Kolumny:
-  - item, qty, city, unit, total, weight.
-- [x] H4. Copy/export CSV.
+- [x] H3. Pipeline CSV copy/export w warstwie state/service.
+- [x] H4. Decyzja UX: dedykowane zakladki usuniete, dane prezentowane przez Inputs/Outputs/Results.
 
 Definition of Done:
-- shopping list jest spojna z Inputs (po agregacji batch).
-
-## EPIC I - Selling List tab
-- [x] I1. Agregacja outputow do sprzedazy.
-- [x] I2. Grupowanie po miescie sprzedazy.
-- [x] I3. Kolumny:
-  - item, qty, city, expected unit, expected total.
-- [x] I4. Copy/export CSV.
-
-Definition of Done:
-- selling list jest spojna z Outputs (po agregacji batch).
+- agregacje sa spojne z Inputs/Outputs (po batch craft).
 
 ## EPIC J - UI/UX (Qt)
 - [x] J1. Dodac glowna zakladke `Market` obok `Meter`/`Scanner`.
-- [x] J2. W `Market` dodac 6 podzakladek.
+- [x] J2. W `Market` dodac 4 podzakladki.
 - J3. Wydajny model tabel:
   - sort/filter bez freezowania UI.
 - J4. Stany:
@@ -218,14 +205,14 @@ Definition of Done:
 1. A + B + C (backend core)
 2. D + E + F + G (MVP UI)
 3. K (testy MVP)
-4. H + I (listy)
+4. H (agregacje execution list)
 5. J polish + L dokumentacja
 
 ## 6) Szacowanie (orientacyjnie)
 - Sprint 1 (1-2 tyg): A + B (minimum) + start C
 - Sprint 2 (1-2 tyg): C + D + E
 - Sprint 3 (1-2 tyg): F + G + testy MVP
-- Sprint 4 (1 tydz): H + I + polish + docs
+- Sprint 4 (1 tydz): H + polish + docs
 
 ## 7) Ryzyka i decyzje techniczne
 - Ryzyko 1: API limity/niestabilnosc -> wymagany cache + retry.
@@ -235,6 +222,6 @@ Definition of Done:
 
 ## 8) Kryteria akceptacji calego modulu
 - Uzytkownik moze ustawic craft scenariusz i dostaje stabilny wynik zysku.
-- Uzytkownik moze wygenerowac shopping/selling list dla batch craftu.
+- Uzytkownik ma spojny widok zakupow/sprzedazy dla batch craftu w Inputs/Outputs/Results.
 - Wyniki sa odtwarzalne, testowalne i dzialaja offline na cache.
 - Modul nie psuje obecnych funkcji DPS metera.

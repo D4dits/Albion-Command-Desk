@@ -1,6 +1,6 @@
 # Albion DPS Meter
 
-Passive DPS/HPS meter for Albion Online with a Qt desktop UI, terminal UI, and CLI.
+Passive DPS/HPS meter for Albion Online with a Qt desktop UI and optional terminal tools.
 It reads UDP traffic only (PCAP replay or live capture); no client hooks, overlays, or modifications.
 
 Core safety rule: the meter aggregates only the local player and party members (never unrelated nearby players).
@@ -203,23 +203,35 @@ Qt tabs:
 - `Market`: crafting calculator workspace with sub-tabs:
   - `Setup + Overview` (region/cities/fees/runs + quick KPI view)
   - `Inputs` and `Outputs` (per-item live/manual pricing modes + output city override)
+  - `ADP age` coloring in Inputs (`<=20m` green, `<=60m` orange, older red)
   - `Results` (per-item profit table with sorting + cost/tax/focus breakdown)
-  - `Shopping` and `Selling` (grouped execution lists with CSV copy/export)
-  - bundled `albion_dps/market/data/recipes.json` is a small starter dataset
+  - table cells support double-click copy to clipboard
+  - bundled `albion_dps/market/data/recipes.json` is generated from local game data pipeline
 
-Build full market recipe dataset:
-- put one or more source JSON files into `tools/market/sources/` (or pass explicit `--input`)
+Rebuild recipes from local Albion files (`data/items.json`, optional `data/indexedItems.json`):
+Windows:
+```
+.\tools\market\run_build_recipes_from_items.ps1 -Strict
+```
+Linux/macOS:
+```
+./tools/market/run_build_recipes_from_items.sh
+```
+
+Build from custom JSON sources (advanced):
+- put source JSON files into `tools/market/sources/` (or pass explicit `--input`)
 - source can be normalized list or object with `recipes: [...]`
 - then run:
 ```
 .\tools\market\run_build_recipes.ps1 -InputGlob "tools/market/sources/**/*.json" -Strict
 ```
-Linux/macOS:
+Linux/macOS advanced:
 ```
 ./tools/market/run_build_recipes.sh --input-glob "tools/market/sources/**/*.json" --strict
 ```
 Outputs:
 - `albion_dps/market/data/recipes.json`
+- `artifacts/market/recipes_from_items_report.json`
 - `artifacts/market/recipes_build_report.json`
 
 Scanner local path:
