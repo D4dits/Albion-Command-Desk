@@ -18,6 +18,7 @@ No game client hooks, no overlays, no memory editing.
 If this app saves you time or silver, support ongoing development:
 
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?style=for-the-badge)](https://buycoffee.to/ao-dps/)
+[![PayPal](https://img.shields.io/badge/PayPal-donate-00457C?style=for-the-badge&logo=paypal&logoColor=white)](https://www.paypal.com/donate/?business=zlotyjacek%40gmail.com&currency_code=PLN)
 
 Want to appear on a public supporters list after donating? Open a GitHub issue and share the display name you want to use.
 
