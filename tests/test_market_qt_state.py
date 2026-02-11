@@ -14,6 +14,7 @@ from albion_dps.market.aod_client import MarketPriceRecord
 from albion_dps.market.models import MarketRegion
 from albion_dps.market.service import MarketFetchMeta
 from albion_dps.qt.market import MarketSetupState
+from albion_dps.qt.market import state as market_state
 
 
 class _FakeMarketService:
@@ -209,6 +210,42 @@ def test_market_setup_state_price_age_handles_aliases_and_invalid_dates() -> Non
         price_type="buy_order",
     )
     assert age_invalid == "n/a"
+
+
+def test_market_setup_state_supports_setup_presets(monkeypatch: pytest.MonkeyPatch) -> None:
+    tmp_dir = Path(f"tmp_market_presets_{uuid.uuid4().hex}")
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    preset_path = tmp_dir / "market_presets.json"
+    monkeypatch.setattr(market_state, "_default_preset_path", lambda: preset_path)
+
+    try:
+        state = MarketSetupState(auto_refresh_prices=False)
+        state.setCraftCity("Martlock")
+        state.setDefaultBuyCity("Martlock")
+        state.setDefaultSellCity("Caerleon")
+        state.setCraftRuns(42)
+        state.setStationFeePercent(412.0)
+        state.setFocusEnabled(True)
+        state.savePreset("martlock_42")
+
+        assert "martlock_42" in list(state.presetNames)
+        assert preset_path.exists()
+
+        state.setCraftCity("Bridgewatch")
+        state.setCraftRuns(7)
+        state.setFocusEnabled(False)
+        state.loadPreset("martlock_42")
+        assert state.craftCity == "Martlock"
+        assert state.defaultBuyCity == "Martlock"
+        assert state.defaultSellCity == "Caerleon"
+        assert state.craftRuns == 42
+        assert state.focusEnabled is True
+        assert round(state.stationFeePercent, 0) == 412
+
+        state.deletePreset("martlock_42")
+        assert "martlock_42" not in list(state.presetNames)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 def test_market_setup_state_can_switch_recipe_by_index() -> None:

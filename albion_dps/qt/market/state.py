@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import logging
 import math
 import re
@@ -719,6 +720,9 @@ class MarketSetupState(QObject):
         self._selling_csv = ""
         self._list_action_text = ""
         self._recipe_search_query = ""
+        self._preset_path = _default_preset_path()
+        self._presets: dict[str, dict[str, object]] = self._load_presets()
+        self._selected_preset_name = ""
         self._ensure_price_preferences_for_recipe(self._recipe)
         if auto_refresh_prices and self._service is not None:
             self._refresh_price_index(self.to_setup(), force=True)
@@ -803,6 +807,14 @@ class MarketSetupState(QObject):
     @Property(str, notify=setupChanged)
     def recipeSearchQuery(self) -> str:
         return self._recipe_search_query
+
+    @Property("QVariantList", notify=setupChanged)
+    def presetNames(self) -> list[str]:
+        return sorted(self._presets.keys(), key=lambda x: x.lower())
+
+    @Property(str, notify=setupChanged)
+    def selectedPresetName(self) -> str:
+        return self._selected_preset_name
 
     @Property(str, notify=pricesChanged)
     def pricesSource(self) -> str:
@@ -986,6 +998,70 @@ class MarketSetupState(QObject):
         self._recipe_search_query = normalized
         self._recipe_options_model.set_query(normalized)
         self.setupChanged.emit()
+
+    @Slot(str)
+    def setSelectedPresetName(self, value: str) -> None:
+        name = value.strip()
+        if name == self._selected_preset_name:
+            return
+        self._selected_preset_name = name
+        self.setupChanged.emit()
+
+    @Slot(str)
+    def savePreset(self, raw_name: str) -> None:
+        name = _sanitize_preset_name(raw_name)
+        if not name:
+            self._set_list_action_text("Preset name is empty.")
+            return
+        self._presets[name] = {
+            "setup": _setup_to_dict(self._setup),
+            "craft_runs": int(self._craft_runs),
+        }
+        if self._save_presets():
+            self._selected_preset_name = name
+            self._set_list_action_text(f"Preset saved: {name}")
+            self.setupChanged.emit()
+
+    @Slot(str)
+    def loadPreset(self, raw_name: str) -> None:
+        name = _sanitize_preset_name(raw_name)
+        if not name:
+            self._set_list_action_text("Preset name is empty.")
+            return
+        payload = self._presets.get(name)
+        if payload is None:
+            self._set_list_action_text(f"Preset not found: {name}")
+            return
+        setup_data = payload.get("setup")
+        if not isinstance(setup_data, dict):
+            self._set_list_action_text(f"Preset is invalid: {name}")
+            return
+        self._setup = sanitized_setup(_setup_from_dict(setup_data, fallback=self._setup))
+        self._craft_runs = max(1, int(payload.get("craft_runs") or self._craft_runs))
+        row = self._find_plan_row_by_recipe(self._recipe.item.unique_name)
+        if row is not None and row.runs != self._craft_runs:
+            self._update_plan_row(row.row_id, runs=self._craft_runs)
+        self._selected_preset_name = name
+        self._rebuild_preview(force_price_refresh=False)
+        self.setupChanged.emit()
+        self.validationChanged.emit()
+        self._set_list_action_text(f"Preset loaded: {name}")
+
+    @Slot(str)
+    def deletePreset(self, raw_name: str) -> None:
+        name = _sanitize_preset_name(raw_name)
+        if not name:
+            self._set_list_action_text("Preset name is empty.")
+            return
+        if name not in self._presets:
+            self._set_list_action_text(f"Preset not found: {name}")
+            return
+        del self._presets[name]
+        if self._selected_preset_name == name:
+            self._selected_preset_name = ""
+        if self._save_presets():
+            self._set_list_action_text(f"Preset deleted: {name}")
+            self.setupChanged.emit()
 
     @Slot()
     def selectFirstRecipeOption(self) -> None:
@@ -1971,6 +2047,37 @@ class MarketSetupState(QObject):
         self._prices_status_text = message
         self.pricesChanged.emit()
 
+    def _load_presets(self) -> dict[str, dict[str, object]]:
+        path = self._preset_path
+        if not path.exists():
+            return {}
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            self._log.warning("Market preset load failed: %s", exc)
+            return {}
+        if not isinstance(payload, dict):
+            return {}
+        out: dict[str, dict[str, object]] = {}
+        for key, value in payload.items():
+            name = _sanitize_preset_name(str(key))
+            if not name or not isinstance(value, dict):
+                continue
+            out[name] = value
+        return out
+
+    def _save_presets(self) -> bool:
+        path = self._preset_path
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            serialized = json.dumps(self._presets, ensure_ascii=True, indent=2, sort_keys=True)
+            path.write_text(serialized, encoding="utf-8")
+        except Exception as exc:
+            self._log.warning("Market preset save failed: %s", exc)
+            self._set_list_action_text(f"Preset save failed: {exc}")
+            return False
+        return True
+
     def _price_key(self, setup: CraftSetup) -> tuple[str, int, tuple[str, ...], tuple[str, ...]]:
         item_ids = tuple(self._collect_pricing_item_ids())
         locations = tuple(self._collect_locations(setup))
@@ -2173,6 +2280,57 @@ def _parse_price(raw_value: str) -> int:
     except ValueError:
         return 0
     return max(0, parsed)
+
+
+def _default_preset_path() -> Path:
+    return Path.home() / ".albion_dps" / "market_presets.json"
+
+
+def _sanitize_preset_name(raw_value: str) -> str:
+    value = str(raw_value or "").strip()
+    value = re.sub(r"\s+", " ", value)
+    return value[:64]
+
+
+def _setup_to_dict(setup: CraftSetup) -> dict[str, object]:
+    return {
+        "region": setup.region.value,
+        "craft_city": setup.craft_city,
+        "default_buy_city": setup.default_buy_city,
+        "default_sell_city": setup.default_sell_city,
+        "premium": bool(setup.premium),
+        "focus_enabled": bool(setup.focus_enabled),
+        "station_fee_percent": float(setup.station_fee_percent),
+        "market_tax_percent": float(setup.market_tax_percent),
+        "daily_bonus_percent": float(setup.daily_bonus_percent),
+        "return_rate_percent": float(setup.return_rate_percent),
+        "hideout_power_percent": float(setup.hideout_power_percent),
+        "quality": int(setup.quality),
+    }
+
+
+def _setup_from_dict(payload: dict[str, object], *, fallback: CraftSetup) -> CraftSetup:
+    region_raw = str(payload.get("region") or fallback.region.value).strip().lower()
+    region_map = {
+        "europe": MarketRegion.EUROPE,
+        "west": MarketRegion.WEST,
+        "east": MarketRegion.EAST,
+    }
+    region = region_map.get(region_raw, fallback.region)
+    return CraftSetup(
+        region=region,
+        craft_city=str(payload.get("craft_city") or fallback.craft_city),
+        default_buy_city=str(payload.get("default_buy_city") or fallback.default_buy_city),
+        default_sell_city=str(payload.get("default_sell_city") or fallback.default_sell_city),
+        premium=bool(payload.get("premium", fallback.premium)),
+        focus_enabled=bool(payload.get("focus_enabled", fallback.focus_enabled)),
+        station_fee_percent=float(payload.get("station_fee_percent") or fallback.station_fee_percent),
+        market_tax_percent=float(payload.get("market_tax_percent") or fallback.market_tax_percent),
+        daily_bonus_percent=float(payload.get("daily_bonus_percent") or fallback.daily_bonus_percent),
+        return_rate_percent=float(payload.get("return_rate_percent") or fallback.return_rate_percent),
+        hideout_power_percent=float(payload.get("hideout_power_percent") or fallback.hideout_power_percent),
+        quality=int(payload.get("quality") or fallback.quality),
+    )
 
 
 def _friendly_item_label(display_name: str, item_id: str) -> str:
