@@ -16,6 +16,9 @@
   - Completed now: output city override per item + results per-item table with sorting and breakdown panel.
   - Completed now: full recipes ingestion from local game `data/items.json` (3376 normalized recipes) with strict catalog validation.
   - Completed now: output valuation engine (gross/fee/tax/net per output row) wired into Outputs + Results tabs.
+  - Completed now: setup presets, leftovers/stock inputs, diagnostics/logging states, and list-view performance optimizations.
+  - Completed now: market integration/regression tests (AO Data cache behavior + recipe dataset guardrails).
+  - Completed now: market docs set (`MARKET_ARCHITECTURE`, `MARKET_TROUBLESHOOTING`, dataset update/cache cleanup guide).
 
 ## 1) Cel
 Wdrozyc w projekcie nowy modul kalkulatora craftingu (AFM-like) z zakladkami:
@@ -96,7 +99,7 @@ Definition of Done:
   - osobna lokalizacja zakupu per material.
 - [x] C2. Koszt craftingu:
   - station fee, tax, premium, no-tax toggles.
-- [~] C3. Return rate model:
+- [x] C3. Return rate model:
   - city bonus, hideout, daily bonus, quality/zone.
 - [x] C4. Focus:
   - focus required, focus saved, SPF (silver per focus).
@@ -118,7 +121,7 @@ Definition of Done:
   - premium, daily bonus, fee, tax.
   - tryb cen (buy/sell/avg/manual).
 - [x] D2. Walidacje i wartosci domyslne.
-- [ ] D3. Presety (np. city profile).
+- [x] D3. Presety (np. city profile).
 - [x] D4. Powiazanie Setup -> Inputs/Outputs recalculation.
 
 Definition of Done:
@@ -130,7 +133,7 @@ Definition of Done:
 - [x] E2. Pobieranie cen i fallback:
   - live -> cache -> manual.
 - [x] E3. Manual override per material.
-- [ ] E4. Leftovers i stock (opcjonalnie MVP+).
+- [x] E4. Leftovers i stock (opcjonalnie MVP+).
 - [x] E5. Widok tabelaryczny:
   - material, qty, city, price type, unit cost, line cost.
 
@@ -171,32 +174,32 @@ Definition of Done:
 ## EPIC J - UI/UX (Qt)
 - [x] J1. Dodac glowna zakladke `Market` obok `Meter`/`Scanner`.
 - [x] J2. W `Market` dodac 4 podzakladki.
-- J3. Wydajny model tabel:
+- [x] J3. Wydajny model tabel:
   - sort/filter bez freezowania UI.
-- J4. Stany:
+- [x] J4. Stany:
   - loading, stale cache, API error, invalid config.
-- J5. Czytelny log diagnostyczny market module.
+- [x] J5. Czytelny log diagnostyczny market module.
 
 Definition of Done:
 - UI responsywne przy batch >= 100 pozycji.
 
 ## EPIC K - Testy i jakosc
-- K1. Unit tests:
+- [x] K1. Unit tests:
   - pricing, return rate, focus, tax, margin.
-- K2. Integration tests:
+- [x] K2. Integration tests:
   - klient AO Data + cache behavior.
-- K3. Snapshot tests wynikow (znane konfiguracje).
+- [x] K3. Snapshot tests wynikow (znane konfiguracje).
 - [x] K4. Smoke test QML dla nowej zakladki Market.
-- K5. Testy regresji po zmianie datasetu recipe.
+- [x] K5. Testy regresji po zmianie datasetu recipe.
 
 Definition of Done:
 - zielony pipeline testow dla market modu.
 
 ## EPIC L - Dokumentacja i operacje
-- L1. `README.md` sekcja Market.
-- L2. `docs/MARKET_ARCHITECTURE.md` (przeplyw danych).
-- L3. `docs/MARKET_TROUBLESHOOTING.md`.
-- L4. instrukcja aktualizacji datasetu i cache cleanup.
+- [x] L1. `README.md` sekcja Market.
+- [x] L2. `docs/MARKET_ARCHITECTURE.md` (przeplyw danych).
+- [x] L3. `docs/MARKET_TROUBLESHOOTING.md`.
+- [x] L4. instrukcja aktualizacji datasetu i cache cleanup.
 
 Definition of Done:
 - nowy uzytkownik uruchamia Market bez dodatkowych pytan.

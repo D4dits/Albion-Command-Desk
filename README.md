@@ -336,6 +336,9 @@ Late party IDs are accepted once names resolve, so history can update as mapping
 ## Project docs
 - Architecture overview: `docs/ARCHITECTURE.md`
 - Troubleshooting: `docs/TROUBLESHOOTING.md`
+- Market architecture: `docs/MARKET_ARCHITECTURE.md`
+- Market troubleshooting: `docs/MARKET_TROUBLESHOOTING.md`
+- Market dataset update and cache cleanup: `docs/MARKET_DATASET_UPDATE.md`
 
 ## Tests
 Some integration tests use PCAP fixtures; if you do not have them locally, those tests will be skipped.
