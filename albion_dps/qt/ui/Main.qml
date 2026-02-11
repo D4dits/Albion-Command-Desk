@@ -8,7 +8,6 @@ ApplicationWindow {
     width: 1120
     height: 720
     title: "Albion Command Desk"
-    icon: "command_desk_icon.xpm"
     color: "#0b0f14"
 
     property color textColor: "#e6edf3"
