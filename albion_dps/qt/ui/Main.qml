@@ -1070,17 +1070,29 @@ ApplicationWindow {
                                             radius: 4
                                             color: "#111b28"
                                             border.color: "#1f2a37"
-                                            implicitHeight: 74
+                                            implicitHeight: 130
 
                                             ColumnLayout {
                                                 anchors.fill: parent
-                                                anchors.margins: 6
+                                                anchors.margins: 8
                                                 spacing: 6
+
+                                                Text {
+                                                    text: "Presets"
+                                                    color: textColor
+                                                    font.pixelSize: 11
+                                                    font.bold: true
+                                                }
 
                                                 RowLayout {
                                                     Layout.fillWidth: true
                                                     spacing: 6
-                                                    Text { text: "Preset"; color: mutedColor; font.pixelSize: 11 }
+                                                    Text {
+                                                        text: "Saved"
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: 42
+                                                    }
                                                     ComboBox {
                                                         id: presetCombo
                                                         Layout.fillWidth: true
@@ -1095,25 +1107,28 @@ ApplicationWindow {
                                                     }
                                                 }
 
+                                                TextField {
+                                                    id: presetNameField
+                                                    Layout.fillWidth: true
+                                                    implicitHeight: compactControlHeight
+                                                    font.pixelSize: 11
+                                                    placeholderText: "preset name"
+                                                    text: marketSetupState.selectedPresetName
+                                                }
+
                                                 RowLayout {
                                                     Layout.fillWidth: true
                                                     spacing: 6
-                                                    TextField {
-                                                        id: presetNameField
-                                                        Layout.fillWidth: true
-                                                        implicitHeight: compactControlHeight
-                                                        font.pixelSize: 11
-                                                        placeholderText: "preset name"
-                                                        text: marketSetupState.selectedPresetName
-                                                    }
                                                     Button {
                                                         text: "Save"
+                                                        Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
                                                         onClicked: marketSetupState.savePreset(presetNameField.text)
                                                     }
                                                     Button {
                                                         text: "Load"
+                                                        Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
                                                         enabled: presetNameField.text.trim().length > 0
@@ -1121,6 +1136,7 @@ ApplicationWindow {
                                                     }
                                                     Button {
                                                         text: "Del"
+                                                        Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
                                                         enabled: presetNameField.text.trim().length > 0
@@ -1348,7 +1364,7 @@ ApplicationWindow {
                                     spacing: 8
 
                                     Text {
-                                        text: "Crafts setup"
+                                        text: "Crafts Table"
                                         color: textColor
                                         font.pixelSize: 12
                                         font.bold: true
@@ -1369,7 +1385,6 @@ ApplicationWindow {
 
                                             RowLayout {
                                                 Layout.fillWidth: true
-                                                Text { text: "Crafts Table"; color: textColor; font.pixelSize: 11; font.bold: true }
                                                 Item { Layout.fillWidth: true }
                                                 Text {
                                                     text: marketSetupState.craftPlanEnabledCount + "/" + marketSetupState.craftPlanCount + " active"
