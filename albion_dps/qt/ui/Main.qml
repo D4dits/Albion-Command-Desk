@@ -278,13 +278,21 @@ ApplicationWindow {
                                 ToolButton {
                                     text: "?"
                                     hoverEnabled: true
-                                    implicitWidth: 22
-                                    implicitHeight: 22
-                                    font.pixelSize: 11
+                                    implicitWidth: 24
+                                    implicitHeight: 24
+                                    font.pixelSize: 13
                                     background: Rectangle {
-                                        radius: 11
-                                        color: "#0f1620"
-                                        border.color: "#2a3a51"
+                                        radius: 12
+                                        color: accentColor
+                                        border.color: "#79c0ff"
+                                    }
+                                    contentItem: Text {
+                                        text: "?"
+                                        color: "#081018"
+                                        font.pixelSize: 13
+                                        font.bold: true
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
                                     }
                                     ToolTip.visible: hovered
                                     ToolTip.text: "Live combat meter.\nTracks DMG/HEAL/DPS/HPS, supports Battle/Zone/Manual mode,\nand lets you open fight snapshots from History."
@@ -659,13 +667,21 @@ ApplicationWindow {
                             ToolButton {
                                 text: "?"
                                 hoverEnabled: true
-                                implicitWidth: 22
-                                implicitHeight: 22
-                                font.pixelSize: 11
+                                implicitWidth: 24
+                                implicitHeight: 24
+                                font.pixelSize: 13
                                 background: Rectangle {
-                                    radius: 11
-                                    color: "#0f1620"
-                                    border.color: "#2a3a51"
+                                    radius: 12
+                                    color: accentColor
+                                    border.color: "#79c0ff"
+                                }
+                                contentItem: Text {
+                                    text: "?"
+                                    color: "#081018"
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                                 ToolTip.visible: hovered
                                 ToolTip.text: "Albion Data uploader control.\nUse it to check/sync client repo, start or stop scanner,\nand monitor detailed runtime logs."
@@ -771,13 +787,21 @@ ApplicationWindow {
                             ToolButton {
                                 text: "?"
                                 hoverEnabled: true
-                                implicitWidth: 22
-                                implicitHeight: 22
-                                font.pixelSize: 11
+                                implicitWidth: 24
+                                implicitHeight: 24
+                                font.pixelSize: 13
                                 background: Rectangle {
-                                    radius: 11
-                                    color: "#0f1620"
-                                    border.color: "#2a3a51"
+                                    radius: 12
+                                    color: accentColor
+                                    border.color: "#79c0ff"
+                                }
+                                contentItem: Text {
+                                    text: "?"
+                                    color: "#081018"
+                                    font.pixelSize: 13
+                                    font.bold: true
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                                 ToolTip.visible: hovered
                                 ToolTip.text: "Craft profitability workspace.\nConfigure setup, pull AOData prices, build craft list,\nand analyze Inputs/Outputs/Results with profit metrics."
