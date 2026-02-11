@@ -37,6 +37,15 @@ class OutputValuation:
     net_value: float
 
 
+@dataclass(frozen=True)
+class _LocationProductionProfile:
+    crafting_base_bonus: float
+    crafting_specialization_bonus: float
+    refining_base_bonus: float
+    refining_specialization_bonus: float
+    allow_hideout_power_bonus: bool = False
+
+
 def build_craft_run(
     *,
     recipe: Recipe,
@@ -322,11 +331,17 @@ def _auto_return_rate_percent(*, setup: CraftSetup, recipe: Recipe | None) -> fl
     has_city_bonus = _has_city_bonus(setup=setup, recipe=recipe)
     is_refining = _is_refining_recipe(recipe)
     use_focus = bool(setup.focus_enabled)
-    production_bonus = 18.0
+    profile = _resolve_location_profile(setup.craft_city)
     if is_refining:
-        production_bonus += 40.0 if has_city_bonus else 0.0
+        production_bonus = profile.refining_base_bonus
+        if has_city_bonus:
+            production_bonus += profile.refining_specialization_bonus
     else:
-        production_bonus += 15.0 if has_city_bonus else 0.0
+        production_bonus = profile.crafting_base_bonus
+        if has_city_bonus:
+            production_bonus += profile.crafting_specialization_bonus
+    if profile.allow_hideout_power_bonus:
+        production_bonus += max(0.0, min(56.0, float(setup.hideout_power_percent)))
     production_bonus += float(daily_bonus)
     if use_focus:
         production_bonus += 59.0
@@ -419,6 +434,22 @@ def _normalize_location(value: str) -> str:
     out = "".join(ch for ch in lowered if ch.isalnum() or ch == " ")
     out = " ".join(out.split())
     return out
+
+
+def _resolve_location_profile(craft_city: str) -> _LocationProductionProfile:
+    key = _normalize_location(craft_city)
+    if key in _ROYAL_CITY_KEYS:
+        return _ROYAL_CITY_PROFILE
+    if key in _OUTLAND_REST_KEYS:
+        return _OUTLANDS_REST_PROFILE
+    if "roads" in key and "hideout" in key:
+        return _ROADS_HIDEOUT_PROFILE
+    if "hideout" in key:
+        return _HIDEOUT_PROFILE
+    if "island" in key:
+        return _ROYAL_ISLAND_PROFILE
+    # Safe default for unknown locations: treat as a standard royal city.
+    return _ROYAL_CITY_PROFILE
 
 
 _STATION_CATEGORY_MAP: dict[str, set[str]] = {
@@ -519,6 +550,66 @@ _CITY_SPECIALIZATION_CATEGORIES: dict[str, set[str]] = {
     "merlyn's rest": {"bow", "dagger", "quarterstaff", "spear", "nature", "shapeshifter", "leather_helmet", "leather_armor", "leather_shoes"},
     "morganas rest": {"arcane", "cursed", "fire", "frost", "holy", "cloth_helmet", "cloth_armor", "cloth_shoes"},
     "morgana's rest": {"arcane", "cursed", "fire", "frost", "holy", "cloth_helmet", "cloth_armor", "cloth_shoes"},
+}
+
+_ROYAL_CITY_PROFILE = _LocationProductionProfile(
+    crafting_base_bonus=18.0,
+    crafting_specialization_bonus=15.0,
+    refining_base_bonus=18.0,
+    refining_specialization_bonus=40.0,
+    allow_hideout_power_bonus=False,
+)
+
+_ROYAL_ISLAND_PROFILE = _LocationProductionProfile(
+    crafting_base_bonus=0.0,
+    crafting_specialization_bonus=15.0,
+    refining_base_bonus=0.0,
+    refining_specialization_bonus=40.0,
+    allow_hideout_power_bonus=False,
+)
+
+_OUTLANDS_REST_PROFILE = _LocationProductionProfile(
+    crafting_base_bonus=15.0,
+    crafting_specialization_bonus=15.0,
+    refining_base_bonus=15.0,
+    refining_specialization_bonus=0.0,
+    allow_hideout_power_bonus=False,
+)
+
+_HIDEOUT_PROFILE = _LocationProductionProfile(
+    crafting_base_bonus=0.0,
+    crafting_specialization_bonus=0.0,
+    refining_base_bonus=15.0,
+    refining_specialization_bonus=0.0,
+    allow_hideout_power_bonus=True,
+)
+
+_ROADS_HIDEOUT_PROFILE = _LocationProductionProfile(
+    crafting_base_bonus=0.0,
+    crafting_specialization_bonus=0.0,
+    refining_base_bonus=10.0,
+    refining_specialization_bonus=0.0,
+    allow_hideout_power_bonus=True,
+)
+
+_ROYAL_CITY_KEYS = {
+    "bridgewatch",
+    "martlock",
+    "lymhurst",
+    "fort sterling",
+    "fortsterling",
+    "thetford",
+    "caerleon",
+    "brecilien",
+}
+
+_OUTLAND_REST_KEYS = {
+    "arthurs rest",
+    "arthur s rest",
+    "merlyns rest",
+    "merlyn s rest",
+    "morganas rest",
+    "morgana s rest",
 }
 
 _LEVEL_SUFFIX_RE = re.compile(r"_LEVEL(?P<level>\d+)$")
