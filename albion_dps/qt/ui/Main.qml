@@ -1065,108 +1065,6 @@ ApplicationWindow {
                                             font.bold: true
                                         }
 
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            radius: 4
-                                            color: "#111b28"
-                                            border.color: "#1f2a37"
-                                            implicitHeight: 130
-
-                                            ColumnLayout {
-                                                anchors.fill: parent
-                                                anchors.margins: 8
-                                                spacing: 6
-
-                                                Text {
-                                                    text: "Presets"
-                                                    color: textColor
-                                                    font.pixelSize: 11
-                                                    font.bold: true
-                                                }
-
-                                                RowLayout {
-                                                    Layout.fillWidth: true
-                                                    spacing: 6
-                                                    Text {
-                                                        text: "Saved"
-                                                        color: mutedColor
-                                                        font.pixelSize: 11
-                                                        Layout.preferredWidth: 42
-                                                    }
-                                                    ComboBox {
-                                                        id: presetCombo
-                                                        Layout.fillWidth: true
-                                                        implicitHeight: compactControlHeight
-                                                        font.pixelSize: 11
-                                                        model: marketSetupState.presetNames
-                                                        currentIndex: Math.max(0, model.indexOf(marketSetupState.selectedPresetName))
-                                                        onActivated: {
-                                                            marketSetupState.setSelectedPresetName(currentText)
-                                                            presetNameField.text = currentText
-                                                        }
-                                                    }
-                                                }
-
-                                                TextField {
-                                                    id: presetNameField
-                                                    Layout.fillWidth: true
-                                                    implicitHeight: compactControlHeight
-                                                    font.pixelSize: 11
-                                                    placeholderText: "preset name"
-                                                    text: marketSetupState.selectedPresetName
-                                                }
-
-                                                RowLayout {
-                                                    Layout.fillWidth: true
-                                                    spacing: 6
-                                                    Button {
-                                                        text: "Save"
-                                                        Layout.fillWidth: true
-                                                        implicitHeight: compactControlHeight
-                                                        font.pixelSize: 11
-                                                        onClicked: {
-                                                            var name = presetNameField.text.trim()
-                                                            if (!name.length && presetCombo.currentText) {
-                                                                name = String(presetCombo.currentText).trim()
-                                                            }
-                                                            marketSetupState.savePreset(name)
-                                                            presetNameField.text = name
-                                                        }
-                                                    }
-                                                    Button {
-                                                        text: "Load"
-                                                        Layout.fillWidth: true
-                                                        implicitHeight: compactControlHeight
-                                                        font.pixelSize: 11
-                                                        enabled: presetNameField.text.trim().length > 0 || String(presetCombo.currentText || "").trim().length > 0
-                                                        onClicked: {
-                                                            var name = presetNameField.text.trim()
-                                                            if (!name.length && presetCombo.currentText) {
-                                                                name = String(presetCombo.currentText).trim()
-                                                            }
-                                                            marketSetupState.loadPreset(name)
-                                                            presetNameField.text = name
-                                                        }
-                                                    }
-                                                    Button {
-                                                        text: "Del"
-                                                        Layout.fillWidth: true
-                                                        implicitHeight: compactControlHeight
-                                                        font.pixelSize: 11
-                                                        enabled: presetNameField.text.trim().length > 0 || String(presetCombo.currentText || "").trim().length > 0
-                                                        onClicked: {
-                                                            var name = presetNameField.text.trim()
-                                                            if (!name.length && presetCombo.currentText) {
-                                                                name = String(presetCombo.currentText).trim()
-                                                            }
-                                                            marketSetupState.deletePreset(name)
-                                                            presetNameField.text = name
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-
                                         GridLayout {
                                             columns: 2
                                             columnSpacing: 8
@@ -1368,6 +1266,108 @@ ApplicationWindow {
                                             }
                                         }
 
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            radius: 4
+                                            color: "#111b28"
+                                            border.color: "#1f2a37"
+                                            implicitHeight: 130
+
+                                            ColumnLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 8
+                                                spacing: 6
+
+                                                Text {
+                                                    text: "Presets"
+                                                    color: textColor
+                                                    font.pixelSize: 11
+                                                    font.bold: true
+                                                }
+
+                                                RowLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 6
+                                                    Text {
+                                                        text: "Saved"
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: 42
+                                                    }
+                                                    ComboBox {
+                                                        id: presetCombo
+                                                        Layout.fillWidth: true
+                                                        implicitHeight: compactControlHeight
+                                                        font.pixelSize: 11
+                                                        model: marketSetupState.presetNames
+                                                        currentIndex: Math.max(0, model.indexOf(marketSetupState.selectedPresetName))
+                                                        onActivated: {
+                                                            marketSetupState.setSelectedPresetName(currentText)
+                                                            presetNameField.text = currentText
+                                                        }
+                                                    }
+                                                }
+
+                                                TextField {
+                                                    id: presetNameField
+                                                    Layout.fillWidth: true
+                                                    implicitHeight: compactControlHeight
+                                                    font.pixelSize: 11
+                                                    placeholderText: "preset name"
+                                                    text: marketSetupState.selectedPresetName
+                                                }
+
+                                                RowLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 6
+                                                    Button {
+                                                        text: "Save"
+                                                        Layout.fillWidth: true
+                                                        implicitHeight: compactControlHeight
+                                                        font.pixelSize: 11
+                                                        onClicked: {
+                                                            var name = presetNameField.text.trim()
+                                                            if (!name.length && presetCombo.currentText) {
+                                                                name = String(presetCombo.currentText).trim()
+                                                            }
+                                                            marketSetupState.savePreset(name)
+                                                            presetNameField.text = name
+                                                        }
+                                                    }
+                                                    Button {
+                                                        text: "Load"
+                                                        Layout.fillWidth: true
+                                                        implicitHeight: compactControlHeight
+                                                        font.pixelSize: 11
+                                                        enabled: presetNameField.text.trim().length > 0 || String(presetCombo.currentText || "").trim().length > 0
+                                                        onClicked: {
+                                                            var name = presetNameField.text.trim()
+                                                            if (!name.length && presetCombo.currentText) {
+                                                                name = String(presetCombo.currentText).trim()
+                                                            }
+                                                            marketSetupState.loadPreset(name)
+                                                            presetNameField.text = name
+                                                        }
+                                                    }
+                                                    Button {
+                                                        text: "Del"
+                                                        Layout.fillWidth: true
+                                                        implicitHeight: compactControlHeight
+                                                        font.pixelSize: 11
+                                                        enabled: presetNameField.text.trim().length > 0 || String(presetCombo.currentText || "").trim().length > 0
+                                                        onClicked: {
+                                                            var name = presetNameField.text.trim()
+                                                            if (!name.length && presetCombo.currentText) {
+                                                                name = String(presetCombo.currentText).trim()
+                                                            }
+                                                            marketSetupState.deletePreset(name)
+                                                            presetNameField.text = name
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
                                     }
                                 }
                             }
@@ -1384,13 +1384,6 @@ ApplicationWindow {
                                     anchors.margins: 10
                                     spacing: 8
 
-                                    Text {
-                                        text: "Crafts Table"
-                                        color: textColor
-                                        font.pixelSize: 12
-                                        font.bold: true
-                                    }
-
                                     Rectangle {
                                         Layout.fillWidth: true
                                         Layout.fillHeight: true
@@ -1406,6 +1399,12 @@ ApplicationWindow {
 
                                             RowLayout {
                                                 Layout.fillWidth: true
+                                                Text {
+                                                    text: "Crafts Table"
+                                                    color: textColor
+                                                    font.pixelSize: 12
+                                                    font.bold: true
+                                                }
                                                 Item { Layout.fillWidth: true }
                                                 Text {
                                                     text: marketSetupState.craftPlanEnabledCount + "/" + marketSetupState.craftPlanCount + " active"
