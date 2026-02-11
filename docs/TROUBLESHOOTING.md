@@ -9,7 +9,7 @@ Windows / PowerShell:
 ```
 python -m venv venv
 .\venv\Scripts\Activate.ps1
-python -m pip install -e ".[capture]"
+python -m pip install -e .
 albion-command-desk --help
 ```
 
@@ -123,7 +123,7 @@ python -m pip install -e ".[test]"
 
 ## Qt GUI fails to load (qtquick2plugin.dll missing)
 This usually means Qt's DLLs are not found:
-- Ensure the venv is active and PySide6 is installed: `python -m pip install -e ".[gui-qt]"`
+- Ensure the venv is active and PySide6 is installed: `python -m pip install -e .`
 - Restart the terminal after install so PATH updates are picked up.
 - If it still fails, install the Microsoft VC++ Redistributable (x64).
 

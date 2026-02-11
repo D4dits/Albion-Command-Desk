@@ -1,10 +1,10 @@
 # Architecture (high level)
 
-Goal: a stable, passive DPS/HPS meter for Albion Online (CLI + GUI, live + PCAP replay), without any client modification.
+Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP replay), without any client modification.
 
 ## Data flow
 
-`RawPacket` -> `PhotonMessage` -> `CombatEvent` -> `SessionMeter` -> `MeterSnapshot` -> CLI/TUI
+`RawPacket` -> `PhotonMessage` -> `CombatEvent` -> `SessionMeter` -> `MeterSnapshot` -> Qt UI
 
 - Capture (live/replay) produces `RawPacket` (timestamp + UDP payload + src/dst metadata).
 - Protocol decoder parses Photon messages.
@@ -36,7 +36,7 @@ The meter must never attribute damage/heal to unrelated nearby players:
 - if self/party is not resolved yet, the strict filter can keep results empty until it is.
 
 ## Useful entry points
-- CLI: `albion_dps/cli.py`
+- CLI launcher (Qt-only): `albion_dps/cli.py`
 - Pipeline: `albion_dps/pipeline.py`
 - Session + history: `albion_dps/meter/session_meter.py`
 - Aggregation window: `albion_dps/meter/aggregate.py`

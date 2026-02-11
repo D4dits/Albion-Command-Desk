@@ -1,6 +1,6 @@
 ﻿# Albion Command Desk
 
-Passive DPS/HPS meter for Albion Online with a Qt desktop UI and optional terminal tools.
+Passive DPS/HPS meter for Albion Online with a Qt desktop UI.
 It reads UDP traffic only (PCAP replay or live capture); no client hooks, overlays, or modifications.
 
 Core safety rule: the meter aggregates only the local player and party members (never unrelated nearby players).
@@ -16,10 +16,6 @@ Core safety rule: the meter aggregates only the local player and party members (
 ## Screenshots
 <p align="center">
   <img src="assets/gui_meter.png" alt="Qt GUI (current)">
-</p>
-
-<p align="center">
-  <img src="assets/tui_meter.png" alt="Textual TUI">
 </p>
 
 ## Support the project
@@ -149,46 +145,18 @@ Windows:
 .\tools\cleanup_artifacts.ps1
 ```
 
-## GUI (Textual)
-Install GUI extras:
-```
-python -m pip install -e ".[gui]"
-```
-For live capture GUI:
-```
-python -m pip install -e ".[gui,capture]"
-```
-
+## GUI (PySide6/QML)
 Run GUI:
 ```
-albion-command-desk gui live
-albion-command-desk gui replay .\path\to\file.pcap
+albion-command-desk live
+albion-command-desk replay .\path\to\file.pcap
 ```
 Without installing (runs directly from the repo checkout):
 ```
-python -m albion_dps gui live
-python -m albion_dps gui replay .\path\to\file.pcap
+python -m albion_dps live
+python -m albion_dps replay .\path\to\file.pcap
 ```
-
-Notes:
-- GUI runs in a terminal window (no overlay on the game client).
-- Exit with `Ctrl+C`.
 GUI keys:
-- `q` quit
-- `b` battle mode, `z` zone mode, `m` manual mode
-- `1` dps sort, `2` dmg sort, `3` hps sort, `4` heal sort
-
-## GUI (PySide6/QML)
-Install Qt GUI extras:
-```
-python -m pip install -e ".[gui-qt]"
-```
-Run Qt GUI:
-```
-albion-command-desk qt live
-albion-command-desk qt replay .\path\to\file.pcap
-```
-Qt keys:
 - `q` quit
 - `b` battle mode, `z` zone mode, `m` manual mode
 - `1` dps sort, `2` dmg sort, `3` hps sort, `4` heal sort
@@ -287,16 +255,7 @@ If the game is installed in a default Steam/Applications path, it will try to au
 - `battle` (default): creates a session when you enter combat state and ends it when you leave combat state.
   Fallback: if combat state is not observed, it can still end by `--battle-timeout` inactivity.
 - `zone`: a long-running session per server endpoint (shown as `ip:port`), reset on zone change.
-- `manual`: start/stop sessions yourself (TUI key: space).
-
-## TUI keys
-- `b` battle mode (default)
-- `z` zone mode
-- `m` manual mode (toggle; start/stop with space)
-- `space` start/stop manual session
-- `n` end current session (archive)
-- `r` reset fame counters
-- `1-9` copy the Nth history entry to clipboard
+- `manual`: start/stop sessions yourself from the GUI.
 
 ## Output and artifacts
 - Unknown payloads: `artifacts/unknown/` (written always; log line only in `--debug`)
