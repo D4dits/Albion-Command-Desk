@@ -62,6 +62,12 @@ def _add_common_gui_args(subparser: argparse.ArgumentParser) -> None:
 
 
 def _normalize_argv(argv: list[str]) -> list[str]:
+    if argv and argv[0] == "qt":
+        alias_tail = argv[1:]
+        if not alias_tail:
+            return ["live"]
+        argv = alias_tail
+
     if not argv:
         return ["live"]
 

@@ -64,3 +64,18 @@ def test_main_uses_sys_argv_when_no_explicit_argv(monkeypatch) -> None:
     assert exit_code == 0
     assert captured["command"] == "replay"
     assert captured["pcap"] == "from_sys.pcap"
+
+
+def test_main_accepts_legacy_qt_alias(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run_qt(args) -> int:
+        captured["command"] = getattr(args, "command", None)
+        captured["qt_command"] = getattr(args, "qt_command", None)
+        return 0
+
+    monkeypatch.setattr(cli, "run_qt", fake_run_qt)
+    exit_code = cli.main(["qt", "live"])
+    assert exit_code == 0
+    assert captured["command"] == "live"
+    assert captured["qt_command"] == "live"
