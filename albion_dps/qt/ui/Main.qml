@@ -20,6 +20,8 @@ ApplicationWindow {
     property int marketSetupPanelWidth: Math.max(300, Math.min(370, Math.round(width * 0.30)))
     property int marketInputsItemWidth: Math.max(150, Math.min(240, Math.round(width * 0.17)))
     property int marketInputsQtyWidth: 62
+    property int marketInputsStockWidth: 72
+    property int marketInputsBuyWidth: 62
     property int marketInputsCityWidth: 118
     property int marketInputsModeWidth: 96
     property int marketInputsManualWidth: 74
@@ -34,7 +36,9 @@ ApplicationWindow {
         + marketInputsUnitWidth
         + marketInputsAgeWidth
         + marketInputsTotalMinWidth
-        + marketColumnSpacing * 7
+        + marketInputsStockWidth
+        + marketInputsBuyWidth
+        + marketColumnSpacing * 9
         + 12
     property int marketOutputsItemWidth: Math.max(145, Math.min(230, Math.round(width * 0.16)))
     property int marketOutputsQtyWidth: 58
@@ -1608,7 +1612,9 @@ ApplicationWindow {
                                         anchors.margins: 4
                                         spacing: marketColumnSpacing
                                         Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Need"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Stock"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsStockWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Buy"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth; horizontalAlignment: Text.AlignLeft }
                                         Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; horizontalAlignment: Text.AlignLeft }
                                         Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsModeWidth; horizontalAlignment: Text.AlignLeft }
                                         Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth; horizontalAlignment: Text.AlignLeft }
@@ -1657,6 +1663,26 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: marketInputsQtyWidth
+                                                horizontalAlignment: Text.AlignLeft
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    acceptedButtons: Qt.LeftButton
+                                                    onDoubleClicked: copyCellText(parent.text)
+                                                }
+                                            }
+                                            TextField {
+                                                Layout.preferredWidth: marketInputsStockWidth
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
+                                                text: stockQuantity > 0 ? formatFixed(stockQuantity, 2) : ""
+                                                placeholderText: "0"
+                                                onEditingFinished: marketSetupState.setInputStockQuantity(itemId, text)
+                                            }
+                                            Text {
+                                                text: formatFixed(buyQuantity, 2)
+                                                color: mutedColor
+                                                font.pixelSize: 11
+                                                Layout.preferredWidth: marketInputsBuyWidth
                                                 horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent

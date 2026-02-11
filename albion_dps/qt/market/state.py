@@ -25,6 +25,8 @@ from albion_dps.market.engine import (
 )
 from albion_dps.market.models import (
     CraftSetup,
+    InputLine,
+    ItemRef,
     MarketRegion,
     PriceType,
     ProfitBreakdown,
@@ -40,6 +42,8 @@ class InputPreviewRow:
     item_id: str
     item: str
     quantity: float
+    stock_quantity: float
+    buy_quantity: float
     city: str
     price_type: str
     price_age_text: str
@@ -58,6 +62,8 @@ class MarketInputsModel(QAbstractListModel):
     ManualPriceRole = Qt.UserRole + 7
     UnitPriceRole = Qt.UserRole + 8
     TotalCostRole = Qt.UserRole + 9
+    StockQuantityRole = Qt.UserRole + 10
+    BuyQuantityRole = Qt.UserRole + 11
 
     def __init__(self) -> None:
         super().__init__()
@@ -79,6 +85,10 @@ class MarketInputsModel(QAbstractListModel):
             return item.item
         if role == self.QuantityRole:
             return item.quantity
+        if role == self.StockQuantityRole:
+            return item.stock_quantity
+        if role == self.BuyQuantityRole:
+            return item.buy_quantity
         if role == self.CityRole:
             return item.city
         if role == self.PriceTypeRole:
@@ -104,6 +114,8 @@ class MarketInputsModel(QAbstractListModel):
             self.ManualPriceRole: b"manualPrice",
             self.UnitPriceRole: b"unitPrice",
             self.TotalCostRole: b"totalCost",
+            self.StockQuantityRole: b"stockQuantity",
+            self.BuyQuantityRole: b"buyQuantity",
         }
 
     def set_items(self, rows: list[InputPreviewRow]) -> None:
@@ -709,6 +721,7 @@ class MarketSetupState(QObject):
         self._input_price_types: dict[str, PriceType] = {}
         self._output_price_types: dict[str, PriceType] = {}
         self._manual_input_prices: dict[str, int] = {}
+        self._input_stock_quantities: dict[str, float] = {}
         self._manual_output_prices: dict[str, int] = {}
         self._output_cities: dict[str, str] = {}
         self._price_index: dict[tuple[str, str, int], MarketPriceRecord] = {}
@@ -1316,6 +1329,15 @@ class MarketSetupState(QObject):
         self._rebuild_preview(force_price_refresh=False)
 
     @Slot(str, str)
+    def setInputStockQuantity(self, item_id: str, raw_value: str) -> None:
+        quantity = _parse_float(raw_value)
+        if quantity <= 0:
+            self._input_stock_quantities.pop(item_id, None)
+        else:
+            self._input_stock_quantities[item_id] = quantity
+        self._rebuild_preview(force_price_refresh=False)
+
+    @Slot(str, str)
     def setOutputManualPrice(self, item_id: str, raw_value: str) -> None:
         price = _parse_price(raw_value)
         if price <= 0:
@@ -1636,7 +1658,7 @@ class MarketSetupState(QObject):
         all_inputs = [line for run in runs for line in run.inputs]
         all_outputs = [line for run in runs for line in run.outputs]
 
-        input_acc: dict[tuple[str, str, str, float], dict[str, float | str]] = {}
+        input_acc: dict[tuple[str, str, str, float], dict[str, object]] = {}
         for line in all_inputs:
             key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
             row = input_acc.get(key)
@@ -1644,6 +1666,7 @@ class MarketSetupState(QObject):
                 input_acc[key] = {
                     "item_id": line.item.unique_name,
                     "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
+                    "item_ref": line.item,
                     "city": line.city,
                     "price_type": line.price_type.value,
                     "price_age_text": self._price_age_text(
@@ -1660,23 +1683,46 @@ class MarketSetupState(QObject):
                 row["quantity"] = float(row["quantity"]) + float(line.quantity)
                 row["total_cost"] = float(row["total_cost"]) + float(line.total_cost)
 
-        input_rows = [
-            InputPreviewRow(
-                item_id=str(row["item_id"]),
-                item=str(row["item"]),
-                quantity=float(max(0, math.ceil(float(row["quantity"])))),
-                city=str(row["city"]),
-                price_type=str(row["price_type"]),
-                price_age_text=str(row["price_age_text"]),
-                manual_price=self._manual_input_prices.get(str(row["item_id"]), 0),
-                unit_price=float(row["unit_price"]),
-                total_cost=float(max(0, math.ceil(float(row["quantity"]))) * float(row["unit_price"])),
+        input_rows: list[InputPreviewRow] = []
+        adjusted_inputs: list[InputLine] = []
+        for row in input_acc.values():
+            item_id = str(row["item_id"])
+            need_qty = float(max(0, math.ceil(float(row["quantity"]))))
+            stock_qty = float(max(0.0, self._input_stock_quantities.get(item_id, 0.0)))
+            stock_qty = min(stock_qty, need_qty)
+            buy_qty = max(0.0, need_qty - stock_qty)
+            unit_price = float(row["unit_price"])
+            total_cost = float(buy_qty * unit_price)
+            input_rows.append(
+                InputPreviewRow(
+                    item_id=item_id,
+                    item=str(row["item"]),
+                    quantity=need_qty,
+                    stock_quantity=stock_qty,
+                    buy_quantity=buy_qty,
+                    city=str(row["city"]),
+                    price_type=str(row["price_type"]),
+                    price_age_text=str(row["price_age_text"]),
+                    manual_price=self._manual_input_prices.get(item_id, 0),
+                    unit_price=unit_price,
+                    total_cost=total_cost,
+                )
             )
-            for row in input_acc.values()
-        ]
+            item_ref = row.get("item_ref")
+            if isinstance(item_ref, ItemRef):
+                adjusted_inputs.append(
+                    InputLine(
+                        item=item_ref,
+                        quantity=buy_qty,
+                        city=str(row["city"]),
+                        price_type=PriceType(str(row["price_type"])),
+                        unit_price=unit_price,
+                    )
+                )
         input_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
 
         self._breakdown = compute_batch_profit(tuple(runs))
+        self._breakdown.input_cost = float(sum(row.total_cost for row in input_rows))
         valuations = compute_output_valuations(
             output_lines=all_outputs,
             station_fee_percent=setup.station_fee_percent,
@@ -1739,7 +1785,7 @@ class MarketSetupState(QObject):
                 unit_price=float(entry.unit_price),
                 total_cost=float(max(0, math.ceil(float(entry.quantity))) * float(entry.unit_price)),
             )
-            for entry in build_shopping_entries(all_inputs)
+            for entry in build_shopping_entries(adjusted_inputs)
         ]
         selling_rows = [
             SellingPreviewRow(
@@ -2280,6 +2326,17 @@ def _parse_price(raw_value: str) -> int:
     except ValueError:
         return 0
     return max(0, parsed)
+
+
+def _parse_float(raw_value: str) -> float:
+    text = str(raw_value or "").strip().replace(",", ".")
+    if not text:
+        return 0.0
+    try:
+        parsed = float(text)
+    except ValueError:
+        return 0.0
+    return max(0.0, parsed)
 
 
 def _default_preset_path() -> Path:

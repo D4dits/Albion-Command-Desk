@@ -248,6 +248,31 @@ def test_market_setup_state_supports_setup_presets(monkeypatch: pytest.MonkeyPat
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
+def test_market_setup_state_applies_input_stock_to_buy_costs() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.addCurrentRecipeToPlan()
+    if state.inputsModel.rowCount() <= 0:
+        return
+
+    idx = state.inputsModel.index(0, 0)
+    item_id = str(state.inputsModel.data(idx, state.inputsModel.ItemIdRole))
+    need_qty = float(state.inputsModel.data(idx, state.inputsModel.QuantityRole) or 0.0)
+    base_total = float(state.inputsModel.data(idx, state.inputsModel.TotalCostRole) or 0.0)
+    baseline_input_total = state.inputsTotalCost
+
+    stock_qty = max(1.0, need_qty / 2.0)
+    state.setInputStockQuantity(item_id, str(stock_qty))
+    idx_after = state.inputsModel.index(0, 0)
+    buy_qty = float(state.inputsModel.data(idx_after, state.inputsModel.BuyQuantityRole) or 0.0)
+    stock_after = float(state.inputsModel.data(idx_after, state.inputsModel.StockQuantityRole) or 0.0)
+    total_after = float(state.inputsModel.data(idx_after, state.inputsModel.TotalCostRole) or 0.0)
+
+    assert stock_after > 0
+    assert buy_qty <= need_qty
+    assert total_after <= base_total
+    assert state.inputsTotalCost <= baseline_input_total
+
+
 def test_market_setup_state_can_switch_recipe_by_index() -> None:
     state = MarketSetupState()
     before = state.recipeId
