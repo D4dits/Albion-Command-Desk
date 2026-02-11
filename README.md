@@ -16,15 +16,15 @@ No game client hooks, no overlays, no memory editing.
 
 ## Screenshots
 <p align="center">
-  <img src="assets/gui_meter.png" alt="Meter tab" width="920">
+  <img src="assets/gui_meter_20260211.png" alt="Meter tab" width="920">
 </p>
 
 <p align="center">
-  <img src="assets/market_gui.png" alt="Market tab" width="920">
+  <img src="assets/market_gui_20260211.png" alt="Market tab" width="920">
 </p>
 
 <p align="center">
-  <img src="assets/scanner_gui.png" alt="Scanner tab" width="920">
+  <img src="assets/scanner_gui_20260211.png" alt="Scanner tab" width="920">
 </p>
 
 ## Install
