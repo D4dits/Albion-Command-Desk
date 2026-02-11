@@ -23,6 +23,10 @@ No game client hooks, no overlays, no memory editing.
   <img src="assets/market_gui.png" alt="Market tab" width="920">
 </p>
 
+<p align="center">
+  <img src="assets/scanner_gui.png" alt="Scanner tab" width="920">
+</p>
+
 ## Install
 Windows PowerShell:
 ```powershell
