@@ -78,10 +78,12 @@ def run_qt(args: argparse.Namespace) -> int:
     )
     producer.start()
 
+    _configure_windows_taskbar_identity("albion.command.desk")
     app = QGuiApplication([])
     icon_path = Path(__file__).resolve().parent / "ui" / "command_desk_icon.xpm"
-    if icon_path.exists():
-        app.setWindowIcon(QIcon(str(icon_path)))
+    app_icon = QIcon(str(icon_path)) if icon_path.exists() else QIcon()
+    if not app_icon.isNull():
+        app.setWindowIcon(app_icon)
     engine = QQmlApplicationEngine()
     warnings: list = []
 
@@ -118,6 +120,11 @@ def run_qt(args: argparse.Namespace) -> int:
         )
         stop_event.set()
         return 1
+    if not app_icon.isNull():
+        for root in engine.rootObjects():
+            set_icon = getattr(root, "setIcon", None)
+            if callable(set_icon):
+                set_icon(app_icon)
 
     def drain_queue() -> None:
         _drain_snapshots(
@@ -137,6 +144,17 @@ def run_qt(args: argparse.Namespace) -> int:
     app.aboutToQuit.connect(stop_event.set)
     app.exec()
     return 0
+
+
+def _configure_windows_taskbar_identity(app_id: str) -> None:
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(str(app_id))
+    except Exception:
+        logging.getLogger(__name__).debug("Could not set Windows AppUserModelID", exc_info=True)
 
 
 def _build_snapshot_stream(
