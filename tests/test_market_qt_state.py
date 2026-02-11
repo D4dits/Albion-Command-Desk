@@ -37,7 +37,9 @@ class _FakeMarketService:
         ttl_seconds: float = 120.0,
         allow_stale: bool = True,
         allow_cache: bool = True,
+        allow_live: bool = True,
     ) -> dict[tuple[str, str, int], MarketPriceRecord]:
+        _ = (region, ttl_seconds, allow_stale, allow_cache, allow_live)
         self.calls += 1
         quality = int((qualities or [1])[0])
         out: dict[tuple[str, str, int], MarketPriceRecord] = {}
@@ -133,7 +135,7 @@ def test_market_setup_state_builds_outputs_and_results() -> None:
     output_mode = str(state.outputsModel.data(first_output, state.outputsModel.PriceTypeRole))
     input_qty = float(state.inputsModel.data(first_input, state.inputsModel.QuantityRole))
     price_age_text = str(state.inputsModel.data(first_input, state.inputsModel.PriceAgeRole))
-    assert input_mode == "buy_order"
+    assert input_mode == "sell_order"
     assert output_mode == "sell_order"
     assert input_qty == float(int(input_qty))
     assert len(price_age_text) > 0

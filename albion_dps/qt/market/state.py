@@ -6,13 +6,14 @@ import json
 import logging
 import math
 import re
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 
-from PySide6.QtCore import QAbstractListModel, QModelIndex, QObject, Property, Qt, Signal, Slot
+from PySide6.QtCore import QAbstractListModel, QModelIndex, QObject, Property, Qt, QTimer, Signal, Slot
 
 from albion_dps.market.aod_client import MarketPriceRecord, REGION_HOSTS
 from albion_dps.market.catalog import RecipeCatalog
@@ -739,6 +740,12 @@ class MarketSetupState(QObject):
         self._preset_path = _default_preset_path()
         self._presets: dict[str, dict[str, object]] = self._load_presets()
         self._selected_preset_name = ""
+        self._min_live_refresh_interval_seconds = 1.25
+        self._rate_limit_cooldown_seconds = 20.0
+        self._next_live_fetch_not_before = 0.0
+        self._deferred_price_refresh_timer = QTimer(self)
+        self._deferred_price_refresh_timer.setSingleShot(True)
+        self._deferred_price_refresh_timer.timeout.connect(self._on_deferred_price_refresh_timeout)
         self._ensure_price_preferences_for_recipe(self._recipe)
         if auto_refresh_prices and self._service is not None:
             self._refresh_price_index(self.to_setup(), force=True)
@@ -1546,7 +1553,7 @@ class MarketSetupState(QObject):
 
     def _ensure_price_preferences_for_recipe(self, recipe: Recipe) -> None:
         for component in recipe.components:
-            self._input_price_types.setdefault(component.item.unique_name, PriceType.BUY_ORDER)
+            self._input_price_types.setdefault(component.item.unique_name, PriceType.SELL_ORDER)
         for output in recipe.outputs:
             self._output_price_types.setdefault(output.item.unique_name, PriceType.SELL_ORDER)
 
@@ -2083,10 +2090,33 @@ class MarketSetupState(QObject):
             self._append_diag("AO Data client unavailable, switched to fallback prices.", level="WARN")
             return self._price_index
 
+        now = time.monotonic()
+        if not force:
+            if self._price_fetch_in_progress:
+                self._schedule_deferred_price_refresh(0.35)
+                if self._price_index:
+                    return self._price_index
+                self._price_index = self._build_fallback_price_index(setup)
+                self._price_context_key = context_key
+                return self._price_index
+            if now < self._next_live_fetch_not_before:
+                remaining = max(0.1, self._next_live_fetch_not_before - now)
+                self._schedule_deferred_price_refresh(remaining + 0.05)
+                self._set_fallback_status(
+                    f"AO Data cooldown active ({remaining:.0f}s). Using cache/fallback prices."
+                )
+                fallback_index = self._build_fallback_price_index(setup)
+                if self._price_index:
+                    fallback_index.update(self._price_index)
+                self._price_index = fallback_index
+                self._price_context_key = context_key
+                return self._price_index
+
         self._price_fetch_in_progress = True
         self._prices_source = "loading"
         self._prices_status_text = "Fetching live prices..."
         self.pricesChanged.emit()
+        fetch_started = time.monotonic()
         try:
             index = self._service.get_price_index(
                 region=setup.region,
@@ -2096,11 +2126,14 @@ class MarketSetupState(QObject):
                 ttl_seconds=120.0,
                 allow_stale=not force,
                 allow_cache=not force,
+                allow_live=True,
             )
             if index:
                 meta = self._service.last_prices_meta
                 self._price_index = index
                 self._price_context_key = context_key
+                if not force:
+                    self._next_live_fetch_not_before = fetch_started + self._min_live_refresh_interval_seconds
                 self._prices_source = meta.source
                 self._prices_status_text = (
                     f"{meta.source}: {meta.record_count} rows in {meta.elapsed_ms:.0f} ms"
@@ -2115,7 +2148,19 @@ class MarketSetupState(QObject):
             self._append_diag("AO Data returned no rows; using fallback prices.", level="WARN")
         except Exception as exc:
             self._log.warning("AO Data fetch failed, using fallback prices: %s", exc)
-            self._set_fallback_status(f"AO Data fetch failed ({exc}). Using bundled fallback prices.")
+            error_text = str(exc)
+            if "429" in error_text or "Too Many Requests" in error_text:
+                cooldown = max(
+                    self._rate_limit_cooldown_seconds,
+                    self._min_live_refresh_interval_seconds,
+                )
+                self._next_live_fetch_not_before = time.monotonic() + cooldown
+                self._schedule_deferred_price_refresh(cooldown + 0.1)
+                self._set_fallback_status(
+                    f"AO Data rate limit (429). Cooling down for {cooldown:.0f}s; using fallback prices."
+                )
+            else:
+                self._set_fallback_status(f"AO Data fetch failed ({exc}). Using bundled fallback prices.")
             self._append_diag(f"AO Data fetch failed: {exc}", level="ERROR")
         finally:
             self._price_fetch_in_progress = False
@@ -2137,6 +2182,21 @@ class MarketSetupState(QObject):
         if len(self._diagnostics_lines) > 200:
             self._diagnostics_lines = self._diagnostics_lines[-200:]
         self.diagnosticsChanged.emit()
+
+    def _schedule_deferred_price_refresh(self, delay_seconds: float) -> None:
+        delay_ms = max(50, int(delay_seconds * 1000))
+        if self._deferred_price_refresh_timer.isActive():
+            remaining = self._deferred_price_refresh_timer.remainingTime()
+            if remaining >= 0 and remaining <= delay_ms:
+                return
+        self._deferred_price_refresh_timer.start(delay_ms)
+
+    @Slot()
+    def _on_deferred_price_refresh_timeout(self) -> None:
+        if self._price_fetch_in_progress:
+            self._schedule_deferred_price_refresh(0.35)
+            return
+        self._rebuild_preview(force_price_refresh=False)
 
     def _load_presets(self) -> dict[str, dict[str, object]]:
         path = self._preset_path

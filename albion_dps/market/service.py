@@ -73,6 +73,7 @@ class MarketDataService:
         ttl_seconds: float = 120.0,
         allow_stale: bool = True,
         allow_cache: bool = True,
+        allow_live: bool = True,
     ) -> list[MarketPriceRecord]:
         started = time.perf_counter()
         cache_key = _cache_key(
@@ -96,6 +97,15 @@ class MarketDataService:
                     cache_key=cache_key,
                 )
                 return rows
+
+        if not allow_live:
+            self._last_prices_meta = MarketFetchMeta(
+                source="cache_miss",
+                record_count=0,
+                elapsed_ms=(time.perf_counter() - started) * 1000.0,
+                cache_key=cache_key,
+            )
+            return []
 
         rows = self.client.fetch_prices(
             region=region,
@@ -126,6 +136,7 @@ class MarketDataService:
         ttl_seconds: float = 120.0,
         allow_stale: bool = True,
         allow_cache: bool = True,
+        allow_live: bool = True,
     ) -> dict[tuple[str, str, int], MarketPriceRecord]:
         rows = self.get_prices(
             region=region,
@@ -135,6 +146,7 @@ class MarketDataService:
             ttl_seconds=ttl_seconds,
             allow_stale=allow_stale,
             allow_cache=allow_cache,
+            allow_live=allow_live,
         )
         index: dict[tuple[str, str, int], MarketPriceRecord] = {}
         for row in rows:

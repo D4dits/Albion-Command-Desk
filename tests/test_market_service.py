@@ -200,3 +200,31 @@ def test_service_charts_cache_and_stale_behavior() -> None:
     assert len(third) == 2
     assert call_count["value"] == 1
     assert service.last_charts_meta.source == "stale_cache"
+
+
+def test_service_cache_only_mode_returns_empty_without_live_call() -> None:
+    call_count = {"value": 0}
+
+    def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):
+        _ = (url, timeout_seconds, user_agent)
+        call_count["value"] += 1
+        return []
+
+    tmp_dir = _make_local_tmp_dir()
+    try:
+        client = AODataClient(fetch_json=fake_fetch_json)
+        with SQLiteCache(tmp_dir / "cache.sqlite3") as cache:
+            service = MarketDataService(client=client, cache=cache)
+            rows = service.get_prices(
+                region=MarketRegion.EUROPE,
+                item_ids=["T4_MAIN_SWORD"],
+                locations=["Bridgewatch"],
+                allow_cache=False,
+                allow_live=False,
+            )
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    assert rows == []
+    assert call_count["value"] == 0
+    assert service.last_prices_meta.source == "cache_miss"
