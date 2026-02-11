@@ -1384,195 +1384,182 @@ ApplicationWindow {
                                     anchors.margins: 10
                                     spacing: 8
 
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        Text {
+                                            text: "Crafts Table"
+                                            color: textColor
+                                            font.pixelSize: 12
+                                            font.bold: true
+                                        }
+                                        Item { Layout.fillWidth: true }
+                                        Text {
+                                            text: marketSetupState.craftPlanEnabledCount + "/" + marketSetupState.craftPlanCount + " active"
+                                            color: mutedColor
+                                            font.pixelSize: 11
+                                        }
+                                        Button {
+                                            text: "Clear"
+                                            implicitHeight: 20
+                                            implicitWidth: 52
+                                            font.pixelSize: 10
+                                            onClicked: marketSetupState.clearCraftPlan()
+                                        }
+                                    }
+
                                     Rectangle {
                                         Layout.fillWidth: true
-                                        Layout.fillHeight: true
-                                        Layout.preferredHeight: Math.max(190, Math.min(420, 86 + marketSetupState.craftPlanCount * 24))
+                                        height: 22
                                         radius: 4
                                         color: "#111b28"
                                         border.color: "#1f2a37"
-
-                                        ColumnLayout {
+                                        RowLayout {
                                             anchors.fill: parent
-                                            anchors.margins: 6
+                                            anchors.margins: 4
                                             spacing: 6
+                                            Text { text: "On"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 24 }
+                                            Text { text: "Craft"; color: mutedColor; font.pixelSize: 10; Layout.fillWidth: true }
+                                            Text { text: "Tier"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 46 }
+                                            Text { text: "City"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 118 }
+                                            Text { text: "Bonus"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 70 }
+                                            Text { text: "RRR"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 54 }
+                                            Text { text: "Runs"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 68 }
+                                            Text { text: "P/L%"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 54 }
+                                            Text { text: ""; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 40 }
+                                        }
+                                    }
+
+                                    ListView {
+                                        Layout.fillWidth: true
+                                        Layout.fillHeight: true
+                                        Layout.preferredHeight: Math.max(190, Math.min(420, 86 + marketSetupState.craftPlanCount * 24))
+                                        clip: true
+                                        spacing: 1
+                                        reuseItems: true
+                                        cacheBuffer: 600
+                                        model: marketSetupState.craftPlanModel
+
+                                        delegate: Rectangle {
+                                            width: ListView.view.width
+                                            height: 32
+                                            color: recipeId === marketSetupState.recipeId
+                                                ? "#1b2635"
+                                                : (index % 2 === 0 ? "#0f1620" : "#101924")
 
                                             RowLayout {
-                                                Layout.fillWidth: true
-                                                Text {
-                                                    text: "Crafts Table"
-                                                    color: textColor
-                                                    font.pixelSize: 12
-                                                    font.bold: true
-                                                }
-                                                Item { Layout.fillWidth: true }
-                                                Text {
-                                                    text: marketSetupState.craftPlanEnabledCount + "/" + marketSetupState.craftPlanCount + " active"
-                                                    color: mutedColor
-                                                    font.pixelSize: 11
-                                                }
-                                                Button {
-                                                    text: "Clear"
-                                                    implicitHeight: 20
-                                                    implicitWidth: 52
-                                                    font.pixelSize: 10
-                                                    onClicked: marketSetupState.clearCraftPlan()
-                                                }
-                                            }
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 4
+                                                anchors.rightMargin: 4
+                                                spacing: 6
 
-                                            Rectangle {
-                                                Layout.fillWidth: true
-                                                height: 22
-                                                radius: 4
-                                                color: "#0f1620"
-                                                RowLayout {
-                                                    anchors.fill: parent
-                                                    anchors.margins: 4
-                                                    spacing: 6
-                                                    Text { text: "On"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 24 }
-                                                    Text { text: "Craft"; color: mutedColor; font.pixelSize: 10; Layout.fillWidth: true }
-                                                    Text { text: "Tier"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 46 }
-                                                    Text { text: "City"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 118 }
-                                                    Text { text: "Bonus"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 70 }
-                                                    Text { text: "RRR"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 54 }
-                                                    Text { text: "Runs"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 68 }
-                                                    Text { text: "P/L%"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 54 }
-                                                    Text { text: ""; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 40 }
-                                                }
-                                            }
-
-                                            ListView {
-                                                Layout.fillWidth: true
-                                                Layout.fillHeight: true
-                                                clip: true
-                                                spacing: 1
-                                                reuseItems: true
-                                                cacheBuffer: 600
-                                                model: marketSetupState.craftPlanModel
-
-                                                delegate: Rectangle {
-                                                    width: ListView.view.width
-                                                    height: 32
-                                                    color: recipeId === marketSetupState.recipeId
-                                                        ? "#1b2635"
-                                                        : (index % 2 === 0 ? "#0f1620" : "#101924")
-
-                                                    RowLayout {
-                                                        anchors.fill: parent
-                                                        anchors.leftMargin: 4
-                                                        anchors.rightMargin: 4
-                                                        spacing: 6
-
-                                                        CheckBox {
-                                                            id: enabledCheck
-                                                            Layout.preferredWidth: 24
-                                                            checked: isEnabled
-                                                            text: ""
-                                                            indicator: Rectangle {
-                                                                implicitWidth: 12
-                                                                implicitHeight: 12
-                                                                radius: 2
-                                                                border.color: "#5f6b7a"
-                                                                color: enabledCheck.checked ? accentColor : "transparent"
-                                                            }
-                                                            contentItem: Item { implicitWidth: 0; implicitHeight: 0 }
-                                                            onToggled: marketSetupState.setPlanRowEnabled(rowId, checked)
-                                                        }
-
-                                                        Text {
-                                                            Layout.fillWidth: true
-                                                            text: displayName
-                                                            color: textColor
-                                                            font.pixelSize: 10
-                                                            elide: Text.ElideRight
-                                                        }
-
-                                                        Text {
-                                                            Layout.preferredWidth: 46
-                                                            text: "T" + tier + "." + enchant
-                                                            color: mutedColor
-                                                            font.pixelSize: 10
-                                                        }
-
-                                                        ComboBox {
-                                                            Layout.preferredWidth: 118
-                                                            implicitHeight: 24
-                                                            font.pixelSize: 10
-                                                            model: [
-                                                                "Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien",
-                                                                "Arthur's Rest", "Merlyn's Rest", "Morgana's Rest"
-                                                            ]
-                                                            currentIndex: Math.max(0, model.indexOf(craftCity))
-                                                            onActivated: marketSetupState.setPlanRowCraftCity(rowId, currentText)
-                                                        }
-
-                                                        ComboBox {
-                                                            Layout.preferredWidth: 70
-                                                            implicitHeight: 24
-                                                            font.pixelSize: 10
-                                                            model: ["0%", "10%", "20%"]
-                                                            currentIndex: Math.max(0, model.indexOf(String(Math.round(Number(dailyBonusPercent))) + "%"))
-                                                            onActivated: marketSetupState.setPlanRowDailyBonus(rowId, currentText)
-                                                        }
-
-                                                        Text {
-                                                            Layout.preferredWidth: 54
-                                                            text: returnRatePercent === undefined || returnRatePercent === null
-                                                                ? "-"
-                                                                : Number(returnRatePercent).toFixed(1) + "%"
-                                                            color: mutedColor
-                                                            font.pixelSize: 10
-                                                            horizontalAlignment: Text.AlignRight
-                                                        }
-
-                                                        TextField {
-                                                            Layout.preferredWidth: 68
-                                                            implicitHeight: 24
-                                                            font.pixelSize: 10
-                                                            text: String(runs)
-                                                            color: textColor
-                                                            horizontalAlignment: TextInput.AlignHCenter
-                                                            verticalAlignment: TextInput.AlignVCenter
-                                                            topPadding: 2
-                                                            bottomPadding: 2
-                                                            leftPadding: 3
-                                                            rightPadding: 3
-                                                            inputMethodHints: Qt.ImhDigitsOnly
-                                                            background: Rectangle {
-                                                                radius: 2
-                                                                color: "#0f1620"
-                                                                border.color: "#2a3a51"
-                                                            }
-                                                            onEditingFinished: {
-                                                                var parsed = parseInt(text)
-                                                                if (isNaN(parsed) || parsed < 1) {
-                                                                    parsed = 1
-                                                                }
-                                                                marketSetupState.setPlanRowRuns(rowId, parsed)
-                                                                text = String(parsed)
-                                                            }
-                                                        }
-
-                                                        Text {
-                                                            Layout.preferredWidth: 54
-                                                            text: profitPercent === undefined || profitPercent === null
-                                                                ? "-"
-                                                                : Number(profitPercent).toFixed(1) + "%"
-                                                            color: profitPercent === undefined || profitPercent === null
-                                                                ? mutedColor
-                                                                : (Number(profitPercent) >= 0 ? "#7ee787" : "#ff7b72")
-                                                            font.pixelSize: 10
-                                                            horizontalAlignment: Text.AlignRight
-                                                        }
-
-                                                        Button {
-                                                            Layout.preferredWidth: 40
-                                                            implicitHeight: 22
-                                                            font.pixelSize: 10
-                                                            text: "Del"
-                                                            onClicked: marketSetupState.removePlanRow(rowId)
-                                                        }
+                                                CheckBox {
+                                                    id: enabledCheck
+                                                    Layout.preferredWidth: 24
+                                                    checked: isEnabled
+                                                    text: ""
+                                                    indicator: Rectangle {
+                                                        implicitWidth: 12
+                                                        implicitHeight: 12
+                                                        radius: 2
+                                                        border.color: "#5f6b7a"
+                                                        color: enabledCheck.checked ? accentColor : "transparent"
                                                     }
+                                                    contentItem: Item { implicitWidth: 0; implicitHeight: 0 }
+                                                    onToggled: marketSetupState.setPlanRowEnabled(rowId, checked)
+                                                }
+
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: displayName
+                                                    color: textColor
+                                                    font.pixelSize: 10
+                                                    elide: Text.ElideRight
+                                                }
+
+                                                Text {
+                                                    Layout.preferredWidth: 46
+                                                    text: "T" + tier + "." + enchant
+                                                    color: mutedColor
+                                                    font.pixelSize: 10
+                                                }
+
+                                                ComboBox {
+                                                    Layout.preferredWidth: 118
+                                                    implicitHeight: 24
+                                                    font.pixelSize: 10
+                                                    model: [
+                                                        "Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien",
+                                                        "Arthur's Rest", "Merlyn's Rest", "Morgana's Rest"
+                                                    ]
+                                                    currentIndex: Math.max(0, model.indexOf(craftCity))
+                                                    onActivated: marketSetupState.setPlanRowCraftCity(rowId, currentText)
+                                                }
+
+                                                ComboBox {
+                                                    Layout.preferredWidth: 70
+                                                    implicitHeight: 24
+                                                    font.pixelSize: 10
+                                                    model: ["0%", "10%", "20%"]
+                                                    currentIndex: Math.max(0, model.indexOf(String(Math.round(Number(dailyBonusPercent))) + "%"))
+                                                    onActivated: marketSetupState.setPlanRowDailyBonus(rowId, currentText)
+                                                }
+
+                                                Text {
+                                                    Layout.preferredWidth: 54
+                                                    text: returnRatePercent === undefined || returnRatePercent === null
+                                                        ? "-"
+                                                        : Number(returnRatePercent).toFixed(1) + "%"
+                                                    color: mutedColor
+                                                    font.pixelSize: 10
+                                                    horizontalAlignment: Text.AlignRight
+                                                }
+
+                                                TextField {
+                                                    Layout.preferredWidth: 68
+                                                    implicitHeight: 24
+                                                    font.pixelSize: 10
+                                                    text: String(runs)
+                                                    color: textColor
+                                                    horizontalAlignment: TextInput.AlignHCenter
+                                                    verticalAlignment: TextInput.AlignVCenter
+                                                    topPadding: 2
+                                                    bottomPadding: 2
+                                                    leftPadding: 3
+                                                    rightPadding: 3
+                                                    inputMethodHints: Qt.ImhDigitsOnly
+                                                    background: Rectangle {
+                                                        radius: 2
+                                                        color: "#0f1620"
+                                                        border.color: "#2a3a51"
+                                                    }
+                                                    onEditingFinished: {
+                                                        var parsed = parseInt(text)
+                                                        if (isNaN(parsed) || parsed < 1) {
+                                                            parsed = 1
+                                                        }
+                                                        marketSetupState.setPlanRowRuns(rowId, parsed)
+                                                        text = String(parsed)
+                                                    }
+                                                }
+
+                                                Text {
+                                                    Layout.preferredWidth: 54
+                                                    text: profitPercent === undefined || profitPercent === null
+                                                        ? "-"
+                                                        : Number(profitPercent).toFixed(1) + "%"
+                                                    color: profitPercent === undefined || profitPercent === null
+                                                        ? mutedColor
+                                                        : (Number(profitPercent) >= 0 ? "#7ee787" : "#ff7b72")
+                                                    font.pixelSize: 10
+                                                    horizontalAlignment: Text.AlignRight
+                                                }
+
+                                                Button {
+                                                    Layout.preferredWidth: 40
+                                                    implicitHeight: 22
+                                                    font.pixelSize: 10
+                                                    text: "Del"
+                                                    onClicked: marketSetupState.removePlanRow(rowId)
                                                 }
                                             }
                                         }
