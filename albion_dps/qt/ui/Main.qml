@@ -872,11 +872,6 @@ ApplicationWindow {
                                     onClicked: marketSetupState.refreshPrices()
                                 }
                                 Button {
-                                    text: "Show raw AOData"
-                                    implicitHeight: 24
-                                    onClicked: marketSetupState.showAoDataRaw()
-                                }
-                                Button {
                                     text: marketDiagnosticsVisible ? "Hide diagnostics" : "Show diagnostics"
                                     implicitHeight: 24
                                     onClicked: marketDiagnosticsVisible = !marketDiagnosticsVisible
