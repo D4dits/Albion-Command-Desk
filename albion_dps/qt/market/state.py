@@ -7,6 +7,7 @@ import logging
 import math
 import re
 import time
+from math import ceil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -741,12 +742,17 @@ class MarketSetupState(QObject):
         self._presets: dict[str, dict[str, object]] = self._load_presets()
         self._selected_preset_name = ""
         self._active_market_tab_index = 0
+        self._market_data_tabs_live_bootstrap_done = False
+        self._manual_refresh_cooldown_seconds = 20.0
         self._min_live_refresh_interval_seconds = 1.25
         self._rate_limit_cooldown_seconds = 20.0
         self._next_live_fetch_not_before = 0.0
         self._deferred_price_refresh_timer = QTimer(self)
         self._deferred_price_refresh_timer.setSingleShot(True)
         self._deferred_price_refresh_timer.timeout.connect(self._on_deferred_price_refresh_timeout)
+        self._refresh_cooldown_tick_timer = QTimer(self)
+        self._refresh_cooldown_tick_timer.setInterval(1000)
+        self._refresh_cooldown_tick_timer.timeout.connect(self._on_refresh_cooldown_tick)
         self._ensure_price_preferences_for_recipe(self._recipe)
         if auto_refresh_prices and self._service is not None:
             self._refresh_price_index(self.to_setup(), force=True)
@@ -852,6 +858,23 @@ class MarketSetupState(QObject):
     @Property(bool, notify=pricesChanged)
     def priceFetchInProgress(self) -> bool:
         return self._price_fetch_in_progress
+
+    @Property(int, notify=pricesChanged)
+    def refreshCooldownSeconds(self) -> int:
+        remaining = self._next_live_fetch_not_before - time.monotonic()
+        if remaining <= 0:
+            return 0
+        return int(ceil(remaining))
+
+    @Property(bool, notify=pricesChanged)
+    def canRefreshPrices(self) -> bool:
+        return (not self._price_fetch_in_progress) and self.refreshCooldownSeconds <= 0
+
+    @Property(str, notify=pricesChanged)
+    def refreshPricesButtonText(self) -> str:
+        if self.refreshCooldownSeconds > 0:
+            return f"Refresh in {self.refreshCooldownSeconds}s"
+        return "Refresh prices"
 
     @Property(QObject, constant=True)
     def inputsModel(self) -> QObject:
@@ -1302,7 +1325,11 @@ class MarketSetupState(QObject):
 
     @Slot()
     def refreshPrices(self) -> None:
+        if not self.canRefreshPrices:
+            self._set_list_action_text(f"Refresh available in {self.refreshCooldownSeconds}s.")
+            return
         self._append_diag("Manual price refresh requested.", level="INFO")
+        self._set_next_live_fetch_cooldown(self._manual_refresh_cooldown_seconds)
         self._rebuild_preview(force_price_refresh=True)
 
     @Slot()
@@ -1657,16 +1684,21 @@ class MarketSetupState(QObject):
 
     def _rebuild_preview(self, *, force_price_refresh: bool) -> None:
         setup = self.to_setup()
-        allow_live_fetch = force_price_refresh or self._active_market_tab_index >= 1
+        planned_recipes = self._recipes_for_preview()
+        if not planned_recipes:
+            self._clear_preview_state("no enabled recipes in craft plan")
+            return
+        allow_live_fetch = force_price_refresh or (
+            self._active_market_tab_index >= 1 and not self._market_data_tabs_live_bootstrap_done
+        )
+        if allow_live_fetch and not force_price_refresh:
+            # One automatic live fetch when first entering data tabs; next refreshes are manual.
+            self._market_data_tabs_live_bootstrap_done = True
         price_index = self._current_price_index(
             setup,
             force_refresh=force_price_refresh,
             allow_live=allow_live_fetch,
         )
-        planned_recipes = self._recipes_for_preview()
-        if not planned_recipes:
-            self._clear_preview_state("no enabled recipes in craft plan")
-            return
         try:
             runs = []
             for row, recipe in planned_recipes:
@@ -2139,7 +2171,6 @@ class MarketSetupState(QObject):
         self._prices_source = "loading"
         self._prices_status_text = "Fetching live prices..."
         self.pricesChanged.emit()
-        fetch_started = time.monotonic()
         try:
             index = self._service.get_price_index(
                 region=setup.region,
@@ -2156,7 +2187,7 @@ class MarketSetupState(QObject):
                 self._price_index = index
                 self._price_context_key = context_key
                 if not force:
-                    self._next_live_fetch_not_before = fetch_started + self._min_live_refresh_interval_seconds
+                    self._set_next_live_fetch_cooldown(self._min_live_refresh_interval_seconds)
                 self._prices_source = meta.source
                 self._prices_status_text = (
                     f"{meta.source}: {meta.record_count} rows in {meta.elapsed_ms:.0f} ms"
@@ -2177,7 +2208,7 @@ class MarketSetupState(QObject):
                     self._rate_limit_cooldown_seconds,
                     self._min_live_refresh_interval_seconds,
                 )
-                self._next_live_fetch_not_before = time.monotonic() + cooldown
+                self._set_next_live_fetch_cooldown(cooldown)
                 self._schedule_deferred_price_refresh(cooldown + 0.1)
                 self._set_fallback_status(
                     f"AO Data rate limit (429). Cooling down for {cooldown:.0f}s; using fallback prices."
@@ -2220,6 +2251,22 @@ class MarketSetupState(QObject):
             self._schedule_deferred_price_refresh(0.35)
             return
         self._rebuild_preview(force_price_refresh=False)
+
+    def _set_next_live_fetch_cooldown(self, seconds: float) -> None:
+        target = time.monotonic() + max(0.0, float(seconds))
+        self._next_live_fetch_not_before = max(self._next_live_fetch_not_before, target)
+        if self.refreshCooldownSeconds > 0:
+            if not self._refresh_cooldown_tick_timer.isActive():
+                self._refresh_cooldown_tick_timer.start()
+        else:
+            self._refresh_cooldown_tick_timer.stop()
+        self.pricesChanged.emit()
+
+    @Slot()
+    def _on_refresh_cooldown_tick(self) -> None:
+        if self.refreshCooldownSeconds <= 0:
+            self._refresh_cooldown_tick_timer.stop()
+        self.pricesChanged.emit()
 
     def _load_presets(self) -> dict[str, dict[str, object]]:
         path = self._preset_path

@@ -7,7 +7,7 @@ ApplicationWindow {
     visible: true
     width: 1120
     height: 720
-    title: "Albion DPS Meter"
+    title: "Albion Command Desk"
     color: "#0b0f14"
 
     property color textColor: "#e6edf3"
@@ -149,7 +149,7 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     spacing: 4
                     Text {
-                        text: "Albion DPS Meter"
+                        text: "Albion Command Desk"
                         color: textColor
                         font.pixelSize: 20
                         font.bold: true
@@ -866,8 +866,9 @@ ApplicationWindow {
                                 Item { Layout.fillWidth: true }
 
                                 Button {
-                                    text: "Refresh prices"
+                                    text: marketSetupState.refreshPricesButtonText
                                     implicitHeight: 24
+                                    enabled: marketSetupState.canRefreshPrices
                                     onClicked: marketSetupState.refreshPrices()
                                 }
                                 Button {
@@ -907,7 +908,7 @@ ApplicationWindow {
 
                             TabButton {
                                 id: marketOverviewTab
-                                text: "Setup + Overview"
+                                text: "Setup"
                                 height: marketTabs.height
                                 background: Rectangle {
                                     radius: 5

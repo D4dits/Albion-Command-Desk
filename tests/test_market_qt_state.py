@@ -160,8 +160,14 @@ def test_market_setup_state_uses_service_and_manual_overrides() -> None:
     assert state.inputsTotalCost < default_input
 
     previous_calls = service.calls
+    # Initial auto live fetch sets short cooldown; manual refresh should wait.
+    state.refreshPrices()
+    assert service.calls == previous_calls
+    assert state.refreshCooldownSeconds > 0
+    state._next_live_fetch_not_before = 0.0
     state.refreshPrices()
     assert service.calls > previous_calls
+    assert state.refreshCooldownSeconds >= 19
 
 
 def test_market_setup_state_skips_live_fetch_in_setup_tab_until_data_tabs() -> None:
