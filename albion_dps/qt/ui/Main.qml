@@ -682,6 +682,7 @@ ApplicationWindow {
                             radius: 6
                             color: "#0f1620"
                             border.color: "#1f2a37"
+                            clip: true
 
                             ScrollView {
                                 anchors.fill: parent
@@ -1916,7 +1917,7 @@ ApplicationWindow {
                                 ListView {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
-                                    Layout.minimumHeight: 180
+                                    Layout.minimumHeight: 96
                                     clip: true
                                     model: marketSetupState.resultsItemsModel
 
@@ -2061,8 +2062,9 @@ ApplicationWindow {
 
                                 Rectangle {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 128
-                                    Layout.minimumHeight: 96
+                                    Layout.preferredHeight: 104
+                                    Layout.minimumHeight: 72
+                                    Layout.maximumHeight: 140
                                     radius: 4
                                     color: "#111b28"
                                     border.color: "#1f2a37"
