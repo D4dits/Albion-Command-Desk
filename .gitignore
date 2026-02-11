@@ -53,6 +53,7 @@ dotnet-install.sh
 _tmp/
 _tmppytest/
 UsersUsersDocumentsDPS_MasterDPS_Meter_AO_tmppytest/
+tmp_main_head.qml
 tools/market/sources/*.json
 !tools/market/sources/.gitkeep
 
