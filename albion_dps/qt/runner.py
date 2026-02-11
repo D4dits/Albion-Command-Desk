@@ -32,7 +32,7 @@ def run_qt(args: argparse.Namespace) -> int:
     _ensure_pyside6_paths()
     try:
         from PySide6.QtCore import QTimer
-        from PySide6.QtGui import QGuiApplication
+        from PySide6.QtGui import QGuiApplication, QIcon
         from PySide6.QtQml import QQmlApplicationEngine
     except Exception:  # pragma: no cover - optional dependency
         logging.getLogger(__name__).exception(
@@ -79,6 +79,9 @@ def run_qt(args: argparse.Namespace) -> int:
     producer.start()
 
     app = QGuiApplication([])
+    icon_path = Path(__file__).resolve().parent / "ui" / "command_desk_icon.xpm"
+    if icon_path.exists():
+        app.setWindowIcon(QIcon(str(icon_path)))
     engine = QQmlApplicationEngine()
     warnings: list = []
 
