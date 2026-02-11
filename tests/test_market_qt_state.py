@@ -144,6 +144,7 @@ def test_market_setup_state_builds_outputs_and_results() -> None:
 def test_market_setup_state_uses_service_and_manual_overrides() -> None:
     service = _FakeMarketService()
     state = MarketSetupState(service=service, auto_refresh_prices=False)
+    state.setActiveMarketTab(1)
 
     assert service.calls == 0
     state.addCurrentRecipeToPlan()
@@ -161,6 +162,21 @@ def test_market_setup_state_uses_service_and_manual_overrides() -> None:
     previous_calls = service.calls
     state.refreshPrices()
     assert service.calls > previous_calls
+
+
+def test_market_setup_state_skips_live_fetch_in_setup_tab_until_data_tabs() -> None:
+    service = _FakeMarketService()
+    state = MarketSetupState(service=service, auto_refresh_prices=False)
+
+    # Setup tab should not trigger live AO Data calls while building craft plan.
+    state.setActiveMarketTab(0)
+    state.addCurrentRecipeToPlan()
+    assert service.calls == 0
+
+    # Entering Inputs/Outputs/Results should enable live fetch.
+    state.setActiveMarketTab(1)
+    assert service.calls >= 1
+    assert state.pricesSource == "live"
 
 
 def test_market_setup_state_price_age_handles_aliases_and_invalid_dates() -> None:

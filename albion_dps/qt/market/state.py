@@ -740,6 +740,7 @@ class MarketSetupState(QObject):
         self._preset_path = _default_preset_path()
         self._presets: dict[str, dict[str, object]] = self._load_presets()
         self._selected_preset_name = ""
+        self._active_market_tab_index = 0
         self._min_live_refresh_interval_seconds = 1.25
         self._rate_limit_cooldown_seconds = 20.0
         self._next_live_fetch_not_before = 0.0
@@ -998,6 +999,15 @@ class MarketSetupState(QObject):
         if value_norm not in mapping:
             return
         self._replace(region=mapping[value_norm])
+
+    @Slot(int)
+    def setActiveMarketTab(self, index: int) -> None:
+        normalized = max(0, int(index))
+        if normalized == self._active_market_tab_index:
+            return
+        self._active_market_tab_index = normalized
+        if self._active_market_tab_index >= 1:
+            self._rebuild_preview(force_price_refresh=False)
 
     @Slot(int)
     def setRecipeIndex(self, index: int) -> None:
@@ -1647,7 +1657,12 @@ class MarketSetupState(QObject):
 
     def _rebuild_preview(self, *, force_price_refresh: bool) -> None:
         setup = self.to_setup()
-        price_index = self._current_price_index(setup, force_refresh=force_price_refresh)
+        allow_live_fetch = force_price_refresh or self._active_market_tab_index >= 1
+        price_index = self._current_price_index(
+            setup,
+            force_refresh=force_price_refresh,
+            allow_live=allow_live_fetch,
+        )
         planned_recipes = self._recipes_for_preview()
         if not planned_recipes:
             self._clear_preview_state("no enabled recipes in craft plan")
@@ -2058,9 +2073,17 @@ class MarketSetupState(QObject):
         setup: CraftSetup,
         *,
         force_refresh: bool,
+        allow_live: bool,
     ) -> dict[tuple[str, str, int], MarketPriceRecord]:
         if force_refresh:
             return self._refresh_price_index(setup, force=True)
+        if not allow_live:
+            # Setup tab: keep local estimate/cache snapshot, skip live AOData pulls.
+            fallback_index = self._build_fallback_price_index(setup)
+            if self._price_index:
+                fallback_index.update(self._price_index)
+            self._price_index = fallback_index
+            return self._price_index
         context_key = self._price_key(setup)
         if self._price_index and context_key == self._price_context_key:
             return self._price_index
