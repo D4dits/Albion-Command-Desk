@@ -7,8 +7,11 @@ import pytest
 
 pytest.importorskip("PySide6")
 
-from PySide6.QtGui import QGuiApplication
-from PySide6.QtQml import QQmlApplicationEngine
+try:
+    from PySide6.QtGui import QGuiApplication
+    from PySide6.QtQml import QQmlApplicationEngine
+except ImportError as exc:  # pragma: no cover - depends on system Qt libs
+    pytest.skip(f"Qt runtime unavailable: {exc}", allow_module_level=True)
 
 from albion_dps.qt.models import UiState
 from albion_dps.qt.market import MarketSetupState

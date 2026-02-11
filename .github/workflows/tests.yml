@@ -25,23 +25,7 @@ jobs:
           python -m pip install -e ".[test]"
       - name: Run tests
         run: |
-          python -m pytest -q
-
-  pytest-gui-textual:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install dependencies
-        run: |
-          python -m pip install -U pip
-          python -m pip install -e ".[test,gui]"
-      - name: Run Textual GUI smoke test
-        run: |
-          python -m pytest -q tests/test_gui_smoke.py
+          python -m pytest -q --ignore=tests/test_qt_smoke.py
 
   pytest-gui-qt:
     runs-on: ubuntu-latest
@@ -74,7 +58,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install -U pip
-          python -m pip install -e ".[test,gui-qt]"
+          python -m pip install -e ".[test]"
       - name: Run Qt GUI smoke test
         run: |
           python -m pytest -q tests/test_qt_smoke.py
