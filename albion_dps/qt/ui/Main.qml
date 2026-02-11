@@ -58,6 +58,7 @@ ApplicationWindow {
         + marketOutputsNetMinWidth
         + marketColumnSpacing * 9
         + 12
+    property bool showTabGuide: true
     property bool meterView: viewTabs.currentIndex === 0
     property bool scannerView: viewTabs.currentIndex === 1
     property bool marketView: viewTabs.currentIndex === 2
@@ -194,6 +195,7 @@ ApplicationWindow {
             TabButton {
                 id: meterTab
                 text: "Meter"
+                hoverEnabled: true
                 height: viewTabs.height
                 background: Rectangle {
                     radius: 5
@@ -207,10 +209,13 @@ ApplicationWindow {
                     verticalAlignment: Text.AlignVCenter
                     font.bold: true
                 }
+                ToolTip.visible: hovered
+                ToolTip.text: "Live combat meter: damage, heal, DPS/HPS, history snapshots."
             }
             TabButton {
                 id: scannerTab
                 text: "Scanner"
+                hoverEnabled: true
                 height: viewTabs.height
                 background: Rectangle {
                     radius: 5
@@ -224,10 +229,13 @@ ApplicationWindow {
                     verticalAlignment: Text.AlignVCenter
                     font.bold: true
                 }
+                ToolTip.visible: hovered
+                ToolTip.text: "Albion Data scanner: repo sync, start/stop scanner, monitor logs."
             }
             TabButton {
                 id: marketTab
                 text: "Market"
+                hoverEnabled: true
                 height: viewTabs.height
                 background: Rectangle {
                     radius: 5
@@ -240,6 +248,54 @@ ApplicationWindow {
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     font.bold: true
+                }
+                ToolTip.visible: hovered
+                ToolTip.text: "Crafting profitability: setup, prices, inputs/outputs, and net result."
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            Button {
+                text: showTabGuide ? "Hide guide" : "Show guide"
+                implicitHeight: 24
+                font.pixelSize: 11
+                onClicked: showTabGuide = !showTabGuide
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: 24
+                visible: showTabGuide
+                radius: 5
+                color: "#0f1620"
+                border.color: "#1f2a37"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    spacing: 10
+
+                    Text {
+                        text: meterView ? "Meter"
+                            : (scannerView ? "Scanner" : "Market")
+                        color: textColor
+                        font.pixelSize: 11
+                        font.bold: true
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: meterView
+                            ? "Capture live fights, switch Battle/Zone/Manual modes, sort DPS/DMG/HPS/HEAL, and open history snapshots."
+                            : (scannerView
+                                ? "Manage AlbionData client: check updates, sync repository, start/stop scanner, and inspect runtime logs."
+                                : "Configure crafting setup, fetch AOData prices, compare Inputs/Outputs, and read profit in Results.")
+                        color: mutedColor
+                        font.pixelSize: 11
+                        elide: Text.ElideRight
+                    }
                 }
             }
         }
