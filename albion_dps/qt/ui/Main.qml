@@ -827,8 +827,9 @@ ApplicationWindow {
 
                             Text {
                                 Layout.fillWidth: true
-                                text: "Prices: " + marketSetupState.pricesSource + "  |  " + marketSetupState.pricesStatusText
-                                color: mutedColor
+                                text: (marketSetupState.priceFetchInProgress ? "[loading] " : "")
+                                    + "Prices: " + marketSetupState.pricesSource + "  |  " + marketSetupState.pricesStatusText
+                                color: marketSetupState.pricesSource === "fallback" ? "#ffb86b" : mutedColor
                                 font.pixelSize: 11
                                 elide: Text.ElideRight
                             }
@@ -883,6 +884,47 @@ ApplicationWindow {
                             font.pixelSize: 11
                             elide: Text.ElideRight
                             visible: text.length > 0
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: 84
+                            radius: 6
+                            color: "#0f1620"
+                            border.color: "#1f2a37"
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 4
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text { text: "Market diagnostics"; color: textColor; font.pixelSize: 11; font.bold: true }
+                                    Item { Layout.fillWidth: true }
+                                    Button {
+                                        text: "Clear"
+                                        implicitHeight: 20
+                                        font.pixelSize: 10
+                                        onClicked: marketSetupState.clearDiagnostics()
+                                    }
+                                }
+
+                                ScrollView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    TextArea {
+                                        text: marketSetupState.diagnosticsText
+                                        readOnly: true
+                                        wrapMode: Text.NoWrap
+                                        color: mutedColor
+                                        font.family: "Consolas"
+                                        font.pixelSize: 10
+                                        selectByMouse: true
+                                    }
+                                }
+                            }
                         }
 
                         TabBar {
@@ -1112,6 +1154,8 @@ ApplicationWindow {
                                                         anchors.fill: parent
                                                         anchors.margins: 4
                                                         clip: true
+                                                        reuseItems: true
+                                                        cacheBuffer: 600
                                                         model: marketSetupState.recipeOptionsModel
 
                                                         delegate: Rectangle {
@@ -1444,6 +1488,8 @@ ApplicationWindow {
                                                 Layout.fillHeight: true
                                                 clip: true
                                                 spacing: 1
+                                                reuseItems: true
+                                                cacheBuffer: 600
                                                 model: marketSetupState.craftPlanModel
 
                                                 delegate: Rectangle {
@@ -1635,6 +1681,8 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 190
                                     clip: true
+                                    reuseItems: true
+                                    cacheBuffer: 600
                                     model: marketSetupState.inputsModel
 
                                     delegate: Rectangle {
@@ -1846,6 +1894,8 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 190
                                     clip: true
+                                    reuseItems: true
+                                    cacheBuffer: 600
                                     model: marketSetupState.outputsModel
 
                                     delegate: Rectangle {
@@ -2098,6 +2148,8 @@ ApplicationWindow {
                                     Layout.fillHeight: true
                                     Layout.minimumHeight: 96
                                     clip: true
+                                    reuseItems: true
+                                    cacheBuffer: 800
                                     model: marketSetupState.resultsItemsModel
 
                                     delegate: Rectangle {
@@ -2252,6 +2304,8 @@ ApplicationWindow {
                                         anchors.fill: parent
                                         anchors.margins: 6
                                         clip: true
+                                        reuseItems: true
+                                        cacheBuffer: 300
                                         model: marketSetupState.breakdownModel
 
                                         delegate: Rectangle {

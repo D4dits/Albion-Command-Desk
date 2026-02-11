@@ -677,6 +677,7 @@ class MarketSetupState(QObject):
     resultsChanged = Signal()
     listsChanged = Signal()
     resultsDetailsChanged = Signal()
+    diagnosticsChanged = Signal()
 
     def __init__(
         self,
@@ -728,10 +729,12 @@ class MarketSetupState(QObject):
         self._price_context_key: tuple[str, int, tuple[str, ...], tuple[str, ...]] | None = None
         self._prices_source = "fallback"
         self._prices_status_text = "Using bundled fallback prices."
+        self._price_fetch_in_progress = False
         self._results_sort_key = "profit"
         self._shopping_csv = ""
         self._selling_csv = ""
         self._list_action_text = ""
+        self._diagnostics_lines: list[str] = []
         self._recipe_search_query = ""
         self._preset_path = _default_preset_path()
         self._presets: dict[str, dict[str, object]] = self._load_presets()
@@ -740,6 +743,7 @@ class MarketSetupState(QObject):
         if auto_refresh_prices and self._service is not None:
             self._refresh_price_index(self.to_setup(), force=True)
         self._rebuild_preview(force_price_refresh=False)
+        self._append_diag("Market state initialized.", level="INFO")
 
     @Property(str, notify=setupChanged)
     def region(self) -> str:
@@ -837,6 +841,10 @@ class MarketSetupState(QObject):
     def pricesStatusText(self) -> str:
         return self._prices_status_text
 
+    @Property(bool, notify=pricesChanged)
+    def priceFetchInProgress(self) -> bool:
+        return self._price_fetch_in_progress
+
     @Property(QObject, constant=True)
     def inputsModel(self) -> QObject:
         return self._inputs_model
@@ -888,6 +896,10 @@ class MarketSetupState(QObject):
     @Property(str, notify=listsChanged)
     def listActionText(self) -> str:
         return self._list_action_text
+
+    @Property(str, notify=diagnosticsChanged)
+    def diagnosticsText(self) -> str:
+        return "\n".join(self._diagnostics_lines)
 
     @Property(str, notify=resultsDetailsChanged)
     def resultsSortKey(self) -> str:
@@ -1033,6 +1045,7 @@ class MarketSetupState(QObject):
         if self._save_presets():
             self._selected_preset_name = name
             self._set_list_action_text(f"Preset saved: {name}")
+            self._append_diag(f"Preset saved: {name}", level="INFO")
             self.setupChanged.emit()
 
     @Slot(str)
@@ -1059,6 +1072,7 @@ class MarketSetupState(QObject):
         self.setupChanged.emit()
         self.validationChanged.emit()
         self._set_list_action_text(f"Preset loaded: {name}")
+        self._append_diag(f"Preset loaded: {name}", level="INFO")
 
     @Slot(str)
     def deletePreset(self, raw_name: str) -> None:
@@ -1074,6 +1088,7 @@ class MarketSetupState(QObject):
             self._selected_preset_name = ""
         if self._save_presets():
             self._set_list_action_text(f"Preset deleted: {name}")
+            self._append_diag(f"Preset deleted: {name}", level="INFO")
             self.setupChanged.emit()
 
     @Slot()
@@ -1270,6 +1285,7 @@ class MarketSetupState(QObject):
 
     @Slot()
     def refreshPrices(self) -> None:
+        self._append_diag("Manual price refresh requested.", level="INFO")
         self._rebuild_preview(force_price_refresh=True)
 
     @Slot()
@@ -1286,8 +1302,10 @@ class MarketSetupState(QObject):
         opened = QDesktopServices.openUrl(QUrl(url))
         if opened:
             self._set_list_action_text("Opened AOData prices in browser.")
+            self._append_diag("Opened AOData raw URL in browser.", level="INFO")
         else:
             self._set_list_action_text(f"AOData URL: {url}")
+            self._append_diag("Failed to open browser; AOData URL copied to status.", level="WARN")
 
     @Slot(str, str)
     def setInputPriceType(self, item_id: str, price_type: str) -> None:
@@ -1384,6 +1402,11 @@ class MarketSetupState(QObject):
             return
         clipboard.setText(value)
         self._set_list_action_text("Copied value to clipboard.")
+
+    @Slot()
+    def clearDiagnostics(self) -> None:
+        self._diagnostics_lines = []
+        self.diagnosticsChanged.emit()
 
     @Slot()
     def copySellingCsv(self) -> None:
@@ -2057,8 +2080,13 @@ class MarketSetupState(QObject):
             self._set_fallback_status("AO Data client not configured. Using bundled fallback prices.")
             self._price_index = self._build_fallback_price_index(setup)
             self._price_context_key = context_key
+            self._append_diag("AO Data client unavailable, switched to fallback prices.", level="WARN")
             return self._price_index
 
+        self._price_fetch_in_progress = True
+        self._prices_source = "loading"
+        self._prices_status_text = "Fetching live prices..."
+        self.pricesChanged.emit()
         try:
             index = self._service.get_price_index(
                 region=setup.region,
@@ -2078,11 +2106,20 @@ class MarketSetupState(QObject):
                     f"{meta.source}: {meta.record_count} rows in {meta.elapsed_ms:.0f} ms"
                 )
                 self.pricesChanged.emit()
+                self._append_diag(
+                    f"Prices loaded from {meta.source} ({meta.record_count} rows, {meta.elapsed_ms:.0f} ms).",
+                    level="INFO",
+                )
                 return self._price_index
             self._set_fallback_status("AO Data returned no price rows. Using bundled fallback prices.")
+            self._append_diag("AO Data returned no rows; using fallback prices.", level="WARN")
         except Exception as exc:
             self._log.warning("AO Data fetch failed, using fallback prices: %s", exc)
             self._set_fallback_status(f"AO Data fetch failed ({exc}). Using bundled fallback prices.")
+            self._append_diag(f"AO Data fetch failed: {exc}", level="ERROR")
+        finally:
+            self._price_fetch_in_progress = False
+            self.pricesChanged.emit()
 
         self._price_index = self._build_fallback_price_index(setup)
         self._price_context_key = context_key
@@ -2092,6 +2129,14 @@ class MarketSetupState(QObject):
         self._prices_source = "fallback"
         self._prices_status_text = message
         self.pricesChanged.emit()
+
+    def _append_diag(self, message: str, *, level: str = "INFO") -> None:
+        now = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        line = f"[{now}] {level}: {message}"
+        self._diagnostics_lines.append(line)
+        if len(self._diagnostics_lines) > 200:
+            self._diagnostics_lines = self._diagnostics_lines[-200:]
+        self.diagnosticsChanged.emit()
 
     def _load_presets(self) -> dict[str, dict[str, object]]:
         path = self._preset_path

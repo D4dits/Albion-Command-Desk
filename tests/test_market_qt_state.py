@@ -248,6 +248,20 @@ def test_market_setup_state_supports_setup_presets(monkeypatch: pytest.MonkeyPat
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
+def test_market_setup_state_diagnostics_log_lifecycle() -> None:
+    service = _FakeMarketService()
+    state = MarketSetupState(service=service, auto_refresh_prices=False)
+    assert "Market state initialized." in state.diagnosticsText
+
+    state.addCurrentRecipeToPlan()
+    state.refreshPrices()
+    assert "Manual price refresh requested." in state.diagnosticsText
+    assert state.priceFetchInProgress is False
+
+    state.clearDiagnostics()
+    assert state.diagnosticsText == ""
+
+
 def test_market_setup_state_applies_input_stock_to_buy_costs() -> None:
     state = MarketSetupState(auto_refresh_prices=False)
     state.addCurrentRecipeToPlan()
