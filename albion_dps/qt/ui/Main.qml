@@ -65,6 +65,7 @@ ApplicationWindow {
     property bool meterView: viewTabs.currentIndex === 0
     property bool scannerView: viewTabs.currentIndex === 1
     property bool marketView: viewTabs.currentIndex === 2
+    property bool marketDiagnosticsVisible: false
 
     function formatInt(value) {
         var n = Number(value)
@@ -874,6 +875,11 @@ ApplicationWindow {
                                     implicitHeight: 24
                                     onClicked: marketSetupState.showAoDataRaw()
                                 }
+                                Button {
+                                    text: marketDiagnosticsVisible ? "Hide diagnostics" : "Show diagnostics"
+                                    implicitHeight: 24
+                                    onClicked: marketDiagnosticsVisible = !marketDiagnosticsVisible
+                                }
                             }
                         }
 
@@ -884,47 +890,6 @@ ApplicationWindow {
                             font.pixelSize: 11
                             elide: Text.ElideRight
                             visible: text.length > 0
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            implicitHeight: 84
-                            radius: 6
-                            color: "#0f1620"
-                            border.color: "#1f2a37"
-
-                            ColumnLayout {
-                                anchors.fill: parent
-                                anchors.margins: 6
-                                spacing: 4
-
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Text { text: "Market diagnostics"; color: textColor; font.pixelSize: 11; font.bold: true }
-                                    Item { Layout.fillWidth: true }
-                                    Button {
-                                        text: "Clear"
-                                        implicitHeight: 20
-                                        font.pixelSize: 10
-                                        onClicked: marketSetupState.clearDiagnostics()
-                                    }
-                                }
-
-                                ScrollView {
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    clip: true
-                                    TextArea {
-                                        text: marketSetupState.diagnosticsText
-                                        readOnly: true
-                                        wrapMode: Text.NoWrap
-                                        color: mutedColor
-                                        font.family: "Consolas"
-                                        font.pixelSize: 10
-                                        selectByMouse: true
-                                    }
-                                }
-                            }
                         }
 
                         TabBar {
@@ -1008,6 +973,56 @@ ApplicationWindow {
                                     verticalAlignment: Text.AlignVCenter
                                     font.pixelSize: 11
                                     font.bold: true
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: marketDiagnosticsVisible ? 110 : 0
+                            Layout.minimumHeight: marketDiagnosticsVisible ? 82 : 0
+                            Layout.maximumHeight: marketDiagnosticsVisible ? 140 : 0
+                            visible: marketDiagnosticsVisible
+                            radius: 6
+                            color: "#0f1620"
+                            border.color: "#1f2a37"
+                            clip: true
+
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                spacing: 4
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text {
+                                        text: "Market diagnostics"
+                                        color: textColor
+                                        font.pixelSize: 11
+                                        font.bold: true
+                                    }
+                                    Item { Layout.fillWidth: true }
+                                    Button {
+                                        text: "Clear"
+                                        implicitHeight: 20
+                                        font.pixelSize: 10
+                                        onClicked: marketSetupState.clearDiagnostics()
+                                    }
+                                }
+
+                                ScrollView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    TextArea {
+                                        text: marketSetupState.diagnosticsText
+                                        readOnly: true
+                                        wrapMode: Text.NoWrap
+                                        color: mutedColor
+                                        font.family: "Consolas"
+                                        font.pixelSize: 10
+                                        selectByMouse: true
+                                    }
                                 }
                             }
                         }
@@ -2073,10 +2088,15 @@ ApplicationWindow {
                             color: "#0f1620"
                             border.color: "#1f2a37"
 
-                            ColumnLayout {
+                            ScrollView {
+                                id: marketResultsScroll
                                 anchors.fill: parent
                                 anchors.margins: 10
-                                spacing: 8
+                                clip: true
+
+                                ColumnLayout {
+                                    width: Math.max(640, marketResultsScroll.availableWidth)
+                                    spacing: 8
 
                                 RowLayout {
                                     Layout.fillWidth: true
@@ -2145,7 +2165,7 @@ ApplicationWindow {
 
                                 ListView {
                                     Layout.fillWidth: true
-                                    Layout.fillHeight: true
+                                    Layout.preferredHeight: Math.max(120, Math.round(root.height * 0.32))
                                     Layout.minimumHeight: 96
                                     clip: true
                                     reuseItems: true
@@ -2293,9 +2313,9 @@ ApplicationWindow {
 
                                 Rectangle {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 104
+                                    Layout.preferredHeight: Math.max(84, Math.round(root.height * 0.17))
                                     Layout.minimumHeight: 72
-                                    Layout.maximumHeight: 140
+                                    Layout.maximumHeight: 180
                                     radius: 4
                                     color: "#111b28"
                                     border.color: "#1f2a37"
@@ -2330,6 +2350,7 @@ ApplicationWindow {
                                             }
                                         }
                                     }
+                                }
                                 }
                             }
                         }
