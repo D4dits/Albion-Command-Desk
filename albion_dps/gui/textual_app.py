@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import queue
 from collections.abc import Callable
@@ -116,7 +116,7 @@ class AlbionDpsApp(App):
         zone_label = self._zone_label_provider() if self._zone_label_provider else None
         timestamp = datetime.fromtimestamp(snapshot.timestamp)
         time_label = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-        header = "Albion DPS Meter  [GUI]"
+        header = "Albion Command Desk  [GUI]"
         header += f"  [mode {self._mode}]"
         if zone_label:
             header += f"  [zone {zone_label}]"
@@ -286,3 +286,4 @@ def _shorten_label(label: str, limit: int) -> str:
         return label[:limit]
     trimmed = label[: max(limit - 3, 0)]
     return f"{trimmed}..."
+

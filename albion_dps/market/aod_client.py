@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import logging
@@ -52,7 +52,7 @@ class AODataClient:
         self,
         *,
         timeout_seconds: float = 12.0,
-        user_agent: str = "albion-dps-market/0.1",
+        user_agent: str = "albion-command-desk-market/0.1",
         fetch_json: Callable[[str, float, str], object] | None = None,
         max_retries: int = 2,
         retry_backoff_initial_seconds: float = 0.20,
@@ -243,4 +243,5 @@ def _default_fetch_json(url: str, timeout_seconds: float, user_agent: str) -> ob
     with urlopen(request, timeout=timeout_seconds) as response:
         payload = response.read().decode("utf-8")
     return json.loads(payload)
+
 

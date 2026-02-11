@@ -3,13 +3,14 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "albion-dps"
+name = "albion-command-desk"
 version = "0.1.0"
-description = "Albion Online DPS/Heal meter"
+description = "Albion Online combat and market operations desk"
 requires-python = ">=3.10"
 dependencies = []
 
 [project.scripts]
+albion-command-desk = "albion_dps.cli:main"
 albion-dps = "albion_dps.cli:main"
 
 [project.optional-dependencies]

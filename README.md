@@ -1,4 +1,4 @@
-# Albion DPS Meter
+﻿# Albion Command Desk
 
 Passive DPS/HPS meter for Albion Online with a Qt desktop UI and optional terminal tools.
 It reads UDP traffic only (PCAP replay or live capture); no client hooks, overlays, or modifications.
@@ -44,11 +44,11 @@ python -m pip install -e ".[all]"
 ```
 3) Replay a PCAP (your capture or a shared fixture):
 ```
-albion-dps replay .\path\to\file.pcap
+albion-command-desk replay .\path\to\file.pcap
 ```
 4) Live capture:
 ```
-albion-dps live
+albion-command-desk live
 ```
 
 ## Quickstart (Linux)
@@ -64,12 +64,12 @@ python -m pip install -e ".[all]"
 ```
 3) Replay a PCAP:
 ```
-albion-dps replay /path/to/file.pcap
+albion-command-desk replay /path/to/file.pcap
 ```
 4) Live capture (pick the right interface):
 ```
-albion-dps live --list-interfaces
-albion-dps live --interface "wlp3s0"
+albion-command-desk live --list-interfaces
+albion-command-desk live --interface "wlp3s0"
 ```
 5) If live capture fails with "Operation not permitted", grant capture permissions:
 ```
@@ -99,14 +99,15 @@ python -m pip install -e ".[test]"
 python -m pip install -e ".[all]"
 ```
 
-If `albion-dps` is not recognized, you likely forgot to activate the venv or install the project.
+If `albion-command-desk` is not recognized, you likely forgot to activate the venv or install the project.
 See `docs/TROUBLESHOOTING.md`.
+Legacy alias `albion-dps` is still available for compatibility.
 
 ## Run
-After installing (provides the `albion-dps` command):
+After installing (provides the `albion-command-desk` command):
 ```
-albion-dps replay artifacts/pcaps/albion_combat_12_party.pcap
-albion-dps live
+albion-command-desk replay artifacts/pcaps/albion_combat_12_party.pcap
+albion-command-desk live
 ```
 
 Without installing (runs directly from the repo checkout):
@@ -160,8 +161,8 @@ python -m pip install -e ".[gui,capture]"
 
 Run GUI:
 ```
-albion-dps gui live
-albion-dps gui replay .\path\to\file.pcap
+albion-command-desk gui live
+albion-command-desk gui replay .\path\to\file.pcap
 ```
 Without installing (runs directly from the repo checkout):
 ```
@@ -184,8 +185,8 @@ python -m pip install -e ".[gui-qt]"
 ```
 Run Qt GUI:
 ```
-albion-dps qt live
-albion-dps qt replay .\path\to\file.pcap
+albion-command-desk qt live
+albion-command-desk qt replay .\path\to\file.pcap
 ```
 Qt keys:
 - `q` quit
@@ -201,7 +202,7 @@ Qt tabs:
   - uses fixed runtime defaults (upload enabled, official public ingest endpoint)
   - live log output
 - `Market`: crafting calculator workspace with sub-tabs:
-  - `Setup + Overview` (region/cities/fees/runs + quick KPI view)
+  - `Setup` (region/cities/fees/runs + crafts table)
   - `Inputs` and `Outputs` (per-item live/manual pricing modes + output city override)
   - `ADP age` coloring in Inputs (`<=20m` green, `<=60m` orange, older red)
   - `Results` (per-item profit table with sorting + cost/tax/focus breakdown)
@@ -306,11 +307,11 @@ If the game is installed in a default Steam/Applications path, it will try to au
 ## Live capture notes
 List interfaces:
 ```
-albion-dps live --list-interfaces
+albion-command-desk live --list-interfaces
 ```
 Specify interface:
 ```
-albion-dps live --interface "<name>"
+albion-command-desk live --interface "<name>"
 ```
 Advanced options:
 ```
@@ -320,7 +321,7 @@ Advanced options:
 --timeout-ms 1000
 --dump-raw artifacts/raw
 ```
-Note: `albion-dps live` auto-detects traffic; if no packets are seen yet, it falls back to the first non-loopback
+Note: `albion-command-desk live` auto-detects traffic; if no packets are seen yet, it falls back to the first non-loopback
 interface. Start the game to generate traffic. Live capture accepts UDP on the standard Albion ports or payloads
 that look like Photon (IPv4/IPv6).
 
@@ -351,3 +352,4 @@ $env:ALBION_DPS_PCAP_DIR="C:\\path\\to\\pcaps"
 python -m pip install -e ".[test]"
 python -m pytest -q
 ```
+

@@ -1,6 +1,6 @@
-# Troubleshooting
+﻿# Troubleshooting
 
-## `albion-dps` is not recognized
+## `albion-command-desk` is not recognized
 You need both:
 1) an activated virtualenv
 2) the project installed (so the console script exists)
@@ -10,7 +10,7 @@ Windows / PowerShell:
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install -e ".[capture]"
-albion-dps --help
+albion-command-desk --help
 ```
 
 Alternative (no install): run from the repo checkout
@@ -21,7 +21,7 @@ python -m albion_dps live
 
 ## Live mode shows "no data"
 Common causes:
-- You are on the wrong interface: run `albion-dps live --list-interfaces` and pick the one that carries game traffic.
+- You are on the wrong interface: run `albion-command-desk live --list-interfaces` and pick the one that carries game traffic.
 - No packets yet: start the game and generate traffic (zone change / combat).
 - Capture dependencies missing: install `pcapy-ng` via `python -m pip install -e ".[capture]"`.
 - Windows: Npcap not installed (or installed without WinPcap API compatibility).
@@ -30,11 +30,11 @@ Common causes:
 Strict "self + party only" filtering means the meter will not aggregate anything until it can resolve "self".
 If you want deterministic startup, seed self:
 ```
-albion-dps live --self-name "YourName"
+albion-command-desk live --self-name "YourName"
 ```
 or
 ```
-albion-dps live --self-id 123456
+albion-command-desk live --self-id 123456
 ```
 
 ## A mob appears as the top "player" (e.g., `@MOB_*`)
@@ -126,3 +126,4 @@ This usually means Qt's DLLs are not found:
 - Ensure the venv is active and PySide6 is installed: `python -m pip install -e ".[gui-qt]"`
 - Restart the terminal after install so PATH updates are picked up.
 - If it still fails, install the Microsoft VC++ Redistributable (x64).
+

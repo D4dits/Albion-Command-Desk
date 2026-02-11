@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import os
@@ -49,7 +49,7 @@ def format_table(
         top_label = "all" if not top_n or top_n <= 0 else str(top_n)
         lines.extend(
             [
-                "Albion DPS Meter",
+                "Albion Command Desk",
                 f"Timestamp: {snapshot.timestamp:.3f}",
                 f"Sort: {sort_key}  Top: {top_label}  Players: {shown_entries}/{total_entries}",
             ]
@@ -245,7 +245,7 @@ def format_dashboard(
     mode_label = mode
     if mode == "manual":
         mode_label = "manual:on" if manual_active else "manual:off"
-    title = f"Albion DPS Meter  [{mode_label}]"
+    title = f"Albion Command Desk  [{mode_label}]"
     if zone_label:
         title = f"{title}  [zone {zone_label}]"
     lines.append(title)
@@ -310,3 +310,4 @@ def _group_entries(
     if top_n is not None and top_n > 0:
         entries = entries[:top_n]
     return entries, total_entries
+

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import logging
@@ -20,7 +20,7 @@ from albion_dps.protocol.registry import default_registry
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="albion-dps")
+    parser = argparse.ArgumentParser(prog="albion-command-desk")
     parser.add_argument("--log-level", default="INFO")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--version", action="version", version="0.1.0")
@@ -487,3 +487,4 @@ def _shorten_label(label: str, limit: int = HISTORY_LABEL_LIMIT) -> str:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
