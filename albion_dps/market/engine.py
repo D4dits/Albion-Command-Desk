@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 from albion_dps.market.aod_client import MarketPriceRecord
 from albion_dps.market.models import (
@@ -520,6 +521,8 @@ _CITY_SPECIALIZATION_CATEGORIES: dict[str, set[str]] = {
     "morgana's rest": {"arcane", "cursed", "fire", "frost", "holy", "cloth_helmet", "cloth_armor", "cloth_shoes"},
 }
 
+_LEVEL_SUFFIX_RE = re.compile(r"_LEVEL(?P<level>\d+)$")
+
 
 def _pick_quote(
     price_index: dict[tuple[str, str, int], MarketPriceRecord],
@@ -528,17 +531,28 @@ def _pick_quote(
     city: str,
     quality: int,
 ) -> MarketPriceRecord | None:
-    key = (item_id, city, quality)
-    quote = price_index.get(key)
-    if quote is not None:
-        return quote
-    key_q1 = (item_id, city, 1)
-    quote = price_index.get(key_q1)
-    if quote is not None:
-        return quote
+    candidates = _item_id_candidates(item_id)
+    fallback: MarketPriceRecord | None = None
+    for candidate_id in candidates:
+        key = (candidate_id, city, quality)
+        quote = price_index.get(key)
+        if quote is not None:
+            if _quote_has_market_data(quote):
+                return quote
+            fallback = fallback or quote
+        key_q1 = (candidate_id, city, 1)
+        quote = price_index.get(key_q1)
+        if quote is not None:
+            if _quote_has_market_data(quote):
+                return quote
+            fallback = fallback or quote
     for candidate_key, candidate in price_index.items():
-        if candidate_key[0] == item_id and candidate_key[1] == city:
-            return candidate
+        if candidate_key[1] in {city} and candidate_key[0] in candidates:
+            if _quote_has_market_data(candidate):
+                return candidate
+            fallback = fallback or candidate
+    if fallback is not None:
+        return fallback
     return None
 
 
@@ -568,3 +582,35 @@ def _select_price(
 
 def _has_manual_price(value: int | None) -> bool:
     return value is not None and int(value) > 0
+
+
+def _quote_has_market_data(quote: MarketPriceRecord) -> bool:
+    return int(quote.buy_price_max or 0) > 0 or int(quote.sell_price_min or 0) > 0
+
+
+def _item_id_candidates(item_id: str) -> tuple[str, ...]:
+    base = str(item_id or "").strip()
+    if not base:
+        return ()
+    out: list[str] = [base]
+    if "@" in base:
+        stem, raw = base.split("@", 1)
+        out.append(stem)
+        try:
+            level = int(raw)
+        except ValueError:
+            level = -1
+        if level >= 0:
+            out.append(f"{stem}_LEVEL{level}")
+    level_match = _LEVEL_SUFFIX_RE.search(base)
+    if level_match is not None:
+        stem = base[: level_match.start()]
+        out.append(stem)
+    # keep order and uniqueness
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for value in out:
+        if value and value not in seen:
+            seen.add(value)
+            ordered.append(value)
+    return tuple(ordered)

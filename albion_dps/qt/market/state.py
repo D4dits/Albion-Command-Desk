@@ -482,6 +482,22 @@ class RecipeFilter:
 
 
 _RECIPE_TIER_ENCHANT_RE = re.compile(r"\b(?:t)?(?P<tier>[1-8])(?:[.\-\/](?P<ench>[0-4]))?\b", re.IGNORECASE)
+_TIER_PREFIX_RE = re.compile(r"^T(?P<tier>\d+)_(?P<rest>.+)$", re.IGNORECASE)
+_LEVEL_SUFFIX_RE = re.compile(r"_LEVEL\d+$", re.IGNORECASE)
+
+_ITEM_ID_WORD_ALIASES: dict[str, str] = {
+    "ARTEFACT": "Artifact",
+    "METALBAR": "Metal Bar",
+    "OFFHAND": "Off Hand",
+    "QUARTERSTAFF": "Quarterstaff",
+    "SHAPESHIFTERSTAFF": "Shapeshifter Staff",
+    "ARCANESTAFF": "Arcane Staff",
+    "CURSEDSTAFF": "Cursed Staff",
+    "FIRESTAFF": "Fire Staff",
+    "FROSTSTAFF": "Frost Staff",
+    "HOLYSTAFF": "Holy Staff",
+    "NATURESTAFF": "Nature Staff",
+}
 
 
 class RecipeOptionsModel(QAbstractListModel):
@@ -770,7 +786,7 @@ class MarketSetupState(QObject):
 
     @Property(str, notify=setupChanged)
     def recipeDisplayName(self) -> str:
-        return self._recipe.item.display_name or self._recipe.item.unique_name
+        return _friendly_item_label(self._recipe.item.display_name, self._recipe.item.unique_name)
 
     @Property(int, notify=setupChanged)
     def recipeTier(self) -> int:
@@ -1335,7 +1351,7 @@ class MarketSetupState(QObject):
         row = CraftPlanRow(
             row_id=self._next_plan_row_id,
             recipe_id=recipe.item.unique_name,
-            display_name=recipe.item.display_name or recipe.item.unique_name,
+            display_name=_friendly_item_label(recipe.item.display_name, recipe.item.unique_name),
             tier=int(recipe.item.tier or 0),
             enchant=int(recipe.item.enchantment or 0),
             craft_city=self._setup.craft_city or "Bridgewatch",
@@ -1459,8 +1475,10 @@ class MarketSetupState(QObject):
     def _collect_pricing_item_ids(self) -> list[str]:
         item_ids: set[str] = set()
         for recipe in self._recipes_for_pricing():
-            item_ids.update(x.item.unique_name for x in recipe.components)
-            item_ids.update(x.item.unique_name for x in recipe.outputs)
+            for component in recipe.components:
+                item_ids.update(_item_id_candidates(component.item.unique_name))
+            for output in recipe.outputs:
+                item_ids.update(_item_id_candidates(output.item.unique_name))
         return sorted(item_ids)
 
     def _collect_locations(self, setup: CraftSetup) -> list[str]:
@@ -1549,7 +1567,7 @@ class MarketSetupState(QObject):
             if row is None:
                 input_acc[key] = {
                     "item_id": line.item.unique_name,
-                    "item": line.item.display_name or line.item.unique_name,
+                    "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
                     "city": line.city,
                     "price_type": line.price_type.value,
                     "price_age_text": self._price_age_text(
@@ -1597,7 +1615,7 @@ class MarketSetupState(QObject):
             if row is None:
                 output_acc[key] = {
                     "item_id": line.item.unique_name,
-                    "item": line.item.display_name or line.item.unique_name,
+                    "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
                     "city": line.city,
                     "price_type": line.price_type.value,
                     "unit_price": float(line.unit_price),
@@ -1638,7 +1656,7 @@ class MarketSetupState(QObject):
         shopping_rows = [
             ShoppingPreviewRow(
                 item_id=entry.item_id,
-                item=entry.item_name,
+                item=_friendly_item_label(entry.item_name, entry.item_id),
                 quantity=float(max(0, math.ceil(float(entry.quantity)))),
                 city=entry.city,
                 price_type=entry.price_type,
@@ -1650,7 +1668,7 @@ class MarketSetupState(QObject):
         selling_rows = [
             SellingPreviewRow(
                 item_id=entry.item_id,
-                item=entry.item_name,
+                item=_friendly_item_label(entry.item_name, entry.item_id),
                 quantity=float(entry.quantity),
                 city=entry.city,
                 price_type=entry.price_type,
@@ -1755,7 +1773,13 @@ class MarketSetupState(QObject):
         ]
 
     def _demand_proxy_percent(self, *, item_id: str, city: str, quality: int) -> float:
-        quote = self._price_index.get((item_id, city, quality)) or self._price_index.get((item_id, city, 1))
+        quote = _find_price_quote(
+            self._price_index,
+            item_id=item_id,
+            city=city,
+            quality=quality,
+            preferred_mode=None,
+        )
         if quote is None:
             return 0.0
         if quote.sell_price_min <= 0 or quote.buy_price_max <= 0:
@@ -1794,24 +1818,34 @@ class MarketSetupState(QObject):
             self._sync_craft_plan_model()
 
     def _price_age_text(self, *, item_id: str, city: str, quality: int, price_type: str) -> str:
-        if str(price_type).strip().lower() == PriceType.MANUAL.value:
+        normalized = str(price_type).strip().lower()
+        if normalized == PriceType.MANUAL.value:
             return "manual"
-        quote = self._price_index.get((item_id, city, quality)) or self._price_index.get((item_id, city, 1))
+        quote = _find_price_quote(
+            self._price_index,
+            item_id=item_id,
+            city=city,
+            quality=quality,
+            preferred_mode=normalized,
+        )
         if quote is None:
             return "n/a"
 
-        normalized = str(price_type).strip().lower()
         if normalized == PriceType.BUY_ORDER.value:
+            if int(quote.buy_price_max or 0) <= 0:
+                return "n/a"
             dt = _parse_iso_datetime(quote.buy_price_max_date)
         elif normalized == PriceType.SELL_ORDER.value:
+            if int(quote.sell_price_min or 0) <= 0:
+                return "n/a"
             dt = _parse_iso_datetime(quote.sell_price_min_date)
         else:
-            dt_buy = _parse_iso_datetime(quote.buy_price_max_date)
-            dt_sell = _parse_iso_datetime(quote.sell_price_min_date)
+            dt_buy = _parse_iso_datetime(quote.buy_price_max_date) if int(quote.buy_price_max or 0) > 0 else None
+            dt_sell = _parse_iso_datetime(quote.sell_price_min_date) if int(quote.sell_price_min or 0) > 0 else None
             dt = max([x for x in [dt_buy, dt_sell] if x is not None], default=None)
 
         if dt is None:
-            return "unknown"
+            return "n/a"
         return _format_age(dt)
 
     def _set_list_action_text(self, text: str) -> None:
@@ -2010,7 +2044,7 @@ class MarketSetupState(QObject):
             rows.append(
                 RecipeOptionRow(
                     recipe_id=recipe.item.unique_name,
-                    display_name=recipe.item.display_name or recipe.item.unique_name,
+                    display_name=_friendly_item_label(recipe.item.display_name, recipe.item.unique_name),
                     tier=int(recipe.item.tier or 0),
                     enchant=int(recipe.item.enchantment or 0),
                 )
@@ -2141,6 +2175,133 @@ def _parse_price(raw_value: str) -> int:
     return max(0, parsed)
 
 
+def _friendly_item_label(display_name: str, item_id: str) -> str:
+    name = str(display_name or "").strip()
+    if name and name.upper() != str(item_id or "").strip().upper():
+        return name
+    fallback = _humanize_item_id(item_id)
+    return fallback or str(item_id or "").strip()
+
+
+def _humanize_item_id(item_id: str) -> str:
+    raw = str(item_id or "").strip()
+    if not raw:
+        return ""
+
+    enchant: int | None = None
+    base = raw
+    if "@" in base:
+        stem, enchant_raw = base.rsplit("@", 1)
+        base = stem
+        try:
+            enchant = int(enchant_raw)
+        except ValueError:
+            enchant = None
+
+    base = _LEVEL_SUFFIX_RE.sub("", base)
+    tier: int | None = None
+    tier_match = _TIER_PREFIX_RE.match(base)
+    if tier_match is not None:
+        tier = int(tier_match.group("tier"))
+        base = tier_match.group("rest")
+
+    words: list[str] = []
+    for token in base.split("_"):
+        cleaned = token.strip()
+        if not cleaned:
+            continue
+        upper = cleaned.upper()
+        if upper in {"MAIN", "2H"}:
+            continue
+        mapped = _ITEM_ID_WORD_ALIASES.get(upper)
+        if mapped is not None:
+            words.append(mapped)
+            continue
+        if len(upper) <= 3 and upper.isalpha():
+            words.append(upper)
+            continue
+        words.append(cleaned.replace("-", " ").title())
+
+    item_name = " ".join(words).strip() or raw
+    if tier is None:
+        return item_name
+    if enchant is not None and enchant > 0:
+        return f"{item_name} {tier}.{enchant}"
+    return f"{item_name} T{tier}"
+
+
+def _item_id_candidates(item_id: str) -> tuple[str, ...]:
+    base = str(item_id or "").strip()
+    if not base:
+        return ()
+    out: list[str] = [base]
+    if "@" in base:
+        stem, raw = base.rsplit("@", 1)
+        out.append(stem)
+        try:
+            level = int(raw)
+        except ValueError:
+            level = -1
+        if level >= 0:
+            out.append(f"{stem}_LEVEL{level}")
+    level_match = _LEVEL_SUFFIX_RE.search(base)
+    if level_match is not None:
+        stem = base[: level_match.start()]
+        out.append(stem)
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for value in out:
+        if value and value not in seen:
+            seen.add(value)
+            ordered.append(value)
+    return tuple(ordered)
+
+
+def _mode_has_price(quote: MarketPriceRecord, preferred_mode: str | None) -> bool:
+    mode = str(preferred_mode or "").strip().lower()
+    if mode == PriceType.BUY_ORDER.value:
+        return int(quote.buy_price_max or 0) > 0
+    if mode == PriceType.SELL_ORDER.value:
+        return int(quote.sell_price_min or 0) > 0
+    if mode == PriceType.MANUAL.value:
+        return True
+    return int(quote.buy_price_max or 0) > 0 or int(quote.sell_price_min or 0) > 0
+
+
+def _find_price_quote(
+    price_index: dict[tuple[str, str, int], MarketPriceRecord],
+    *,
+    item_id: str,
+    city: str,
+    quality: int,
+    preferred_mode: str | None,
+) -> MarketPriceRecord | None:
+    candidates = _item_id_candidates(item_id)
+    if not candidates:
+        return None
+    fallback: MarketPriceRecord | None = None
+    quality_candidates = [int(quality)]
+    if int(quality) != 1:
+        quality_candidates.append(1)
+    for candidate_id in candidates:
+        for candidate_quality in quality_candidates:
+            quote = price_index.get((candidate_id, city, candidate_quality))
+            if quote is None:
+                continue
+            if _mode_has_price(quote, preferred_mode):
+                return quote
+            if fallback is None:
+                fallback = quote
+    for (candidate_id, candidate_city, _candidate_quality), quote in price_index.items():
+        if candidate_city != city or candidate_id not in candidates:
+            continue
+        if _mode_has_price(quote, preferred_mode):
+            return quote
+        if fallback is None:
+            fallback = quote
+    return fallback
+
+
 def _parse_iso_datetime(raw_value: str) -> datetime | None:
     text = str(raw_value or "").strip()
     if not text:
@@ -2150,6 +2311,8 @@ def _parse_iso_datetime(raw_value: str) -> datetime | None:
     try:
         parsed = datetime.fromisoformat(text)
     except ValueError:
+        return None
+    if parsed.year <= 2001:
         return None
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=timezone.utc)

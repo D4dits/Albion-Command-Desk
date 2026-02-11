@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 import shutil
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -34,6 +35,7 @@ class _FakeMarketService:
         qualities: list[int] | None = None,
         ttl_seconds: float = 120.0,
         allow_stale: bool = True,
+        allow_cache: bool = True,
     ) -> dict[tuple[str, str, int], MarketPriceRecord]:
         self.calls += 1
         quality = int((qualities or [1])[0])
@@ -156,6 +158,57 @@ def test_market_setup_state_uses_service_and_manual_overrides() -> None:
     previous_calls = service.calls
     state.refreshPrices()
     assert service.calls > previous_calls
+
+
+def test_market_setup_state_price_age_handles_aliases_and_invalid_dates() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    state._price_index = {
+        ("T7_METALBAR_LEVEL1", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T7_METALBAR_LEVEL1",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=0,
+            buy_price_max=0,
+            sell_price_min_date="0001-01-01T00:00:00",
+            buy_price_max_date="0001-01-01T00:00:00",
+        ),
+        ("T7_METALBAR", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T7_METALBAR",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=9000,
+            buy_price_max=8500,
+            sell_price_min_date=now_iso,
+            buy_price_max_date=now_iso,
+        ),
+    }
+    age_buy = state._price_age_text(
+        item_id="T7_METALBAR_LEVEL1",
+        city="Bridgewatch",
+        quality=1,
+        price_type="buy_order",
+    )
+    assert age_buy != "n/a"
+
+    state._price_index = {
+        ("T7_METALBAR", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T7_METALBAR",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=9000,
+            buy_price_max=8500,
+            sell_price_min_date="0001-01-01T00:00:00",
+            buy_price_max_date="0001-01-01T00:00:00",
+        )
+    }
+    age_invalid = state._price_age_text(
+        item_id="T7_METALBAR",
+        city="Bridgewatch",
+        quality=1,
+        price_type="buy_order",
+    )
+    assert age_invalid == "n/a"
 
 
 def test_market_setup_state_can_switch_recipe_by_index() -> None:

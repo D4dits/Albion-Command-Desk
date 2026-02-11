@@ -142,6 +142,84 @@ def test_build_craft_run_manual_price_overrides_selected_mode() -> None:
     assert output.unit_price == 22222.0
 
 
+def test_build_craft_run_level_item_uses_base_market_quote() -> None:
+    spear = ItemRef(
+        unique_name="T7_MAIN_SPEAR_KEEPER",
+        display_name="Heron Spear",
+        tier=7,
+        enchantment=0,
+        item_value=30000,
+    )
+    bars = ItemRef(
+        unique_name="T7_METALBAR_LEVEL1",
+        display_name="Metal Bar",
+        tier=7,
+        enchantment=0,
+        item_value=7000,
+    )
+    recipe = Recipe(
+        item=spear,
+        station="Warrior Forge",
+        city_bonus="Bridgewatch",
+        components=(RecipeComponent(item=bars, quantity=16.0),),
+        outputs=(RecipeOutput(item=spear, quantity=1.0),),
+    )
+    setup = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Bridgewatch",
+        default_buy_city="Bridgewatch",
+        default_sell_city="Bridgewatch",
+        quality=1,
+    )
+    price_index = {
+        ("T7_METALBAR_LEVEL1", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T7_METALBAR_LEVEL1",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=0,
+            buy_price_max=0,
+            sell_price_min_date="0001-01-01T00:00:00",
+            buy_price_max_date="0001-01-01T00:00:00",
+        ),
+        ("T7_METALBAR", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T7_METALBAR",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=7400,
+            buy_price_max=7000,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+        ("T7_METALBAR@1", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T7_METALBAR@1",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=120000,
+            buy_price_max=110000,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+        ("T7_MAIN_SPEAR_KEEPER", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T7_MAIN_SPEAR_KEEPER",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=150000,
+            buy_price_max=140000,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+    }
+    run = build_craft_run(
+        recipe=recipe,
+        quantity=1,
+        setup=setup,
+        price_index=price_index,
+    )
+    bars_line = run.inputs[0]
+    assert bars_line.item.unique_name == "T7_METALBAR_LEVEL1"
+    assert bars_line.unit_price == 7000.0
+
+
 def test_compute_run_profit_uses_costs_and_fees() -> None:
     recipe = _build_recipe()
     setup = CraftSetup(
