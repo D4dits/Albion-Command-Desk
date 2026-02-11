@@ -1427,12 +1427,13 @@ ApplicationWindow {
                             border.color: "#1f2a37"
 
                             ScrollView {
+                                id: marketInputsScroll
                                 anchors.fill: parent
                                 anchors.margins: 10
                                 clip: true
 
                                 ColumnLayout {
-                                    width: Math.max(parent.width, marketInputsContentMinWidth)
+                                    width: Math.max(marketInputsScroll.availableWidth, marketInputsContentMinWidth)
                                     spacing: 8
 
                                 Text {
@@ -1615,12 +1616,13 @@ ApplicationWindow {
                             border.color: "#1f2a37"
 
                             ScrollView {
+                                id: marketOutputsScroll
                                 anchors.fill: parent
                                 anchors.margins: 10
                                 clip: true
 
                                 ColumnLayout {
-                                    width: Math.max(parent.width, marketOutputsContentMinWidth)
+                                    width: Math.max(marketOutputsScroll.availableWidth, marketOutputsContentMinWidth)
                                     spacing: 8
 
                                 Text {
@@ -1913,7 +1915,8 @@ ApplicationWindow {
 
                                 ListView {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 210
+                                    Layout.fillHeight: true
+                                    Layout.minimumHeight: 180
                                     clip: true
                                     model: marketSetupState.resultsItemsModel
 
@@ -2058,7 +2061,8 @@ ApplicationWindow {
 
                                 Rectangle {
                                     Layout.fillWidth: true
-                                    Layout.fillHeight: true
+                                    Layout.preferredHeight: 128
+                                    Layout.minimumHeight: 96
                                     radius: 4
                                     color: "#111b28"
                                     border.color: "#1f2a37"
