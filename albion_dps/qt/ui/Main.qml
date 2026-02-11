@@ -16,8 +16,48 @@ ApplicationWindow {
     property color panelColor: "#131a22"
     property color borderColor: "#1f2a37"
     property int compactControlHeight: 24
-    property int marketInputsContentMinWidth: 860
-    property int marketOutputsContentMinWidth: 920
+    property int marketColumnSpacing: 6
+    property int marketSetupPanelWidth: Math.max(300, Math.min(370, Math.round(width * 0.30)))
+    property int marketInputsItemWidth: Math.max(150, Math.min(240, Math.round(width * 0.17)))
+    property int marketInputsQtyWidth: 62
+    property int marketInputsCityWidth: 118
+    property int marketInputsModeWidth: 96
+    property int marketInputsManualWidth: 74
+    property int marketInputsUnitWidth: 78
+    property int marketInputsAgeWidth: 76
+    property int marketInputsTotalMinWidth: 120
+    property int marketInputsContentMinWidth: marketInputsItemWidth
+        + marketInputsQtyWidth
+        + marketInputsCityWidth
+        + marketInputsModeWidth
+        + marketInputsManualWidth
+        + marketInputsUnitWidth
+        + marketInputsAgeWidth
+        + marketInputsTotalMinWidth
+        + marketColumnSpacing * 7
+        + 12
+    property int marketOutputsItemWidth: Math.max(145, Math.min(230, Math.round(width * 0.16)))
+    property int marketOutputsQtyWidth: 58
+    property int marketOutputsCityWidth: 108
+    property int marketOutputsModeWidth: 92
+    property int marketOutputsManualWidth: 70
+    property int marketOutputsUnitWidth: 74
+    property int marketOutputsGrossWidth: 82
+    property int marketOutputsFeeWidth: 74
+    property int marketOutputsTaxWidth: 74
+    property int marketOutputsNetMinWidth: 116
+    property int marketOutputsContentMinWidth: marketOutputsItemWidth
+        + marketOutputsQtyWidth
+        + marketOutputsCityWidth
+        + marketOutputsModeWidth
+        + marketOutputsManualWidth
+        + marketOutputsUnitWidth
+        + marketOutputsGrossWidth
+        + marketOutputsFeeWidth
+        + marketOutputsTaxWidth
+        + marketOutputsNetMinWidth
+        + marketColumnSpacing * 9
+        + 12
     property bool meterView: viewTabs.currentIndex === 0
     property bool scannerView: viewTabs.currentIndex === 1
     property bool marketView: viewTabs.currentIndex === 2
@@ -688,9 +728,9 @@ ApplicationWindow {
                             font.pixelSize: 11
                         }
 
-                        RowLayout {
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: 6
 
                             Text {
                                 Layout.fillWidth: true
@@ -700,34 +740,46 @@ ApplicationWindow {
                                 elide: Text.ElideRight
                             }
 
-                            ComboBox {
-                                implicitWidth: 110
-                                implicitHeight: 24
-                                font.pixelSize: 11
-                                model: ["europe", "west", "east"]
-                                currentIndex: Math.max(0, model.indexOf(marketSetupState.region))
-                                onActivated: marketSetupState.setRegion(currentText)
-                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
 
-                            CheckBox {
-                                id: premiumCheck
-                                implicitHeight: 24
-                                checked: marketSetupState.premium
-                                text: "Premium"
-                                palette.windowText: textColor
-                                palette.text: textColor
-                                onToggled: marketSetupState.setPremium(checked)
-                            }
+                                Text {
+                                    text: "Region"
+                                    color: mutedColor
+                                    font.pixelSize: 11
+                                }
+                                ComboBox {
+                                    implicitWidth: 110
+                                    implicitHeight: 24
+                                    font.pixelSize: 11
+                                    model: ["europe", "west", "east"]
+                                    currentIndex: Math.max(0, model.indexOf(marketSetupState.region))
+                                    onActivated: marketSetupState.setRegion(currentText)
+                                }
 
-                            Button {
-                                text: "Refresh prices"
-                                implicitHeight: 24
-                                onClicked: marketSetupState.refreshPrices()
-                            }
-                            Button {
-                                text: "Show raw AOData"
-                                implicitHeight: 24
-                                onClicked: marketSetupState.showAoDataRaw()
+                                CheckBox {
+                                    id: premiumCheck
+                                    implicitHeight: 24
+                                    checked: marketSetupState.premium
+                                    text: "Premium"
+                                    palette.windowText: textColor
+                                    palette.text: textColor
+                                    onToggled: marketSetupState.setPremium(checked)
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                Button {
+                                    text: "Refresh prices"
+                                    implicitHeight: 24
+                                    onClicked: marketSetupState.refreshPrices()
+                                }
+                                Button {
+                                    text: "Show raw AOData"
+                                    implicitHeight: 24
+                                    onClicked: marketSetupState.showAoDataRaw()
+                                }
                             }
                         }
 
@@ -836,9 +888,9 @@ ApplicationWindow {
                                 spacing: 12
 
                             Rectangle {
-                                Layout.preferredWidth: 360
-                                Layout.minimumWidth: 340
-                                Layout.maximumWidth: 420
+                                Layout.preferredWidth: marketSetupPanelWidth
+                                Layout.minimumWidth: 300
+                                Layout.maximumWidth: 390
                                 Layout.fillHeight: true
                                 radius: 6
                                 color: "#0f1620"
@@ -1399,15 +1451,22 @@ ApplicationWindow {
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.margins: 4
-                                        spacing: 6
-                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 150; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 105; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 85; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; horizontalAlignment: Text.AlignLeft }
+                                        spacing: marketColumnSpacing
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsModeWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text {
+                                            text: "Total"
+                                            color: mutedColor
+                                            font.pixelSize: 11
+                                            Layout.fillWidth: true
+                                            Layout.minimumWidth: marketInputsTotalMinWidth
+                                            horizontalAlignment: Text.AlignLeft
+                                        }
                                     }
                                 }
 
@@ -1425,12 +1484,12 @@ ApplicationWindow {
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.margins: 4
-                                            spacing: 6
+                                            spacing: marketColumnSpacing
                                             Text {
                                                 text: item
                                                 color: textColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 150
+                                                Layout.preferredWidth: marketInputsItemWidth
                                                 elide: Text.ElideRight
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1442,7 +1501,7 @@ ApplicationWindow {
                                                 text: formatInt(quantity)
                                                 color: mutedColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 55
+                                                Layout.preferredWidth: marketInputsQtyWidth
                                                 horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1454,7 +1513,7 @@ ApplicationWindow {
                                                 text: city
                                                 color: mutedColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 105
+                                                Layout.preferredWidth: marketInputsCityWidth
                                                 elide: Text.ElideRight
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1463,7 +1522,7 @@ ApplicationWindow {
                                                 }
                                             }
                                             ComboBox {
-                                                Layout.preferredWidth: 85
+                                                Layout.preferredWidth: marketInputsModeWidth
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
                                                 model: ["buy_order", "sell_order", "average"]
@@ -1471,7 +1530,7 @@ ApplicationWindow {
                                                 onActivated: marketSetupState.setInputPriceType(itemId, currentText)
                                             }
                                             TextField {
-                                                Layout.preferredWidth: 60
+                                                Layout.preferredWidth: marketInputsManualWidth
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
                                                 text: manualPrice > 0 ? String(manualPrice) : ""
@@ -1483,7 +1542,7 @@ ApplicationWindow {
                                                 text: formatInt(unitPrice)
                                                 color: mutedColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 55
+                                                Layout.preferredWidth: marketInputsUnitWidth
                                                 horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1495,7 +1554,7 @@ ApplicationWindow {
                                                 text: priceAgeText
                                                 color: adpAgeColor(priceAgeText)
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 60
+                                                Layout.preferredWidth: marketInputsAgeWidth
                                                 horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1508,6 +1567,7 @@ ApplicationWindow {
                                                 color: textColor
                                                 font.pixelSize: 11
                                                 Layout.fillWidth: true
+                                                Layout.minimumWidth: marketInputsTotalMinWidth
                                                 horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1579,17 +1639,24 @@ ApplicationWindow {
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.margins: 4
-                                        spacing: 6
-                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 135; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 50; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 85; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 80; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 50; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 50; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Net"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; horizontalAlignment: Text.AlignLeft }
+                                        spacing: marketColumnSpacing
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsModeWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsManualWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth; horizontalAlignment: Text.AlignLeft }
+                                        Text {
+                                            text: "Net"
+                                            color: mutedColor
+                                            font.pixelSize: 11
+                                            Layout.fillWidth: true
+                                            Layout.minimumWidth: marketOutputsNetMinWidth
+                                            horizontalAlignment: Text.AlignLeft
+                                        }
                                     }
                                 }
 
@@ -1607,12 +1674,12 @@ ApplicationWindow {
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.margins: 4
-                                            spacing: 6
+                                            spacing: marketColumnSpacing
                                             Text {
                                                 text: item
                                                 color: textColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 135
+                                                Layout.preferredWidth: marketOutputsItemWidth
                                                 elide: Text.ElideRight
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1624,7 +1691,7 @@ ApplicationWindow {
                                                 text: formatFixed(quantity, 2)
                                                 color: mutedColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 50
+                                                Layout.preferredWidth: marketOutputsQtyWidth
                                                 horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1636,7 +1703,7 @@ ApplicationWindow {
                                                 text: city
                                                 color: mutedColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 85
+                                                Layout.preferredWidth: marketOutputsCityWidth
                                                 elide: Text.ElideRight
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1645,7 +1712,7 @@ ApplicationWindow {
                                                 }
                                             }
                                             ComboBox {
-                                                Layout.preferredWidth: 80
+                                                Layout.preferredWidth: marketOutputsModeWidth
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
                                                 model: ["sell_order", "buy_order", "average"]
@@ -1653,7 +1720,7 @@ ApplicationWindow {
                                                 onActivated: marketSetupState.setOutputPriceType(itemId, currentText)
                                             }
                                             TextField {
-                                                Layout.preferredWidth: 55
+                                                Layout.preferredWidth: marketOutputsManualWidth
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
                                                 text: manualPrice > 0 ? String(manualPrice) : ""
@@ -1665,7 +1732,7 @@ ApplicationWindow {
                                                 text: formatInt(unitPrice)
                                                 color: mutedColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 55
+                                                Layout.preferredWidth: marketOutputsUnitWidth
                                                 horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1677,7 +1744,7 @@ ApplicationWindow {
                                                 text: formatInt(totalValue)
                                                 color: mutedColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 60
+                                                Layout.preferredWidth: marketOutputsGrossWidth
                                                 horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1689,7 +1756,7 @@ ApplicationWindow {
                                                 text: formatInt(feeValue)
                                                 color: mutedColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 50
+                                                Layout.preferredWidth: marketOutputsFeeWidth
                                                 horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1701,7 +1768,7 @@ ApplicationWindow {
                                                 text: formatInt(taxValue)
                                                 color: mutedColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 50
+                                                Layout.preferredWidth: marketOutputsTaxWidth
                                                 horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
@@ -1714,6 +1781,7 @@ ApplicationWindow {
                                                 color: textColor
                                                 font.pixelSize: 11
                                                 Layout.fillWidth: true
+                                                Layout.minimumWidth: marketOutputsNetMinWidth
                                                 horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
