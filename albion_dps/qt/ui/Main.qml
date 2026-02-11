@@ -1124,23 +1124,44 @@ ApplicationWindow {
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
-                                                        onClicked: marketSetupState.savePreset(presetNameField.text)
+                                                        onClicked: {
+                                                            var name = presetNameField.text.trim()
+                                                            if (!name.length && presetCombo.currentText) {
+                                                                name = String(presetCombo.currentText).trim()
+                                                            }
+                                                            marketSetupState.savePreset(name)
+                                                            presetNameField.text = name
+                                                        }
                                                     }
                                                     Button {
                                                         text: "Load"
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
-                                                        enabled: presetNameField.text.trim().length > 0
-                                                        onClicked: marketSetupState.loadPreset(presetNameField.text)
+                                                        enabled: presetNameField.text.trim().length > 0 || String(presetCombo.currentText || "").trim().length > 0
+                                                        onClicked: {
+                                                            var name = presetNameField.text.trim()
+                                                            if (!name.length && presetCombo.currentText) {
+                                                                name = String(presetCombo.currentText).trim()
+                                                            }
+                                                            marketSetupState.loadPreset(name)
+                                                            presetNameField.text = name
+                                                        }
                                                     }
                                                     Button {
                                                         text: "Del"
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
-                                                        enabled: presetNameField.text.trim().length > 0
-                                                        onClicked: marketSetupState.deletePreset(presetNameField.text)
+                                                        enabled: presetNameField.text.trim().length > 0 || String(presetCombo.currentText || "").trim().length > 0
+                                                        onClicked: {
+                                                            var name = presetNameField.text.trim()
+                                                            if (!name.length && presetCombo.currentText) {
+                                                                name = String(presetCombo.currentText).trim()
+                                                            }
+                                                            marketSetupState.deletePreset(name)
+                                                            presetNameField.text = name
+                                                        }
                                                     }
                                                 }
                                             }

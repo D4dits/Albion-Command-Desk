@@ -1081,6 +1081,9 @@ class MarketSetupState(QObject):
         self._presets[name] = {
             "setup": _setup_to_dict(self._setup),
             "craft_runs": int(self._craft_runs),
+            "recipe_id": self._recipe.item.unique_name,
+            "recipe_search_query": self._recipe_search_query,
+            "craft_plan": [_craft_plan_row_to_dict(row) for row in self._craft_plan_rows],
         }
         if self._save_presets():
             self._selected_preset_name = name
@@ -1103,10 +1106,36 @@ class MarketSetupState(QObject):
             self._set_list_action_text(f"Preset is invalid: {name}")
             return
         self._setup = sanitized_setup(_setup_from_dict(setup_data, fallback=self._setup))
+        loaded_rows = _craft_plan_rows_from_payload(
+            payload.get("craft_plan"),
+            catalog=self._catalog,
+            fallback_city=self._setup.craft_city,
+            fallback_daily_bonus_percent=float(self._setup.daily_bonus_percent),
+        )
+        if loaded_rows is not None:
+            self._craft_plan_rows = loaded_rows
+            self._next_plan_row_id = max((row.row_id for row in loaded_rows), default=0) + 1
+            self._sync_craft_plan_model()
+            for plan_row in self._craft_plan_rows:
+                plan_recipe = self._catalog.get(plan_row.recipe_id)
+                if plan_recipe is not None:
+                    self._ensure_price_preferences_for_recipe(plan_recipe)
+
+        recipe_id = str(payload.get("recipe_id") or "").strip()
+        if recipe_id and self._catalog.get(recipe_id) is not None:
+            self._recipe = self._resolve_recipe(recipe_id)
+        elif self._craft_plan_rows:
+            self._recipe = self._resolve_recipe(self._craft_plan_rows[0].recipe_id)
+        self._ensure_price_preferences_for_recipe(self._recipe)
+
+        search_query = str(payload.get("recipe_search_query") or "").strip()
+        self._recipe_search_query = search_query
+        self._recipe_options_model.set_query(search_query)
+
         self._craft_runs = max(1, int(payload.get("craft_runs") or self._craft_runs))
-        row = self._find_plan_row_by_recipe(self._recipe.item.unique_name)
-        if row is not None and row.runs != self._craft_runs:
-            self._update_plan_row(row.row_id, runs=self._craft_runs)
+        active_row = self._find_plan_row_by_recipe(self._recipe.item.unique_name)
+        if active_row is not None:
+            self._craft_runs = max(1, int(active_row.runs))
         self._selected_preset_name = name
         self._rebuild_preview(force_price_refresh=False)
         self.setupChanged.emit()
@@ -2514,6 +2543,21 @@ def _parse_float(raw_value: str) -> float:
     return max(0.0, parsed)
 
 
+def _parse_bool(raw_value: object, *, default: bool) -> bool:
+    if isinstance(raw_value, bool):
+        return raw_value
+    if raw_value is None:
+        return default
+    if isinstance(raw_value, (int, float)):
+        return bool(raw_value)
+    normalized = str(raw_value).strip().lower()
+    if normalized in {"1", "true", "yes", "y", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "n", "off"}:
+        return False
+    return default
+
+
 def _default_preset_path() -> Path:
     return Path.home() / ".albion_dps" / "market_presets.json"
 
@@ -2563,6 +2607,82 @@ def _setup_from_dict(payload: dict[str, object], *, fallback: CraftSetup) -> Cra
         hideout_power_percent=float(payload.get("hideout_power_percent") or fallback.hideout_power_percent),
         quality=int(payload.get("quality") or fallback.quality),
     )
+
+
+def _craft_plan_row_to_dict(row: CraftPlanRow) -> dict[str, object]:
+    return {
+        "row_id": int(row.row_id),
+        "recipe_id": row.recipe_id,
+        "display_name": row.display_name,
+        "tier": int(row.tier),
+        "enchant": int(row.enchant),
+        "craft_city": row.craft_city,
+        "daily_bonus_percent": float(row.daily_bonus_percent),
+        "runs": int(row.runs),
+        "enabled": bool(row.enabled),
+    }
+
+
+def _craft_plan_rows_from_payload(
+    payload: object,
+    *,
+    catalog: RecipeCatalog,
+    fallback_city: str,
+    fallback_daily_bonus_percent: float,
+) -> list[CraftPlanRow] | None:
+    if payload is None:
+        return None
+    if not isinstance(payload, list):
+        return []
+
+    rows: list[CraftPlanRow] = []
+    used_recipe_ids: set[str] = set()
+    next_row_id = 1
+    fallback_city_value = fallback_city.strip() or "Bridgewatch"
+    fallback_daily_bonus = float(MarketSetupState._normalize_daily_bonus_percent(fallback_daily_bonus_percent))
+    for raw_row in payload:
+        if not isinstance(raw_row, dict):
+            continue
+        recipe_id = str(raw_row.get("recipe_id") or "").strip()
+        if not recipe_id or recipe_id in used_recipe_ids:
+            continue
+        recipe = catalog.get(recipe_id)
+        if recipe is None:
+            continue
+        used_recipe_ids.add(recipe_id)
+
+        requested_row_id = _parse_price(str(raw_row.get("row_id") or next_row_id))
+        row_id = max(next_row_id, requested_row_id if requested_row_id > 0 else next_row_id)
+        next_row_id = row_id + 1
+        display_name = str(raw_row.get("display_name") or "").strip()
+        if not display_name:
+            display_name = _friendly_item_label(recipe.item.display_name, recipe.item.unique_name)
+        tier = _parse_price(str(raw_row.get("tier") or int(recipe.item.tier or 0)))
+        enchant = _parse_price(str(raw_row.get("enchant") or int(recipe.item.enchantment or 0)))
+        craft_city = str(raw_row.get("craft_city") or fallback_city_value).strip() or fallback_city_value
+        daily_bonus = float(
+            MarketSetupState._normalize_daily_bonus_percent(
+                _parse_float(str(raw_row.get("daily_bonus_percent") or fallback_daily_bonus))
+            )
+        )
+        runs = max(1, _parse_price(str(raw_row.get("runs") or 1)))
+        enabled = _parse_bool(raw_row.get("enabled"), default=True)
+        rows.append(
+            CraftPlanRow(
+                row_id=row_id,
+                recipe_id=recipe.item.unique_name,
+                display_name=display_name,
+                tier=tier,
+                enchant=enchant,
+                craft_city=craft_city,
+                daily_bonus_percent=daily_bonus,
+                return_rate_percent=None,
+                runs=runs,
+                enabled=enabled,
+                profit_percent=None,
+            )
+        )
+    return rows
 
 
 def _friendly_item_label(display_name: str, item_id: str) -> str:

@@ -244,27 +244,64 @@ def test_market_setup_state_supports_setup_presets(monkeypatch: pytest.MonkeyPat
 
     try:
         state = MarketSetupState(auto_refresh_prices=False)
+        state.addCurrentRecipeToPlan()
+        recipe_options_model = state.recipeOptionsModel
+        if recipe_options_model.rowCount() > 1:
+            second_recipe_id = str(
+                recipe_options_model.data(recipe_options_model.index(1, 0), recipe_options_model.RecipeIdRole) or ""
+            )
+            if second_recipe_id:
+                state.addRecipeToPlan(second_recipe_id)
+
+        plan_model = state.craftPlanModel
+        assert plan_model.rowCount() >= 1
+        first_plan_index = plan_model.index(0, 0)
+        first_plan_row_id = int(plan_model.data(first_plan_index, plan_model.RowIdRole))
+        first_plan_recipe_id = str(plan_model.data(first_plan_index, plan_model.RecipeIdRole) or "")
+
         state.setCraftCity("Martlock")
         state.setDefaultBuyCity("Martlock")
         state.setDefaultSellCity("Caerleon")
         state.setCraftRuns(42)
         state.setStationFeePercent(412.0)
         state.setFocusEnabled(True)
+        state.setPlanRowRuns(first_plan_row_id, 33)
+        state.setPlanRowCraftCity(first_plan_row_id, "Martlock")
+        state.setPlanRowDailyBonus(first_plan_row_id, "20%")
+        state.setRecipeSearchQuery("broadsword")
         state.savePreset("martlock_42")
 
         assert "martlock_42" in list(state.presetNames)
         assert preset_path.exists()
 
+        state.clearCraftPlan()
         state.setCraftCity("Bridgewatch")
         state.setCraftRuns(7)
         state.setFocusEnabled(False)
+        state.setRecipeSearchQuery("")
         state.loadPreset("martlock_42")
         assert state.craftCity == "Martlock"
         assert state.defaultBuyCity == "Martlock"
         assert state.defaultSellCity == "Caerleon"
-        assert state.craftRuns == 42
+        assert state.craftRuns == 33
         assert state.focusEnabled is True
         assert round(state.stationFeePercent, 0) == 412
+        assert state.recipeSearchQuery == "broadsword"
+        assert state.craftPlanCount >= 1
+        reloaded_model = state.craftPlanModel
+        restored_ids: list[str] = []
+        restored = False
+        for idx in range(reloaded_model.rowCount()):
+            model_index = reloaded_model.index(idx, 0)
+            recipe_id = str(reloaded_model.data(model_index, reloaded_model.RecipeIdRole) or "")
+            restored_ids.append(recipe_id)
+            if recipe_id != first_plan_recipe_id:
+                continue
+            restored = True
+            assert int(reloaded_model.data(model_index, reloaded_model.RunsRole) or 0) == 33
+            assert str(reloaded_model.data(model_index, reloaded_model.CraftCityRole) or "") == "Martlock"
+            assert float(reloaded_model.data(model_index, reloaded_model.DailyBonusRole) or 0.0) == 20.0
+        assert restored, f"Expected recipe {first_plan_recipe_id} in restored rows: {restored_ids}"
 
         state.deletePreset("martlock_42")
         assert "martlock_42" not in list(state.presetNames)
