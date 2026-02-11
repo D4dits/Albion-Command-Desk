@@ -14,6 +14,13 @@ No game client hooks, no overlays, no memory editing.
   <img src="https://img.shields.io/badge/Game-Albion%20Online-orange">
 </p>
 
+## Support the Project
+If this app saves you time or silver, support ongoing development:
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?style=for-the-badge)](https://buycoffee.to/ao-dps/)
+
+Want to appear on a public supporters list after donating? Open a GitHub issue and share the display name you want to use.
+
 ## Screenshots
 <p align="center">
   <img src="assets/gui_meter_20260211.png" alt="Meter tab" width="920">
@@ -140,6 +147,3 @@ $env:TEMP="$PWD\\artifacts\\tmp"
 $env:TMP=$env:TEMP
 python -m pytest -q
 ```
-
-## Support
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?style=for-the-badge)](https://buycoffee.to/ao-dps/)
