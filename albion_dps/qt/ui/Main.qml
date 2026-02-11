@@ -898,6 +898,8 @@ ApplicationWindow {
                             implicitHeight: 30
                             spacing: 6
                             padding: 0
+                            onCurrentIndexChanged: marketSetupState.setActiveMarketTab(currentIndex)
+                            Component.onCompleted: marketSetupState.setActiveMarketTab(currentIndex)
                             background: Rectangle {
                                 color: "transparent"
                                 border.width: 0
@@ -1345,105 +1347,10 @@ ApplicationWindow {
                                     spacing: 8
 
                                     Text {
-                                        text: "Overview"
+                                        text: "Crafts setup"
                                         color: textColor
                                         font.pixelSize: 12
                                         font.bold: true
-                                    }
-
-                                    GridLayout {
-                                        Layout.fillWidth: true
-                                        columns: 3
-                                        columnSpacing: 8
-                                        rowSpacing: 8
-
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            height: 62
-                                            radius: 4
-                                            color: "#111b28"
-                                            border.color: "#1f2a37"
-                                            Column {
-                                                anchors.fill: parent
-                                                anchors.margins: 8
-                                                spacing: 4
-                                                Text { text: "Investment"; color: mutedColor; font.pixelSize: 11 }
-                                                Text {
-                                                    text: formatInt(marketSetupState.inputsTotalCost)
-                                                    color: textColor
-                                                    font.pixelSize: 14
-                                                    font.bold: true
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        acceptedButtons: Qt.LeftButton
-                                                        onDoubleClicked: copyCellText(parent.text)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            height: 62
-                                            radius: 4
-                                            color: "#111b28"
-                                            border.color: "#1f2a37"
-                                            Column {
-                                                anchors.fill: parent
-                                                anchors.margins: 8
-                                                spacing: 4
-                                                Text { text: "Revenue"; color: mutedColor; font.pixelSize: 11 }
-                                                Text {
-                                                    text: formatInt(marketSetupState.outputsTotalValue)
-                                                    color: textColor
-                                                    font.pixelSize: 14
-                                                    font.bold: true
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        acceptedButtons: Qt.LeftButton
-                                                        onDoubleClicked: copyCellText(parent.text)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        Rectangle {
-                                            Layout.fillWidth: true
-                                            height: 62
-                                            radius: 4
-                                            color: "#111b28"
-                                            border.color: "#1f2a37"
-                                            Column {
-                                                anchors.fill: parent
-                                                anchors.margins: 8
-                                                spacing: 4
-                                                Text { text: "Net"; color: mutedColor; font.pixelSize: 11 }
-                                                Text {
-                                                    text: formatInt(marketSetupState.netProfitValue)
-                                                    color: marketSetupState.netProfitValue >= 0 ? "#7ee787" : "#ff7b72"
-                                                    font.pixelSize: 14
-                                                    font.bold: true
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        acceptedButtons: Qt.LeftButton
-                                                        onDoubleClicked: copyCellText(parent.text)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Rectangle {
-                                        Layout.fillWidth: true
-                                        height: 28
-                                        radius: 4
-                                        color: "#111b28"
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.margins: 6
-                                            spacing: 12
-                                            Text { text: "Margin: " + formatFixed(marketSetupState.marginPercent, 2) + "%"; color: mutedColor; font.pixelSize: 11 }
-                                            Item { Layout.fillWidth: true }
-                                            Text { text: "Crafts: " + marketSetupState.craftPlanEnabledCount + "/" + marketSetupState.craftPlanCount; color: textColor; font.pixelSize: 11; elide: Text.ElideRight }
-                                        }
                                     }
 
                                     Rectangle {
@@ -1645,15 +1552,10 @@ ApplicationWindow {
                             color: "#0f1620"
                             border.color: "#1f2a37"
 
-                            ScrollView {
-                                id: marketInputsScroll
+                            ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10
-                                clip: true
-
-                                ColumnLayout {
-                                    width: Math.max(marketInputsScroll.availableWidth, marketInputsContentMinWidth)
-                                    spacing: 8
+                                spacing: 8
 
                                 Text {
                                     text: "Inputs"
@@ -1662,161 +1564,173 @@ ApplicationWindow {
                                     font.bold: true
                                 }
 
-                                Rectangle {
+                                ScrollView {
+                                    id: marketInputsScroll
                                     Layout.fillWidth: true
-                                    height: 24
-                                    radius: 4
-                                    color: "#111b28"
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 4
-                                        spacing: marketColumnSpacing
-                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Need"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Stock"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsStockWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Buy"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsModeWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text {
-                                            text: "Total"
-                                            color: mutedColor
-                                            font.pixelSize: 11
-                                            Layout.fillWidth: true
-                                            Layout.minimumWidth: marketInputsTotalMinWidth
-                                            horizontalAlignment: Text.AlignLeft
-                                        }
-                                    }
-                                }
-
-                                ListView {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 190
+                                    Layout.fillHeight: true
                                     clip: true
-                                    reuseItems: true
-                                    cacheBuffer: 600
-                                    model: marketSetupState.inputsModel
 
-                                    delegate: Rectangle {
-                                        width: ListView.view.width
-                                        height: 28
-                                        color: index % 2 === 0 ? "#0f1620" : "#101924"
+                                    ColumnLayout {
+                                        width: Math.max(marketInputsScroll.availableWidth, marketInputsContentMinWidth)
+                                        spacing: 6
 
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.margins: 4
-                                            spacing: marketColumnSpacing
-                                            Text {
-                                                text: item
-                                                color: textColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketInputsItemWidth
-                                                elide: Text.ElideRight
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 24
+                                            radius: 4
+                                            color: "#111b28"
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 4
+                                                spacing: marketColumnSpacing
+                                                Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Need"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Stock"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsStockWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Buy"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsModeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text {
+                                                    text: "Total"
+                                                    color: mutedColor
+                                                    font.pixelSize: 11
+                                                    Layout.fillWidth: true
+                                                    Layout.minimumWidth: marketInputsTotalMinWidth
+                                                    horizontalAlignment: Text.AlignLeft
                                                 }
                                             }
-                                            Text {
-                                                text: formatInt(quantity)
-                                                color: mutedColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketInputsQtyWidth
-                                                horizontalAlignment: Text.AlignLeft
-                                                MouseArea {
+                                        }
+
+                                        ListView {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: Math.max(200, marketSetupState.inputsModel.rowCount() * 28)
+                                            clip: true
+                                            reuseItems: true
+                                            cacheBuffer: 600
+                                            model: marketSetupState.inputsModel
+
+                                            delegate: Rectangle {
+                                                width: ListView.view.width
+                                                height: 28
+                                                color: index % 2 === 0 ? "#0f1620" : "#101924"
+
+                                                RowLayout {
                                                     anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
-                                                }
-                                            }
-                                            TextField {
-                                                Layout.preferredWidth: marketInputsStockWidth
-                                                implicitHeight: compactControlHeight
-                                                font.pixelSize: 11
-                                                text: stockQuantity > 0 ? formatFixed(stockQuantity, 2) : ""
-                                                placeholderText: "0"
-                                                onEditingFinished: marketSetupState.setInputStockQuantity(itemId, text)
-                                            }
-                                            Text {
-                                                text: formatFixed(buyQuantity, 2)
-                                                color: mutedColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketInputsBuyWidth
-                                                horizontalAlignment: Text.AlignLeft
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
-                                                }
-                                            }
-                                            Text {
-                                                text: city
-                                                color: mutedColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketInputsCityWidth
-                                                elide: Text.ElideRight
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
-                                                }
-                                            }
-                                            ComboBox {
-                                                Layout.preferredWidth: marketInputsModeWidth
-                                                implicitHeight: compactControlHeight
-                                                font.pixelSize: 11
-                                                model: ["buy_order", "sell_order", "average"]
-                                                currentIndex: Math.max(0, model.indexOf(priceType))
-                                                onActivated: marketSetupState.setInputPriceType(itemId, currentText)
-                                            }
-                                            TextField {
-                                                Layout.preferredWidth: marketInputsManualWidth
-                                                implicitHeight: compactControlHeight
-                                                font.pixelSize: 11
-                                                text: manualPrice > 0 ? String(manualPrice) : ""
-                                                placeholderText: "-"
-                                                inputMethodHints: Qt.ImhDigitsOnly
-                                                onEditingFinished: marketSetupState.setInputManualPrice(itemId, text)
-                                            }
-                                            Text {
-                                                text: formatInt(unitPrice)
-                                                color: mutedColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketInputsUnitWidth
-                                                horizontalAlignment: Text.AlignLeft
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
-                                                }
-                                            }
-                                            Text {
-                                                text: priceAgeText
-                                                color: adpAgeColor(priceAgeText)
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketInputsAgeWidth
-                                                horizontalAlignment: Text.AlignLeft
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
-                                                }
-                                            }
-                                            Text {
-                                                text: formatInt(totalCost)
-                                                color: textColor
-                                                font.pixelSize: 11
-                                                Layout.fillWidth: true
-                                                Layout.minimumWidth: marketInputsTotalMinWidth
-                                                horizontalAlignment: Text.AlignLeft
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
+                                                    anchors.margins: 4
+                                                    spacing: marketColumnSpacing
+                                                    Text {
+                                                        text: item
+                                                        color: textColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketInputsItemWidth
+                                                        elide: Text.ElideRight
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    Text {
+                                                        text: formatInt(quantity)
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketInputsQtyWidth
+                                                        horizontalAlignment: Text.AlignLeft
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    TextField {
+                                                        Layout.preferredWidth: marketInputsStockWidth
+                                                        implicitHeight: compactControlHeight
+                                                        font.pixelSize: 11
+                                                        text: stockQuantity > 0 ? formatFixed(stockQuantity, 2) : ""
+                                                        placeholderText: "0"
+                                                        onEditingFinished: marketSetupState.setInputStockQuantity(itemId, text)
+                                                    }
+                                                    Text {
+                                                        text: formatFixed(buyQuantity, 2)
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketInputsBuyWidth
+                                                        horizontalAlignment: Text.AlignLeft
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    Text {
+                                                        text: city
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketInputsCityWidth
+                                                        elide: Text.ElideRight
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    ComboBox {
+                                                        Layout.preferredWidth: marketInputsModeWidth
+                                                        implicitHeight: compactControlHeight
+                                                        font.pixelSize: 11
+                                                        model: ["buy_order", "sell_order", "average"]
+                                                        currentIndex: Math.max(0, model.indexOf(priceType))
+                                                        onActivated: marketSetupState.setInputPriceType(itemId, currentText)
+                                                    }
+                                                    TextField {
+                                                        Layout.preferredWidth: marketInputsManualWidth
+                                                        implicitHeight: compactControlHeight
+                                                        font.pixelSize: 11
+                                                        text: manualPrice > 0 ? String(manualPrice) : ""
+                                                        placeholderText: "-"
+                                                        inputMethodHints: Qt.ImhDigitsOnly
+                                                        onEditingFinished: marketSetupState.setInputManualPrice(itemId, text)
+                                                    }
+                                                    Text {
+                                                        text: formatInt(unitPrice)
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketInputsUnitWidth
+                                                        horizontalAlignment: Text.AlignLeft
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    Text {
+                                                        text: priceAgeText
+                                                        color: adpAgeColor(priceAgeText)
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketInputsAgeWidth
+                                                        horizontalAlignment: Text.AlignLeft
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    Text {
+                                                        text: formatInt(totalCost)
+                                                        color: textColor
+                                                        font.pixelSize: 11
+                                                        Layout.fillWidth: true
+                                                        Layout.minimumWidth: marketInputsTotalMinWidth
+                                                        horizontalAlignment: Text.AlignLeft
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -1846,9 +1760,7 @@ ApplicationWindow {
                                         }
                                     }
                                 }
-
                             }
-                        }
                         }
 
                         Rectangle {
@@ -1858,15 +1770,10 @@ ApplicationWindow {
                             color: "#0f1620"
                             border.color: "#1f2a37"
 
-                            ScrollView {
-                                id: marketOutputsScroll
+                            ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10
-                                clip: true
-
-                                ColumnLayout {
-                                    width: Math.max(marketOutputsScroll.availableWidth, marketOutputsContentMinWidth)
-                                    spacing: 8
+                                spacing: 8
 
                                 Text {
                                     text: "Outputs"
@@ -1875,165 +1782,177 @@ ApplicationWindow {
                                     font.bold: true
                                 }
 
-                                Rectangle {
+                                ScrollView {
+                                    id: marketOutputsScroll
                                     Layout.fillWidth: true
-                                    height: 24
-                                    radius: 4
-                                    color: "#111b28"
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 4
-                                        spacing: marketColumnSpacing
-                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsModeWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsManualWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth; horizontalAlignment: Text.AlignLeft }
-                                        Text {
-                                            text: "Net"
-                                            color: mutedColor
-                                            font.pixelSize: 11
-                                            Layout.fillWidth: true
-                                            Layout.minimumWidth: marketOutputsNetMinWidth
-                                            horizontalAlignment: Text.AlignLeft
-                                        }
-                                    }
-                                }
-
-                                ListView {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 190
+                                    Layout.fillHeight: true
                                     clip: true
-                                    reuseItems: true
-                                    cacheBuffer: 600
-                                    model: marketSetupState.outputsModel
 
-                                    delegate: Rectangle {
-                                        width: ListView.view.width
-                                        height: 28
-                                        color: index % 2 === 0 ? "#0f1620" : "#101924"
+                                    ColumnLayout {
+                                        width: Math.max(marketOutputsScroll.availableWidth, marketOutputsContentMinWidth)
+                                        spacing: 6
 
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.margins: 4
-                                            spacing: marketColumnSpacing
-                                            Text {
-                                                text: item
-                                                color: textColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketOutputsItemWidth
-                                                elide: Text.ElideRight
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 24
+                                            radius: 4
+                                            color: "#111b28"
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 4
+                                                spacing: marketColumnSpacing
+                                                Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsModeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsManualWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text {
+                                                    text: "Net"
+                                                    color: mutedColor
+                                                    font.pixelSize: 11
+                                                    Layout.fillWidth: true
+                                                    Layout.minimumWidth: marketOutputsNetMinWidth
+                                                    horizontalAlignment: Text.AlignLeft
                                                 }
                                             }
-                                            Text {
-                                                text: formatFixed(quantity, 2)
-                                                color: mutedColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketOutputsQtyWidth
-                                                horizontalAlignment: Text.AlignLeft
-                                                MouseArea {
+                                        }
+
+                                        ListView {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: Math.max(200, marketSetupState.outputsModel.rowCount() * 28)
+                                            clip: true
+                                            reuseItems: true
+                                            cacheBuffer: 600
+                                            model: marketSetupState.outputsModel
+
+                                            delegate: Rectangle {
+                                                width: ListView.view.width
+                                                height: 28
+                                                color: index % 2 === 0 ? "#0f1620" : "#101924"
+
+                                                RowLayout {
                                                     anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
-                                                }
-                                            }
-                                            Text {
-                                                text: city
-                                                color: mutedColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketOutputsCityWidth
-                                                elide: Text.ElideRight
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
-                                                }
-                                            }
-                                            ComboBox {
-                                                Layout.preferredWidth: marketOutputsModeWidth
-                                                implicitHeight: compactControlHeight
-                                                font.pixelSize: 11
-                                                model: ["sell_order", "buy_order", "average"]
-                                                currentIndex: Math.max(0, model.indexOf(priceType))
-                                                onActivated: marketSetupState.setOutputPriceType(itemId, currentText)
-                                            }
-                                            TextField {
-                                                Layout.preferredWidth: marketOutputsManualWidth
-                                                implicitHeight: compactControlHeight
-                                                font.pixelSize: 11
-                                                text: manualPrice > 0 ? String(manualPrice) : ""
-                                                placeholderText: "-"
-                                                inputMethodHints: Qt.ImhDigitsOnly
-                                                onEditingFinished: marketSetupState.setOutputManualPrice(itemId, text)
-                                            }
-                                            Text {
-                                                text: formatInt(unitPrice)
-                                                color: mutedColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketOutputsUnitWidth
-                                                horizontalAlignment: Text.AlignLeft
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
-                                                }
-                                            }
-                                            Text {
-                                                text: formatInt(totalValue)
-                                                color: mutedColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketOutputsGrossWidth
-                                                horizontalAlignment: Text.AlignLeft
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
-                                                }
-                                            }
-                                            Text {
-                                                text: formatInt(feeValue)
-                                                color: mutedColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketOutputsFeeWidth
-                                                horizontalAlignment: Text.AlignLeft
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
-                                                }
-                                            }
-                                            Text {
-                                                text: formatInt(taxValue)
-                                                color: mutedColor
-                                                font.pixelSize: 11
-                                                Layout.preferredWidth: marketOutputsTaxWidth
-                                                horizontalAlignment: Text.AlignLeft
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
-                                                }
-                                            }
-                                            Text {
-                                                text: formatInt(netValue)
-                                                color: textColor
-                                                font.pixelSize: 11
-                                                Layout.fillWidth: true
-                                                Layout.minimumWidth: marketOutputsNetMinWidth
-                                                horizontalAlignment: Text.AlignLeft
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: copyCellText(parent.text)
+                                                    anchors.margins: 4
+                                                    spacing: marketColumnSpacing
+                                                    Text {
+                                                        text: item
+                                                        color: textColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketOutputsItemWidth
+                                                        elide: Text.ElideRight
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    Text {
+                                                        text: formatFixed(quantity, 2)
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketOutputsQtyWidth
+                                                        horizontalAlignment: Text.AlignLeft
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    Text {
+                                                        text: city
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketOutputsCityWidth
+                                                        elide: Text.ElideRight
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    ComboBox {
+                                                        Layout.preferredWidth: marketOutputsModeWidth
+                                                        implicitHeight: compactControlHeight
+                                                        font.pixelSize: 11
+                                                        model: ["sell_order", "buy_order", "average"]
+                                                        currentIndex: Math.max(0, model.indexOf(priceType))
+                                                        onActivated: marketSetupState.setOutputPriceType(itemId, currentText)
+                                                    }
+                                                    TextField {
+                                                        Layout.preferredWidth: marketOutputsManualWidth
+                                                        implicitHeight: compactControlHeight
+                                                        font.pixelSize: 11
+                                                        text: manualPrice > 0 ? String(manualPrice) : ""
+                                                        placeholderText: "-"
+                                                        inputMethodHints: Qt.ImhDigitsOnly
+                                                        onEditingFinished: marketSetupState.setOutputManualPrice(itemId, text)
+                                                    }
+                                                    Text {
+                                                        text: formatInt(unitPrice)
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketOutputsUnitWidth
+                                                        horizontalAlignment: Text.AlignLeft
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    Text {
+                                                        text: formatInt(totalValue)
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketOutputsGrossWidth
+                                                        horizontalAlignment: Text.AlignLeft
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    Text {
+                                                        text: formatInt(feeValue)
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketOutputsFeeWidth
+                                                        horizontalAlignment: Text.AlignLeft
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    Text {
+                                                        text: formatInt(taxValue)
+                                                        color: mutedColor
+                                                        font.pixelSize: 11
+                                                        Layout.preferredWidth: marketOutputsTaxWidth
+                                                        horizontalAlignment: Text.AlignLeft
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
+                                                    Text {
+                                                        text: formatInt(netValue)
+                                                        color: textColor
+                                                        font.pixelSize: 11
+                                                        Layout.fillWidth: true
+                                                        Layout.minimumWidth: marketOutputsNetMinWidth
+                                                        horizontalAlignment: Text.AlignLeft
+                                                        MouseArea {
+                                                            anchors.fill: parent
+                                                            acceptedButtons: Qt.LeftButton
+                                                            onDoubleClicked: copyCellText(parent.text)
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -2075,8 +1994,6 @@ ApplicationWindow {
                                         }
                                         Item { Layout.fillWidth: true }
                                     }
-                                }
-
                                 }
                             }
                         }
