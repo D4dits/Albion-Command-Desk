@@ -549,6 +549,91 @@ def test_effective_return_fraction_applies_city_specialization_by_item_family() 
     assert round(bridgewatch_fraction, 3) == 0.153
 
 
+def test_effective_return_fraction_crafting_snapshot_matrix() -> None:
+    sword = ItemRef(unique_name="T4_MAIN_SWORD", display_name="Broadsword", tier=4, enchantment=0, item_value=1200)
+    recipe = Recipe(
+        item=sword,
+        station="Warrior Forge",
+        city_bonus="Lymhurst",
+        components=(),
+        outputs=(RecipeOutput(item=sword, quantity=1.0),),
+    )
+    scenarios = [
+        ("royal_no_bonus", CraftSetup(craft_city="Bridgewatch", default_buy_city="Bridgewatch", default_sell_city="Bridgewatch"), 0.153),
+        ("royal_with_bonus", CraftSetup(craft_city="Lymhurst", default_buy_city="Lymhurst", default_sell_city="Lymhurst"), 0.248),
+        (
+            "royal_no_bonus_focus",
+            CraftSetup(craft_city="Bridgewatch", default_buy_city="Bridgewatch", default_sell_city="Bridgewatch", focus_enabled=True),
+            0.435,
+        ),
+        (
+            "royal_with_bonus_focus",
+            CraftSetup(craft_city="Lymhurst", default_buy_city="Lymhurst", default_sell_city="Lymhurst", focus_enabled=True),
+            0.479,
+        ),
+        (
+            "royal_with_bonus_daily20_focus",
+            CraftSetup(
+                craft_city="Lymhurst",
+                default_buy_city="Lymhurst",
+                default_sell_city="Lymhurst",
+                focus_enabled=True,
+                daily_bonus_percent=20.0,
+            ),
+            0.528,
+        ),
+        (
+            "island_with_bonus",
+            CraftSetup(craft_city="Royal Island", default_buy_city="Bridgewatch", default_sell_city="Bridgewatch"),
+            0.000,
+        ),
+        (
+            "outlands_rest_base",
+            CraftSetup(craft_city="Arthur's Rest", default_buy_city="Bridgewatch", default_sell_city="Bridgewatch"),
+            0.130,
+        ),
+    ]
+    for _name, setup, expected in scenarios:
+        fraction = effective_return_fraction(setup=setup, recipe=recipe)
+        assert round(fraction, 3) == expected
+
+
+def test_effective_return_fraction_refining_snapshot_matrix() -> None:
+    metalbar = ItemRef(unique_name="T4_METALBAR", display_name="Metal Bar", tier=4, enchantment=0, item_value=300)
+    refining_recipe = Recipe(
+        item=metalbar,
+        station="Smelter",
+        city_bonus="Thetford",
+        components=(),
+        outputs=(RecipeOutput(item=metalbar, quantity=1.0),),
+    )
+    scenarios = [
+        (
+            "refine_royal_no_bonus",
+            CraftSetup(craft_city="Bridgewatch", default_buy_city="Bridgewatch", default_sell_city="Bridgewatch"),
+            0.153,
+        ),
+        (
+            "refine_royal_with_bonus",
+            CraftSetup(craft_city="Thetford", default_buy_city="Thetford", default_sell_city="Thetford"),
+            0.367,
+        ),
+        (
+            "refine_roads_hideout_power20",
+            CraftSetup(
+                craft_city="Roads Hideout",
+                default_buy_city="Bridgewatch",
+                default_sell_city="Bridgewatch",
+                hideout_power_percent=20.0,
+            ),
+            0.231,
+        ),
+    ]
+    for _name, setup, expected in scenarios:
+        fraction = effective_return_fraction(setup=setup, recipe=refining_recipe)
+        assert round(fraction, 3) == expected
+
+
 def test_build_craft_runs_batch_and_aggregate_profit() -> None:
     recipe = _build_recipe()
     setup = CraftSetup(
