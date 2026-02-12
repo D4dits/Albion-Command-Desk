@@ -17,7 +17,7 @@ ApplicationWindow {
     property color borderColor: "#1f2a37"
     property int compactControlHeight: 24
     property int marketColumnSpacing: 6
-    property int marketSetupPanelWidth: Math.max(300, Math.min(370, Math.round(width * 0.30)))
+    property int marketSetupPanelWidth: Math.max(360, Math.min(500, Math.round(width * 0.36)))
     property int marketInputsItemWidth: Math.max(150, Math.min(240, Math.round(width * 0.17)))
     property int marketInputsQtyWidth: 62
     property int marketInputsStockWidth: 72
@@ -1202,8 +1202,8 @@ ApplicationWindow {
 
                             Rectangle {
                                 Layout.preferredWidth: marketSetupPanelWidth
-                                Layout.minimumWidth: 300
-                                Layout.maximumWidth: 390
+                                Layout.minimumWidth: 360
+                                Layout.maximumWidth: 520
                                 Layout.fillHeight: true
                                 radius: 6
                                 color: "#0f1620"
