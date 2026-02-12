@@ -69,6 +69,7 @@ ApplicationWindow {
     property bool marketDiagnosticsVisible: false
     property bool marketStatusExpanded: false
     property bool marketBreakdownExpanded: false
+    property real craftPlanPendingContentY: -1
 
     function formatInt(value) {
         var n = Number(value)
@@ -197,6 +198,20 @@ ApplicationWindow {
         anchors.fill: parent
         anchors.margins: 16
         spacing: 12
+
+        Timer {
+            id: craftPlanRestoreTimer
+            interval: 1
+            repeat: false
+            onTriggered: {
+                if (root.craftPlanPendingContentY < 0) {
+                    return
+                }
+                var maxY = Math.max(0, craftPlanList.contentHeight - craftPlanList.height)
+                craftPlanList.contentY = Math.min(root.craftPlanPendingContentY, maxY)
+                root.craftPlanPendingContentY = -1
+            }
+        }
 
         Rectangle {
             Layout.fillWidth: true
@@ -1673,6 +1688,15 @@ ApplicationWindow {
                                         cacheBuffer: 600
                                         model: marketSetupState.craftPlanModel
 
+                                        Connections {
+                                            target: craftPlanList.model
+                                            function onModelReset() {
+                                                if (root.craftPlanPendingContentY >= 0) {
+                                                    craftPlanRestoreTimer.restart()
+                                                }
+                                            }
+                                        }
+
                                         delegate: Rectangle {
                                             width: ListView.view.width
                                             height: 32
@@ -1804,12 +1828,8 @@ ApplicationWindow {
                                                     font.pixelSize: 10
                                                     text: "Del"
                                                     onClicked: {
-                                                        var savedY = craftPlanList.contentY
+                                                        root.craftPlanPendingContentY = craftPlanList.contentY
                                                         marketSetupState.removePlanRow(rowId)
-                                                        Qt.callLater(function() {
-                                                            var maxY = Math.max(0, craftPlanList.contentHeight - craftPlanList.height)
-                                                            craftPlanList.contentY = Math.min(savedY, maxY)
-                                                        })
                                                     }
                                                 }
                                             }
