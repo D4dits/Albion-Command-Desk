@@ -1661,6 +1661,7 @@ ApplicationWindow {
                                     }
 
                                     ListView {
+                                        id: craftPlanList
                                         Layout.fillWidth: true
                                         Layout.fillHeight: true
                                         Layout.preferredHeight: Math.max(190, Math.min(420, 86 + marketSetupState.craftPlanCount * 24))
@@ -1800,7 +1801,14 @@ ApplicationWindow {
                                                     implicitHeight: 22
                                                     font.pixelSize: 10
                                                     text: "Del"
-                                                    onClicked: marketSetupState.removePlanRow(rowId)
+                                                    onClicked: {
+                                                        var savedY = craftPlanList.contentY
+                                                        marketSetupState.removePlanRow(rowId)
+                                                        Qt.callLater(function() {
+                                                            var maxY = Math.max(0, craftPlanList.contentHeight - craftPlanList.height)
+                                                            craftPlanList.contentY = Math.min(savedY, maxY)
+                                                        })
+                                                    }
                                                 }
                                             }
                                         }
