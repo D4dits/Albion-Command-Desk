@@ -36,7 +36,7 @@ The meter must never attribute damage/heal to unrelated nearby players:
 - if self/party is not resolved yet, the strict filter can keep results empty until it is.
 
 ## Useful entry points
-- CLI launcher (Qt-only): `albion_dps/cli.py`
+- Desktop launcher (Qt GUI): `albion_dps/cli.py`
 - Pipeline: `albion_dps/pipeline.py`
 - Session + history: `albion_dps/meter/session_meter.py`
 - Aggregation window: `albion_dps/meter/aggregate.py`
