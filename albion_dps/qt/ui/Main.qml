@@ -50,6 +50,7 @@ ApplicationWindow {
     property int marketOutputsFeeWidth: 74
     property int marketOutputsTaxWidth: 74
     property int marketOutputsNetMinWidth: 116
+    property int marketResultsItemWidth: Math.max(220, Math.min(340, Math.round(width * 0.28)))
     property int marketOutputsContentMinWidth: marketOutputsItemWidth
         + marketOutputsQtyWidth
         + marketOutputsCityWidth
@@ -2328,7 +2329,7 @@ ApplicationWindow {
                                         anchors.fill: parent
                                         anchors.margins: 4
                                         spacing: 6
-                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 145 }
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsItemWidth }
                                         Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 100 }
                                         Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
                                         Text { text: "Revenue"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
@@ -2368,7 +2369,7 @@ ApplicationWindow {
                                                 text: itemLabelWithTier(item, itemId)
                                                 color: textColor
                                                 font.pixelSize: 11
-                                                Layout.preferredWidth: 145
+                                                Layout.preferredWidth: marketResultsItemWidth
                                                 elide: Text.ElideRight
                                                 MouseArea {
                                                     anchors.fill: parent
