@@ -66,6 +66,7 @@ ApplicationWindow {
     property bool scannerView: viewTabs.currentIndex === 1
     property bool marketView: viewTabs.currentIndex === 2
     property bool marketDiagnosticsVisible: false
+    property bool marketStatusExpanded: false
 
     function formatInt(value) {
         var n = Number(value)
@@ -149,15 +150,45 @@ ApplicationWindow {
             if (!isFinite(enchant) || enchant < 0) {
                 enchant = 0
             }
+        } else {
+            var levelMatch = itemId.match(/_LEVEL(\d+)$/)
+            if (levelMatch) {
+                enchant = parseInt(levelMatch[1], 10)
+                if (!isFinite(enchant) || enchant < 0) {
+                    enchant = 0
+                }
+            }
         }
         var suffix = enchant > 0 ? (" T" + tier + "." + enchant) : (" T" + tier)
         if (label.length === 0) {
             return suffix.trim()
         }
-        if (/\bT\d(?:\.\d)?\b/i.test(label)) {
+        var withoutTier = label.replace(/\s+(?:T?\d+(?:\.\d+)?)\s*$/i, "").trim()
+        if (withoutTier.length === 0) {
+            withoutTier = label
+        }
+        return withoutTier + suffix
+    }
+
+    function itemLabelWithTierParts(labelValue, tierValue, enchantValue) {
+        var label = String(labelValue || "").trim()
+        var tier = parseInt(tierValue, 10)
+        if (!isFinite(tier) || tier <= 0) {
             return label
         }
-        return label + suffix
+        var enchant = parseInt(enchantValue, 10)
+        if (!isFinite(enchant) || enchant < 0) {
+            enchant = 0
+        }
+        var suffix = enchant > 0 ? (" T" + tier + "." + enchant) : (" T" + tier)
+        if (label.length === 0) {
+            return suffix.trim()
+        }
+        var withoutTier = label.replace(/\s+(?:T?\d+(?:\.\d+)?)\s*$/i, "").trim()
+        if (withoutTier.length === 0) {
+            withoutTier = label
+        }
+        return withoutTier + suffix
     }
 
     ColumnLayout {
@@ -921,78 +952,88 @@ ApplicationWindow {
                             Item { Layout.fillWidth: true }
                         }
 
-                        Text {
-                            text: marketSetupState.validationText.length === 0
-                                ? "Configuration valid."
-                                : "Validation: " + marketSetupState.validationText
-                            color: marketSetupState.validationText.length === 0 ? "#7ee787" : "#ff7b72"
-                            font.pixelSize: 11
-                        }
-
-                        ColumnLayout {
+                        RowLayout {
                             Layout.fillWidth: true
-                            spacing: 6
+                            spacing: 8
 
                             Text {
                                 Layout.fillWidth: true
                                 text: (marketSetupState.priceFetchInProgress ? "[loading] " : "")
-                                    + "Prices: " + marketSetupState.pricesSource + "  |  " + marketSetupState.pricesStatusText
-                                color: marketSetupState.pricesSource === "fallback" ? "#ffb86b" : mutedColor
+                                    + "Status: "
+                                    + (marketSetupState.validationText.length === 0 ? "ok" : "invalid")
+                                    + "  |  Prices: " + marketSetupState.pricesSource
+                                    + (marketSetupState.listActionText.length > 0 ? "  |  " + marketSetupState.listActionText : "")
+                                color: marketSetupState.validationText.length === 0
+                                    ? (marketSetupState.pricesSource === "fallback" ? "#ffb86b" : "#7ee787")
+                                    : "#ff7b72"
                                 font.pixelSize: 11
                                 elide: Text.ElideRight
                             }
 
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 8
+                            Text {
+                                text: "Region"
+                                color: mutedColor
+                                font.pixelSize: 11
+                            }
+                            ComboBox {
+                                implicitWidth: 110
+                                implicitHeight: 24
+                                font.pixelSize: 11
+                                model: ["europe", "west", "east"]
+                                currentIndex: Math.max(0, model.indexOf(marketSetupState.region))
+                                onActivated: marketSetupState.setRegion(currentText)
+                            }
 
-                                Text {
-                                    text: "Region"
-                                    color: mutedColor
-                                    font.pixelSize: 11
-                                }
-                                ComboBox {
-                                    implicitWidth: 110
-                                    implicitHeight: 24
-                                    font.pixelSize: 11
-                                    model: ["europe", "west", "east"]
-                                    currentIndex: Math.max(0, model.indexOf(marketSetupState.region))
-                                    onActivated: marketSetupState.setRegion(currentText)
-                                }
+                            CheckBox {
+                                id: premiumCheck
+                                implicitHeight: 24
+                                checked: marketSetupState.premium
+                                text: "Premium"
+                                palette.windowText: textColor
+                                palette.text: textColor
+                                onToggled: marketSetupState.setPremium(checked)
+                            }
 
-                                CheckBox {
-                                    id: premiumCheck
-                                    implicitHeight: 24
-                                    checked: marketSetupState.premium
-                                    text: "Premium"
-                                    palette.windowText: textColor
-                                    palette.text: textColor
-                                    onToggled: marketSetupState.setPremium(checked)
-                                }
-
-                                Item { Layout.fillWidth: true }
-
-                                Button {
-                                    text: marketSetupState.refreshPricesButtonText
-                                    implicitHeight: 24
-                                    enabled: marketSetupState.canRefreshPrices
-                                    onClicked: marketSetupState.refreshPrices()
-                                }
-                                Button {
-                                    text: marketDiagnosticsVisible ? "Hide diagnostics" : "Show diagnostics"
-                                    implicitHeight: 24
-                                    onClicked: marketDiagnosticsVisible = !marketDiagnosticsVisible
-                                }
+                            Button {
+                                text: marketSetupState.refreshPricesButtonText
+                                implicitHeight: 24
+                                enabled: marketSetupState.canRefreshPrices
+                                onClicked: marketSetupState.refreshPrices()
+                            }
+                            Button {
+                                text: marketStatusExpanded ? "Hide details" : "Show details"
+                                implicitHeight: 24
+                                onClicked: marketStatusExpanded = !marketStatusExpanded
+                            }
+                            Button {
+                                text: marketDiagnosticsVisible ? "Hide diagnostics" : "Show diagnostics"
+                                implicitHeight: 24
+                                onClicked: marketDiagnosticsVisible = !marketDiagnosticsVisible
                             }
                         }
 
-                        Text {
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            text: marketSetupState.listActionText
-                            color: mutedColor
-                            font.pixelSize: 11
-                            elide: Text.ElideRight
-                            visible: text.length > 0
+                            spacing: 4
+                            visible: marketStatusExpanded
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: marketSetupState.validationText.length === 0
+                                    ? "Configuration valid."
+                                    : "Validation: " + marketSetupState.validationText
+                                color: marketSetupState.validationText.length === 0 ? "#7ee787" : "#ff7b72"
+                                font.pixelSize: 11
+                                elide: Text.ElideRight
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Prices details: " + marketSetupState.pricesStatusText
+                                color: marketSetupState.pricesSource === "fallback" ? "#ffb86b" : mutedColor
+                                font.pixelSize: 11
+                                elide: Text.ElideRight
+                            }
                         }
 
                         TabBar {
@@ -1572,10 +1613,15 @@ ApplicationWindow {
 
                                                 Text {
                                                     Layout.fillWidth: true
-                                                    text: displayName
+                                                    text: itemLabelWithTierParts(displayName, tier, enchant)
                                                     color: textColor
                                                     font.pixelSize: 10
                                                     elide: Text.ElideRight
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        acceptedButtons: Qt.LeftButton
+                                                        onDoubleClicked: copyCellText(parent.text)
+                                                    }
                                                 }
 
                                                 Text {
@@ -1583,6 +1629,11 @@ ApplicationWindow {
                                                     text: "T" + tier + "." + enchant
                                                     color: mutedColor
                                                     font.pixelSize: 10
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        acceptedButtons: Qt.LeftButton
+                                                        onDoubleClicked: copyCellText(itemLabelWithTierParts(displayName, tier, enchant))
+                                                    }
                                                 }
 
                                                 ComboBox {
@@ -1749,7 +1800,7 @@ ApplicationWindow {
                                                     anchors.margins: 4
                                                     spacing: marketColumnSpacing
                                                     Text {
-                                                        text: item
+                                                        text: itemLabelWithTier(item, itemId)
                                                         color: textColor
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketInputsItemWidth
