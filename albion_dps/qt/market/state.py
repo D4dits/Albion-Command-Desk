@@ -1255,6 +1255,29 @@ class MarketSetupState(QObject):
         self.validationChanged.emit()
 
     @Slot()
+    def addRecipeFamily(self) -> None:
+        base_recipe_id = self._recipe.item.unique_name
+        if self._recipe_search_query.strip():
+            first_id = self._recipe_options_model.recipe_id_at(0)
+            if first_id:
+                base_recipe_id = first_id
+        family_ids = self._family_recipe_ids(base_recipe_id)
+        if not family_ids:
+            self._set_list_action_text("No recipes found for selected family.")
+            return
+        added = 0
+        for recipe_id in family_ids:
+            if self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=True):
+                added += 1
+        if added <= 0:
+            self._set_list_action_text("No new family recipes were added.")
+            return
+        self._set_list_action_text(f"Added {added} family recipes.")
+        self._rebuild_preview(force_price_refresh=False)
+        self.setupChanged.emit()
+        self.validationChanged.emit()
+
+    @Slot()
     def addCurrentRecipeToPlan(self) -> None:
         added = self._add_recipe_to_plan_internal(self._recipe.item.unique_name, runs=self._craft_runs, enabled=True)
         if not added:
@@ -1629,6 +1652,35 @@ class MarketSetupState(QObject):
 
     def _sync_craft_plan_model(self) -> None:
         self._craft_plan_model.set_items(self._sorted_craft_plan_rows(self._craft_plan_rows))
+
+    def _family_recipe_ids(self, recipe_id: str) -> list[str]:
+        base_recipe = self._catalog.get(recipe_id)
+        if base_recipe is None:
+            return []
+        family_key = _item_family_key(base_recipe.item.unique_name)
+        if not family_key:
+            return [base_recipe.item.unique_name]
+
+        rows: list[tuple[int, int, str, str]] = []
+        for candidate_id in self._catalog.items():
+            recipe = self._catalog.get(candidate_id)
+            if recipe is None:
+                continue
+            if _item_family_key(recipe.item.unique_name) != family_key:
+                continue
+            enchant = int(recipe.item.enchantment or 0)
+            if self._recipe_enchant_filter is not None and enchant != int(self._recipe_enchant_filter):
+                continue
+            rows.append(
+                (
+                    int(recipe.item.tier or 0),
+                    enchant,
+                    _friendly_item_label(recipe.item.display_name, recipe.item.unique_name).lower(),
+                    recipe.item.unique_name,
+                )
+            )
+        rows.sort()
+        return [row[3] for row in rows]
 
     def _sorted_craft_plan_rows(self, rows: list[CraftPlanRow]) -> list[CraftPlanRow]:
         source = list(rows)
@@ -2806,6 +2858,19 @@ def _friendly_item_label(display_name: str, item_id: str) -> str:
         return name
     fallback = _humanize_item_id(item_id)
     return fallback or str(item_id or "").strip()
+
+
+def _item_family_key(item_id: str) -> str:
+    base = str(item_id or "").strip().upper()
+    if not base:
+        return ""
+    if "@" in base:
+        base = base.rsplit("@", 1)[0]
+    base = _LEVEL_SUFFIX_RE.sub("", base)
+    tier_match = _TIER_PREFIX_RE.match(base)
+    if tier_match is not None:
+        base = tier_match.group("rest").upper()
+    return base
 
 
 def _humanize_item_id(item_id: str) -> str:

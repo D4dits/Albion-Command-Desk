@@ -1244,6 +1244,14 @@ ApplicationWindow {
                                                         enabled: recipeSuggestions.count > 0
                                                         onClicked: marketSetupState.addFilteredRecipeOptions()
                                                     }
+                                                    Button {
+                                                        text: "Add family"
+                                                        implicitHeight: compactControlHeight
+                                                        implicitWidth: 78
+                                                        font.pixelSize: 10
+                                                        enabled: recipeSuggestions.count > 0 || recipeSearchInput.text.trim().length === 0
+                                                        onClicked: marketSetupState.addRecipeFamily()
+                                                    }
                                                 }
 
                                                 RowLayout {
