@@ -2266,54 +2266,6 @@ ApplicationWindow {
                                     font.pixelSize: 10
                                 }
 
-                                Text {
-                                    text: "Breakdown"
-                                    color: textColor
-                                    font.pixelSize: 12
-                                    font.bold: true
-                                }
-
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 104
-                                    Layout.minimumHeight: 84
-                                    Layout.maximumHeight: 160
-                                    radius: 4
-                                    color: "#111b28"
-                                    border.color: "#1f2a37"
-
-                                    ListView {
-                                        anchors.fill: parent
-                                        anchors.margins: 6
-                                        clip: true
-                                        reuseItems: true
-                                        cacheBuffer: 300
-                                        model: marketSetupState.breakdownModel
-
-                                        delegate: Rectangle {
-                                            width: ListView.view.width
-                                            height: 24
-                                            color: index % 2 === 0 ? "#111b28" : "#0f1620"
-                                            RowLayout {
-                                                anchors.fill: parent
-                                                anchors.margins: 4
-                                                Text { text: label; color: mutedColor; font.pixelSize: 11 }
-                                                Item { Layout.fillWidth: true }
-                                                Text {
-                                                    text: formatFixed(value, 2)
-                                                    color: (label === "Net profit" && value < 0) ? "#ff7b72" : textColor
-                                                    font.pixelSize: 11
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        acceptedButtons: Qt.LeftButton
-                                                        onDoubleClicked: copyCellText(parent.text)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
                                 ListView {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: Math.max(
@@ -2455,6 +2407,54 @@ ApplicationWindow {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
                                                     onDoubleClicked: copyCellText(parent.text)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Text {
+                                    text: "Breakdown"
+                                    color: textColor
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 104
+                                    Layout.minimumHeight: 84
+                                    Layout.maximumHeight: 160
+                                    radius: 4
+                                    color: "#111b28"
+                                    border.color: "#1f2a37"
+
+                                    ListView {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        clip: true
+                                        reuseItems: true
+                                        cacheBuffer: 300
+                                        model: marketSetupState.breakdownModel
+
+                                        delegate: Rectangle {
+                                            width: ListView.view.width
+                                            height: 24
+                                            color: index % 2 === 0 ? "#111b28" : "#0f1620"
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 4
+                                                Text { text: label; color: mutedColor; font.pixelSize: 11 }
+                                                Item { Layout.fillWidth: true }
+                                                Text {
+                                                    text: formatFixed(value, 2)
+                                                    color: (label === "Net profit" && value < 0) ? "#ff7b72" : textColor
+                                                    font.pixelSize: 11
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        acceptedButtons: Qt.LeftButton
+                                                        onDoubleClicked: copyCellText(parent.text)
+                                                    }
                                                 }
                                             }
                                         }
