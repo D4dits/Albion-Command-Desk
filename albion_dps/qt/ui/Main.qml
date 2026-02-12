@@ -2205,13 +2205,73 @@ ApplicationWindow {
                                         Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
                                         Text { text: "Profit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
                                         Text { text: "Margin"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                        Text { text: "Demand"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                        Text { text: "Demand*"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                    }
+                                }
+
+                                Text {
+                                    text: "Demand* = buy_price_max / sell_price_min (AOData). 100% means buy ~= sell."
+                                    color: mutedColor
+                                    font.pixelSize: 10
+                                }
+
+                                Text {
+                                    text: "Breakdown"
+                                    color: textColor
+                                    font.pixelSize: 12
+                                    font.bold: true
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 104
+                                    Layout.minimumHeight: 84
+                                    Layout.maximumHeight: 160
+                                    radius: 4
+                                    color: "#111b28"
+                                    border.color: "#1f2a37"
+
+                                    ListView {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        clip: true
+                                        reuseItems: true
+                                        cacheBuffer: 300
+                                        model: marketSetupState.breakdownModel
+
+                                        delegate: Rectangle {
+                                            width: ListView.view.width
+                                            height: 24
+                                            color: index % 2 === 0 ? "#111b28" : "#0f1620"
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.margins: 4
+                                                Text { text: label; color: mutedColor; font.pixelSize: 11 }
+                                                Item { Layout.fillWidth: true }
+                                                Text {
+                                                    text: formatFixed(value, 2)
+                                                    color: (label === "Net profit" && value < 0) ? "#ff7b72" : textColor
+                                                    font.pixelSize: 11
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        acceptedButtons: Qt.LeftButton
+                                                        onDoubleClicked: copyCellText(parent.text)
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
 
                                 ListView {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: Math.max(120, Math.round(root.height * 0.32))
+                                    Layout.preferredHeight: Math.max(
+                                        120,
+                                        Math.min(
+                                            Math.max(120, marketSetupState.resultsItemsModel.rowCount() * 26),
+                                            Math.round(root.height * 0.24)
+                                        )
+                                    )
                                     Layout.minimumHeight: 96
                                     clip: true
                                     reuseItems: true
@@ -2255,7 +2315,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -2267,7 +2327,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 70
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -2279,7 +2339,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 70
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -2291,7 +2351,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -2303,7 +2363,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -2315,7 +2375,7 @@ ApplicationWindow {
                                                 color: profit >= 0 ? "#7ee787" : "#ff7b72"
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 70
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -2327,7 +2387,7 @@ ApplicationWindow {
                                                 color: marginPercent >= 0 ? "#7ee787" : "#ff7b72"
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 60
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -2339,7 +2399,7 @@ ApplicationWindow {
                                                 color: mutedColor
                                                 font.pixelSize: 11
                                                 Layout.fillWidth: true
-                                                horizontalAlignment: Text.AlignRight
+                                                horizontalAlignment: Text.AlignLeft
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
@@ -2350,53 +2410,6 @@ ApplicationWindow {
                                     }
                                 }
 
-                                Text {
-                                    text: "Breakdown"
-                                    color: textColor
-                                    font.pixelSize: 12
-                                    font.bold: true
-                                }
-
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: Math.max(84, Math.round(root.height * 0.17))
-                                    Layout.minimumHeight: 72
-                                    Layout.maximumHeight: 180
-                                    radius: 4
-                                    color: "#111b28"
-                                    border.color: "#1f2a37"
-
-                                    ListView {
-                                        anchors.fill: parent
-                                        anchors.margins: 6
-                                        clip: true
-                                        reuseItems: true
-                                        cacheBuffer: 300
-                                        model: marketSetupState.breakdownModel
-
-                                        delegate: Rectangle {
-                                            width: ListView.view.width
-                                            height: 24
-                                            color: index % 2 === 0 ? "#111b28" : "#0f1620"
-                                            RowLayout {
-                                                anchors.fill: parent
-                                                anchors.margins: 4
-                                                Text { text: label; color: mutedColor; font.pixelSize: 11 }
-                                                Item { Layout.fillWidth: true }
-                                                Text {
-                                                    text: formatFixed(value, 2)
-                                                    color: (label === "Net profit" && value < 0) ? "#ff7b72" : textColor
-                                                    font.pixelSize: 11
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        acceptedButtons: Qt.LeftButton
-                                                        onDoubleClicked: copyCellText(parent.text)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
                                 }
                             }
                         }
