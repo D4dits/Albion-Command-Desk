@@ -1236,18 +1236,23 @@ ApplicationWindow {
                                                             focus = false
                                                         }
                                                     }
+                                                }
+
+                                                RowLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 6
                                                     Button {
                                                         text: "Add filtered"
-                                                        implicitHeight: compactControlHeight
-                                                        implicitWidth: 86
+                                                        Layout.fillWidth: true
+                                                        implicitHeight: 22
                                                         font.pixelSize: 10
                                                         enabled: recipeSuggestions.count > 0
                                                         onClicked: marketSetupState.addFilteredRecipeOptions()
                                                     }
                                                     Button {
                                                         text: "Add family"
-                                                        implicitHeight: compactControlHeight
-                                                        implicitWidth: 78
+                                                        Layout.fillWidth: true
+                                                        implicitHeight: 22
                                                         font.pixelSize: 10
                                                         enabled: recipeSuggestions.count > 0 || recipeSearchInput.text.trim().length === 0
                                                         onClicked: marketSetupState.addRecipeFamily()
