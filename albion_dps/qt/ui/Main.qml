@@ -17,7 +17,7 @@ ApplicationWindow {
     property color borderColor: "#1f2a37"
     property int compactControlHeight: 24
     property int marketColumnSpacing: 6
-    property int marketSetupPanelWidth: 380
+    property int marketSetupPanelWidth: 360
     property int marketInputsItemWidth: Math.max(150, Math.min(240, Math.round(width * 0.17)))
     property int marketInputsQtyWidth: 62
     property int marketInputsStockWidth: 72
