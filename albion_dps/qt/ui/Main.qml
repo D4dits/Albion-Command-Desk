@@ -147,6 +147,7 @@ ApplicationWindow {
 
                 ColumnLayout {
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     spacing: 4
                     Text {
                         text: "Albion Command Desk"
@@ -155,6 +156,7 @@ ApplicationWindow {
                         font.bold: true
                     }
                     Text {
+                        Layout.fillWidth: true
                         text: meterView
                             ? "Mode: " + uiState.mode + "  |  Zone: " + uiState.zone
                             : (scannerView
@@ -165,11 +167,16 @@ ApplicationWindow {
                                   + "  |  Net: " + formatInt(marketSetupState.netProfitValue))
                         color: mutedColor
                         font.pixelSize: 12
+                        elide: Text.ElideRight
+                        wrapMode: Text.NoWrap
                     }
                 }
 
                 ColumnLayout {
-                    visible: meterView
+                    Layout.preferredWidth: 180
+                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                    opacity: meterView ? 1.0 : 0.0
+                    enabled: meterView
                     spacing: 4
                     Text {
                         text: uiState.timeText
@@ -186,6 +193,7 @@ ApplicationWindow {
                 }
 
                 RowLayout {
+                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                     spacing: 8
                     Button {
                         id: headerPayPalButton
