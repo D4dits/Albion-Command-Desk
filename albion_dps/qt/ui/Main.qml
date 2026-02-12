@@ -1236,7 +1236,7 @@ ApplicationWindow {
                                                                     color: mutedColor
                                                                     font.pixelSize: 11
                                                                     Layout.preferredWidth: 58
-                                                                    horizontalAlignment: Text.AlignRight
+                                                                    horizontalAlignment: Text.AlignLeft
                                                                 }
                                                             }
 
@@ -1613,7 +1613,7 @@ ApplicationWindow {
                                                         : Number(returnRatePercent).toFixed(1) + "%"
                                                     color: mutedColor
                                                     font.pixelSize: 10
-                                                    horizontalAlignment: Text.AlignRight
+                                                    horizontalAlignment: Text.AlignLeft
                                                 }
 
                                                 TextField {
@@ -1653,7 +1653,7 @@ ApplicationWindow {
                                                         ? mutedColor
                                                         : (Number(profitPercent) >= 0 ? "#7ee787" : "#ff7b72")
                                                     font.pixelSize: 10
-                                                    horizontalAlignment: Text.AlignRight
+                                                    horizontalAlignment: Text.AlignLeft
                                                 }
 
                                                 Button {
