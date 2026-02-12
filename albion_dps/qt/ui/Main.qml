@@ -1236,6 +1236,48 @@ ApplicationWindow {
                                                             focus = false
                                                         }
                                                     }
+                                                    Button {
+                                                        text: "Add filtered"
+                                                        implicitHeight: compactControlHeight
+                                                        implicitWidth: 86
+                                                        font.pixelSize: 10
+                                                        enabled: recipeSuggestions.count > 0
+                                                        onClicked: marketSetupState.addFilteredRecipeOptions()
+                                                    }
+                                                }
+
+                                                RowLayout {
+                                                    Layout.fillWidth: true
+                                                    spacing: 6
+                                                    Text {
+                                                        text: "Enchant"
+                                                        color: mutedColor
+                                                        font.pixelSize: 10
+                                                    }
+                                                    ComboBox {
+                                                        implicitWidth: 72
+                                                        implicitHeight: 22
+                                                        font.pixelSize: 10
+                                                        model: ["all", "0", "1", "2", "3", "4"]
+                                                        currentIndex: {
+                                                            var filterValue = marketSetupState.recipeEnchantFilter
+                                                            if (filterValue < 0) return 0
+                                                            return Math.min(5, filterValue + 1)
+                                                        }
+                                                        onActivated: {
+                                                            if (currentIndex <= 0) {
+                                                                marketSetupState.setRecipeEnchantFilter(-1)
+                                                            } else {
+                                                                marketSetupState.setRecipeEnchantFilter(parseInt(currentText))
+                                                            }
+                                                        }
+                                                    }
+                                                    Text {
+                                                        text: recipeSuggestions.count + " matches"
+                                                        color: mutedColor
+                                                        font.pixelSize: 10
+                                                    }
+                                                    Item { Layout.fillWidth: true }
                                                 }
 
                                                 Rectangle {
@@ -1541,6 +1583,37 @@ ApplicationWindow {
                                             text: marketSetupState.craftPlanEnabledCount + "/" + marketSetupState.craftPlanCount + " active"
                                             color: mutedColor
                                             font.pixelSize: 11
+                                        }
+                                        Text {
+                                            text: "Sort"
+                                            color: mutedColor
+                                            font.pixelSize: 10
+                                        }
+                                        ComboBox {
+                                            implicitWidth: 84
+                                            implicitHeight: 20
+                                            font.pixelSize: 10
+                                            model: ["craft", "tier", "city", "p/l"]
+                                            currentIndex: {
+                                                if (marketSetupState.craftPlanSortKey === "tier") return 1
+                                                if (marketSetupState.craftPlanSortKey === "city") return 2
+                                                if (marketSetupState.craftPlanSortKey === "pl") return 3
+                                                return 0
+                                            }
+                                            onActivated: {
+                                                if (currentText === "p/l") {
+                                                    marketSetupState.setCraftPlanSortKey("pl")
+                                                } else {
+                                                    marketSetupState.setCraftPlanSortKey(currentText)
+                                                }
+                                            }
+                                        }
+                                        Button {
+                                            text: marketSetupState.craftPlanSortDescending ? "Desc" : "Asc"
+                                            implicitHeight: 20
+                                            implicitWidth: 48
+                                            font.pixelSize: 10
+                                            onClicked: marketSetupState.toggleCraftPlanSortDescending()
                                         }
                                         Button {
                                             text: "Clear"

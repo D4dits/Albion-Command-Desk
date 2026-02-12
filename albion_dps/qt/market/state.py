@@ -526,6 +526,7 @@ class RecipeOptionsModel(QAbstractListModel):
         self._all_items: list[RecipeOptionRow] = []
         self._items: list[RecipeOptionRow] = []
         self._filter = RecipeFilter(terms=(), tier=None, enchant=None)
+        self._enchant_filter: int | None = None
 
     def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
         return len(self._items)
@@ -563,10 +564,24 @@ class RecipeOptionsModel(QAbstractListModel):
         self._filter = _parse_recipe_filter(query)
         self._apply_filter()
 
+    def set_enchant_filter(self, enchant: int | None) -> None:
+        normalized: int | None
+        if enchant is None:
+            normalized = None
+        else:
+            parsed = int(enchant)
+            normalized = parsed if 0 <= parsed <= 4 else None
+        if normalized == self._enchant_filter:
+            return
+        self._enchant_filter = normalized
+        self._apply_filter()
+
     def _apply_filter(self) -> None:
         rows = self._all_items
         if self._filter.terms or self._filter.tier is not None or self._filter.enchant is not None:
             rows = [row for row in rows if _matches_recipe_filter(row, self._filter)]
+        if self._enchant_filter is not None:
+            rows = [row for row in rows if int(row.enchant) == int(self._enchant_filter)]
         self.beginResetModel()
         self._items = list(rows)
         self.endResetModel()
@@ -581,6 +596,9 @@ class RecipeOptionsModel(QAbstractListModel):
             if item.recipe_id == recipe_id:
                 return idx
         return -1
+
+    def recipe_ids(self) -> list[str]:
+        return [item.recipe_id for item in self._items]
 
 
 @dataclass(frozen=True)
@@ -738,9 +756,12 @@ class MarketSetupState(QObject):
         self._list_action_text = ""
         self._diagnostics_lines: list[str] = []
         self._recipe_search_query = ""
+        self._recipe_enchant_filter: int | None = None
         self._preset_path = _default_preset_path()
         self._presets: dict[str, dict[str, object]] = self._load_presets()
         self._selected_preset_name = ""
+        self._craft_plan_sort_key = "craft"
+        self._craft_plan_sort_desc = False
         self._active_market_tab_index = 0
         self._market_data_tabs_live_bootstrap_done = False
         self._manual_refresh_cooldown_seconds = 20.0
@@ -839,6 +860,10 @@ class MarketSetupState(QObject):
     def recipeSearchQuery(self) -> str:
         return self._recipe_search_query
 
+    @Property(int, notify=setupChanged)
+    def recipeEnchantFilter(self) -> int:
+        return -1 if self._recipe_enchant_filter is None else int(self._recipe_enchant_filter)
+
     @Property("QVariantList", notify=setupChanged)
     def presetNames(self) -> list[str]:
         return sorted(self._presets.keys(), key=lambda x: x.lower())
@@ -899,6 +924,14 @@ class MarketSetupState(QObject):
     @Property(int, notify=setupChanged)
     def craftPlanEnabledCount(self) -> int:
         return len([row for row in self._craft_plan_rows if row.enabled])
+
+    @Property(str, notify=setupChanged)
+    def craftPlanSortKey(self) -> str:
+        return self._craft_plan_sort_key
+
+    @Property(bool, notify=setupChanged)
+    def craftPlanSortDescending(self) -> bool:
+        return self._craft_plan_sort_desc
 
     @Property(QObject, constant=True)
     def shoppingModel(self) -> QObject:
@@ -1064,6 +1097,22 @@ class MarketSetupState(QObject):
         self._recipe_options_model.set_query(normalized)
         self.setupChanged.emit()
 
+    @Slot(int)
+    def setRecipeEnchantFilter(self, value: int) -> None:
+        normalized: int | None
+        raw = int(value)
+        if raw < 0:
+            normalized = None
+        elif raw <= 4:
+            normalized = raw
+        else:
+            return
+        if normalized == self._recipe_enchant_filter:
+            return
+        self._recipe_enchant_filter = normalized
+        self._recipe_options_model.set_enchant_filter(normalized)
+        self.setupChanged.emit()
+
     @Slot(str)
     def setSelectedPresetName(self, value: str) -> None:
         name = value.strip()
@@ -1186,6 +1235,24 @@ class MarketSetupState(QObject):
             return
         self.addRecipeToPlan(recipe_id)
         self.setRecipeId(recipe_id)
+
+    @Slot()
+    def addFilteredRecipeOptions(self) -> None:
+        recipe_ids = self._recipe_options_model.recipe_ids()
+        if not recipe_ids:
+            self._set_list_action_text("No recipes match current filters.")
+            return
+        added = 0
+        for recipe_id in recipe_ids:
+            if self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=True):
+                added += 1
+        if added <= 0:
+            self._set_list_action_text("No new recipes were added.")
+            return
+        self._set_list_action_text(f"Added {added} recipes to craft plan.")
+        self._rebuild_preview(force_price_refresh=False)
+        self.setupChanged.emit()
+        self.validationChanged.emit()
 
     @Slot()
     def addCurrentRecipeToPlan(self) -> None:
@@ -1448,6 +1515,34 @@ class MarketSetupState(QObject):
         self._rebuild_preview(force_price_refresh=False)
         self.resultsDetailsChanged.emit()
 
+    @Slot(str)
+    def setCraftPlanSortKey(self, key: str) -> None:
+        normalized = key.strip().lower()
+        if normalized not in {"craft", "tier", "city", "pl"}:
+            return
+        changed = normalized != self._craft_plan_sort_key
+        self._craft_plan_sort_key = normalized
+        if normalized == "pl" and not self._craft_plan_sort_desc:
+            self._craft_plan_sort_desc = True
+            changed = True
+        if not changed:
+            return
+        self._sync_craft_plan_model()
+        self.setupChanged.emit()
+
+    @Slot(bool)
+    def setCraftPlanSortDescending(self, value: bool) -> None:
+        normalized = bool(value)
+        if normalized == self._craft_plan_sort_desc:
+            return
+        self._craft_plan_sort_desc = normalized
+        self._sync_craft_plan_model()
+        self.setupChanged.emit()
+
+    @Slot()
+    def toggleCraftPlanSortDescending(self) -> None:
+        self.setCraftPlanSortDescending(not self._craft_plan_sort_desc)
+
     @Slot()
     def copyShoppingCsv(self) -> None:
         if not self._shopping_csv:
@@ -1533,7 +1628,27 @@ class MarketSetupState(QObject):
         self.validationChanged.emit()
 
     def _sync_craft_plan_model(self) -> None:
-        self._craft_plan_model.set_items(self._craft_plan_rows)
+        self._craft_plan_model.set_items(self._sorted_craft_plan_rows(self._craft_plan_rows))
+
+    def _sorted_craft_plan_rows(self, rows: list[CraftPlanRow]) -> list[CraftPlanRow]:
+        source = list(rows)
+        sort_key = self._craft_plan_sort_key
+        reverse = bool(self._craft_plan_sort_desc)
+
+        def pl_value(row: CraftPlanRow) -> float:
+            if row.profit_percent is None:
+                return float("-inf")
+            return float(row.profit_percent)
+
+        if sort_key == "tier":
+            source.sort(key=lambda row: (int(row.tier), int(row.enchant), row.display_name.lower(), int(row.row_id)), reverse=reverse)
+        elif sort_key == "city":
+            source.sort(key=lambda row: (row.craft_city.lower(), row.display_name.lower(), int(row.row_id)), reverse=reverse)
+        elif sort_key == "pl":
+            source.sort(key=lambda row: (pl_value(row), row.display_name.lower(), int(row.row_id)), reverse=reverse)
+        else:
+            source.sort(key=lambda row: (row.display_name.lower(), int(row.tier), int(row.enchant), int(row.row_id)), reverse=reverse)
+        return source
 
     def _add_recipe_to_plan_internal(self, recipe_id: str, *, runs: int, enabled: bool) -> bool:
         recipe = self._catalog.get(recipe_id)
