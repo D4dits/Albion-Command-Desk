@@ -2470,7 +2470,6 @@ ApplicationWindow {
             }
         }
     }
-    }
     Shortcut { sequence: "B"; onActivated: uiState.setMode("battle") }
     Shortcut { sequence: "Z"; onActivated: uiState.setMode("zone") }
     Shortcut { sequence: "M"; onActivated: uiState.setMode("manual") }
