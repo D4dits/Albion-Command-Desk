@@ -760,7 +760,7 @@ class MarketSetupState(QObject):
         self._preset_path = _default_preset_path()
         self._presets: dict[str, dict[str, object]] = self._load_presets()
         self._selected_preset_name = ""
-        self._craft_plan_sort_key = "craft"
+        self._craft_plan_sort_key = "added"
         self._craft_plan_sort_desc = False
         self._active_market_tab_index = 0
         self._market_data_tabs_live_bootstrap_done = False
@@ -1541,7 +1541,7 @@ class MarketSetupState(QObject):
     @Slot(str)
     def setCraftPlanSortKey(self, key: str) -> None:
         normalized = key.strip().lower()
-        if normalized not in {"craft", "tier", "city", "pl"}:
+        if normalized not in {"added", "craft", "tier", "city", "pl"}:
             return
         changed = normalized != self._craft_plan_sort_key
         self._craft_plan_sort_key = normalized
@@ -1692,7 +1692,9 @@ class MarketSetupState(QObject):
                 return float("-inf")
             return float(row.profit_percent)
 
-        if sort_key == "tier":
+        if sort_key == "added":
+            source.sort(key=lambda row: int(row.row_id), reverse=reverse)
+        elif sort_key == "tier":
             source.sort(key=lambda row: (int(row.tier), int(row.enchant), row.display_name.lower(), int(row.row_id)), reverse=reverse)
         elif sort_key == "city":
             source.sort(key=lambda row: (row.craft_city.lower(), row.display_name.lower(), int(row.row_id)), reverse=reverse)

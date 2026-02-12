@@ -1624,11 +1624,12 @@ ApplicationWindow {
                                             implicitWidth: 84
                                             implicitHeight: 20
                                             font.pixelSize: 10
-                                            model: ["craft", "tier", "city", "p/l"]
+                                            model: ["added", "craft", "tier", "city", "p/l"]
                                             currentIndex: {
-                                                if (marketSetupState.craftPlanSortKey === "tier") return 1
-                                                if (marketSetupState.craftPlanSortKey === "city") return 2
-                                                if (marketSetupState.craftPlanSortKey === "pl") return 3
+                                                if (marketSetupState.craftPlanSortKey === "craft") return 1
+                                                if (marketSetupState.craftPlanSortKey === "tier") return 2
+                                                if (marketSetupState.craftPlanSortKey === "city") return 3
+                                                if (marketSetupState.craftPlanSortKey === "pl") return 4
                                                 return 0
                                             }
                                             onActivated: {
