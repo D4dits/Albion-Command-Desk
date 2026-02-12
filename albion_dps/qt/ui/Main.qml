@@ -128,6 +128,38 @@ ApplicationWindow {
         marketSetupState.copyText(String(value === undefined || value === null ? "" : value))
     }
 
+    function itemLabelWithTier(labelValue, itemIdValue) {
+        var label = String(labelValue || "").trim()
+        var itemId = String(itemIdValue || "").trim().toUpperCase()
+        if (itemId.length === 0) {
+            return label
+        }
+        var tierMatch = itemId.match(/^T(\d+)_/)
+        if (!tierMatch) {
+            return label
+        }
+        var tier = parseInt(tierMatch[1], 10)
+        if (!isFinite(tier) || tier <= 0) {
+            return label
+        }
+        var enchant = 0
+        var enchantMatch = itemId.match(/@(\d+)$/)
+        if (enchantMatch) {
+            enchant = parseInt(enchantMatch[1], 10)
+            if (!isFinite(enchant) || enchant < 0) {
+                enchant = 0
+            }
+        }
+        var suffix = enchant > 0 ? (" T" + tier + "." + enchant) : (" T" + tier)
+        if (label.length === 0) {
+            return suffix.trim()
+        }
+        if (/\bT\d(?:\.\d)?\b/i.test(label)) {
+            return label
+        }
+        return label + suffix
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: 16
@@ -197,7 +229,7 @@ ApplicationWindow {
                     spacing: 8
                     Button {
                         id: headerPayPalButton
-                        text: "PayPal $20"
+                        text: "PayPal"
                         implicitHeight: 32
                         implicitWidth: 120
                         onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=zlotyjacek%40gmail.com&currency_code=USD&amount=20.00")
@@ -809,9 +841,11 @@ ApplicationWindow {
                             clip: true
 
                             ScrollView {
+                                id: scannerLogView
                                 anchors.fill: parent
                                 anchors.margins: 8
                                 TextArea {
+                                    id: scannerLogArea
                                     text: scannerState.logText
                                     readOnly: true
                                     wrapMode: Text.NoWrap
@@ -819,6 +853,21 @@ ApplicationWindow {
                                     font.family: "Consolas"
                                     font.pixelSize: 11
                                     selectByMouse: true
+
+                                    function followTail() {
+                                        cursorPosition = length
+                                        if (scannerLogView.contentItem
+                                                && scannerLogView.contentItem.contentHeight !== undefined
+                                                && scannerLogView.contentItem.height !== undefined) {
+                                            scannerLogView.contentItem.contentY = Math.max(
+                                                0,
+                                                scannerLogView.contentItem.contentHeight - scannerLogView.contentItem.height
+                                            )
+                                        }
+                                    }
+
+                                    onTextChanged: Qt.callLater(followTail)
+                                    Component.onCompleted: Qt.callLater(followTail)
                                 }
                             }
                         }
@@ -1648,6 +1697,7 @@ ApplicationWindow {
 
                                     ColumnLayout {
                                         width: Math.max(marketInputsScroll.availableWidth, marketInputsContentMinWidth)
+                                        height: marketInputsScroll.availableHeight
                                         spacing: 6
 
                                         Rectangle {
@@ -1682,7 +1732,8 @@ ApplicationWindow {
 
                                         ListView {
                                             Layout.fillWidth: true
-                                            Layout.preferredHeight: Math.max(200, marketSetupState.inputsModel.rowCount() * 28)
+                                            Layout.fillHeight: true
+                                            Layout.minimumHeight: 120
                                             clip: true
                                             reuseItems: true
                                             cacheBuffer: 600
@@ -1866,6 +1917,7 @@ ApplicationWindow {
 
                                     ColumnLayout {
                                         width: Math.max(marketOutputsScroll.availableWidth, marketOutputsContentMinWidth)
+                                        height: marketOutputsScroll.availableHeight
                                         spacing: 6
 
                                         Rectangle {
@@ -1900,7 +1952,8 @@ ApplicationWindow {
 
                                         ListView {
                                             Layout.fillWidth: true
-                                            Layout.preferredHeight: Math.max(200, marketSetupState.outputsModel.rowCount() * 28)
+                                            Layout.fillHeight: true
+                                            Layout.minimumHeight: 120
                                             clip: true
                                             reuseItems: true
                                             cacheBuffer: 600
@@ -1916,7 +1969,7 @@ ApplicationWindow {
                                                     anchors.margins: 4
                                                     spacing: marketColumnSpacing
                                                     Text {
-                                                        text: item
+                                                        text: itemLabelWithTier(item, itemId)
                                                         color: textColor
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsItemWidth
@@ -2174,7 +2227,7 @@ ApplicationWindow {
                                             anchors.margins: 4
                                             spacing: 6
                                             Text {
-                                                text: item
+                                                text: itemLabelWithTier(item, itemId)
                                                 color: textColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 145
