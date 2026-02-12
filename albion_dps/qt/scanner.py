@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import signal
 import shutil
 import subprocess
 import sys
@@ -48,6 +49,7 @@ class ScannerState(QObject):
         self._process_lock = threading.Lock()
         self._op_lock = threading.Lock()
         self._capability_hint_shown = False
+        self._stop_requested = False
 
         self._statusSignal.connect(self._set_status_text)
         self._updateSignal.connect(self._set_update_text)
@@ -107,7 +109,7 @@ class ScannerState(QObject):
             self._append_warn("Scanner is not running.")
             return
         self._append_log("Stopping scanner...")
-        process.terminate()
+        self._stop_process(process)
 
     def shutdown(self) -> None:
         process: subprocess.Popen[str] | None
@@ -115,11 +117,7 @@ class ScannerState(QObject):
             process = self._process
         if process is None:
             return
-        process.terminate()
-        try:
-            process.wait(timeout=2)
-        except Exception:
-            process.kill()
+        self._stop_process(process)
 
     def _run_async(self, target, action_name: str) -> None:
         if not self._op_lock.acquire(blocking=False):
@@ -223,15 +221,82 @@ class ScannerState(QObject):
             self._processExitSignal.emit(exit_code)
 
     def _handle_process_exit(self, code: int) -> None:
+        stop_requested = self._stop_requested
         with self._process_lock:
             self._process = None
+        self._stop_requested = False
         self._runningSignal.emit(False)
-        if code == 0:
+        if code == 0 or stop_requested:
             self._statusSignal.emit("scanner stopped")
-            self._append_log("Scanner exited normally.")
+            self._append_log("Scanner stopped.")
         else:
             self._statusSignal.emit(f"scanner exited ({code})")
             self._append_error(f"Scanner exited with code {code}.")
+
+    def _stop_process(self, process: subprocess.Popen[str]) -> None:
+        with self._process_lock:
+            self._stop_requested = True
+        if _is_windows():
+            self._stop_process_windows(process)
+            return
+        self._stop_process_posix(process)
+
+    def _stop_process_windows(self, process: subprocess.Popen[str]) -> None:
+        if process.poll() is not None:
+            return
+        try:
+            process.terminate()
+            process.wait(timeout=2)
+            return
+        except Exception:
+            pass
+
+        taskkill_path = shutil.which("taskkill")
+        if taskkill_path:
+            try:
+                subprocess.run(
+                    [taskkill_path, "/PID", str(process.pid), "/T", "/F"],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=8,
+                    check=False,
+                )
+                process.wait(timeout=2)
+                return
+            except Exception:
+                pass
+
+        try:
+            process.kill()
+        except Exception:
+            return
+
+    def _stop_process_posix(self, process: subprocess.Popen[str]) -> None:
+        if process.poll() is not None:
+            return
+        try:
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            process.wait(timeout=2)
+            return
+        except Exception:
+            pass
+
+        try:
+            process.terminate()
+            process.wait(timeout=2)
+            return
+        except Exception:
+            pass
+
+        try:
+            os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+        except Exception:
+            try:
+                process.kill()
+            except Exception:
+                return
 
     def _resolve_start_command(self) -> list[str] | None:
         binary_name = "albiondata-client.exe" if _is_windows() else "albiondata-client"
@@ -287,15 +352,20 @@ class ScannerState(QObject):
         self._client_dir.mkdir(parents=True, exist_ok=True)
         self._append_log(f"Starting scanner: {' '.join(command)}")
         try:
+            popen_kwargs = {
+                "cwd": str(self._client_dir),
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.STDOUT,
+                "text": True,
+                "encoding": "utf-8",
+                "errors": "replace",
+                "bufsize": 1,
+            }
+            if not _is_windows():
+                popen_kwargs["start_new_session"] = True
             process = subprocess.Popen(
                 command,
-                cwd=str(self._client_dir),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                bufsize=1,
+                **popen_kwargs,
             )
         except Exception as exc:
             self._append_error(f"Failed to start scanner: {exc}")
@@ -303,6 +373,7 @@ class ScannerState(QObject):
 
         with self._process_lock:
             self._process = process
+            self._stop_requested = False
         self._runningSignal.emit(True)
         self._statusSignal.emit("scanner running")
 

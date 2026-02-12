@@ -712,6 +712,25 @@ ApplicationWindow {
                         }
 
                         RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+                            Text {
+                                text: "Support:"
+                                color: mutedColor
+                                font.pixelSize: 11
+                            }
+                            Button {
+                                text: "PayPal"
+                                onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=zlotyjacek%40gmail.com&currency_code=USD&amount=20.00")
+                            }
+                            Button {
+                                text: "Buy Me a Coffee"
+                                onClicked: Qt.openUrlExternally("https://buycoffee.to/ao-dps/")
+                            }
+                            Item { Layout.fillWidth: true }
+                        }
+
+                        RowLayout {
                             spacing: 8
                             Button {
                                 text: "Check updates"
