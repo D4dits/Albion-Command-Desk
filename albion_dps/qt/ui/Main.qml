@@ -1267,6 +1267,7 @@ ApplicationWindow {
                                                         text: "Enchant"
                                                         color: mutedColor
                                                         font.pixelSize: 10
+                                                        Layout.preferredWidth: 52
                                                     }
                                                     ComboBox {
                                                         implicitWidth: 72
@@ -1290,8 +1291,9 @@ ApplicationWindow {
                                                         text: recipeSuggestions.count + " matches"
                                                         color: mutedColor
                                                         font.pixelSize: 10
+                                                        Layout.fillWidth: true
+                                                        horizontalAlignment: Text.AlignRight
                                                     }
-                                                    Item { Layout.fillWidth: true }
                                                 }
 
                                                 Rectangle {
