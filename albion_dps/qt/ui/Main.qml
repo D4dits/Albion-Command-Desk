@@ -184,6 +184,56 @@ ApplicationWindow {
                         horizontalAlignment: Text.AlignRight
                     }
                 }
+
+                RowLayout {
+                    spacing: 8
+                    Button {
+                        id: headerPayPalButton
+                        text: "PayPal $20"
+                        implicitHeight: 32
+                        implicitWidth: 120
+                        onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=zlotyjacek%40gmail.com&currency_code=USD&amount=20.00")
+                        background: Rectangle {
+                            radius: 16
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: "#0d6efd" }
+                                GradientStop { position: 1.0; color: "#00457C" }
+                            }
+                            border.color: "#66b3ff"
+                        }
+                        contentItem: Text {
+                            text: headerPayPalButton.text
+                            color: "#ffffff"
+                            font.bold: true
+                            font.pixelSize: 12
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+                    Button {
+                        id: headerCoffeeButton
+                        text: "Buy me a coffee"
+                        implicitHeight: 32
+                        implicitWidth: 148
+                        onClicked: Qt.openUrlExternally("https://buycoffee.to/ao-dps/")
+                        background: Rectangle {
+                            radius: 16
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: "#ffd34d" }
+                                GradientStop { position: 1.0; color: "#ff9f1a" }
+                            }
+                            border.color: "#ffd34d"
+                        }
+                        contentItem: Text {
+                            text: headerCoffeeButton.text
+                            color: "#1c1300"
+                            font.bold: true
+                            font.pixelSize: 12
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+                }
             }
         }
 
@@ -709,25 +759,6 @@ ApplicationWindow {
                             text: "Scanner uses fixed runtime defaults (upload enabled, official public ingest endpoint)."
                             color: mutedColor
                             font.pixelSize: 11
-                        }
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-                            Text {
-                                text: "Support:"
-                                color: mutedColor
-                                font.pixelSize: 11
-                            }
-                            Button {
-                                text: "PayPal"
-                                onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=zlotyjacek%40gmail.com&currency_code=USD&amount=20.00")
-                            }
-                            Button {
-                                text: "Buy Me a Coffee"
-                                onClicked: Qt.openUrlExternally("https://buycoffee.to/ao-dps/")
-                            }
-                            Item { Layout.fillWidth: true }
                         }
 
                         RowLayout {
