@@ -67,6 +67,7 @@ ApplicationWindow {
     property bool marketView: viewTabs.currentIndex === 2
     property bool marketDiagnosticsVisible: false
     property bool marketStatusExpanded: false
+    property bool marketBreakdownExpanded: false
 
     function formatInt(value) {
         var n = Number(value)
@@ -2184,16 +2185,10 @@ ApplicationWindow {
                             radius: 6
                             color: "#0f1620"
                             border.color: "#1f2a37"
-
-                            ScrollView {
-                                id: marketResultsScroll
+                            ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10
-                                clip: true
-
-                                ColumnLayout {
-                                    width: Math.max(640, marketResultsScroll.availableWidth)
-                                    spacing: 8
+                                spacing: 8
 
                                 RowLayout {
                                     Layout.fillWidth: true
@@ -2268,14 +2263,8 @@ ApplicationWindow {
 
                                 ListView {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: Math.max(
-                                        120,
-                                        Math.min(
-                                            Math.max(120, marketSetupState.resultsItemsModel.rowCount() * 26),
-                                            Math.round(root.height * 0.24)
-                                        )
-                                    )
-                                    Layout.minimumHeight: 96
+                                    Layout.fillHeight: true
+                                    Layout.minimumHeight: 160
                                     clip: true
                                     reuseItems: true
                                     cacheBuffer: 800
@@ -2413,11 +2402,21 @@ ApplicationWindow {
                                     }
                                 }
 
-                                Text {
-                                    text: "Breakdown"
-                                    color: textColor
-                                    font.pixelSize: 12
-                                    font.bold: true
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 8
+                                    Text {
+                                        text: "Breakdown"
+                                        color: textColor
+                                        font.pixelSize: 12
+                                        font.bold: true
+                                    }
+                                    Item { Layout.fillWidth: true }
+                                    Button {
+                                        text: marketBreakdownExpanded ? "Hide" : "Show"
+                                        implicitHeight: 22
+                                        onClicked: marketBreakdownExpanded = !marketBreakdownExpanded
+                                    }
                                 }
 
                                 Rectangle {
@@ -2428,6 +2427,7 @@ ApplicationWindow {
                                     radius: 4
                                     color: "#111b28"
                                     border.color: "#1f2a37"
+                                    visible: marketBreakdownExpanded
 
                                     ListView {
                                         anchors.fill: parent
