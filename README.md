@@ -11,7 +11,6 @@ Passive Albion Online companion app with a Qt desktop UI:
 - Market crafting workspace (inputs/outputs/results)
 
 No game client hooks, no overlays, no memory editing.
-Brand assets use custom project branding for the app identity.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white">
@@ -42,42 +41,65 @@ Donors can be featured on a public supporters list. If you want to be listed, op
   <img src="assets/scanner.png" alt="Scanner tab" width="920">
 </p>
 
-## Brand Assets
-- Logo (README/media): `assets/Logo.png`
-- App icon source: `assets/Icone.png`
-- Branding render script: `tools/branding/render_brand_from_logo.ps1`
-- App icon assets: `albion_dps/qt/ui/command_desk_icon.png` and `albion_dps/qt/ui/command_desk_icon.ico`
+## Before Install (Recommended)
+Best setup before installing ACD:
+- Python `3.11` or `3.12` (64-bit) with `pip` available in terminal.
+- `git` installed (if you install from source checkout).
+- Windows live capture: Npcap Runtime (`https://npcap.com/#download`).
+- Linux/macOS live capture: system packet-capture libs (`libpcap`).
+- Permissions to create a local virtual environment (`venv` folder in repo).
 
-Regenerate logo/icon from source art:
+## Install (Step by Step)
+The recommended path is bootstrap script per OS.
+
+### 1) Get source code
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\branding\render_brand_from_logo.ps1 -Source "C:\path\to\source-logo.png"
+git clone https://github.com/D4dits/Albion-Command-Desk.git
+cd Albion-Command-Desk
 ```
 
-## Install
-### Support Matrix
-
-| OS | Bootstrap script | Status |
-|---|---|---|
-| Windows | `tools/install/windows/install.ps1` | Supported |
-| Linux | `tools/install/linux/install.sh` | Supported |
-| macOS | `tools/install/macos/install.sh` | Supported |
-
-Windows quick bootstrap (recommended):
+### 2) Run installer script for your OS
+Windows:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1
 ```
 
-Linux quick bootstrap (recommended):
+Linux:
 ```bash
 bash ./tools/install/linux/install.sh
 ```
 
-macOS quick bootstrap (recommended):
+macOS:
 ```bash
 bash ./tools/install/macos/install.sh
 ```
 
-Windows PowerShell:
+### 3) What bootstrap installer does
+- checks Python and required tools
+- creates/reuses local `venv`
+- installs ACD (`.[capture]` by default)
+- runs smoke checks (CLI import + Qt startup probe)
+- starts app in `live` mode (unless skip-run option is used)
+
+### 4) Useful install options
+Windows:
+```powershell
+# Install only (do not auto-start app)
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -SkipRun
+
+# Recreate venv from scratch
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -ForceRecreateVenv
+```
+
+Linux/macOS:
+```bash
+# Install only (do not auto-start app)
+bash ./tools/install/linux/install.sh --skip-run
+bash ./tools/install/macos/install.sh --skip-run
+```
+
+### 5) Manual fallback install
+Windows:
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
@@ -93,30 +115,21 @@ python -m pip install -U pip
 python -m pip install -e ".[capture]"
 ```
 
-That single install command covers both:
-- `replay` (PCAP files)
-- `live` capture (with packet dependency set)
-
-Windows `live` startup now verifies Npcap Runtime:
-- if detected, app logs the install path and continues
-- if missing, app shows the download link: `https://npcap.com/#download`
-
-Testing tools:
-```powershell
-python -m pip install -e ".[all]"
-```
-
-Bootstrap installers run shared post-install smoke checks (CLI import + Qt startup probe).
-
-Windows installer script docs:
-- `tools/install/windows/README.md`
-- `tools/install/linux/README.md`
-- `tools/install/macos/README.md`
+Windows `live` startup verifies Npcap Runtime:
+- if detected, app logs detected path and starts normally
+- if missing, app shows install hint: `https://npcap.com/#download`
 
 ## Run
-Live capture:
+If you used bootstrap installer with `-SkipRun`, start from the repo venv:
+
+Windows:
 ```powershell
-albion-command-desk live
+.\venv\Scripts\albion-command-desk live
+```
+
+Linux/macOS:
+```bash
+./venv/bin/albion-command-desk live
 ```
 
 PCAP replay:
