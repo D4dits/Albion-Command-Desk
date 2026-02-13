@@ -1,0 +1,75 @@
+name: release-manifest
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (for example v0.2.0)"
+        required: true
+        type: string
+      channel:
+        description: "Manifest channel"
+        required: false
+        default: stable
+        type: choice
+        options:
+          - stable
+          - beta
+          - nightly
+      min_supported_version:
+        description: "Optional minimum supported app version"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish-manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Resolve release metadata inputs
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "TAG=${{ github.event.release.tag_name }}" >> "$GITHUB_ENV"
+            echo "CHANNEL=stable" >> "$GITHUB_ENV"
+            echo "MIN_SUPPORTED=" >> "$GITHUB_ENV"
+          else
+            echo "TAG=${{ inputs.tag }}" >> "$GITHUB_ENV"
+            echo "CHANNEL=${{ inputs.channel }}" >> "$GITHUB_ENV"
+            echo "MIN_SUPPORTED=${{ inputs.min_supported_version }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build release manifest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python tools/release/manifest/build_manifest.py \
+            --repo "${{ github.repository }}" \
+            --tag "$TAG" \
+            --channel "$CHANNEL" \
+            --output "tools/release/manifest/manifest.json" \
+            --min-supported-version "$MIN_SUPPORTED"
+
+      - name: Upload manifest workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-manifest-${{ env.TAG }}
+          path: tools/release/manifest/manifest.json
+
+      - name: Upload manifest to release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "$TAG" tools/release/manifest/manifest.json --clobber

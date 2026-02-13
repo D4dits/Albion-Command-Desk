@@ -47,6 +47,29 @@ Donors can be featured on a public supporters list. If you want to be listed, op
 - App icon assets: `albion_dps/qt/ui/command_desk_icon.png` and `albion_dps/qt/ui/command_desk_icon.ico`
 
 ## Install
+### Support Matrix
+
+| OS | Bootstrap script | Status |
+|---|---|---|
+| Windows | `tools/install/windows/install.ps1` | Supported |
+| Linux | `tools/install/linux/install.sh` | Supported |
+| macOS | `tools/install/macos/install.sh` | Supported |
+
+Windows quick bootstrap (recommended):
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1
+```
+
+Linux quick bootstrap (recommended):
+```bash
+bash ./tools/install/linux/install.sh
+```
+
+macOS quick bootstrap (recommended):
+```bash
+bash ./tools/install/macos/install.sh
+```
+
 Windows PowerShell:
 ```powershell
 python -m venv venv
@@ -71,6 +94,13 @@ Testing tools:
 ```powershell
 python -m pip install -e ".[all]"
 ```
+
+Bootstrap installers run shared post-install smoke checks (CLI import + Qt startup probe).
+
+Windows installer script docs:
+- `tools/install/windows/README.md`
+- `tools/install/linux/README.md`
+- `tools/install/macos/README.md`
 
 ## Run
 Live capture:
@@ -135,12 +165,24 @@ Output:
 - `artifacts/market/recipes_from_items_report.json`
 - `artifacts/market/recipes_build_report.json`
 
+## Release Metadata (Update Contract)
+Update notifications and installer discovery use a release manifest contract:
+- Spec: `docs/release/RELEASE_MANIFEST_SPEC.md`
+- Example payload: `tools/release/manifest/manifest.example.json`
+- Builder: `tools/release/manifest/build_manifest.py`
+- CI publisher: `.github/workflows/release-manifest.yml`
+- Runtime override endpoint: set `ALBION_COMMAND_DESK_MANIFEST_URL`
+- UI controls: `Auto update` toggle + `Check now` action in the header
+
 ## Troubleshooting and Docs
+- `docs/DELIVERY_BACKLOG.md` (active ticket queue and implementation order)
+- `CHANGELOG.md` (all delivered changes)
 - `docs/TROUBLESHOOTING.md`
 - `docs/ARCHITECTURE.md`
 - `docs/MARKET_ARCHITECTURE.md`
 - `docs/MARKET_TROUBLESHOOTING.md`
 - `docs/MARKET_DATASET_UPDATE.md`
+- `docs/release/RELEASE_CHECKLIST.md`
 
 ## Tests
 ```powershell

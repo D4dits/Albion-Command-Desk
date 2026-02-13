@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "app_id": "albion-command-desk",
+  "channel": "stable",
+  "published_at": "2026-02-13T12:00:00Z",
+  "latest": {
+    "version": "0.1.1",
+    "release_url": "https://github.com/D4dits/Albion-Command-Desk/releases/tag/v0.1.1",
+    "changelog_url": "https://github.com/D4dits/Albion-Command-Desk/blob/main/CHANGELOG.md",
+    "min_supported_version": "0.1.0"
+  },
+  "assets": [
+    {
+      "os": "windows",
+      "arch": "x86_64",
+      "kind": "installer",
+      "name": "AlbionCommandDesk-Setup.exe",
+      "url": "https://github.com/D4dits/Albion-Command-Desk/releases/download/v0.1.1/AlbionCommandDesk-Setup.exe",
+      "sha256": "6f3fb6cd2f5fbd4f5b8c4977f9f6f95fe0e7277d7c7e3610f10608b2307389df",
+      "size": 36713339
+    },
+    {
+      "os": "linux",
+      "arch": "x86_64",
+      "kind": "archive",
+      "name": "AlbionCommandDesk-linux-x86_64.tar.gz",
+      "url": "https://github.com/D4dits/Albion-Command-Desk/releases/download/v0.1.1/AlbionCommandDesk-linux-x86_64.tar.gz",
+      "sha256": "bb8f5f7f0e4fb38d6bf69f7f2dfbc22dc15de6190f4067189a7c0f31dbb7fc01",
+      "size": 41234567
+    },
+    {
+      "os": "macos",
+      "arch": "arm64",
+      "kind": "archive",
+      "name": "AlbionCommandDesk-macos-arm64.tar.gz",
+      "url": "https://github.com/D4dits/Albion-Command-Desk/releases/download/v0.1.1/AlbionCommandDesk-macos-arm64.tar.gz",
+      "sha256": "f0e56cb9a8218f2c0f9445e7e6e5452f42731ecaf2e9d64f3a8d45cce56af4f8",
+      "size": 39876543
+    }
+  ]
+}

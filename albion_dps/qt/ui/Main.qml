@@ -272,9 +272,90 @@ ApplicationWindow {
                     }
                 }
 
+                Rectangle {
+                    visible: uiState.updateBannerVisible
+                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                    Layout.preferredWidth: Math.max(270, Math.min(420, root.width * 0.28))
+                    Layout.preferredHeight: 34
+                    radius: 17
+                    color: "#1f3322"
+                    border.color: "#2ea043"
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 6
+                        spacing: 6
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: uiState.updateBannerText
+                            color: "#7ee787"
+                            font.pixelSize: 12
+                            elide: Text.ElideRight
+                            wrapMode: Text.NoWrap
+                        }
+
+                        Button {
+                            id: updateOpenButton
+                            text: "Open"
+                            implicitHeight: 24
+                            implicitWidth: 54
+                            onClicked: {
+                                if (uiState.updateBannerUrl.length > 0) {
+                                    Qt.openUrlExternally(uiState.updateBannerUrl)
+                                }
+                            }
+                        }
+
+                        Button {
+                            id: updateDismissButton
+                            text: "x"
+                            implicitHeight: 24
+                            implicitWidth: 28
+                            onClicked: uiState.dismissUpdateBanner()
+                        }
+                    }
+                }
+
                 RowLayout {
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                     spacing: 8
+                    ColumnLayout {
+                        spacing: 2
+                        RowLayout {
+                            spacing: 6
+                            CheckBox {
+                                id: autoUpdateCheckBox
+                                checked: uiState.updateAutoCheck
+                                text: "Auto update"
+                                onToggled: uiState.setUpdateAutoCheck(checked)
+                                contentItem: Text {
+                                    text: autoUpdateCheckBox.text
+                                    color: mutedColor
+                                    font.pixelSize: 11
+                                    verticalAlignment: Text.AlignVCenter
+                                    leftPadding: autoUpdateCheckBox.indicator.width + autoUpdateCheckBox.spacing
+                                }
+                            }
+                            Button {
+                                id: checkUpdatesButton
+                                text: "Check now"
+                                implicitHeight: 28
+                                implicitWidth: 88
+                                onClicked: uiState.requestManualUpdateCheck()
+                            }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            visible: uiState.updateCheckStatus.length > 0
+                            text: uiState.updateCheckStatus
+                            color: mutedColor
+                            font.pixelSize: 10
+                            elide: Text.ElideRight
+                            wrapMode: Text.NoWrap
+                        }
+                    }
                     Button {
                         id: headerPayPalButton
                         text: "PayPal"

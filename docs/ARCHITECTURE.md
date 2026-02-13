@@ -24,6 +24,22 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
 ## Qt UI (PySide6/QML)
 - Implemented in main: Qt runner bridges snapshots to QAbstractListModel models.
 - QML renders scoreboard, history cards, key legend, and fame stats.
+- Header runtime helpers:
+  - update checks (manifest-based, non-blocking),
+  - persisted update preference (`Auto update`),
+  - manual check trigger (`Check now`).
+
+## Install and update delivery
+- Bootstrap installers:
+  - Windows: `tools/install/windows/install.ps1`
+  - Linux: `tools/install/linux/install.sh`
+  - macOS: `tools/install/macos/install.sh`
+- Shared post-install smoke checks:
+  - `tools/install/common/smoke_check.py`
+- Release metadata contract and publication:
+  - Spec: `docs/release/RELEASE_MANIFEST_SPEC.md`
+  - Builder: `tools/release/manifest/build_manifest.py`
+  - CI workflow: `.github/workflows/release-manifest.yml`
 
 ## Module boundaries (intended)
 - Capture does not know parsing/UI.
