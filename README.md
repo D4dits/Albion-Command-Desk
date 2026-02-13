@@ -136,6 +136,8 @@ Output:
 - `artifacts/market/recipes_build_report.json`
 
 ## Troubleshooting and Docs
+- `docs/DELIVERY_BACKLOG.md` (active ticket queue and implementation order)
+- `CHANGELOG.md` (all delivered changes)
 - `docs/TROUBLESHOOTING.md`
 - `docs/ARCHITECTURE.md`
 - `docs/MARKET_ARCHITECTURE.md`
