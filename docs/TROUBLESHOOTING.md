@@ -148,6 +148,7 @@ This usually means Qt's DLLs are not found:
   - `Check now` button (manual check).
 - Default manifest endpoint can be overridden with:
   - `ALBION_COMMAND_DESK_MANIFEST_URL`
+  - Default value: `https://github.com/D4dits/Albion-Command-Desk/releases/latest/download/manifest.json`
 - Settings file location can be overridden with:
   - `ALBION_COMMAND_DESK_CONFIG_DIR`
 - Default settings paths:

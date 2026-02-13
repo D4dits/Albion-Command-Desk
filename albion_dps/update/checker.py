@@ -7,8 +7,7 @@ from urllib.request import Request, urlopen
 
 
 DEFAULT_MANIFEST_URL = (
-    "https://raw.githubusercontent.com/D4dits/Albion-Command-Desk/main/"
-    "tools/release/manifest/manifest.json"
+    "https://github.com/D4dits/Albion-Command-Desk/releases/latest/download/manifest.json"
 )
 
 

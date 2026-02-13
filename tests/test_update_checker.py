@@ -5,7 +5,11 @@ import shutil
 import uuid
 from pathlib import Path
 
-from albion_dps.update.checker import check_for_updates, default_manifest_url
+from albion_dps.update.checker import (
+    DEFAULT_MANIFEST_URL,
+    check_for_updates,
+    default_manifest_url,
+)
 
 
 def _write_manifest(data: dict) -> Path:
@@ -67,3 +71,8 @@ def test_check_for_updates_reports_not_available_for_same_version() -> None:
 def test_default_manifest_url_uses_environment_override(monkeypatch) -> None:
     monkeypatch.setenv("ALBION_COMMAND_DESK_MANIFEST_URL", "https://example.com/manifest.json")
     assert default_manifest_url() == "https://example.com/manifest.json"
+
+
+def test_default_manifest_url_falls_back_to_release_asset(monkeypatch) -> None:
+    monkeypatch.delenv("ALBION_COMMAND_DESK_MANIFEST_URL", raising=False)
+    assert default_manifest_url() == DEFAULT_MANIFEST_URL
