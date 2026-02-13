@@ -9,7 +9,8 @@ One-command setup for Albion Command Desk from a source checkout.
 3. Upgrades `pip`.
 4. Installs package with capture extras: `.[capture]`.
 5. Verifies CLI startup.
-6. Starts app in live mode (unless `--skip-run` is used).
+6. Runs shared smoke checks (CLI import + Qt startup probe).
+7. Starts app in live mode (unless `--skip-run` is used).
 
 ## Usage
 

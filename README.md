@@ -87,6 +87,8 @@ Testing tools:
 python -m pip install -e ".[all]"
 ```
 
+Bootstrap installers run shared post-install smoke checks (CLI import + Qt startup probe).
+
 Windows installer script docs:
 - `tools/install/windows/README.md`
 - `tools/install/linux/README.md`

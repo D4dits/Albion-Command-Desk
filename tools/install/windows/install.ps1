@@ -120,6 +120,7 @@ if (-not (Test-Path $VenvPath)) {
 
 $venvPython = Join-Path $VenvPath "Scripts\python.exe"
 $venvCli = Join-Path $VenvPath "Scripts\albion-command-desk.exe"
+$smokeScript = Join-Path $ProjectRoot "tools\install\common\smoke_check.py"
 
 if (-not (Test-Path $venvPython)) {
     Throw-InstallError "Virtual environment is missing python.exe: $venvPython"
@@ -153,6 +154,16 @@ if (Test-Path $venvCli) {
     if ($LASTEXITCODE -ne 0) {
         Throw-InstallError "Module smoke check failed."
     }
+}
+
+if (-not (Test-Path $smokeScript)) {
+    Throw-InstallError "Shared smoke check script not found: $smokeScript"
+}
+
+Write-InstallInfo "Running shared install smoke checks"
+& $venvPython $smokeScript --project-root $ProjectRoot
+if ($LASTEXITCODE -ne 0) {
+    Throw-InstallError "Shared smoke checks failed."
 }
 
 if ($SkipRun) {

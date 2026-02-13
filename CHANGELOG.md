@@ -18,6 +18,7 @@ and this project uses semantic versioning.
 - Linux installer script documentation: `tools/install/linux/README.md`.
 - macOS bootstrap installer script: `tools/install/macos/install.sh`.
 - macOS installer script documentation: `tools/install/macos/README.md`.
+- Shared install smoke check runner: `tools/install/common/smoke_check.py`.
 
 ### Changed
 - `README.md` docs section now links to the delivery backlog and changelog.
@@ -25,6 +26,7 @@ and this project uses semantic versioning.
 - `README.md` now includes recommended Windows bootstrap install command.
 - `README.md` now includes recommended Linux bootstrap install command.
 - `README.md` now includes recommended macOS bootstrap install command.
+- Windows/Linux/macOS bootstrap scripts now run a common post-install smoke check.
 
 ## [0.1.0] - 2026-02-11
 

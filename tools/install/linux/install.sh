@@ -116,6 +116,7 @@ fi
 
 VENV_PYTHON="${VENV_PATH}/bin/python"
 VENV_CLI="${VENV_PATH}/bin/albion-command-desk"
+SMOKE_SCRIPT="${PROJECT_ROOT}/tools/install/common/smoke_check.py"
 [[ -x "$VENV_PYTHON" ]] || fail "Virtual environment python is missing: ${VENV_PYTHON}"
 
 log_info "Upgrading pip"
@@ -133,6 +134,10 @@ if [[ -x "$VENV_CLI" ]]; then
 else
   "$VENV_PYTHON" -m albion_dps.cli --version
 fi
+
+[[ -f "$SMOKE_SCRIPT" ]] || fail "Shared smoke check script not found: ${SMOKE_SCRIPT}"
+log_info "Running shared install smoke checks"
+"$VENV_PYTHON" "$SMOKE_SCRIPT" --project-root "$PROJECT_ROOT"
 
 if (( SKIP_RUN )); then
   log_info "Installation complete. Launch manually with:"

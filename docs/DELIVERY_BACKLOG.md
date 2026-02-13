@@ -56,7 +56,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Apple Silicon/Intel notes are documented.
 
 ### ACD-REL-005 - Shared install smoke checks
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: add post-install validation for all platforms.
 - Files to modify:
   1. `tools/install/common/smoke_check.py` (new)
@@ -129,3 +129,4 @@ Update status checkboxes and notes after each implemented ticket.
 - 2026-02-13: ACD-REL-002 completed (Windows installer script + docs + README quick bootstrap).
 - 2026-02-13: ACD-REL-003 completed (Linux installer script + docs + README quick bootstrap).
 - 2026-02-13: ACD-REL-004 completed (macOS installer script + docs + README quick bootstrap).
+- 2026-02-13: ACD-REL-005 completed (shared smoke checks wired into Windows/Linux/macOS install scripts).
