@@ -48,6 +48,7 @@ and this project uses semantic versioning.
 - `bootstrap-smoke.yml` now runs `install.ps1` directly on Windows, uses a workspace-local venv path, and installs full Qt runtime libs on Linux.
 - `tools/install/windows/install.ps1` now resolves alternative `python*.exe` names in venvs and retries creation with `--copies` when needed.
 - `tools/install/windows/install.ps1` now validates `VenvPath` defensively and logs the resolved venv path for CI diagnostics.
+- `tools/install/windows/install.ps1` now handles missing venv Python without calling `Test-Path` on `$null`.
 
 ## [0.1.0] - 2026-02-11
 

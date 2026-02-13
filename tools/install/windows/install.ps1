@@ -197,7 +197,7 @@ if (-not $venvPython) {
 $venvCli = Join-Path $VenvPath "Scripts\albion-command-desk.exe"
 $smokeScript = Join-Path $ProjectRoot "tools\install\common\smoke_check.py"
 
-if (-not (Test-Path $venvPython)) {
+if ([string]::IsNullOrWhiteSpace($venvPython) -or (-not (Test-Path $venvPython))) {
     if ([string]::IsNullOrWhiteSpace($VenvPath)) {
         Throw-InstallError "VenvPath is empty while validating virtual environment."
     }
