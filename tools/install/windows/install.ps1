@@ -97,10 +97,13 @@ function Resolve-PythonLauncher {
 
 function Invoke-WithLauncher {
     param(
-        [array]$Launcher,
+        [string[]]$Launcher,
         [string[]]$Args,
         [string]$Description
     )
+    if (-not $Launcher -or $Launcher.Count -eq 0) {
+        Throw-InstallError "Python launcher command is empty for step: $Description"
+    }
     $exe = $Launcher[0]
     $baseArgs = @()
     if ($Launcher.Count -gt 1) {

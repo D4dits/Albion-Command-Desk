@@ -50,6 +50,7 @@ and this project uses semantic versioning.
 - `tools/install/windows/install.ps1` now validates `VenvPath` defensively and logs the resolved venv path for CI diagnostics.
 - `tools/install/windows/install.ps1` now handles missing venv Python without calling `Test-Path` on `$null`.
 - `tools/install/windows/install.ps1` now falls back to `virtualenv` when `python -m venv` produces no usable interpreter on Windows CI.
+- `tools/install/windows/install.ps1` now treats launcher commands as string arrays (not character arrays), fixing broken interpreter invocation in CI.
 
 ## [0.1.0] - 2026-02-11
 
