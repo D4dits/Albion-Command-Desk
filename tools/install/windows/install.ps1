@@ -113,6 +113,39 @@ function Invoke-WithLauncher {
     }
 }
 
+function Resolve-VenvPython {
+    param(
+        [string]$VenvRoot
+    )
+    $scriptsPath = Join-Path $VenvRoot "Scripts"
+    if (-not (Test-Path $scriptsPath)) {
+        return $null
+    }
+
+    $preferred = @(
+        "python.exe",
+        "python3.exe",
+        "python3.12.exe",
+        "python3.11.exe",
+        "python3.10.exe"
+    )
+    foreach ($name in $preferred) {
+        $candidate = Join-Path $scriptsPath $name
+        if (Test-Path $candidate) {
+            return $candidate
+        }
+    }
+
+    $fallback = Get-ChildItem -Path $scriptsPath -Filter "python*.exe" -File -ErrorAction SilentlyContinue |
+        Sort-Object Name |
+        Select-Object -First 1
+    if ($fallback) {
+        return $fallback.FullName
+    }
+
+    return $null
+}
+
 if (-not $ProjectRoot) {
     $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..\..")).Path
 }
@@ -147,12 +180,26 @@ if (-not (Test-Path $VenvPath)) {
     Write-InstallInfo "Using existing virtual environment: $VenvPath"
 }
 
-$venvPython = Join-Path $VenvPath "Scripts\python.exe"
+$venvPython = Resolve-VenvPython -VenvRoot $VenvPath
+if (-not $venvPython) {
+    Write-InstallWarn "No Python executable found in venv after first creation attempt. Retrying with --copies."
+    Invoke-WithLauncher -Launcher $launcher.Command -Args @("-m", "venv", "--copies", $VenvPath) -Description "Recreating virtual environment with --copies"
+    $venvPython = Resolve-VenvPython -VenvRoot $VenvPath
+}
+
 $venvCli = Join-Path $VenvPath "Scripts\albion-command-desk.exe"
 $smokeScript = Join-Path $ProjectRoot "tools\install\common\smoke_check.py"
 
 if (-not (Test-Path $venvPython)) {
-    Throw-InstallError "Virtual environment is missing python.exe: $venvPython"
+    $scriptsPath = Join-Path $VenvPath "Scripts"
+    $visible = ""
+    if (Test-Path $scriptsPath) {
+        $visible = (Get-ChildItem -Path $scriptsPath -File -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name) -join ", "
+    }
+    if (-not $visible) {
+        $visible = "<none>"
+    }
+    Throw-InstallError "Virtual environment is missing a Python executable under '$scriptsPath'. Files: $visible"
 }
 
 Write-InstallInfo "Upgrading pip"

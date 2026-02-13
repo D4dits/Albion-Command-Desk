@@ -28,9 +28,9 @@ jobs:
       - name: Run Windows bootstrap smoke
         shell: powershell
         run: |
-          powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 `
+          .\tools\install\windows\install.ps1 `
             -ProjectRoot "$PWD" `
-            -VenvPath "$PWD\.venv-smoke" `
+            -VenvPath "$env:RUNNER_TEMP\acd-smoke-venv" `
             -Python "$env:pythonLocation\python.exe" `
             -ForceRecreateVenv `
             -SkipRun
