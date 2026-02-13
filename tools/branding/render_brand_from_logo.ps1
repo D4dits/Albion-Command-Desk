@@ -5,7 +5,7 @@ param(
     [string]$WideLogoOut = "assets/branding/albion-command-desk-logo-wide-3200.png",
     [string]$IconOut = "albion_dps/qt/ui/command_desk_icon.png",
     [string]$IcoOut = "albion_dps/qt/ui/command_desk_icon.ico",
-    [string]$PrimaryWord = "Ablion",
+    [string]$PrimaryWord = "Albion",
     [string]$SecondaryWord = "Command Desk"
 )
 

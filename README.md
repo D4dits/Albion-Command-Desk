@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/branding/albion-command-desk-logo-wide-3200.png" alt="Albion Command Desk" width="680">
+  <img src="assets/Logo.png" alt="Albion Command Desk" width="620">
 </p>
 
 # Albion Command Desk
@@ -43,8 +43,8 @@ Donors can be featured on a public supporters list. If you want to be listed, op
 </p>
 
 ## Brand Assets
-- Square logo (high-res): `assets/branding/albion-command-desk-logo-2048.png`
-- Wide logo (README/media): `assets/branding/albion-command-desk-logo-wide-3200.png`
+- Logo (README/media): `assets/Logo.png`
+- App icon source: `assets/Icone.png`
 - Branding render script: `tools/branding/render_brand_from_logo.ps1`
 - App icon assets: `albion_dps/qt/ui/command_desk_icon.png` and `albion_dps/qt/ui/command_desk_icon.ico`
 
