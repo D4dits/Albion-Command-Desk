@@ -501,6 +501,7 @@ def _build_player_rows(
                 weapon_icon=weapon_icon,
             )
         )
+    rows = _collapse_player_rows(rows)
     rows.sort(key=lambda item: _metric_value(item, metric), reverse=True)
     rows = rows[: max(top_n, 1)]
     max_value = max((_metric_value(item, metric) for item in rows), default=0.0)
@@ -571,9 +572,14 @@ def _build_history_rows(
             label = f"zone {summary.label}"
         duration = _format_duration(summary.duration)
         totals = _format_totals(summary.total_damage, summary.total_heal)
-        players_count = len(summary.entries)
-        players = _format_players_preview(summary.entries, names=names, max_players=3)
-        copy_text = _format_history_copy(summary, names=names)
+        collapsed_entries = _collapse_history_entries(
+            summary.entries,
+            names=names,
+            duration=summary.duration,
+        )
+        players_count = len(collapsed_entries)
+        players = _format_players_preview(collapsed_entries, names=names, max_players=3)
+        copy_text = _format_history_copy(summary, names=names, entries=collapsed_entries)
         rows.append(
             HistoryRow(
                 label=f"{label} {duration}",
@@ -615,15 +621,21 @@ def _format_players_preview(
     return ", ".join(parts) if parts else "(no data)"
 
 
-def _format_history_copy(summary: SessionSummary, *, names: dict[int, str]) -> str:
+def _format_history_copy(
+    summary: SessionSummary,
+    *,
+    names: dict[int, str],
+    entries: list[SessionEntry] | None = None,
+) -> str:
     label = summary.mode
     if summary.mode == "zone" and summary.label:
         label = f"zone {summary.label}"
     duration = _format_duration(summary.duration)
     totals = _format_totals(summary.total_damage, summary.total_heal)
-    header = f"{label} {duration} | {totals} | players {len(summary.entries)}"
+    display_entries = entries if entries is not None else summary.entries
+    header = f"{label} {duration} | {totals} | players {len(display_entries)}"
     lines = [header]
-    for idx, entry in enumerate(summary.entries, start=1):
+    for idx, entry in enumerate(display_entries, start=1):
         resolved = _resolve_label(entry.label, names)
         lines.append(
             f"{idx:02d}. {resolved} | dmg {_format_int(entry.damage)} | heal {_format_int(entry.heal)} | dps {entry.dps:.1f} | hps {entry.hps:.1f}"
@@ -680,6 +692,7 @@ def _build_player_rows_from_entries(
                 weapon_icon="",
             )
         )
+    rows = _collapse_player_rows(rows)
     rows.sort(key=lambda item: _metric_value(item, metric), reverse=True)
     rows = rows[: max(top_n, 1)]
     max_value = max((_metric_value(item, metric) for item in rows), default=0.0)
@@ -704,6 +717,92 @@ def _build_player_rows_from_entries(
             )
         )
     return out
+
+
+def _collapse_player_rows(rows: list[PlayerRow]) -> list[PlayerRow]:
+    if not rows:
+        return []
+    grouped: dict[str, dict[str, object]] = {}
+    for row in rows:
+        current = grouped.get(row.name)
+        if current is None:
+            grouped[row.name] = {
+                "damage": float(row.damage),
+                "heal": float(row.heal),
+                "dps": float(row.dps),
+                "hps": float(row.hps),
+                "weapon_name": row.weapon_name,
+                "weapon_tier": row.weapon_tier,
+                "weapon_icon": row.weapon_icon,
+            }
+            continue
+        current["damage"] = float(current["damage"]) + float(row.damage)
+        current["heal"] = float(current["heal"]) + float(row.heal)
+        current["dps"] = float(current["dps"]) + float(row.dps)
+        current["hps"] = float(current["hps"]) + float(row.hps)
+        if not current["weapon_name"] and row.weapon_name:
+            current["weapon_name"] = row.weapon_name
+            current["weapon_tier"] = row.weapon_tier
+            current["weapon_icon"] = row.weapon_icon
+
+    max_damage = max((float(item["damage"]) for item in grouped.values()), default=0.0)
+    max_heal = max((float(item["heal"]) for item in grouped.values()), default=0.0)
+    collapsed: list[PlayerRow] = []
+    for name, item in grouped.items():
+        damage = float(item["damage"])
+        heal = float(item["heal"])
+        dps = float(item["dps"])
+        hps = float(item["hps"])
+        role = _infer_role(damage, heal, max_damage=max_damage, max_heal=max_heal) or ""
+        collapsed.append(
+            PlayerRow(
+                name=name,
+                damage=damage,
+                heal=heal,
+                dps=dps,
+                hps=hps,
+                bar_ratio=0.0,
+                role=role,
+                color=_color_for_label(name, role),
+                weapon_name=str(item["weapon_name"] or ""),
+                weapon_tier=str(item["weapon_tier"] or ""),
+                weapon_icon=str(item["weapon_icon"] or ""),
+            )
+        )
+    return collapsed
+
+
+def _collapse_history_entries(
+    entries: list[SessionEntry],
+    *,
+    names: dict[int, str],
+    duration: float,
+) -> list[SessionEntry]:
+    grouped: dict[str, tuple[float, float]] = {}
+    for entry in entries:
+        label = _resolve_label(entry.label, names)
+        damage, heal = grouped.get(label, (0.0, 0.0))
+        grouped[label] = (damage + float(entry.damage), heal + float(entry.heal))
+    collapsed: list[SessionEntry] = []
+    for label, (damage, heal) in grouped.items():
+        if duration > 0:
+            dps = damage / duration
+            hps = heal / duration
+        else:
+            dps = 0.0
+            hps = 0.0
+        collapsed.append(
+            SessionEntry(
+                label=label,
+                damage=damage,
+                heal=heal,
+                dps=dps,
+                hps=hps,
+                source_id=None,
+            )
+        )
+    collapsed.sort(key=lambda item: item.damage, reverse=True)
+    return collapsed
 
 
 def _summary_key(summary: SessionSummary) -> tuple[Any, ...]:

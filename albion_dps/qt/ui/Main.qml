@@ -721,6 +721,8 @@ ApplicationWindow {
                             Button {
                                 visible: uiState.selectedHistoryIndex >= 0
                                 text: "Back to live"
+                                implicitHeight: 30
+                                implicitWidth: 104
                                 onClicked: uiState.clearHistorySelection()
                             }
 
@@ -728,10 +730,12 @@ ApplicationWindow {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 clip: true
+                                spacing: 6
+                                rightMargin: 6
                                 model: uiState.historyModel
                                 delegate: Rectangle {
-                                    width: ListView.view.width
-                                    height: 92
+                                    width: Math.max(0, ListView.view.width - 6)
+                                    height: 98
                                     radius: 6
                                     color: selected ? "#162231" : "#0f1620"
                                     border.color: selected ? "#4aa3ff" : "#1f2a37"
@@ -750,7 +754,9 @@ ApplicationWindow {
                                             Text { text: label; color: textColor; font.pixelSize: 12; font.bold: true }
                                             Item { Layout.fillWidth: true }
                                             Button {
-                                                text: "Copy full"
+                                                text: "Copy"
+                                                implicitWidth: 64
+                                                implicitHeight: 26
                                                 onClicked: uiState.copyHistory(index)
                                             }
                                         }
