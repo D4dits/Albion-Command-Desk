@@ -112,7 +112,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Troubleshooting includes common setup and update errors.
 
 ### ACD-REL-010 - Stabilization and release checklist
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: lock down repeatable release process.
 - Files to modify:
   1. `docs/release/RELEASE_CHECKLIST.md` (new)
@@ -134,3 +134,4 @@ Update status checkboxes and notes after each implemented ticket.
 - 2026-02-13: ACD-REL-007 completed (persistent auto-check preference + manual check trigger + troubleshooting docs).
 - 2026-02-13: ACD-REL-008 completed (manifest builder + release-manifest workflow + publishing docs).
 - 2026-02-13: ACD-REL-009 completed (README support matrix + installer/update troubleshooting + architecture delivery notes).
+- 2026-02-13: ACD-REL-010 completed (release checklist and changelog gate added to docs).

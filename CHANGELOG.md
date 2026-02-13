@@ -23,6 +23,7 @@ and this project uses semantic versioning.
 - Persistent app settings store: `albion_dps/settings.py`.
 - Release manifest builder script: `tools/release/manifest/build_manifest.py`.
 - Release manifest CI workflow: `.github/workflows/release-manifest.yml`.
+- Release process checklist: `docs/release/RELEASE_CHECKLIST.md`.
 
 ### Changed
 - `README.md` docs section now links to the delivery backlog and changelog.
@@ -39,6 +40,7 @@ and this project uses semantic versioning.
 - `README.md` now includes an install support matrix for Windows/Linux/macOS bootstrap scripts.
 - `docs/TROUBLESHOOTING.md` now includes a dedicated installer/update error map.
 - `docs/ARCHITECTURE.md` now includes install/update delivery components.
+- `README.md` docs section now links `docs/release/RELEASE_CHECKLIST.md`.
 
 ## [0.1.0] - 2026-02-11
 

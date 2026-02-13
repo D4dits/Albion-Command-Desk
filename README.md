@@ -182,6 +182,7 @@ Update notifications and installer discovery use a release manifest contract:
 - `docs/MARKET_ARCHITECTURE.md`
 - `docs/MARKET_TROUBLESHOOTING.md`
 - `docs/MARKET_DATASET_UPDATE.md`
+- `docs/release/RELEASE_CHECKLIST.md`
 
 ## Tests
 ```powershell
