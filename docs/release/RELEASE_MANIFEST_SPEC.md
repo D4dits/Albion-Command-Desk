@@ -89,6 +89,8 @@ Top-level:
 
 - Build command (local/manual):
   - `python tools/release/manifest/build_manifest.py --repo <owner/repo> --tag <tag> --output tools/release/manifest/manifest.json`
+- Publish helper (Windows):
+  - `powershell -ExecutionPolicy Bypass -File .\tools\release\manifest\publish_manifest.ps1 -Tag <tag>`
 - CI workflow:
   - `.github/workflows/release-manifest.yml`
   - Triggers on `release.published` or `workflow_dispatch`.

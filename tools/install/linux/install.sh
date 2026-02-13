@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 VENV_PATH="${PROJECT_ROOT}/venv"
+PYTHON_CMD_OVERRIDE=""
 SKIP_RUN=0
 FORCE_RECREATE_VENV=0
 
@@ -27,6 +28,7 @@ Usage: ./tools/install/linux/install.sh [options]
 Options:
   --project-root <path>      Override repository root path.
   --venv-path <path>         Override virtual environment path.
+  --python <path-or-command> Force Python interpreter command/path.
   --skip-run                 Install only (do not start app).
   --force-recreate-venv      Remove and recreate virtual environment.
   -h, --help                 Show this help.
@@ -43,6 +45,11 @@ while [[ $# -gt 0 ]]; do
     --venv-path)
       [[ $# -ge 2 ]] || fail "--venv-path requires a value."
       VENV_PATH="$2"
+      shift 2
+      ;;
+    --python)
+      [[ $# -ge 2 ]] || fail "--python requires a value."
+      PYTHON_CMD_OVERRIDE="$2"
       shift 2
       ;;
     --skip-run)
@@ -66,6 +73,24 @@ done
 [[ -f "${PROJECT_ROOT}/pyproject.toml" ]] || fail "pyproject.toml not found under '${PROJECT_ROOT}'."
 
 resolve_python() {
+  if [[ -n "$PYTHON_CMD_OVERRIDE" ]]; then
+    if ! command -v "$PYTHON_CMD_OVERRIDE" >/dev/null 2>&1 && [[ ! -x "$PYTHON_CMD_OVERRIDE" ]]; then
+      fail "Requested Python command/path not found: $PYTHON_CMD_OVERRIDE"
+    fi
+    local version major minor
+    version="$("$PYTHON_CMD_OVERRIDE" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
+    if [[ -z "$version" ]]; then
+      fail "Could not execute requested Python: $PYTHON_CMD_OVERRIDE"
+    fi
+    major="${version%%.*}"
+    minor="${version##*.}"
+    if [[ "$major" != "3" ]] || [[ ! "$minor" =~ ^[0-9]+$ ]] || (( minor < 10 )); then
+      fail "Requested Python must be 3.10+ (detected: $version)"
+    fi
+    printf '%s|%s\n' "$PYTHON_CMD_OVERRIDE" "$version"
+    return 0
+  fi
+
   local candidates=(
     "python3.12"
     "python3.11"

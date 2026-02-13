@@ -2,6 +2,7 @@
 param(
     [string]$ProjectRoot = "",
     [string]$VenvPath = "",
+    [string]$Python = "",
     [switch]$SkipRun,
     [switch]$ForceRecreateVenv
 )
@@ -24,6 +25,34 @@ function Throw-InstallError {
 }
 
 function Resolve-PythonLauncher {
+    param(
+        [string]$RequestedPython = ""
+    )
+    if ($RequestedPython) {
+        if (-not (Test-Path $RequestedPython)) {
+            Throw-InstallError "Requested Python path does not exist: $RequestedPython"
+        }
+        $versionString = ""
+        try {
+            $versionString = (& $RequestedPython -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')").Trim()
+        } catch {
+            Throw-InstallError "Failed to execute requested Python: $RequestedPython"
+        }
+        $parts = $versionString.Split(".")
+        if ($parts.Count -lt 2) {
+            Throw-InstallError "Could not parse requested Python version from: $RequestedPython"
+        }
+        $major = [int]$parts[0]
+        $minor = [int]$parts[1]
+        if (-not ($major -eq 3 -and $minor -ge 10)) {
+            Throw-InstallError "Requested Python must be 3.10+ (detected: $versionString)"
+        }
+        return @{
+            Command = @($RequestedPython)
+            Version = $versionString
+        }
+    }
+
     $candidates = @(
         @("py", "-3.12"),
         @("py", "-3.11"),
@@ -96,7 +125,7 @@ if (-not (Test-Path $pyprojectPath)) {
     Throw-InstallError "pyproject.toml not found under '$ProjectRoot'. Run this from the repository."
 }
 
-$launcher = Resolve-PythonLauncher
+$launcher = Resolve-PythonLauncher -RequestedPython $Python
 if (-not $launcher) {
     Throw-InstallError "Python 3.10+ not found. Install Python, then rerun this script."
 }

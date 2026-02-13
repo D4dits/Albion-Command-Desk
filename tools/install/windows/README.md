@@ -32,6 +32,12 @@ Recreate virtual environment before install:
 powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -ForceRecreateVenv
 ```
 
+Use a specific Python interpreter (CI/controlled runtime):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Python "C:\Python312\python.exe"
+```
+
 ## Notes
 
 - If packet capture dependencies fail, prefer Python 3.11 or 3.12.

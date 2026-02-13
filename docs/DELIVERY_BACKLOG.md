@@ -122,6 +122,24 @@ Update status checkboxes and notes after each implemented ticket.
   - Checklist covers test, package, verify, publish, rollback.
   - Changelog entries are required in release prep.
 
+## Post-Backlog Operational Items
+
+### OPS-001 - First manifest publish runbook
+- [x] Status: DONE
+- Scope:
+  - Add helper script for publishing first manifest to an existing GitHub release.
+- Files:
+  - `tools/release/manifest/publish_manifest.ps1`
+  - `docs/release/RELEASE_MANIFEST_SPEC.md`
+
+### OPS-002 - Clean-machine bootstrap validation
+- [x] Status: DONE
+- Scope:
+  - Add CI workflow executing bootstrap scripts on clean Windows/Linux/macOS runners.
+- Files:
+  - `.github/workflows/bootstrap-smoke.yml`
+  - `README.md`
+
 ## Progress Log
 
 - 2026-02-13: backlog initialized.
@@ -135,3 +153,5 @@ Update status checkboxes and notes after each implemented ticket.
 - 2026-02-13: ACD-REL-008 completed (manifest builder + release-manifest workflow + publishing docs).
 - 2026-02-13: ACD-REL-009 completed (README support matrix + installer/update troubleshooting + architecture delivery notes).
 - 2026-02-13: ACD-REL-010 completed (release checklist and changelog gate added to docs).
+- 2026-02-13: OPS-001 completed (Windows manifest publish helper script).
+- 2026-02-13: OPS-002 completed (bootstrap smoke workflow on clean CI runners).

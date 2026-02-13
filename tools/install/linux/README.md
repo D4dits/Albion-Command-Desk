@@ -32,6 +32,12 @@ Recreate virtual environment before install:
 bash ./tools/install/linux/install.sh --force-recreate-venv
 ```
 
+Use a specific Python interpreter (CI/controlled runtime):
+
+```bash
+bash ./tools/install/linux/install.sh --python "$(command -v python3.12)"
+```
+
 ## Notes
 
 - On some distributions, packet capture dependencies require system libraries/toolchain.

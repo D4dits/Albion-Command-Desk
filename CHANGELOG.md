@@ -24,6 +24,8 @@ and this project uses semantic versioning.
 - Release manifest builder script: `tools/release/manifest/build_manifest.py`.
 - Release manifest CI workflow: `.github/workflows/release-manifest.yml`.
 - Release process checklist: `docs/release/RELEASE_CHECKLIST.md`.
+- Manifest publish helper script (Windows): `tools/release/manifest/publish_manifest.ps1`.
+- Clean-machine bootstrap validation workflow: `.github/workflows/bootstrap-smoke.yml`.
 
 ### Changed
 - `README.md` docs section now links to the delivery backlog and changelog.
@@ -41,6 +43,7 @@ and this project uses semantic versioning.
 - `docs/TROUBLESHOOTING.md` now includes a dedicated installer/update error map.
 - `docs/ARCHITECTURE.md` now includes install/update delivery components.
 - `README.md` docs section now links `docs/release/RELEASE_CHECKLIST.md`.
+- `README.md` release-metadata section now references manifest publish helper and bootstrap smoke CI.
 
 ## [0.1.0] - 2026-02-11
 

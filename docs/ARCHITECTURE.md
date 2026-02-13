@@ -40,6 +40,8 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
   - Spec: `docs/release/RELEASE_MANIFEST_SPEC.md`
   - Builder: `tools/release/manifest/build_manifest.py`
   - CI workflow: `.github/workflows/release-manifest.yml`
+- Clean-machine bootstrap validation:
+  - CI workflow: `.github/workflows/bootstrap-smoke.yml`
 
 ## Module boundaries (intended)
 - Capture does not know parsing/UI.

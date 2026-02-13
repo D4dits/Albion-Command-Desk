@@ -170,7 +170,9 @@ Update notifications and installer discovery use a release manifest contract:
 - Spec: `docs/release/RELEASE_MANIFEST_SPEC.md`
 - Example payload: `tools/release/manifest/manifest.example.json`
 - Builder: `tools/release/manifest/build_manifest.py`
+- Publisher helper (Windows): `tools/release/manifest/publish_manifest.ps1`
 - CI publisher: `.github/workflows/release-manifest.yml`
+- Clean-machine bootstrap smoke CI: `.github/workflows/bootstrap-smoke.yml`
 - Runtime override endpoint: set `ALBION_COMMAND_DESK_MANIFEST_URL`
 - UI controls: `Auto update` toggle + `Check now` action in the header
 

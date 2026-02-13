@@ -33,6 +33,12 @@ Recreate virtual environment before install:
 bash ./tools/install/macos/install.sh --force-recreate-venv
 ```
 
+Use a specific Python interpreter (CI/controlled runtime):
+
+```bash
+bash ./tools/install/macos/install.sh --python "$(command -v python3.12)"
+```
+
 ## Notes
 
 - If command line tools are missing, run `xcode-select --install`.
