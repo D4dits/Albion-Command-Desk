@@ -80,8 +80,14 @@ def run_qt(args: argparse.Namespace) -> int:
 
     _configure_windows_taskbar_identity("albion.command.desk")
     app = QGuiApplication([])
-    icon_path = Path(__file__).resolve().parent / "ui" / "command_desk_icon.xpm"
-    app_icon = QIcon(str(icon_path)) if icon_path.exists() else QIcon()
+    icon_dir = Path(__file__).resolve().parent / "ui"
+    icon_candidates = (
+        icon_dir / "command_desk_icon.png",
+        icon_dir / "command_desk_icon.ico",
+        icon_dir / "command_desk_icon.xpm",
+    )
+    icon_path = next((path for path in icon_candidates if path.exists()), None)
+    app_icon = QIcon(str(icon_path)) if icon_path is not None else QIcon()
     if not app_icon.isNull():
         app.setWindowIcon(app_icon)
     engine = QQmlApplicationEngine()
