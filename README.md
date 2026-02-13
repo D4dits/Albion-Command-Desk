@@ -52,7 +52,7 @@ Windows PowerShell:
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install -U pip
-python -m pip install -e .
+python -m pip install -e ".[capture]"
 ```
 
 Linux/macOS:
@@ -60,17 +60,16 @@ Linux/macOS:
 python -m venv venv
 source venv/bin/activate
 python -m pip install -U pip
-python -m pip install -e .
-```
-
-Live capture needs packet dependencies:
-```powershell
 python -m pip install -e ".[capture]"
 ```
 
+That single install command covers both:
+- `replay` (PCAP files)
+- `live` capture (with packet dependency set)
+
 Testing tools:
 ```powershell
-python -m pip install -e ".[test]"
+python -m pip install -e ".[all]"
 ```
 
 ## Run
