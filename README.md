@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/branding/acd-logo-wide-3200-v2.png" alt="Ablion Command Desk" width="980">
+  <img src="assets/branding/albion-command-desk-logo-wide-3200.png" alt="Albion Command Desk" width="680">
 </p>
 
 # Albion Command Desk
@@ -11,7 +11,7 @@ Passive Albion Online companion app with a Qt desktop UI:
 - Market crafting workspace (inputs/outputs/results)
 
 No game client hooks, no overlays, no memory editing.
-Brand assets use a stylized `Ablion` wordmark (custom project branding).
+Brand assets use custom project branding for the app identity.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white">
@@ -44,7 +44,7 @@ Donors can be featured on a public supporters list. If you want to be listed, op
 
 ## Brand Assets
 - Square logo (high-res): `assets/branding/albion-command-desk-logo-2048.png`
-- Wide logo (README/media): `assets/branding/acd-logo-wide-3200-v2.png`
+- Wide logo (README/media): `assets/branding/albion-command-desk-logo-wide-3200.png`
 - Branding render script: `tools/branding/render_brand_from_logo.ps1`
 - App icon assets: `albion_dps/qt/ui/command_desk_icon.png` and `albion_dps/qt/ui/command_desk_icon.ico`
 
