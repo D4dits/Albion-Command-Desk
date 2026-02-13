@@ -117,6 +117,9 @@ function Resolve-VenvPython {
     param(
         [string]$VenvRoot
     )
+    if ([string]::IsNullOrWhiteSpace($VenvRoot)) {
+        return $null
+    }
     $scriptsPath = Join-Path $VenvRoot "Scripts"
     if (-not (Test-Path $scriptsPath)) {
         return $null
@@ -152,6 +155,10 @@ if (-not $ProjectRoot) {
 if (-not $VenvPath) {
     $VenvPath = Join-Path $ProjectRoot "venv"
 }
+if ([string]::IsNullOrWhiteSpace($VenvPath)) {
+    Throw-InstallError "VenvPath is empty after parameter resolution."
+}
+Write-InstallInfo "Resolved virtual environment path: $VenvPath"
 
 $pyprojectPath = Join-Path $ProjectRoot "pyproject.toml"
 if (-not (Test-Path $pyprojectPath)) {
@@ -191,6 +198,9 @@ $venvCli = Join-Path $VenvPath "Scripts\albion-command-desk.exe"
 $smokeScript = Join-Path $ProjectRoot "tools\install\common\smoke_check.py"
 
 if (-not (Test-Path $venvPython)) {
+    if ([string]::IsNullOrWhiteSpace($VenvPath)) {
+        Throw-InstallError "VenvPath is empty while validating virtual environment."
+    }
     $scriptsPath = Join-Path $VenvPath "Scripts"
     $visible = ""
     if (Test-Path $scriptsPath) {
