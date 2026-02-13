@@ -57,6 +57,11 @@ Linux quick bootstrap (recommended):
 bash ./tools/install/linux/install.sh
 ```
 
+macOS quick bootstrap (recommended):
+```bash
+bash ./tools/install/macos/install.sh
+```
+
 Windows PowerShell:
 ```powershell
 python -m venv venv
@@ -85,6 +90,7 @@ python -m pip install -e ".[all]"
 Windows installer script docs:
 - `tools/install/windows/README.md`
 - `tools/install/linux/README.md`
+- `tools/install/macos/README.md`
 
 ## Run
 Live capture:

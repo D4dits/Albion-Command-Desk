@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+VENV_PATH="${PROJECT_ROOT}/venv"
+SKIP_RUN=0
+FORCE_RECREATE_VENV=0
+
+log_info() {
+  printf '[ACD install] %s\n' "$1"
+}
+
+log_warn() {
+  printf '[ACD install] %s\n' "$1" >&2
+}
+
+fail() {
+  printf '[ACD install] %s\n' "$1" >&2
+  exit 1
+}
+
+usage() {
+  cat <<'EOF'
+Usage: ./tools/install/macos/install.sh [options]
+
+Options:
+  --project-root <path>      Override repository root path.
+  --venv-path <path>         Override virtual environment path.
+  --skip-run                 Install only (do not start app).
+  --force-recreate-venv      Remove and recreate virtual environment.
+  -h, --help                 Show this help.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --project-root)
+      [[ $# -ge 2 ]] || fail "--project-root requires a value."
+      PROJECT_ROOT="$2"
+      shift 2
+      ;;
+    --venv-path)
+      [[ $# -ge 2 ]] || fail "--venv-path requires a value."
+      VENV_PATH="$2"
+      shift 2
+      ;;
+    --skip-run)
+      SKIP_RUN=1
+      shift
+      ;;
+    --force-recreate-venv)
+      FORCE_RECREATE_VENV=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      fail "Unknown option: $1"
+      ;;
+  esac
+done
+
+[[ -f "${PROJECT_ROOT}/pyproject.toml" ]] || fail "pyproject.toml not found under '${PROJECT_ROOT}'."
+
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  fail "This installer is intended for macOS."
+fi
+
+if ! xcode-select -p >/dev/null 2>&1; then
+  fail "Xcode Command Line Tools are missing. Run: xcode-select --install"
+fi
+
+if ! command -v clang >/dev/null 2>&1; then
+  fail "clang is missing. Ensure Xcode Command Line Tools are installed."
+fi
+
+resolve_python() {
+  local candidates=(
+    "python3.12"
+    "python3.11"
+    "python3.10"
+    "python3"
+    "python"
+  )
+  local cmd version major minor
+  for cmd in "${candidates[@]}"; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+      continue
+    fi
+    version="$("$cmd" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
+    if [[ -z "$version" ]]; then
+      continue
+    fi
+    major="${version%%.*}"
+    minor="${version##*.}"
+    if [[ "$major" == "3" ]] && [[ "$minor" =~ ^[0-9]+$ ]] && (( minor >= 10 )); then
+      printf '%s|%s\n' "$cmd" "$version"
+      return 0
+    fi
+  done
+  return 1
+}
+
+resolved="$(resolve_python || true)"
+[[ -n "$resolved" ]] || fail "Python 3.10+ not found. Install Python and rerun."
+PYTHON_CMD="${resolved%%|*}"
+PYTHON_VERSION="${resolved##*|}"
+log_info "Using Python launcher: ${PYTHON_CMD} (version ${PYTHON_VERSION})"
+
+if [[ "$PYTHON_VERSION" == 3.13* ]]; then
+  log_warn "Python 3.13 may fail to install capture extras on some systems. Prefer Python 3.11 or 3.12."
+fi
+
+if (( FORCE_RECREATE_VENV )) && [[ -d "$VENV_PATH" ]]; then
+  log_info "Removing existing virtual environment: ${VENV_PATH}"
+  rm -rf "$VENV_PATH"
+fi
+
+if [[ ! -d "$VENV_PATH" ]]; then
+  log_info "Creating virtual environment"
+  "$PYTHON_CMD" -m venv "$VENV_PATH"
+else
+  log_info "Using existing virtual environment: ${VENV_PATH}"
+fi
+
+VENV_PYTHON="${VENV_PATH}/bin/python"
+VENV_CLI="${VENV_PATH}/bin/albion-command-desk"
+[[ -x "$VENV_PYTHON" ]] || fail "Virtual environment python is missing: ${VENV_PYTHON}"
+
+log_info "Upgrading pip"
+"$VENV_PYTHON" -m pip install --upgrade pip
+
+log_info "Installing Albion Command Desk with capture extras"
+(
+  cd "$PROJECT_ROOT"
+  "$VENV_PYTHON" -m pip install -e ".[capture]"
+)
+
+log_info "Verifying CLI entrypoint"
+if [[ -x "$VENV_CLI" ]]; then
+  "$VENV_CLI" --version
+else
+  "$VENV_PYTHON" -m albion_dps.cli --version
+fi
+
+if (( SKIP_RUN )); then
+  log_info "Installation complete. Launch manually with:"
+  printf '  %s live\n' "$VENV_CLI"
+  exit 0
+fi
+
+log_info "Starting Albion Command Desk (live mode)"
+if [[ -x "$VENV_CLI" ]]; then
+  exec "$VENV_CLI" live
+fi
+exec "$VENV_PYTHON" -m albion_dps.cli live

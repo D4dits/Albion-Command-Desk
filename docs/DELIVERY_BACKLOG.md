@@ -45,7 +45,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Non-root mode and distro caveats are documented.
 
 ### ACD-REL-004 - macOS bootstrap installer script
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: one command/script for macOS setup and first run.
 - Files to modify:
   1. `tools/install/macos/install.sh` (new)
@@ -128,3 +128,4 @@ Update status checkboxes and notes after each implemented ticket.
 - 2026-02-13: ACD-REL-001 completed (`RELEASE_MANIFEST_SPEC.md`, manifest example, README links).
 - 2026-02-13: ACD-REL-002 completed (Windows installer script + docs + README quick bootstrap).
 - 2026-02-13: ACD-REL-003 completed (Linux installer script + docs + README quick bootstrap).
+- 2026-02-13: ACD-REL-004 completed (macOS installer script + docs + README quick bootstrap).
