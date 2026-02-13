@@ -44,6 +44,8 @@ and this project uses semantic versioning.
 - `docs/ARCHITECTURE.md` now includes install/update delivery components.
 - `README.md` docs section now links `docs/release/RELEASE_CHECKLIST.md`.
 - `README.md` release-metadata section now references manifest publish helper and bootstrap smoke CI.
+- `publish_manifest.ps1` now omits `--min-supported-version` when not provided (no manual workaround needed).
+- `bootstrap-smoke.yml` now uses a workspace venv path on Windows and installs full Qt runtime libs on Linux.
 
 ## [0.1.0] - 2026-02-11
 

@@ -35,10 +35,20 @@ $py = Resolve-Python -RequestedPython $Python
 
 Push-Location $projectRoot
 try {
+    $builderArgs = @(
+        $builderPath,
+        "--repo", $Repo,
+        "--tag", $Tag,
+        "--channel", $Channel,
+        "--output", $manifestPath
+    )
+    if ($MinSupportedVersion) {
+        $builderArgs += @("--min-supported-version", $MinSupportedVersion)
+    }
     if ($py -eq "py") {
-        & py -3.12 $builderPath --repo $Repo --tag $Tag --channel $Channel --output $manifestPath --min-supported-version $MinSupportedVersion
+        & py -3.12 @builderArgs
     } else {
-        & $py $builderPath --repo $Repo --tag $Tag --channel $Channel --output $manifestPath --min-supported-version $MinSupportedVersion
+        & $py @builderArgs
     }
     if ($LASTEXITCODE -ne 0) {
         throw "Manifest build failed."

@@ -30,7 +30,7 @@ jobs:
         run: |
           powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 `
             -ProjectRoot "$PWD" `
-            -VenvPath "$env:RUNNER_TEMP\acd-smoke-venv" `
+            -VenvPath "$PWD\.venv-smoke" `
             -Python "$env:pythonLocation\python.exe" `
             -ForceRecreateVenv `
             -SkipRun
@@ -42,7 +42,25 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libpcap-dev
+          sudo apt-get install -y \
+            build-essential \
+            libpcap-dev \
+            libegl1 \
+            libgl1 \
+            libx11-6 \
+            libx11-xcb1 \
+            libxkbcommon-x11-0 \
+            libxcb1 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-xinerama0 \
+            libxcb-xfixes0 \
+            libxrender1 \
+            libxi6
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
