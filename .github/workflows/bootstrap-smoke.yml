@@ -30,7 +30,7 @@ jobs:
         run: |
           .\tools\install\windows\install.ps1 `
             -ProjectRoot "$PWD" `
-            -VenvPath "$env:RUNNER_TEMP\acd-smoke-venv" `
+            -VenvPath (Join-Path $env:RUNNER_TEMP "acd-smoke-venv") `
             -Python "$env:pythonLocation\python.exe" `
             -ForceRecreateVenv `
             -SkipRun
