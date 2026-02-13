@@ -12,7 +12,7 @@ Update status checkboxes and notes after each implemented ticket.
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: define a stable app update metadata format used by installers and in-app checks.
 - Files to modify:
   1. `docs/release/RELEASE_MANIFEST_SPEC.md` (new)
@@ -125,3 +125,4 @@ Update status checkboxes and notes after each implemented ticket.
 ## Progress Log
 
 - 2026-02-13: backlog initialized.
+- 2026-02-13: ACD-REL-001 completed (`RELEASE_MANIFEST_SPEC.md`, manifest example, README links).

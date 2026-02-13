@@ -10,9 +10,12 @@ and this project uses semantic versioning.
 ### Added
 - `docs/DELIVERY_BACKLOG.md` as the canonical ticket queue with execution order.
 - Changelog policy: each completed ticket must update this file.
+- Release update contract spec: `docs/release/RELEASE_MANIFEST_SPEC.md`.
+- Example release manifest payload: `tools/release/manifest/manifest.example.json`.
 
 ### Changed
 - `README.md` docs section now links to the delivery backlog and changelog.
+- `README.md` now includes a Release Metadata section for update/install integration.
 
 ## [0.1.0] - 2026-02-11
 

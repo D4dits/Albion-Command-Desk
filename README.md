@@ -135,6 +135,11 @@ Output:
 - `artifacts/market/recipes_from_items_report.json`
 - `artifacts/market/recipes_build_report.json`
 
+## Release Metadata (Update Contract)
+Update notifications and installer discovery use a release manifest contract:
+- Spec: `docs/release/RELEASE_MANIFEST_SPEC.md`
+- Example payload: `tools/release/manifest/manifest.example.json`
+
 ## Troubleshooting and Docs
 - `docs/DELIVERY_BACKLOG.md` (active ticket queue and implementation order)
 - `CHANGELOG.md` (all delivered changes)
