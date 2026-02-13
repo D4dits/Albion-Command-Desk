@@ -35,6 +35,10 @@ MATCH_ROSTER_SUBTYPE = 120
 MATCH_ROSTER_NAME_KEY = 2
 MATCH_ROSTER_MIN_SIZE = 5
 MATCH_ROSTER_TTL_SECONDS = 120.0
+PARTY_FALLBACK_SUBTYPE_MIN = 200
+PARTY_FALLBACK_SUBTYPE_MAX = 260
+PARTY_FALLBACK_MAX_ROSTER_SIZE = 20
+PARTY_FALLBACK_SINGLE_GUID_KEYS = (1, 3, 4, 5, 12)
 COMBAT_TARGET_SUBTYPE = 21
 COMBAT_TARGET_A_KEY = 0
 COMBAT_TARGET_B_KEY = 1
@@ -59,6 +63,18 @@ JOIN_SELF_ID_KEY = 0
 JOIN_SELF_NAME_KEY = 2
 NON_PLAYER_NAME_PREFIXES = ("@",)
 NON_PLAYER_NAMES = {"SYSTEM"}
+KNOWN_PARTY_SUBTYPES = (
+    set(PARTY_SUBTYPE_NAME_KEYS)
+    | set(PARTY_SUBTYPE_ROSTER)
+    | set(SELF_SUBTYPE_NAME_KEYS)
+    | {
+        PARTY_SUBTYPE_DISBAND,
+        PARTY_SUBTYPE_PLAYER_LEFT,
+        PARTY_SUBTYPE_PLAYER_JOINED,
+        MATCH_ROSTER_SUBTYPE,
+        COMBAT_TARGET_SUBTYPE,
+    }
+)
 
 
 @dataclass
@@ -144,6 +160,8 @@ class PartyRegistry:
             if guids is not None:
                 self._set_party_roster(guids, names)
                 return
+        if self._apply_unknown_party_fallback(subtype, event.parameters):
+            return
         name_key = PARTY_SUBTYPE_NAME_KEYS.get(subtype)
         if name_key is None:
             name_key = SELF_SUBTYPE_NAME_KEYS.get(subtype)
@@ -298,6 +316,37 @@ class PartyRegistry:
             return
         if self._self_name is None:
             self._self_name = name
+
+    def _apply_unknown_party_fallback(self, subtype: int, parameters: dict[int, object]) -> bool:
+        if subtype in KNOWN_PARTY_SUBTYPES:
+            return False
+        if subtype < PARTY_FALLBACK_SUBTYPE_MIN or subtype > PARTY_FALLBACK_SUBTYPE_MAX:
+            return False
+
+        guid_list_fields = _extract_party_guid_list_fields(parameters)
+        single_guid_fields = _extract_party_single_guid_fields(parameters)
+        if not guid_list_fields and not single_guid_fields:
+            return False
+        name_fields = _extract_party_name_fields(parameters)
+
+        for guids in sorted(guid_list_fields, key=len, reverse=True):
+            if len(guids) < 2:
+                continue
+            for names in name_fields:
+                if len(names) != len(guids):
+                    continue
+                self._set_party_roster(guids, names)
+                return True
+
+        single_guid = single_guid_fields[0] if single_guid_fields else None
+        if single_guid is None:
+            return False
+
+        single_name = parameters.get(2)
+        if isinstance(single_name, str) and _looks_like_player_name(single_name):
+            self._add_party_member(single_guid, single_name)
+            return True
+        return False
 
     def _maybe_trim_match_roster(self) -> None:
         if not self._self_name or not self._match_roster_order:
@@ -901,6 +950,47 @@ def _extract_party_roster(
     if guids and names and len(names) != len(guids):
         return None, None
     return guids, names if names else None
+
+
+def _extract_party_guid_list_fields(parameters: dict[int, object]) -> list[list[bytes]]:
+    fields: list[list[bytes]] = []
+    for key, value in parameters.items():
+        if key == PARTY_SUBTYPE_KEY:
+            continue
+        if not isinstance(value, list):
+            continue
+        guids = [bytes(item) for item in value if _coerce_guid(item) is not None]
+        if not guids or len(guids) != len(value):
+            continue
+        if len(guids) > PARTY_FALLBACK_MAX_ROSTER_SIZE:
+            continue
+        fields.append(guids)
+    return fields
+
+
+def _extract_party_single_guid_fields(parameters: dict[int, object]) -> list[bytes]:
+    fields: list[bytes] = []
+    for key in PARTY_FALLBACK_SINGLE_GUID_KEYS:
+        guid = _coerce_guid(parameters.get(key))
+        if guid is not None:
+            fields.append(guid)
+    return fields
+
+
+def _extract_party_name_fields(parameters: dict[int, object]) -> list[list[str]]:
+    fields: list[list[str]] = []
+    for key, value in parameters.items():
+        if key == PARTY_SUBTYPE_KEY:
+            continue
+        names = _coerce_names(value)
+        if not names:
+            continue
+        if len(names) > PARTY_FALLBACK_MAX_ROSTER_SIZE:
+            continue
+        if not all(_looks_like_player_name(name) for name in names):
+            continue
+        fields.append(names)
+    return fields
 
 
 def _looks_like_player_name(name: str | None) -> bool:

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+import albion_dps.domain.party_registry as party_registry_module
+
 from albion_dps.domain.name_registry import NameRegistry
 from albion_dps.domain.party_registry import PartyRegistry
 from albion_dps.models import CombatEvent, PhotonMessage, RawPacket
@@ -27,6 +31,8 @@ _GUID_LINK_PAYLOAD_HEX = (
     "853b1783791e9e69056214066b01b60762040879000266c304c4a9c3b7b5da0966419a38340a"
     "62020b6200fc6b0028"
 )
+_GUID_SELF = bytes.fromhex("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+_GUID_PARTY = bytes.fromhex("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
 
 
 def test_party_registry_extracts_names_subtype_229() -> None:
@@ -418,3 +424,64 @@ def test_party_registry_resolves_self_id_from_confirmed_name() -> None:
     registry.sync_self_name(names)
 
     assert registry.snapshot_self_ids() == {101}
+
+
+def test_party_registry_fallback_parses_unknown_roster_subtype(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    params = {
+        252: 245,
+        7: [_GUID_SELF, _GUID_PARTY],
+        8: ["D4dits", "SocialFur3"],
+    }
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters=params),
+    )
+
+    registry.observe(message)
+    registry.seed_self_ids([101])
+    names = NameRegistry()
+    names.record(101, "D4dits")
+    names.record(202, "SocialFur3")
+    names.record(303, "EnemyPlayer")
+    registry.sync_names(names)
+
+    assert registry.snapshot_names() == {"D4dits", "SocialFur3"}
+    assert registry.snapshot_guids() == {_GUID_SELF, _GUID_PARTY}
+    assert registry.allows(101, names)
+    assert registry.allows(202, names)
+    assert not registry.allows(303, names)
+
+
+def test_party_registry_fallback_parses_unknown_join(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    events = iter([SimpleNamespace(parameters={252: 246, 1: _GUID_PARTY, 2: "SocialFur3"})])
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: next(events),
+    )
+
+    registry.observe(message)
+    assert "SocialFur3" in registry.snapshot_names()
+    assert _GUID_PARTY in registry.snapshot_guids()
+
+def test_party_registry_fallback_ignores_unknown_guid_without_join_name(monkeypatch) -> None:
+    registry = PartyRegistry()
+    registry._add_party_member(_GUID_PARTY, "SocialFur3")
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters={252: 247, 1: _GUID_PARTY, 0: "Other"}),
+    )
+
+    registry.observe(message)
+    assert "SocialFur3" in registry.snapshot_names()
+    assert _GUID_PARTY in registry.snapshot_guids()
