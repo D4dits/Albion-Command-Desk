@@ -98,7 +98,7 @@ function Resolve-PythonLauncher {
 function Invoke-WithLauncher {
     param(
         [string[]]$Launcher,
-        [string[]]$Args,
+        [string[]]$CommandArgs,
         [string]$Description
     )
     if (-not $Launcher -or $Launcher.Count -eq 0) {
@@ -110,9 +110,9 @@ function Invoke-WithLauncher {
         $baseArgs = $Launcher[1..($Launcher.Count - 1)]
     }
     Write-InstallInfo $Description
-    $rendered = @($exe) + $baseArgs + $Args
+    $rendered = @($exe) + $baseArgs + $CommandArgs
     Write-InstallInfo ("Command: " + ($rendered -join " "))
-    & $exe @baseArgs @Args
+    & $exe @baseArgs @CommandArgs
     Write-InstallInfo "Exit code: $LASTEXITCODE"
     if ($LASTEXITCODE -ne 0) {
         Throw-InstallError "$Description failed with exit code $LASTEXITCODE."
@@ -188,7 +188,7 @@ if ($ForceRecreateVenv -and (Test-Path $VenvPath)) {
 }
 
 if (-not (Test-Path $VenvPath)) {
-    Invoke-WithLauncher -Launcher $launcher.Command -Args @("-m", "venv", $VenvPath) -Description "Creating virtual environment"
+    Invoke-WithLauncher -Launcher $launcher.Command -CommandArgs @("-m", "venv", $VenvPath) -Description "Creating virtual environment"
 } else {
     Write-InstallInfo "Using existing virtual environment: $VenvPath"
 }
@@ -196,7 +196,7 @@ if (-not (Test-Path $VenvPath)) {
 $venvPython = Resolve-VenvPython -VenvRoot $VenvPath
 if (-not $venvPython) {
     Write-InstallWarn "No Python executable found in venv after first creation attempt. Retrying with --copies."
-    Invoke-WithLauncher -Launcher $launcher.Command -Args @("-m", "venv", "--copies", $VenvPath) -Description "Recreating virtual environment with --copies"
+    Invoke-WithLauncher -Launcher $launcher.Command -CommandArgs @("-m", "venv", "--copies", $VenvPath) -Description "Recreating virtual environment with --copies"
     $venvPython = Resolve-VenvPython -VenvRoot $VenvPath
 }
 if (-not $venvPython) {
@@ -204,8 +204,8 @@ if (-not $venvPython) {
     if (Test-Path $VenvPath) {
         Remove-Item -Recurse -Force $VenvPath
     }
-    Invoke-WithLauncher -Launcher $launcher.Command -Args @("-m", "pip", "install", "--upgrade", "virtualenv") -Description "Installing virtualenv fallback"
-    Invoke-WithLauncher -Launcher $launcher.Command -Args @("-m", "virtualenv", $VenvPath) -Description "Creating virtual environment with virtualenv"
+    Invoke-WithLauncher -Launcher $launcher.Command -CommandArgs @("-m", "pip", "install", "--upgrade", "virtualenv") -Description "Installing virtualenv fallback"
+    Invoke-WithLauncher -Launcher $launcher.Command -CommandArgs @("-m", "virtualenv", $VenvPath) -Description "Creating virtual environment with virtualenv"
     $venvPython = Resolve-VenvPython -VenvRoot $VenvPath
 }
 
