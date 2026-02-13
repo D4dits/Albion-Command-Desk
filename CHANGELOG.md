@@ -14,11 +14,14 @@ and this project uses semantic versioning.
 - Example release manifest payload: `tools/release/manifest/manifest.example.json`.
 - Windows bootstrap installer script: `tools/install/windows/install.ps1`.
 - Windows installer script documentation: `tools/install/windows/README.md`.
+- Linux bootstrap installer script: `tools/install/linux/install.sh`.
+- Linux installer script documentation: `tools/install/linux/README.md`.
 
 ### Changed
 - `README.md` docs section now links to the delivery backlog and changelog.
 - `README.md` now includes a Release Metadata section for update/install integration.
 - `README.md` now includes recommended Windows bootstrap install command.
+- `README.md` now includes recommended Linux bootstrap install command.
 
 ## [0.1.0] - 2026-02-11
 

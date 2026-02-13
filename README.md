@@ -52,6 +52,11 @@ Windows quick bootstrap (recommended):
 powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1
 ```
 
+Linux quick bootstrap (recommended):
+```bash
+bash ./tools/install/linux/install.sh
+```
+
 Windows PowerShell:
 ```powershell
 python -m venv venv
@@ -79,6 +84,7 @@ python -m pip install -e ".[all]"
 
 Windows installer script docs:
 - `tools/install/windows/README.md`
+- `tools/install/linux/README.md`
 
 ## Run
 Live capture:
