@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Source = "assets/logo.png",
+    [string]$Source = "",
     [string]$SquareLogoOut = "assets/branding/albion-command-desk-logo-2048.png",
     [string]$WideLogoOut = "assets/branding/albion-command-desk-logo-wide-3200.png",
     [string]$IconOut = "albion_dps/qt/ui/command_desk_icon.png",
@@ -12,6 +12,13 @@ param(
 $ErrorActionPreference = "Stop"
 
 Add-Type -AssemblyName System.Drawing
+
+if ([string]::IsNullOrWhiteSpace($Source)) {
+    throw "[branding] Missing -Source. Pass a path to the source logo image."
+}
+if (-not (Test-Path $Source)) {
+    throw "[branding] Source file not found: $Source"
+}
 
 function New-Graphics {
     param([System.Drawing.Bitmap]$Bitmap)

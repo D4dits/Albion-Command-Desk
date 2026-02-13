@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/branding/albion-command-desk-logo-wide-3200.png" alt="Albion Command Desk" width="980">
+  <img src="assets/branding/acd-logo-wide-3200-v2.png" alt="Ablion Command Desk" width="980">
 </p>
 
 # Albion Command Desk
@@ -44,14 +44,13 @@ Donors can be featured on a public supporters list. If you want to be listed, op
 
 ## Brand Assets
 - Square logo (high-res): `assets/branding/albion-command-desk-logo-2048.png`
-- Wide logo (README/media): `assets/branding/albion-command-desk-logo-wide-3200.png`
-- Source art input: `assets/logo.png`
+- Wide logo (README/media): `assets/branding/acd-logo-wide-3200-v2.png`
 - Branding render script: `tools/branding/render_brand_from_logo.ps1`
 - App icon assets: `albion_dps/qt/ui/command_desk_icon.png` and `albion_dps/qt/ui/command_desk_icon.ico`
 
 Regenerate logo/icon from source art:
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\branding\render_brand_from_logo.ps1
+powershell -ExecutionPolicy Bypass -File .\tools\branding\render_brand_from_logo.ps1 -Source "C:\path\to\source-logo.png"
 ```
 
 ## Install

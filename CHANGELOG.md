@@ -59,7 +59,9 @@ and this project uses semantic versioning.
 - `tools/install/windows/install.ps1` now supports `-SkipCaptureExtras` for environments without Npcap headers.
 - `bootstrap-smoke.yml` now uses `-SkipCaptureExtras` on Windows to validate installer flow without external SDK downloads.
 - `run_qt` now validates Windows Npcap runtime before `live` start, logs detected install location, and shows download link when missing.
-- Brand assets and app icon now derive from `assets/logo.png`, with a stylized `Ablion` wordmark to distinguish project branding.
+- Brand assets and app icon now derive from source logo art, with a stylized `Ablion` wordmark to distinguish project branding.
+- README hero graphic now uses `assets/branding/acd-logo-wide-3200-v2.png` (new file name to avoid cached old preview).
+- `tools/branding/render_brand_from_logo.ps1` now requires explicit `-Source` input path.
 
 ## [0.1.0] - 2026-02-11
 
