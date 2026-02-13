@@ -7,6 +7,10 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+- No unreleased changes.
+
+## [0.1.14] - 2026-02-13
+
 ### Added
 - `docs/DELIVERY_BACKLOG.md` as the canonical ticket queue with execution order.
 - Changelog policy: each completed ticket must update this file.
@@ -59,9 +63,11 @@ and this project uses semantic versioning.
 - `tools/install/windows/install.ps1` now supports `-SkipCaptureExtras` for environments without Npcap headers.
 - `bootstrap-smoke.yml` now uses `-SkipCaptureExtras` on Windows to validate installer flow without external SDK downloads.
 - `run_qt` now validates Windows Npcap runtime before `live` start, logs detected install location, and shows download link when missing.
-- Brand assets and app icon now derive from source logo art, with a stylized `Ablion` wordmark to distinguish project branding.
-- README hero graphic now uses `assets/branding/acd-logo-wide-3200-v2.png` (new file name to avoid cached old preview).
+- Brand assets and app icon now derive from source logo art using the current Albion Command Desk branding set.
+- README hero graphic now uses `assets/Logo.png`.
 - `tools/branding/render_brand_from_logo.ps1` now requires explicit `-Source` input path.
+- Update checker default endpoint now points to release asset `releases/latest/download/manifest.json`.
+- Qt runner now prioritizes `command_desk_icon.ico` on Windows and logs icon source path at startup.
 
 ## [0.1.0] - 2026-02-11
 

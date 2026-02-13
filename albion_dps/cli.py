@@ -16,7 +16,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--log-level", default="INFO")
     parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--version", action="version", version="0.1.0")
+    parser.add_argument("--version", action="version", version="0.1.14")
 
     subparsers = parser.add_subparsers(dest="command")
     live = subparsers.add_parser("live", help="Run GUI with live capture")
