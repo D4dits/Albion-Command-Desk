@@ -4,7 +4,8 @@ param(
     [string]$VenvPath = "",
     [string]$Python = "",
     [switch]$SkipRun,
-    [switch]$ForceRecreateVenv
+    [switch]$ForceRecreateVenv,
+    [switch]$SkipCaptureExtras
 )
 
 $ErrorActionPreference = "Stop"
@@ -233,11 +234,18 @@ if ($LASTEXITCODE -ne 0) {
     Throw-InstallError "pip upgrade failed."
 }
 
-Write-InstallInfo "Installing Albion Command Desk with capture extras"
+if ($SkipCaptureExtras) {
+    Write-InstallWarn "Skipping capture extras for this install run."
+}
+$installTarget = if ($SkipCaptureExtras) { "." } else { ".[capture]" }
+Write-InstallInfo "Installing Albion Command Desk ($installTarget)"
 Push-Location $ProjectRoot
 try {
-    & $venvPython -m pip install -e ".[capture]"
+    & $venvPython -m pip install -e $installTarget
     if ($LASTEXITCODE -ne 0) {
+        if ($SkipCaptureExtras) {
+            Throw-InstallError "Package install failed."
+        }
         Throw-InstallError "Package install failed. Verify build tools and packet capture prerequisites."
     }
 } finally {

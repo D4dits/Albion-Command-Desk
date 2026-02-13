@@ -53,6 +53,8 @@ and this project uses semantic versioning.
 - `tools/install/windows/install.ps1` now treats launcher commands as string arrays (not character arrays), fixing broken interpreter invocation in CI.
 - `tools/install/windows/install.ps1` now prints launcher commands and exit codes to simplify bootstrap CI diagnostics.
 - `tools/install/windows/install.ps1` now passes launcher command arguments correctly (`-m venv`, `-m pip`, etc.) after renaming the internal args parameter.
+- `tools/install/windows/install.ps1` now supports `-SkipCaptureExtras` for environments without Npcap headers.
+- `bootstrap-smoke.yml` now uses `-SkipCaptureExtras` on Windows to validate installer flow without external SDK downloads.
 
 ## [0.1.0] - 2026-02-11
 

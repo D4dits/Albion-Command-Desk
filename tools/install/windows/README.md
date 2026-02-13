@@ -7,7 +7,7 @@ One-command setup for Albion Command Desk from source checkout.
 1. Detects Python 3.10+ (prefers `py -3.12`, then `py -3.11`, then `py -3.10`).
 2. Creates (or reuses) a virtual environment.
 3. Upgrades `pip`.
-4. Installs package with capture extras: `.[capture]`.
+4. Installs package with capture extras: `.[capture]` (or base package with `-SkipCaptureExtras`).
 5. Verifies CLI startup.
 6. Runs shared smoke checks (CLI import + Qt startup probe).
 7. Starts app in live mode (unless `-SkipRun` is used).
@@ -36,6 +36,12 @@ Use a specific Python interpreter (CI/controlled runtime):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Python "C:\Python312\python.exe"
+```
+
+Install without capture extras (for CI or hosts without Npcap SDK headers):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -SkipCaptureExtras
 ```
 
 ## Notes

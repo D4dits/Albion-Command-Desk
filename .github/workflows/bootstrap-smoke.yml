@@ -33,6 +33,7 @@ jobs:
             -VenvPath "$PWD\.venv-smoke" `
             -Python "$env:pythonLocation\python.exe" `
             -ForceRecreateVenv `
+            -SkipCaptureExtras `
             -SkipRun
 
   linux:
