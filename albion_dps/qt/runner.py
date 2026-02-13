@@ -9,7 +9,8 @@ import threading
 from collections.abc import Iterable
 from pathlib import Path
 
-from albion_dps.capture import auto_detect_interface, list_interfaces
+from albion_dps.capture import auto_detect_interface, capture_backend_available, list_interfaces
+from albion_dps.capture.npcap_runtime import NPCAP_DOWNLOAD_URL, detect_npcap_runtime
 from albion_dps.domain import FameTracker, NameRegistry, PartyRegistry, load_item_resolver
 from albion_dps.domain.item_db import ensure_game_databases
 from albion_dps.domain.map_resolver import load_map_resolver
@@ -205,6 +206,38 @@ def _build_snapshot_stream(
             for interface in list_interfaces():
                 print(interface)
             return None
+        if os.name == "nt":
+            npcap_status = detect_npcap_runtime()
+            if npcap_status.available:
+                if npcap_status.install_path:
+                    logging.getLogger(__name__).info(
+                        "Npcap Runtime detected at: %s (%s)",
+                        npcap_status.install_path,
+                        npcap_status.detail,
+                    )
+                else:
+                    logging.getLogger(__name__).info("Npcap Runtime detected.")
+            else:
+                logging.getLogger(__name__).error(
+                    "Npcap Runtime is missing. Download: %s",
+                    NPCAP_DOWNLOAD_URL,
+                )
+                logging.getLogger(__name__).error(
+                    "Live capture requires Npcap Runtime. Install it, then restart Albion Command Desk."
+                )
+                return None
+
+        if not capture_backend_available():
+            logging.getLogger(__name__).error(
+                "Live capture backend is missing. Reinstall with capture extras: pip install -e \".[capture]\""
+            )
+            if os.name == "nt":
+                logging.getLogger(__name__).error(
+                    "If needed, install Npcap Runtime: %s",
+                    NPCAP_DOWNLOAD_URL,
+                )
+            return None
+
         interface = args.interface
         if not interface:
             interface = auto_detect_interface(

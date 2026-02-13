@@ -26,6 +26,9 @@ and this project uses semantic versioning.
 - Release process checklist: `docs/release/RELEASE_CHECKLIST.md`.
 - Manifest publish helper script (Windows): `tools/release/manifest/publish_manifest.ps1`.
 - Clean-machine bootstrap validation workflow: `.github/workflows/bootstrap-smoke.yml`.
+- Windows Npcap runtime detection module: `albion_dps/capture/npcap_runtime.py`.
+- Branding generation script from source art: `tools/branding/render_brand_from_logo.ps1`.
+- Tests for Npcap runtime detection: `tests/test_npcap_runtime.py`.
 
 ### Changed
 - `README.md` docs section now links to the delivery backlog and changelog.
@@ -55,6 +58,8 @@ and this project uses semantic versioning.
 - `tools/install/windows/install.ps1` now passes launcher command arguments correctly (`-m venv`, `-m pip`, etc.) after renaming the internal args parameter.
 - `tools/install/windows/install.ps1` now supports `-SkipCaptureExtras` for environments without Npcap headers.
 - `bootstrap-smoke.yml` now uses `-SkipCaptureExtras` on Windows to validate installer flow without external SDK downloads.
+- `run_qt` now validates Windows Npcap runtime before `live` start, logs detected install location, and shows download link when missing.
+- Brand assets and app icon now derive from `assets/logo.png`, with a stylized `Ablion` wordmark to distinguish project branding.
 
 ## [0.1.0] - 2026-02-11
 

@@ -18,6 +18,10 @@ except ImportError:  # pragma: no cover
 LOGGER = logging.getLogger(__name__)
 
 
+def capture_backend_available() -> bool:
+    return pcapy is not None
+
+
 def _system_interfaces() -> list[str]:
     try:
         return [name for _, name in socket.if_nameindex()]

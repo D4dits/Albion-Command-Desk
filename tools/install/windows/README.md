@@ -48,3 +48,5 @@ powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Sk
 
 - If packet capture dependencies fail, prefer Python 3.11 or 3.12.
 - For local firewalls/AV restrictions, run PowerShell as Administrator.
+- `live` mode checks Npcap Runtime on startup and logs detected install path.
+- If Npcap Runtime is missing, install from: `https://npcap.com/#download`.

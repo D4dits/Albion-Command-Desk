@@ -11,6 +11,7 @@ Passive Albion Online companion app with a Qt desktop UI:
 - Market crafting workspace (inputs/outputs/results)
 
 No game client hooks, no overlays, no memory editing.
+Brand assets use a stylized `Ablion` wordmark (custom project branding).
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white">
@@ -44,7 +45,14 @@ Donors can be featured on a public supporters list. If you want to be listed, op
 ## Brand Assets
 - Square logo (high-res): `assets/branding/albion-command-desk-logo-2048.png`
 - Wide logo (README/media): `assets/branding/albion-command-desk-logo-wide-3200.png`
+- Source art input: `assets/logo.png`
+- Branding render script: `tools/branding/render_brand_from_logo.ps1`
 - App icon assets: `albion_dps/qt/ui/command_desk_icon.png` and `albion_dps/qt/ui/command_desk_icon.ico`
+
+Regenerate logo/icon from source art:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\branding\render_brand_from_logo.ps1
+```
 
 ## Install
 ### Support Matrix
@@ -89,6 +97,10 @@ python -m pip install -e ".[capture]"
 That single install command covers both:
 - `replay` (PCAP files)
 - `live` capture (with packet dependency set)
+
+Windows `live` startup now verifies Npcap Runtime:
+- if detected, app logs the install path and continues
+- if missing, app shows the download link: `https://npcap.com/#download`
 
 Testing tools:
 ```powershell
