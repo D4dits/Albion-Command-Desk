@@ -110,7 +110,10 @@ function Invoke-WithLauncher {
         $baseArgs = $Launcher[1..($Launcher.Count - 1)]
     }
     Write-InstallInfo $Description
+    $rendered = @($exe) + $baseArgs + $Args
+    Write-InstallInfo ("Command: " + ($rendered -join " "))
     & $exe @baseArgs @Args
+    Write-InstallInfo "Exit code: $LASTEXITCODE"
     if ($LASTEXITCODE -ne 0) {
         Throw-InstallError "$Description failed with exit code $LASTEXITCODE."
     }
