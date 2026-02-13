@@ -193,6 +193,15 @@ if (-not $venvPython) {
     Invoke-WithLauncher -Launcher $launcher.Command -Args @("-m", "venv", "--copies", $VenvPath) -Description "Recreating virtual environment with --copies"
     $venvPython = Resolve-VenvPython -VenvRoot $VenvPath
 }
+if (-not $venvPython) {
+    Write-InstallWarn "venv module did not create a usable interpreter. Falling back to virtualenv."
+    if (Test-Path $VenvPath) {
+        Remove-Item -Recurse -Force $VenvPath
+    }
+    Invoke-WithLauncher -Launcher $launcher.Command -Args @("-m", "pip", "install", "--upgrade", "virtualenv") -Description "Installing virtualenv fallback"
+    Invoke-WithLauncher -Launcher $launcher.Command -Args @("-m", "virtualenv", $VenvPath) -Description "Creating virtual environment with virtualenv"
+    $venvPython = Resolve-VenvPython -VenvRoot $VenvPath
+}
 
 $venvCli = Join-Path $VenvPath "Scripts\albion-command-desk.exe"
 $smokeScript = Join-Path $ProjectRoot "tools\install\common\smoke_check.py"
