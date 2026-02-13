@@ -12,10 +12,13 @@ and this project uses semantic versioning.
 - Changelog policy: each completed ticket must update this file.
 - Release update contract spec: `docs/release/RELEASE_MANIFEST_SPEC.md`.
 - Example release manifest payload: `tools/release/manifest/manifest.example.json`.
+- Windows bootstrap installer script: `tools/install/windows/install.ps1`.
+- Windows installer script documentation: `tools/install/windows/README.md`.
 
 ### Changed
 - `README.md` docs section now links to the delivery backlog and changelog.
 - `README.md` now includes a Release Metadata section for update/install integration.
+- `README.md` now includes recommended Windows bootstrap install command.
 
 ## [0.1.0] - 2026-02-11
 

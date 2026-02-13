@@ -23,7 +23,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Fields for version, channel, changelog URL, and assets are defined.
 
 ### ACD-REL-002 - Windows bootstrap installer script
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: one command/script that installs prerequisites and starts the app on Windows.
 - Files to modify:
   1. `tools/install/windows/install.ps1` (new)
@@ -126,3 +126,4 @@ Update status checkboxes and notes after each implemented ticket.
 
 - 2026-02-13: backlog initialized.
 - 2026-02-13: ACD-REL-001 completed (`RELEASE_MANIFEST_SPEC.md`, manifest example, README links).
+- 2026-02-13: ACD-REL-002 completed (Windows installer script + docs + README quick bootstrap).

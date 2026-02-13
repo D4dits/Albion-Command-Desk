@@ -47,6 +47,11 @@ Donors can be featured on a public supporters list. If you want to be listed, op
 - App icon assets: `albion_dps/qt/ui/command_desk_icon.png` and `albion_dps/qt/ui/command_desk_icon.ico`
 
 ## Install
+Windows quick bootstrap (recommended):
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1
+```
+
 Windows PowerShell:
 ```powershell
 python -m venv venv
@@ -71,6 +76,9 @@ Testing tools:
 ```powershell
 python -m pip install -e ".[all]"
 ```
+
+Windows installer script docs:
+- `tools/install/windows/README.md`
 
 ## Run
 Live capture:
