@@ -19,6 +19,21 @@ python -m albion_dps --help
 python -m albion_dps live
 ```
 
+## Installer / update errors (quick map)
+- `Python 3.10+ not found`:
+  - Install Python and rerun bootstrap installer.
+- `Package install failed` during `.[capture]`:
+  - Use Python 3.11 or 3.12 (3.13 can fail for some capture wheels).
+  - Install system build tools where required (Linux/macOS).
+- `Shared smoke checks failed`:
+  - Ensure PySide6 installed and Qt runtime works.
+  - Recreate venv (`--force-recreate-venv`) and rerun installer.
+- `Update check failed` in header status:
+  - Verify internet access and manifest URL.
+  - If using custom endpoint, confirm `ALBION_COMMAND_DESK_MANIFEST_URL`.
+- `No update state persistence`:
+  - Verify write access to config dir or set `ALBION_COMMAND_DESK_CONFIG_DIR`.
+
 ## Live mode shows "no data"
 Common causes:
 - You are on the wrong interface: run `albion-command-desk live --list-interfaces` and pick the one that carries game traffic.

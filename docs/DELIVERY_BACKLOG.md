@@ -101,7 +101,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Manifest includes checksum and release notes URL.
 
 ### ACD-REL-009 - Installer docs and support matrix
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: keep install paths clear and consistent across platforms.
 - Files to modify:
   1. `README.md`
@@ -133,3 +133,4 @@ Update status checkboxes and notes after each implemented ticket.
 - 2026-02-13: ACD-REL-006 completed (manifest-based update checker + non-blocking UI banner).
 - 2026-02-13: ACD-REL-007 completed (persistent auto-check preference + manual check trigger + troubleshooting docs).
 - 2026-02-13: ACD-REL-008 completed (manifest builder + release-manifest workflow + publishing docs).
+- 2026-02-13: ACD-REL-009 completed (README support matrix + installer/update troubleshooting + architecture delivery notes).

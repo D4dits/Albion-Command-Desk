@@ -47,6 +47,14 @@ Donors can be featured on a public supporters list. If you want to be listed, op
 - App icon assets: `albion_dps/qt/ui/command_desk_icon.png` and `albion_dps/qt/ui/command_desk_icon.ico`
 
 ## Install
+### Support Matrix
+
+| OS | Bootstrap script | Status |
+|---|---|---|
+| Windows | `tools/install/windows/install.ps1` | Supported |
+| Linux | `tools/install/linux/install.sh` | Supported |
+| macOS | `tools/install/macos/install.sh` | Supported |
+
 Windows quick bootstrap (recommended):
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1

@@ -36,6 +36,9 @@ and this project uses semantic versioning.
 - Update-check preference is persisted between runs.
 - `docs/TROUBLESHOOTING.md` now includes update-settings and config path details.
 - `docs/release/RELEASE_MANIFEST_SPEC.md` now includes publication workflow and build command.
+- `README.md` now includes an install support matrix for Windows/Linux/macOS bootstrap scripts.
+- `docs/TROUBLESHOOTING.md` now includes a dedicated installer/update error map.
+- `docs/ARCHITECTURE.md` now includes install/update delivery components.
 
 ## [0.1.0] - 2026-02-11
 
