@@ -27,6 +27,7 @@ PARTY_SUBTYPE_ROSTER = {212, 227, 229}
 PARTY_SUBTYPE_DISBAND = 213
 PARTY_SUBTYPE_PLAYER_LEFT = 216
 PARTY_SUBTYPE_PLAYER_JOINED = 214
+PARTY_SUBTYPE_MEMBER_REMOVED = 233
 SELF_SUBTYPE_NAME_KEYS = {
     228: 1,
     238: 0,
@@ -71,6 +72,7 @@ KNOWN_PARTY_SUBTYPES = (
         PARTY_SUBTYPE_DISBAND,
         PARTY_SUBTYPE_PLAYER_LEFT,
         PARTY_SUBTYPE_PLAYER_JOINED,
+        PARTY_SUBTYPE_MEMBER_REMOVED,
         MATCH_ROSTER_SUBTYPE,
         COMBAT_TARGET_SUBTYPE,
     }
@@ -113,6 +115,7 @@ class PartyRegistry:
     _last_packet_fingerprint: tuple[float, str, int, str, int, int] | None = None
     _zone_key: str | None = None
     _map_index: str | None = None
+    _membership_version: int = 0
 
     def observe(self, message: PhotonMessage, packet: RawPacket | None = None) -> None:
         if packet is not None:
@@ -142,6 +145,20 @@ class PartyRegistry:
             guid = _coerce_guid(event.parameters.get(1))
             if guid is not None:
                 self._remove_party_guid(guid)
+            return
+        if subtype == PARTY_SUBTYPE_MEMBER_REMOVED:
+            guid = _coerce_guid(event.parameters.get(1))
+            if guid is None:
+                return
+            name = self._party_guid_names.get(guid)
+            if (
+                name is not None
+                and self._self_name is not None
+                and name == self._self_name
+            ):
+                self._clear_party()
+                return
+            self._remove_party_guid(guid)
             return
         if subtype == PARTY_SUBTYPE_PLAYER_JOINED:
             guid = _coerce_guid(event.parameters.get(1))
@@ -373,6 +390,9 @@ class PartyRegistry:
 
     def snapshot_self_ids(self) -> set[int]:
         return set(self._self_ids)
+
+    def membership_version(self) -> int:
+        return self._membership_version
 
     def has_ids(self) -> bool:
         if self.strict:
@@ -713,6 +733,16 @@ class PartyRegistry:
         self._combat_ids_seen.clear()
 
     def _clear_party(self) -> None:
+        had_party_state = bool(
+            self._party_names
+            or self._party_guids
+            or self._party_guid_names
+            or self._match_roster_names
+            or self._match_friend_ids
+            or self._match_enemy_ids
+            or self._match_pending_friend_ids
+            or self._match_pending_enemy_ids
+        )
         self._party_names.clear()
         self._resolved_party_names.clear()
         self._party_guids.clear()
@@ -728,6 +758,8 @@ class PartyRegistry:
             self._party_ids.intersection_update(self._self_ids)
         else:
             self._party_ids.clear()
+        if had_party_state:
+            self._membership_version += 1
 
     def _reset_party_ids_after_roster_change(self) -> None:
         self._resolved_party_names.clear()
@@ -737,6 +769,18 @@ class PartyRegistry:
             self._party_ids.clear()
 
     def _set_party_roster(self, guids: list[bytes], names: list[str] | None) -> None:
+        next_guids = set(guids)
+        next_guid_names: dict[bytes, str] = {}
+        if names:
+            for guid, name in zip(guids, names):
+                if name:
+                    next_guid_names[guid] = name
+        next_names = set(next_guid_names.values())
+        changed = (
+            next_guids != self._party_guids
+            or next_guid_names != self._party_guid_names
+            or next_names != self._party_names
+        )
         self._party_guids = set(guids)
         self._party_guid_names.clear()
         self._party_names.clear()
@@ -746,8 +790,17 @@ class PartyRegistry:
                     self._party_guid_names[guid] = name
                     self._party_names.add(name)
         self._reset_party_ids_after_roster_change()
+        if changed:
+            self._membership_version += 1
 
     def _add_party_member(self, guid: bytes | None, name: str | None) -> None:
+        changed = False
+        if guid is not None and guid not in self._party_guids:
+            changed = True
+        if name and name not in self._party_names:
+            changed = True
+        if guid is not None and name and self._party_guid_names.get(guid) != name:
+            changed = True
         if guid is not None:
             self._party_guids.add(guid)
         if name:
@@ -755,6 +808,8 @@ class PartyRegistry:
         if guid is not None and name:
             self._party_guid_names[guid] = name
         self._reset_party_ids_after_roster_change()
+        if changed:
+            self._membership_version += 1
 
     def _remove_party_guid(self, guid: bytes) -> None:
         if guid not in self._party_guids:
@@ -766,6 +821,7 @@ class PartyRegistry:
                 self._party_names.discard(name)
                 self._resolved_party_names.discard(name)
         self._reset_party_ids_after_roster_change()
+        self._membership_version += 1
 
     def _set_match_roster(self, names: list[str]) -> None:
         roster = list(names)

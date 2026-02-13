@@ -104,6 +104,9 @@ def stream_snapshots(
     pending_combat_states: list[tuple[float, int, bool, bool]] = []
     pending_max_age = 120.0
     pending_max_count = 2000
+    last_membership_version: int | None = None
+    if party_registry is not None:
+        last_membership_version = party_registry.membership_version()
 
     for packet in packets:
         last_timestamp = packet.timestamp
@@ -123,6 +126,21 @@ def stream_snapshots(
                 if name_registry is not None:
                     party_registry.sync_self_name(name_registry)
                     party_registry.sync_id_names(name_registry)
+                membership_version = party_registry.membership_version()
+                if (
+                    last_membership_version is not None
+                    and membership_version != last_membership_version
+                ):
+                    # Party membership changed; close current segment to avoid
+                    # carrying ex-party stats into live scoreboard.
+                    if hasattr(meter, "end_session"):
+                        try:
+                            meter.end_session()
+                        except TypeError:
+                            pass
+                    pending_events.clear()
+                    pending_combat_states.clear()
+                last_membership_version = membership_version
             if fame_tracker is not None:
                 fame_tracker.observe(message, packet)
             if hasattr(meter, "observe_message"):

@@ -485,3 +485,43 @@ def test_party_registry_fallback_ignores_unknown_guid_without_join_name(monkeypa
     registry.observe(message)
     assert "SocialFur3" in registry.snapshot_names()
     assert _GUID_PARTY in registry.snapshot_guids()
+
+
+def test_party_registry_subtype_233_removes_non_self_member(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    registry._add_party_member(_GUID_SELF, "D4dits")
+    registry._add_party_member(_GUID_PARTY, "SocialFur3")
+    registry.set_self_name("D4dits", confirmed=True)
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters={252: 233, 1: _GUID_PARTY}),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_names() == {"D4dits"}
+    assert registry.snapshot_guids() == {_GUID_SELF}
+
+
+def test_party_registry_subtype_233_clears_party_when_self_removed(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    registry._add_party_member(_GUID_SELF, "D4dits")
+    registry._add_party_member(_GUID_PARTY, "SocialFur3")
+    registry.set_self_name("D4dits", confirmed=True)
+    registry.seed_self_ids([101])
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters={252: 233, 1: _GUID_SELF}),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_names() == set()
+    assert registry.snapshot_guids() == set()
+    assert registry.snapshot_ids() == {101}
