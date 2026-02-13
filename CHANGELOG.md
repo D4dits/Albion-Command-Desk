@@ -21,6 +21,8 @@ and this project uses semantic versioning.
 - Shared install smoke check runner: `tools/install/common/smoke_check.py`.
 - Manifest-based update checker module: `albion_dps/update/checker.py`.
 - Persistent app settings store: `albion_dps/settings.py`.
+- Release manifest builder script: `tools/release/manifest/build_manifest.py`.
+- Release manifest CI workflow: `.github/workflows/release-manifest.yml`.
 
 ### Changed
 - `README.md` docs section now links to the delivery backlog and changelog.
@@ -33,6 +35,7 @@ and this project uses semantic versioning.
 - Qt header now includes `Auto update` toggle and `Check now` manual trigger.
 - Update-check preference is persisted between runs.
 - `docs/TROUBLESHOOTING.md` now includes update-settings and config path details.
+- `docs/release/RELEASE_MANIFEST_SPEC.md` now includes publication workflow and build command.
 
 ## [0.1.0] - 2026-02-11
 

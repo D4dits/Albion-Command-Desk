@@ -90,7 +90,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Setting is persisted.
 
 ### ACD-REL-008 - CI publish helper for manifests
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: automate generation and publication of release metadata.
 - Files to modify:
   1. `.github/workflows/release-manifest.yml` (new)
@@ -132,3 +132,4 @@ Update status checkboxes and notes after each implemented ticket.
 - 2026-02-13: ACD-REL-005 completed (shared smoke checks wired into Windows/Linux/macOS install scripts).
 - 2026-02-13: ACD-REL-006 completed (manifest-based update checker + non-blocking UI banner).
 - 2026-02-13: ACD-REL-007 completed (persistent auto-check preference + manual check trigger + troubleshooting docs).
+- 2026-02-13: ACD-REL-008 completed (manifest builder + release-manifest workflow + publishing docs).
