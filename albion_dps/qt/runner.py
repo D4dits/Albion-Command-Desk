@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.metadata
 import logging
 import os
 import queue
@@ -19,6 +20,7 @@ from albion_dps.pipeline import live_snapshots, replay_snapshots
 from albion_dps.protocol.combat_mapper import CombatEventMapper
 from albion_dps.protocol.photon_decode import PhotonDecoder
 from albion_dps.protocol.registry import default_registry
+from albion_dps.update import check_for_updates
 
 
 SnapshotQueue = queue.Queue[MeterSnapshot | None]
@@ -31,7 +33,7 @@ def run_qt(args: argparse.Namespace) -> int:
         return 0
     _ensure_pyside6_paths()
     try:
-        from PySide6.QtCore import QTimer
+        from PySide6.QtCore import QObject, QTimer, Signal
         from PySide6.QtGui import QGuiApplication, QIcon
         from PySide6.QtQml import QQmlApplicationEngine
     except Exception:  # pragma: no cover - optional dependency
@@ -107,6 +109,11 @@ def run_qt(args: argparse.Namespace) -> int:
         role_lookup=role_lookup,
         weapon_lookup=weapon_lookup,
     )
+    class _UpdateNotifier(QObject):
+        updateReady = Signal(bool, str, str, str)
+
+    update_notifier = _UpdateNotifier()
+    update_notifier.updateReady.connect(state.setUpdateStatus)
     scanner_state = ScannerState()
     market_cache_path = Path("data") / "market_cache.sqlite3"
     market_cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -131,6 +138,7 @@ def run_qt(args: argparse.Namespace) -> int:
             set_icon = getattr(root, "setIcon", None)
             if callable(set_icon):
                 set_icon(app_icon)
+    _start_update_check(update_notifier)
 
     def drain_queue() -> None:
         _drain_snapshots(
@@ -364,3 +372,27 @@ def _fallback_interface() -> str | None:
             continue
         return candidate
     return interfaces[0]
+
+
+def _current_app_version() -> str:
+    try:
+        return importlib.metadata.version("albion-command-desk")
+    except Exception:
+        return "0.1.0"
+
+
+def _start_update_check(notifier) -> None:
+    current_version = _current_app_version()
+
+    def worker() -> None:
+        info = check_for_updates(current_version=current_version)
+        if not info.available:
+            return
+        notifier.updateReady.emit(
+            True,
+            info.current_version,
+            info.latest_version,
+            info.release_url,
+        )
+
+    threading.Thread(target=worker, daemon=True, name="acd-update-check").start()
