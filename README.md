@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/branding/albion-command-desk-logo-wide-3200.png" alt="Albion Command Desk" width="980">
+</p>
+
 # Albion Command Desk
 
 Passive Albion Online companion app with a Qt desktop UI:
@@ -36,6 +40,11 @@ Donors can be featured on a public supporters list. If you want to be listed, op
 <p align="center">
   <img src="assets/scanner.png" alt="Scanner tab" width="920">
 </p>
+
+## Brand Assets
+- Square logo (high-res): `assets/branding/albion-command-desk-logo-2048.png`
+- Wide logo (README/media): `assets/branding/albion-command-desk-logo-wide-3200.png`
+- App icon assets: `albion_dps/qt/ui/command_desk_icon.png` and `albion_dps/qt/ui/command_desk_icon.ico`
 
 ## Install
 Windows PowerShell:
