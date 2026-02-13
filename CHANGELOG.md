@@ -45,7 +45,7 @@ and this project uses semantic versioning.
 - `README.md` docs section now links `docs/release/RELEASE_CHECKLIST.md`.
 - `README.md` release-metadata section now references manifest publish helper and bootstrap smoke CI.
 - `publish_manifest.ps1` now omits `--min-supported-version` when not provided (no manual workaround needed).
-- `bootstrap-smoke.yml` now runs `install.ps1` directly on Windows, uses `$RUNNER_TEMP` for the venv path, and installs full Qt runtime libs on Linux.
+- `bootstrap-smoke.yml` now runs `install.ps1` directly on Windows, uses a workspace-local venv path, and installs full Qt runtime libs on Linux.
 - `tools/install/windows/install.ps1` now resolves alternative `python*.exe` names in venvs and retries creation with `--copies` when needed.
 
 ## [0.1.0] - 2026-02-11
