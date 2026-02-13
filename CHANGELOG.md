@@ -20,6 +20,7 @@ and this project uses semantic versioning.
 - macOS installer script documentation: `tools/install/macos/README.md`.
 - Shared install smoke check runner: `tools/install/common/smoke_check.py`.
 - Manifest-based update checker module: `albion_dps/update/checker.py`.
+- Persistent app settings store: `albion_dps/settings.py`.
 
 ### Changed
 - `README.md` docs section now links to the delivery backlog and changelog.
@@ -29,6 +30,9 @@ and this project uses semantic versioning.
 - `README.md` now includes recommended macOS bootstrap install command.
 - Windows/Linux/macOS bootstrap scripts now run a common post-install smoke check.
 - Qt UI now shows a non-blocking update banner when a newer release is detected.
+- Qt header now includes `Auto update` toggle and `Check now` manual trigger.
+- Update-check preference is persisted between runs.
+- `docs/TROUBLESHOOTING.md` now includes update-settings and config path details.
 
 ## [0.1.0] - 2026-02-11
 

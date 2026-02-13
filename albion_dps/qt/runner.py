@@ -20,10 +20,12 @@ from albion_dps.pipeline import live_snapshots, replay_snapshots
 from albion_dps.protocol.combat_mapper import CombatEventMapper
 from albion_dps.protocol.photon_decode import PhotonDecoder
 from albion_dps.protocol.registry import default_registry
+from albion_dps.settings import AppSettings, load_app_settings, save_app_settings
 from albion_dps.update import check_for_updates
 
 
 SnapshotQueue = queue.Queue[MeterSnapshot | None]
+_UPDATE_CHECK_LOCK = threading.Lock()
 
 
 def run_qt(args: argparse.Namespace) -> int:
@@ -108,12 +110,17 @@ def run_qt(args: argparse.Namespace) -> int:
         set_mode_callback=meter.set_mode,
         role_lookup=role_lookup,
         weapon_lookup=weapon_lookup,
+        update_auto_check=load_app_settings().update_auto_check,
     )
     class _UpdateNotifier(QObject):
         updateReady = Signal(bool, str, str, str)
+        updateStatus = Signal(str)
 
     update_notifier = _UpdateNotifier()
     update_notifier.updateReady.connect(state.setUpdateStatus)
+    update_notifier.updateStatus.connect(state.setUpdateCheckStatus)
+    state.updateAutoCheckToggled.connect(_save_update_preference)
+    state.manualUpdateCheckRequested.connect(lambda: _start_update_check(update_notifier))
     scanner_state = ScannerState()
     market_cache_path = Path("data") / "market_cache.sqlite3"
     market_cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -138,7 +145,8 @@ def run_qt(args: argparse.Namespace) -> int:
             set_icon = getattr(root, "setIcon", None)
             if callable(set_icon):
                 set_icon(app_icon)
-    _start_update_check(update_notifier)
+    if state.updateAutoCheck:
+        _start_update_check(update_notifier)
 
     def drain_queue() -> None:
         _drain_snapshots(
@@ -385,14 +393,31 @@ def _start_update_check(notifier) -> None:
     current_version = _current_app_version()
 
     def worker() -> None:
-        info = check_for_updates(current_version=current_version)
-        if not info.available:
+        if not _UPDATE_CHECK_LOCK.acquire(blocking=False):
             return
-        notifier.updateReady.emit(
-            True,
-            info.current_version,
-            info.latest_version,
-            info.release_url,
-        )
+        try:
+            notifier.updateStatus.emit("Checking updates...")
+            info = check_for_updates(current_version=current_version)
+            if info.available:
+                notifier.updateReady.emit(
+                    True,
+                    info.current_version,
+                    info.latest_version,
+                    info.release_url,
+                )
+                return
+            if info.error:
+                notifier.updateStatus.emit("Update check failed")
+                return
+            notifier.updateStatus.emit("Up to date")
+        finally:
+            _UPDATE_CHECK_LOCK.release()
 
     threading.Thread(target=worker, daemon=True, name="acd-update-check").start()
+
+
+def _save_update_preference(enabled: bool) -> None:
+    try:
+        save_app_settings(AppSettings(update_auto_check=bool(enabled)))
+    except Exception:
+        logging.getLogger(__name__).warning("Failed to persist update preference", exc_info=True)

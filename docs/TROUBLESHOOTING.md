@@ -127,3 +127,16 @@ This usually means Qt's DLLs are not found:
 - Restart the terminal after install so PATH updates are picked up.
 - If it still fails, install the Microsoft VC++ Redistributable (x64).
 
+## Update checks and preferences
+- The header includes:
+  - `Auto update` toggle (persisted setting),
+  - `Check now` button (manual check).
+- Default manifest endpoint can be overridden with:
+  - `ALBION_COMMAND_DESK_MANIFEST_URL`
+- Settings file location can be overridden with:
+  - `ALBION_COMMAND_DESK_CONFIG_DIR`
+- Default settings paths:
+  - Windows: `%APPDATA%\\AlbionCommandDesk\\settings.json`
+  - macOS: `~/Library/Application Support/AlbionCommandDesk/settings.json`
+  - Linux: `~/.config/albion-command-desk/settings.json`
+

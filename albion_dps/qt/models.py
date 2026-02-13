@@ -203,6 +203,9 @@ class UiState(QObject):
     sortChanged = Signal()
     historySelectionChanged = Signal()
     updateBannerChanged = Signal()
+    updateControlChanged = Signal()
+    manualUpdateCheckRequested = Signal()
+    updateAutoCheckToggled = Signal(bool)
 
     def __init__(
         self,
@@ -213,6 +216,7 @@ class UiState(QObject):
         set_mode_callback: Callable[[str], None] | None = None,
         role_lookup: Callable[[int], str | None] | None = None,
         weapon_lookup: Callable[[int], object | None] | None = None,
+        update_auto_check: bool = True,
     ) -> None:
         super().__init__()
         self._mode = "battle"
@@ -236,6 +240,8 @@ class UiState(QObject):
         self._update_banner_visible = False
         self._update_banner_text = ""
         self._update_banner_url = ""
+        self._update_auto_check = bool(update_auto_check)
+        self._update_check_status = ""
 
     @Property(str, notify=modeChanged)
     def mode(self) -> str:
@@ -288,6 +294,14 @@ class UiState(QObject):
     @Property(str, notify=updateBannerChanged)
     def updateBannerUrl(self) -> str:
         return self._update_banner_url
+
+    @Property(bool, notify=updateControlChanged)
+    def updateAutoCheck(self) -> bool:
+        return self._update_auto_check
+
+    @Property(str, notify=updateControlChanged)
+    def updateCheckStatus(self) -> str:
+        return self._update_check_status
 
     @Slot(str)
     def setSortKey(self, key: str) -> None:
@@ -359,8 +373,10 @@ class UiState(QObject):
         self._update_banner_text = banner_text
         self._update_banner_url = release_url
         self._update_banner_visible = True
+        self._update_check_status = banner_text
         if changed:
             self.updateBannerChanged.emit()
+        self.updateControlChanged.emit()
 
     @Slot()
     def dismissUpdateBanner(self) -> None:
@@ -368,6 +384,28 @@ class UiState(QObject):
             return
         self._update_banner_visible = False
         self.updateBannerChanged.emit()
+
+    @Slot(bool)
+    def setUpdateAutoCheck(self, enabled: bool) -> None:
+        enabled = bool(enabled)
+        if enabled == self._update_auto_check:
+            return
+        self._update_auto_check = enabled
+        self.updateControlChanged.emit()
+        self.updateAutoCheckToggled.emit(enabled)
+
+    @Slot()
+    def requestManualUpdateCheck(self) -> None:
+        self.setUpdateCheckStatus("Checking updates...")
+        self.manualUpdateCheckRequested.emit()
+
+    @Slot(str)
+    def setUpdateCheckStatus(self, text: str) -> None:
+        text = str(text or "")
+        if text == self._update_check_status:
+            return
+        self._update_check_status = text
+        self.updateControlChanged.emit()
 
     def update(
         self,

@@ -79,7 +79,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Non-blocking banner shows current/latest version and download link.
 
 ### ACD-REL-007 - Update settings and opt-out
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: let users control update-check behavior.
 - Files to modify:
   1. `albion_dps/settings.py`
@@ -131,3 +131,4 @@ Update status checkboxes and notes after each implemented ticket.
 - 2026-02-13: ACD-REL-004 completed (macOS installer script + docs + README quick bootstrap).
 - 2026-02-13: ACD-REL-005 completed (shared smoke checks wired into Windows/Linux/macOS install scripts).
 - 2026-02-13: ACD-REL-006 completed (manifest-based update checker + non-blocking UI banner).
+- 2026-02-13: ACD-REL-007 completed (persistent auto-check preference + manual check trigger + troubleshooting docs).
