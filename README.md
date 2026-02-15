@@ -50,74 +50,95 @@ Best setup before installing ACD:
 - Permissions to create a local virtual environment (`venv` folder in repo).
 
 ## Install (Step by Step)
-The recommended path is bootstrap script per OS.
 
-### 1) Get source code
+### Windows (clean machine, detailed)
+Use this exact sequence in **PowerShell as Administrator**.
+
+1) Allow scripts for this session only:
 ```powershell
+Set-ExecutionPolicy -Scope Process Bypass -Force
+```
+
+2) Install required tools:
+```powershell
+winget source update
+winget install -e --id Python.Python.3.12 --accept-package-agreements --accept-source-agreements
+winget install -e --id Git.Git --accept-package-agreements --accept-source-agreements
+winget install -e --id Microsoft.DotNet.SDK.10 --accept-package-agreements --accept-source-agreements
+winget install -e --id Microsoft.VisualStudio.2022.BuildTools --accept-package-agreements --accept-source-agreements --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --includeRecommended"
+```
+
+3) Install packet-capture prerequisites:
+- Install **Npcap Runtime** from `https://npcap.com/#download`.
+- During setup, enable **WinPcap API-compatible mode**.
+- Download and extract **Npcap SDK** to `C:\npcap-sdk` (or another known folder).
+
+4) Verify toolchain:
+```powershell
+python --version
+git --version
+dotnet --list-sdks
+Get-ChildItem C:\npcap-sdk -Recurse -Filter pcap.h
+```
+
+5) Clone repository and enter project directory:
+```powershell
+cd "$HOME\Downloads"
+git clone https://github.com/D4dits/Albion-Command-Desk.git
+cd ".\Albion-Command-Desk"
+```
+
+6) Export Npcap SDK paths for current terminal session:
+```powershell
+$env:WPCAPDIR="C:\npcap-sdk"
+$env:INCLUDE="$env:WPCAPDIR\Include\pcap;$env:WPCAPDIR\Include;$env:INCLUDE"
+$env:LIB="$env:WPCAPDIR\Lib\x64;$env:LIB"
+```
+
+7) Run bootstrap installer:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -ForceRecreateVenv -SkipRun
+```
+
+8) Generate item/map databases (required for full market + map labels):
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files\Albion Online"
+```
+For Steam install:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files (x86)\Steam\steamapps\common\Albion Online"
+```
+
+9) Start app:
+```powershell
+.\venv\Scripts\albion-command-desk.exe live
+```
+
+10) Fallback if capture build still fails:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -SkipCaptureExtras -ForceRecreateVenv -SkipRun
+```
+This installs UI/core without packet-capture extension.
+
+Notes:
+- Run commands from the repo root (`Albion-Command-Desk`), not from `C:\Windows\System32`.
+- If `Activate.ps1` opens as text or fails with policy error, use installer commands above and avoid manual activation.
+- If Python points to Windows Store alias unexpectedly, disable App Execution Alias for `python.exe` in Windows settings.
+
+### Linux/macOS quick setup
+```bash
 git clone https://github.com/D4dits/Albion-Command-Desk.git
 cd Albion-Command-Desk
-```
-
-### 2) Run installer script for your OS
-Windows:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1
-```
-
-Linux:
-```bash
 bash ./tools/install/linux/install.sh
+# macOS: bash ./tools/install/macos/install.sh
 ```
 
-macOS:
-```bash
-bash ./tools/install/macos/install.sh
-```
-
-### 3) What bootstrap installer does
+### What bootstrap installer does
 - checks Python and required tools
 - creates/reuses local `venv`
 - installs ACD (`.[capture]` by default)
 - runs smoke checks (CLI import + Qt startup probe)
 - starts app in `live` mode (unless skip-run option is used)
-
-### 4) Useful install options
-Windows:
-```powershell
-# Install only (do not auto-start app)
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -SkipRun
-
-# Recreate venv from scratch
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -ForceRecreateVenv
-```
-
-Linux/macOS:
-```bash
-# Install only (do not auto-start app)
-bash ./tools/install/linux/install.sh --skip-run
-bash ./tools/install/macos/install.sh --skip-run
-```
-
-### 5) Manual fallback install
-Windows:
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-python -m pip install -U pip
-python -m pip install -e ".[capture]"
-```
-
-Linux/macOS:
-```bash
-python -m venv venv
-source venv/bin/activate
-python -m pip install -U pip
-python -m pip install -e ".[capture]"
-```
-
-Windows `live` startup verifies Npcap Runtime:
-- if detected, app logs detected path and starts normally
-- if missing, app shows install hint: `https://npcap.com/#download`
 
 ## Run
 If you used bootstrap installer with `-SkipRun`, start from the repo venv:
