@@ -1256,12 +1256,12 @@ class MarketSetupState(QObject):
 
     @Slot()
     def addRecipeFamily(self) -> None:
-        base_recipe_id = self._recipe.item.unique_name
+        family_ids: list[str] = []
         if self._recipe_search_query.strip():
-            first_id = self._recipe_options_model.recipe_id_at(0)
-            if first_id:
-                base_recipe_id = first_id
-        family_ids = self._family_recipe_ids(base_recipe_id)
+            filtered_ids = self._recipe_options_model.recipe_ids()
+            family_ids = self._family_recipe_ids_for_filtered(filtered_ids)
+        else:
+            family_ids = self._family_recipe_ids(self._recipe.item.unique_name)
         if not family_ids:
             self._set_list_action_text("No recipes found for selected family.")
             return
@@ -1681,6 +1681,28 @@ class MarketSetupState(QObject):
             )
         rows.sort()
         return [row[3] for row in rows]
+
+    def _family_recipe_ids_for_filtered(self, recipe_ids: list[str]) -> list[str]:
+        if not recipe_ids:
+            return []
+        collected: list[str] = []
+        seen_family_keys: set[str] = set()
+        seen_recipe_ids: set[str] = set()
+        for recipe_id in recipe_ids:
+            recipe = self._catalog.get(recipe_id)
+            if recipe is None:
+                continue
+            family_key = _item_family_key(recipe.item.unique_name)
+            dedupe_key = family_key or recipe.item.unique_name
+            if dedupe_key in seen_family_keys:
+                continue
+            seen_family_keys.add(dedupe_key)
+            for family_recipe_id in self._family_recipe_ids(recipe.item.unique_name):
+                if family_recipe_id in seen_recipe_ids:
+                    continue
+                seen_recipe_ids.add(family_recipe_id)
+                collected.append(family_recipe_id)
+        return collected
 
     def _sorted_craft_plan_rows(self, rows: list[CraftPlanRow]) -> list[CraftPlanRow]:
         source = list(rows)
@@ -2927,19 +2949,45 @@ def _item_id_candidates(item_id: str) -> tuple[str, ...]:
     if not base:
         return ()
     out: list[str] = [base]
-    if "@" in base:
-        stem, raw = base.rsplit("@", 1)
-        out.append(stem)
+
+    # AOData and game assets may expose enchanting suffix in three forms:
+    # @3, _LEVEL3, and _LEVEL3@3. Query all to maximize hit rate.
+    core = base
+    had_at = "@" in base
+    enchant: int | None = None
+    if "@" in core:
+        maybe_core, maybe_enchant = core.rsplit("@", 1)
         try:
-            level = int(raw)
+            enchant = int(maybe_enchant)
+            core = maybe_core
         except ValueError:
-            level = -1
-        if level >= 0:
-            out.append(f"{stem}_LEVEL{level}")
-    level_match = _LEVEL_SUFFIX_RE.search(base)
+            pass
+
+    stem = core
+    level: int | None = None
+    level_match = _LEVEL_SUFFIX_RE.search(core)
+    had_level = level_match is not None
     if level_match is not None:
-        stem = base[: level_match.start()]
-        out.append(stem)
+        stem = core[: level_match.start()]
+        suffix = level_match.group(0)
+        try:
+            level = int(suffix.rsplit("LEVEL", 1)[1])
+        except (IndexError, ValueError):
+            level = None
+
+    if enchant is None and level is not None:
+        enchant = level
+    if level is None and enchant is not None:
+        level = enchant
+
+    if level is not None:
+        out.append(f"{stem}_LEVEL{level}")
+    # For *_LEVELN ids prefer *_LEVELN@N (canonical refined form) over *@N.
+    if enchant is not None and (had_at or not had_level):
+        out.append(f"{stem}@{enchant}")
+    if level is not None and enchant is not None:
+        out.append(f"{stem}_LEVEL{level}@{enchant}")
+    out.append(stem)
     seen: set[str] = set()
     ordered: list[str] = []
     for value in out:
