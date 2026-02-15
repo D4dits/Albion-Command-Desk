@@ -536,13 +536,13 @@ _ITEM_TOKEN_CATEGORY_MAP: dict[str, str] = {
 
 
 _CITY_SPECIALIZATION_CATEGORIES: dict[str, set[str]] = {
-    "martlock": {"axe", "quarterstaff", "frost", "plate_shoes", "hide"},
+    "martlock": {"axe", "quarterstaff", "frost", "plate_shoes", "off_hand", "hide"},
     "bridgewatch": {"crossbow", "dagger", "cursed", "plate_armor", "cloth_shoes", "stone"},
     "lymhurst": {"sword", "bow", "arcane", "leather_helmet", "leather_shoes", "fiber"},
     "fort sterling": {"hammer", "spear", "holy", "plate_helmet", "cloth_armor", "wood"},
     "fortsterling": {"hammer", "spear", "holy", "plate_helmet", "cloth_armor", "wood"},
     "thetford": {"mace", "nature", "fire", "leather_armor", "cloth_helmet", "ore"},
-    "caerleon": {"wargloves", "shapeshifter", "gatherer_gear", "off_hand", "tools", "food"},
+    "caerleon": {"wargloves", "shapeshifter", "gatherer_gear", "tools", "food"},
     "brecilien": {"cape", "bag", "potion"},
     "arthurs rest": {"axe", "crossbow", "hammer", "mace", "sword", "wargloves", "plate_helmet", "plate_armor", "plate_shoes"},
     "arthur's rest": {"axe", "crossbow", "hammer", "mace", "sword", "wargloves", "plate_helmet", "plate_armor", "plate_shoes"},
