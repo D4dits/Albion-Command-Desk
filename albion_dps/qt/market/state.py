@@ -8,6 +8,7 @@ import math
 import re
 import time
 from math import ceil
+from functools import lru_cache
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -39,6 +40,21 @@ from albion_dps.market.service import MarketDataService
 from albion_dps.market.setup import sanitized_setup, validate_setup
 
 _SHOPPING_SAFETY_BUFFER_PERCENT = 2.0
+_JOURNAL_NPC_EMPTY_PRICES: dict[int, int] = {
+    2: 500,
+    3: 1000,
+    4: 2000,
+    5: 4000,
+    6: 8000,
+    7: 16000,
+    8: 32000,
+}
+_JOURNAL_NAME_BY_KIND: dict[str, str] = {
+    "WARRIOR": "Blacksmith's Journal",
+    "HUNTER": "Fletcher's Journal",
+    "MAGE": "Imbuer's Journal",
+    "TOOLMAKER": "Tinker's Journal",
+}
 
 
 @dataclass(frozen=True)
@@ -498,6 +514,28 @@ class RecipeFilter:
     enchant: int | None
 
 
+@dataclass(frozen=True)
+class _JournalRule:
+    kind: str
+    tier: int
+    empty_item_id: str
+    full_item_id: str
+    max_fame: float
+    fame_per_item: float
+
+
+@dataclass(frozen=True)
+class _JournalTotals:
+    input_cost: float = 0.0
+    output_value: float = 0.0
+    market_tax: float = 0.0
+    full_quantity: float = 0.0
+
+    @property
+    def net_profit(self) -> float:
+        return float(self.output_value - self.input_cost - self.market_tax)
+
+
 _RECIPE_TIER_ENCHANT_RE = re.compile(r"\b(?:t)?(?P<tier>[1-8])(?:[.\-\/](?P<ench>[0-4]))?\b", re.IGNORECASE)
 _TIER_PREFIX_RE = re.compile(r"^T(?P<tier>\d+)_(?P<rest>.+)$", re.IGNORECASE)
 _LEVEL_SUFFIX_RE = re.compile(r"_LEVEL\d+$", re.IGNORECASE)
@@ -741,6 +779,8 @@ class MarketSetupState(QObject):
         self._craft_plan_rows: list[CraftPlanRow] = []
         self._next_plan_row_id = 1
         self._breakdown = ProfitBreakdown()
+        self._base_input_total_cost = 0.0
+        self._journal_totals = _JournalTotals()
         self._input_price_types: dict[str, PriceType] = {}
         self._output_price_types: dict[str, PriceType] = {}
         self._manual_input_prices: dict[str, int] = {}
@@ -979,7 +1019,7 @@ class MarketSetupState(QObject):
             value = self._inputs_model.data(model_index, MarketInputsModel.TotalCostRole)
             if value is not None:
                 total += float(value)
-        return total
+        return float(total + self._journal_totals.input_cost)
 
     @Property(float, notify=outputsChanged)
     def outputsTotalValue(self) -> float:
@@ -989,7 +1029,7 @@ class MarketSetupState(QObject):
             value = self._outputs_model.data(model_index, MarketOutputsModel.TotalValueRole)
             if value is not None:
                 total += float(value)
-        return total
+        return float(total + self._journal_totals.output_value)
 
     @Property(float, notify=outputsChanged)
     def outputsNetValue(self) -> float:
@@ -999,7 +1039,7 @@ class MarketSetupState(QObject):
             value = self._outputs_model.data(model_index, MarketOutputsModel.NetValueRole)
             if value is not None:
                 total += float(value)
-        return total
+        return float(total + self._journal_totals.output_value - self._journal_totals.market_tax)
 
     @Property(float, notify=resultsChanged)
     def stationFeeValue(self) -> float:
@@ -1866,6 +1906,12 @@ class MarketSetupState(QObject):
                 item_ids.update(_item_id_candidates(component.item.unique_name))
             for output in recipe.outputs:
                 item_ids.update(_item_id_candidates(output.item.unique_name))
+            journal_rule = _journal_rule_for_item(recipe.item.unique_name)
+            if journal_rule is not None:
+                # Market IDs for journals are not fully consistent across dumps; query all common variants.
+                item_ids.add(journal_rule.empty_item_id)
+                item_ids.add(f"{journal_rule.empty_item_id}_EMPTY")
+                item_ids.add(journal_rule.full_item_id)
         return sorted(item_ids)
 
     def _collect_locations(self, setup: CraftSetup) -> list[str]:
@@ -1898,6 +1944,8 @@ class MarketSetupState(QObject):
         self._shopping_csv = ""
         self._selling_csv = ""
         self._breakdown = ProfitBreakdown(notes=[note] if note else [])
+        self._base_input_total_cost = 0.0
+        self._journal_totals = _JournalTotals()
         self.inputsChanged.emit()
         self.outputsChanged.emit()
         self.resultsChanged.emit()
@@ -1956,6 +2004,7 @@ class MarketSetupState(QObject):
 
         all_inputs = [line for run in runs for line in run.inputs]
         all_outputs = [line for run in runs for line in run.outputs]
+        self._journal_totals = self._estimate_journal_totals(runs=runs, setup=setup, price_index=price_index)
         returnable_by_item: dict[str, bool] = {}
         for _, recipe in planned_recipes:
             for component in recipe.components:
@@ -2029,7 +2078,10 @@ class MarketSetupState(QObject):
         input_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
 
         self._breakdown = compute_batch_profit(tuple(runs))
-        self._breakdown.input_cost = float(sum(row.total_cost for row in input_rows))
+        self._base_input_total_cost = float(sum(row.total_cost for row in input_rows))
+        self._breakdown.input_cost = float(self._base_input_total_cost + self._journal_totals.input_cost)
+        self._breakdown.output_value = float(self._breakdown.output_value + self._journal_totals.output_value)
+        self._breakdown.market_tax = float(self._breakdown.market_tax + self._journal_totals.market_tax)
         valuations = compute_output_valuations(
             output_lines=all_outputs,
             station_fee_percent=setup.station_fee_percent,
@@ -2153,7 +2205,7 @@ class MarketSetupState(QObject):
 
     def _build_results_rows(self, output_rows: list[OutputPreviewRow]) -> list[ResultItemRow]:
         total_revenue = max(0.0, sum(row.total_value for row in output_rows))
-        input_total = float(self.inputsTotalCost)
+        input_total = float(self._base_input_total_cost)
         rows: list[ResultItemRow] = []
         for output in output_rows:
             share = (output.total_value / total_revenue) if total_revenue > 0 else 0.0
@@ -2185,6 +2237,30 @@ class MarketSetupState(QObject):
                 )
             )
 
+        if self._journal_totals.output_value > 0 or self._journal_totals.input_cost > 0:
+            journal_profit = float(self._journal_totals.net_profit)
+            journal_margin = (
+                (journal_profit / float(self._journal_totals.input_cost) * 100.0)
+                if self._journal_totals.input_cost > 0
+                else 0.0
+            )
+            rows.append(
+                ResultItemRow(
+                    item_id="JOURNALS_ESTIMATE",
+                    item="Crafting Journals (est.)",
+                    city="",
+                    quantity=float(self._journal_totals.full_quantity),
+                    unit_price=0.0,
+                    revenue=float(self._journal_totals.output_value),
+                    allocated_cost=float(self._journal_totals.input_cost),
+                    fee_value=0.0,
+                    tax_value=float(self._journal_totals.market_tax),
+                    profit=journal_profit,
+                    margin_percent=float(journal_margin),
+                    demand_proxy=0.0,
+                )
+            )
+
         if self._results_sort_key == "margin":
             rows.sort(key=lambda x: x.margin_percent, reverse=True)
         elif self._results_sort_key == "revenue":
@@ -2194,12 +2270,17 @@ class MarketSetupState(QObject):
         return rows
 
     def _build_breakdown_rows(self) -> list[BreakdownRow]:
-        return [
-            BreakdownRow(label="Raw materials", value=float(self._breakdown.input_cost)),
-            BreakdownRow(label="Station fee", value=float(self._breakdown.station_fee)),
-            BreakdownRow(label="Market tax", value=float(self._breakdown.market_tax)),
-            BreakdownRow(label="Net profit", value=float(self._breakdown.net_profit)),
+        rows: list[BreakdownRow] = [
+            BreakdownRow(label="Raw materials", value=float(self._base_input_total_cost)),
         ]
+        if self._journal_totals.input_cost > 0:
+            rows.append(BreakdownRow(label="Journals (empty)", value=float(self._journal_totals.input_cost)))
+        rows.append(BreakdownRow(label="Station fee", value=float(self._breakdown.station_fee)))
+        rows.append(BreakdownRow(label="Market tax", value=float(self._breakdown.market_tax)))
+        if self._journal_totals.output_value > 0:
+            rows.append(BreakdownRow(label="Journals (full)", value=float(self._journal_totals.output_value)))
+        rows.append(BreakdownRow(label="Net profit", value=float(self._breakdown.net_profit)))
+        return rows
 
     def _demand_proxy_percent(self, *, item_id: str, city: str, quality: int) -> float:
         quote = _find_price_quote(
@@ -2276,6 +2357,126 @@ class MarketSetupState(QObject):
         if dt is None:
             return "n/a"
         return _format_age(dt)
+
+    def _estimate_journal_totals(
+        self,
+        *,
+        runs: list[Any],
+        setup: CraftSetup,
+        price_index: dict[tuple[str, str, int], MarketPriceRecord],
+    ) -> _JournalTotals:
+        buy_city = (setup.default_buy_city or setup.craft_city or "").strip()
+        sell_city = (setup.default_sell_city or setup.craft_city or "").strip()
+        if not buy_city or not sell_city:
+            return _JournalTotals()
+
+        aggregates: dict[str, dict[str, float | str]] = {}
+        for run in runs:
+            recipe = getattr(run, "recipe", None)
+            outputs = getattr(run, "outputs", ())
+            if recipe is None:
+                continue
+            rule = _journal_rule_for_item(str(recipe.item.unique_name))
+            if rule is None:
+                continue
+            recipe_base = _base_item_id(str(recipe.item.unique_name))
+            crafted_units = 0.0
+            for line in outputs:
+                if _base_item_id(str(line.item.unique_name)) == recipe_base:
+                    crafted_units += float(line.quantity)
+            if crafted_units <= 0:
+                continue
+            factor = _journal_fame_factor_for_item(str(recipe.item.unique_name))
+            gained_fame = crafted_units * float(rule.fame_per_item) * float(factor)
+            if gained_fame <= 0:
+                continue
+            key = f"{rule.empty_item_id}|{rule.full_item_id}|{rule.max_fame}"
+            row = aggregates.get(key)
+            if row is None:
+                aggregates[key] = {
+                    "empty_item_id": rule.empty_item_id,
+                    "full_item_id": rule.full_item_id,
+                    "max_fame": float(rule.max_fame),
+                    "gained_fame": gained_fame,
+                }
+            else:
+                row["gained_fame"] = float(row["gained_fame"]) + gained_fame
+
+        if not aggregates:
+            return _JournalTotals()
+
+        total_input_cost = 0.0
+        total_output_value = 0.0
+        total_full_quantity = 0.0
+        for row in aggregates.values():
+            max_fame = max(1.0, float(row["max_fame"]))
+            full_quantity = max(0.0, float(row["gained_fame"]) / max_fame)
+            if full_quantity <= 0:
+                continue
+            empty_item_id = str(row["empty_item_id"])
+            full_item_id = str(row["full_item_id"])
+
+            empty_market_price = self._resolve_market_price_for_item_ids(
+                price_index=price_index,
+                item_ids=[f"{empty_item_id}_EMPTY", empty_item_id],
+                city=buy_city,
+                quality=setup.quality,
+                preferred_mode=PriceType.SELL_ORDER.value,
+            )
+            empty_npc_price = float(_JOURNAL_NPC_EMPTY_PRICES.get(_tier_from_item_id(empty_item_id), 0))
+            if empty_market_price > 0 and empty_npc_price > 0:
+                empty_unit_price = min(empty_market_price, empty_npc_price)
+            else:
+                empty_unit_price = empty_market_price if empty_market_price > 0 else empty_npc_price
+
+            full_unit_price = self._resolve_market_price_for_item_ids(
+                price_index=price_index,
+                item_ids=[full_item_id],
+                city=sell_city,
+                quality=setup.quality,
+                preferred_mode=PriceType.SELL_ORDER.value,
+            )
+            if full_unit_price <= 0:
+                continue
+
+            total_input_cost += full_quantity * empty_unit_price
+            total_output_value += full_quantity * full_unit_price
+            total_full_quantity += full_quantity
+
+        journal_market_tax = max(0.0, total_output_value * (float(setup.market_tax_percent) / 100.0))
+        return _JournalTotals(
+            input_cost=float(total_input_cost),
+            output_value=float(total_output_value),
+            market_tax=float(journal_market_tax),
+            full_quantity=float(total_full_quantity),
+        )
+
+    def _resolve_market_price_for_item_ids(
+        self,
+        *,
+        price_index: dict[tuple[str, str, int], MarketPriceRecord],
+        item_ids: list[str],
+        city: str,
+        quality: int,
+        preferred_mode: str,
+    ) -> float:
+        for item_id in item_ids:
+            quote = _find_price_quote(
+                price_index,
+                item_id=item_id,
+                city=city,
+                quality=quality,
+                preferred_mode=preferred_mode,
+            )
+            if quote is None:
+                continue
+            if preferred_mode == PriceType.BUY_ORDER.value:
+                value = int(quote.buy_price_max or 0)
+            else:
+                value = int(quote.sell_price_min or 0)
+            if value > 0:
+                return float(value)
+        return 0.0
 
     def _set_list_action_text(self, text: str) -> None:
         self._list_action_text = text
@@ -2884,6 +3085,118 @@ def _craft_plan_rows_from_payload(
             )
         )
     return rows
+
+
+def _base_item_id(item_id: str) -> str:
+    value = str(item_id or "").strip().upper()
+    if not value:
+        return ""
+    if "@" in value:
+        value = value.rsplit("@", 1)[0]
+    value = _LEVEL_SUFFIX_RE.sub("", value)
+    return value
+
+
+def _tier_from_item_id(item_id: str) -> int:
+    match = _TIER_PREFIX_RE.match(_base_item_id(item_id))
+    if match is None:
+        return 0
+    try:
+        return int(match.group("tier"))
+    except (TypeError, ValueError):
+        return 0
+
+
+@lru_cache(maxsize=1)
+def _journal_maps() -> tuple[dict[str, _JournalRule], dict[str, float]]:
+    items_path = Path(__file__).resolve().parents[3] / "data" / "items.json"
+    try:
+        payload = json.loads(items_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}, {}
+    raw_items = payload.get("items") if isinstance(payload, dict) else None
+    if not isinstance(raw_items, dict):
+        return {}, {}
+
+    entries: dict[str, dict[str, object]] = {}
+
+    def walk(node: object) -> None:
+        if isinstance(node, dict):
+            unique_name = node.get("@uniquename")
+            if isinstance(unique_name, str) and unique_name:
+                entries[unique_name] = node
+            for value in node.values():
+                walk(value)
+            return
+        if isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(raw_items)
+
+    journal_by_item: dict[str, _JournalRule] = {}
+    fame_factor_by_item: dict[str, float] = {}
+    for unique_name, node in entries.items():
+        factor_raw = node.get("@destinyandjournalcraftfamefactor")
+        if factor_raw is not None:
+            try:
+                fame_factor_by_item[_base_item_id(unique_name)] = float(factor_raw)
+            except (TypeError, ValueError):
+                pass
+
+    journal_types = ("WARRIOR", "HUNTER", "MAGE", "TOOLMAKER")
+    for tier in range(2, 9):
+        for kind in journal_types:
+            journal_id = f"T{tier}_JOURNAL_{kind}"
+            node = entries.get(journal_id)
+            if node is None:
+                continue
+            max_fame_raw = node.get("@maxfame")
+            fame_missions = node.get("famefillingmissions")
+            if not isinstance(fame_missions, dict):
+                continue
+            craft = fame_missions.get("craftitemfame")
+            if not isinstance(craft, dict):
+                continue
+            value_raw = craft.get("@value")
+            valid_items = craft.get("validitem")
+            if isinstance(valid_items, dict):
+                valid_list = [valid_items]
+            elif isinstance(valid_items, list):
+                valid_list = [x for x in valid_items if isinstance(x, dict)]
+            else:
+                valid_list = []
+            try:
+                max_fame = float(max_fame_raw)
+                fame_per_item = float(value_raw)
+            except (TypeError, ValueError):
+                continue
+            if max_fame <= 0 or fame_per_item <= 0:
+                continue
+            rule = _JournalRule(
+                kind=kind,
+                tier=tier,
+                empty_item_id=journal_id,
+                full_item_id=f"{journal_id}_FULL",
+                max_fame=max_fame,
+                fame_per_item=fame_per_item,
+            )
+            for row in valid_list:
+                item_id = row.get("@id")
+                if not isinstance(item_id, str) or not item_id:
+                    continue
+                journal_by_item[_base_item_id(item_id)] = rule
+    return journal_by_item, fame_factor_by_item
+
+
+def _journal_rule_for_item(item_id: str) -> _JournalRule | None:
+    journal_by_item, _ = _journal_maps()
+    return journal_by_item.get(_base_item_id(item_id))
+
+
+def _journal_fame_factor_for_item(item_id: str) -> float:
+    _, fame_factor_by_item = _journal_maps()
+    return float(fame_factor_by_item.get(_base_item_id(item_id), 1.0))
 
 
 def _friendly_item_label(display_name: str, item_id: str) -> str:

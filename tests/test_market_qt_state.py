@@ -354,6 +354,20 @@ def test_need_quantity_with_safety_buffer_for_returnable_resources() -> None:
     assert market_state._need_quantity_with_safety_buffer(10.0, False) == 10
 
 
+def test_journal_rule_mapping_and_factor_for_crafting_item() -> None:
+    rule = market_state._journal_rule_for_item("T4_MAIN_ROCKMACE_KEEPER@2")
+    assert rule is not None
+    assert rule.kind == "WARRIOR"
+    assert rule.tier == 4
+    assert rule.empty_item_id == "T4_JOURNAL_WARRIOR"
+    assert rule.full_item_id == "T4_JOURNAL_WARRIOR_FULL"
+    assert int(rule.max_fame) == 3600
+    assert int(rule.fame_per_item) == 1200
+
+    factor = market_state._journal_fame_factor_for_item("T4_MAIN_ROCKMACE_KEEPER@2")
+    assert round(factor, 2) == 1.10
+
+
 def test_market_setup_state_can_switch_recipe_by_index() -> None:
     state = MarketSetupState()
     before = state.recipeId
