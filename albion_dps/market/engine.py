@@ -684,19 +684,44 @@ def _item_id_candidates(item_id: str) -> tuple[str, ...]:
     if not base:
         return ()
     out: list[str] = [base]
-    if "@" in base:
-        stem, raw = base.split("@", 1)
-        out.append(stem)
+
+    # AOData and in-game assets can encode enchant in several interchangeable forms:
+    # T4_METALBAR@3, T4_METALBAR_LEVEL3, T4_METALBAR_LEVEL3@3
+    core = base
+    had_at = "@" in base
+    enchant: int | None = None
+    if "@" in core:
+        maybe_core, maybe_enchant = core.rsplit("@", 1)
         try:
-            level = int(raw)
+            enchant = int(maybe_enchant)
+            core = maybe_core
         except ValueError:
-            level = -1
-        if level >= 0:
-            out.append(f"{stem}_LEVEL{level}")
-    level_match = _LEVEL_SUFFIX_RE.search(base)
+            pass
+
+    stem = core
+    level: int | None = None
+    level_match = _LEVEL_SUFFIX_RE.search(core)
+    had_level = level_match is not None
     if level_match is not None:
-        stem = base[: level_match.start()]
-        out.append(stem)
+        stem = core[: level_match.start()]
+        try:
+            level = int(level_match.group("level"))
+        except (TypeError, ValueError):
+            level = None
+
+    if enchant is None and level is not None:
+        enchant = level
+    if level is None and enchant is not None:
+        level = enchant
+
+    if level is not None:
+        out.append(f"{stem}_LEVEL{level}")
+    # For *_LEVELN ids prefer *_LEVELN@N (canonical refined form) over *@N.
+    if enchant is not None and (had_at or not had_level):
+        out.append(f"{stem}@{enchant}")
+    if level is not None and enchant is not None:
+        out.append(f"{stem}_LEVEL{level}@{enchant}")
+    out.append(stem)
     # keep order and uniqueness
     seen: set[str] = set()
     ordered: list[str] = []

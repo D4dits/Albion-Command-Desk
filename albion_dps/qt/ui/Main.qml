@@ -1105,6 +1105,11 @@ ApplicationWindow {
                                 onClicked: marketSetupState.refreshPrices()
                             }
                             Button {
+                                text: "Show raw AOData"
+                                implicitHeight: 24
+                                onClicked: marketSetupState.showAoDataRaw()
+                            }
+                            Button {
                                 text: marketStatusExpanded ? "Hide details" : "Show details"
                                 implicitHeight: 24
                                 onClicked: marketStatusExpanded = !marketStatusExpanded
