@@ -38,6 +38,8 @@ from albion_dps.market.planner import build_selling_entries, build_shopping_entr
 from albion_dps.market.service import MarketDataService
 from albion_dps.market.setup import sanitized_setup, validate_setup
 
+_SHOPPING_SAFETY_BUFFER_PERCENT = 2.0
+
 
 @dataclass(frozen=True)
 class InputPreviewRow:
@@ -1954,6 +1956,11 @@ class MarketSetupState(QObject):
 
         all_inputs = [line for run in runs for line in run.inputs]
         all_outputs = [line for run in runs for line in run.outputs]
+        returnable_by_item: dict[str, bool] = {}
+        for _, recipe in planned_recipes:
+            for component in recipe.components:
+                item_id = str(component.item.unique_name)
+                returnable_by_item[item_id] = bool(returnable_by_item.get(item_id, False) or component.returnable)
 
         input_acc: dict[tuple[str, str, str, float], dict[str, object]] = {}
         for line in all_inputs:
@@ -1975,6 +1982,7 @@ class MarketSetupState(QObject):
                     "unit_price": float(line.unit_price),
                     "quantity": float(line.quantity),
                     "total_cost": float(line.total_cost),
+                    "returnable": bool(returnable_by_item.get(line.item.unique_name, False)),
                 }
             else:
                 row["quantity"] = float(row["quantity"]) + float(line.quantity)
@@ -1984,7 +1992,9 @@ class MarketSetupState(QObject):
         adjusted_inputs: list[InputLine] = []
         for row in input_acc.values():
             item_id = str(row["item_id"])
-            need_qty = float(max(0, math.ceil(float(row["quantity"]))))
+            quantity_raw = float(row["quantity"])
+            is_returnable = bool(row.get("returnable", False))
+            need_qty = float(max(0, _need_quantity_with_safety_buffer(quantity_raw, is_returnable)))
             stock_qty = float(max(0.0, self._input_stock_quantities.get(item_id, 0.0)))
             stock_qty = min(stock_qty, need_qty)
             buy_qty = max(0.0, need_qty - stock_qty)
@@ -3078,6 +3088,14 @@ def _format_age(updated_at: datetime) -> str:
     if rem_hours == 0:
         return f"{days}d"
     return f"{days}d {rem_hours}h"
+
+
+def _need_quantity_with_safety_buffer(quantity_raw: float, is_returnable: bool) -> int:
+    base = max(0.0, float(quantity_raw))
+    if not is_returnable:
+        return int(math.ceil(base))
+    multiplier = 1.0 + (_SHOPPING_SAFETY_BUFFER_PERCENT / 100.0)
+    return int(math.ceil(base * multiplier))
 
 
 def _parse_recipe_filter(query: str) -> RecipeFilter:

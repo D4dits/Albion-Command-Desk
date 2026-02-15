@@ -348,6 +348,12 @@ def test_market_setup_state_applies_input_stock_to_buy_costs() -> None:
     assert state.inputsTotalCost <= baseline_input_total
 
 
+def test_need_quantity_with_safety_buffer_for_returnable_resources() -> None:
+    assert market_state._need_quantity_with_safety_buffer(125.0, True) == 128
+    assert market_state._need_quantity_with_safety_buffer(63.0, True) == 65
+    assert market_state._need_quantity_with_safety_buffer(10.0, False) == 10
+
+
 def test_market_setup_state_can_switch_recipe_by_index() -> None:
     state = MarketSetupState()
     before = state.recipeId

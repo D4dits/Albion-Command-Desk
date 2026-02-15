@@ -549,6 +549,47 @@ def test_effective_return_fraction_applies_city_specialization_by_item_family() 
     assert round(bridgewatch_fraction, 3) == 0.153
 
 
+def test_effective_return_fraction_applies_offhand_bonus_in_martlock() -> None:
+    shield = ItemRef(
+        unique_name="T4_OFF_SPIKEDSHIELD_MORGANA",
+        display_name="Facebreaker",
+        tier=4,
+        enchantment=0,
+        item_value=1200,
+    )
+    bars = ItemRef(unique_name="T4_METALBAR", display_name="Metal Bar", tier=4, enchantment=0, item_value=300)
+    recipe = Recipe(
+        item=shield,
+        station="Offhand",
+        city_bonus="",
+        components=(RecipeComponent(item=bars, quantity=4.0),),
+        outputs=(RecipeOutput(item=shield, quantity=1.0),),
+        focus_per_craft=200,
+    )
+    setup_martlock = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Martlock",
+        default_buy_city="Martlock",
+        default_sell_city="Martlock",
+        premium=False,
+        return_rate_percent=0.0,
+        daily_bonus_percent=0.0,
+    )
+    setup_caerleon = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Caerleon",
+        default_buy_city="Caerleon",
+        default_sell_city="Caerleon",
+        premium=False,
+        return_rate_percent=0.0,
+        daily_bonus_percent=0.0,
+    )
+    martlock_fraction = effective_return_fraction(setup=setup_martlock, recipe=recipe)
+    caerleon_fraction = effective_return_fraction(setup=setup_caerleon, recipe=recipe)
+    assert round(martlock_fraction, 3) == 0.248
+    assert round(caerleon_fraction, 3) == 0.153
+
+
 def test_effective_return_fraction_crafting_snapshot_matrix() -> None:
     sword = ItemRef(unique_name="T4_MAIN_SWORD", display_name="Broadsword", tier=4, enchantment=0, item_value=1200)
     recipe = Recipe(
