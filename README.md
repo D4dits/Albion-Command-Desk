@@ -54,6 +54,9 @@ Best setup before installing ACD:
 ### Windows (clean machine, detailed)
 Use this exact sequence in **PowerShell as Administrator**.
 
+Video tutorial:
+- https://youtu.be/26Ul7UEx194
+
 1) Allow scripts for this session only:
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass -Force
