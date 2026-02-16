@@ -321,12 +321,51 @@ ApplicationWindow {
                 RowLayout {
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                     spacing: 8
+                    ColumnLayout {
+                        Layout.preferredWidth: 215
+                        Layout.minimumWidth: 215
+                        spacing: 2
+                        RowLayout {
+                            Layout.alignment: Qt.AlignRight
+                            spacing: 6
+                            CheckBox {
+                                id: autoUpdateCheckBox
+                                checked: uiState.updateAutoCheck
+                                text: "Auto update"
+                                onToggled: uiState.setUpdateAutoCheck(checked)
+                                contentItem: Text {
+                                    text: autoUpdateCheckBox.text
+                                    color: mutedColor
+                                    font.pixelSize: 11
+                                    verticalAlignment: Text.AlignVCenter
+                                    leftPadding: autoUpdateCheckBox.indicator.width + autoUpdateCheckBox.spacing
+                                }
+                            }
+                            Button {
+                                id: checkUpdatesButton
+                                text: "Check now"
+                                implicitHeight: 28
+                                implicitWidth: 88
+                                onClicked: uiState.requestManualUpdateCheck()
+                            }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            visible: uiState.updateCheckStatus.length > 0
+                            text: uiState.updateCheckStatus
+                            color: mutedColor
+                            font.pixelSize: 10
+                            horizontalAlignment: Text.AlignRight
+                            elide: Text.ElideRight
+                            wrapMode: Text.NoWrap
+                        }
+                    }
                     Button {
                         id: headerPayPalButton
                         text: "PayPal"
                         implicitHeight: 32
                         implicitWidth: 120
-                        onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=zlotyjacek%40gmail.com&currency_code=USD&amount=20.00")
+                        onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00")
                         background: Rectangle {
                             radius: 16
                             gradient: Gradient {
@@ -365,45 +404,6 @@ ApplicationWindow {
                             font.pixelSize: 12
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
-                        }
-                    }
-                    ColumnLayout {
-                        Layout.preferredWidth: 215
-                        Layout.minimumWidth: 215
-                        spacing: 2
-                        RowLayout {
-                            Layout.alignment: Qt.AlignRight
-                            spacing: 6
-                            CheckBox {
-                                id: autoUpdateCheckBox
-                                checked: uiState.updateAutoCheck
-                                text: "Auto update"
-                                onToggled: uiState.setUpdateAutoCheck(checked)
-                                contentItem: Text {
-                                    text: autoUpdateCheckBox.text
-                                    color: mutedColor
-                                    font.pixelSize: 11
-                                    verticalAlignment: Text.AlignVCenter
-                                    leftPadding: autoUpdateCheckBox.indicator.width + autoUpdateCheckBox.spacing
-                                }
-                            }
-                            Button {
-                                id: checkUpdatesButton
-                                text: "Check now"
-                                implicitHeight: 28
-                                implicitWidth: 88
-                                onClicked: uiState.requestManualUpdateCheck()
-                            }
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            visible: uiState.updateCheckStatus.length > 0
-                            text: uiState.updateCheckStatus
-                            color: mutedColor
-                            font.pixelSize: 10
-                            horizontalAlignment: Text.AlignRight
-                            elide: Text.ElideRight
-                            wrapMode: Text.NoWrap
                         }
                     }
                 }
