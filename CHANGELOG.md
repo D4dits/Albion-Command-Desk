@@ -18,6 +18,8 @@ and this project uses semantic versioning.
 - Shared inset/table container component in `albion_dps/qt/ui/TableSurface.qml`.
 - Grouped regression runner for Phase 3 QA in `tools/qa/run_regression_suite.py`.
 - QA regression runbook in `docs/qa/QA_REGRESSION_PASS.md`.
+- Clean-machine CI matrix verifier in `tools/qa/verify_clean_machine_matrix.py`.
+- QA clean-machine runbook in `docs/qa/QA_CLEAN_MACHINE.md`.
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -48,6 +50,8 @@ and this project uses semantic versioning.
 - `docs/TROUBLESHOOTING.md` now includes compact-layout guidance for small-window table workflows.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `UXR-013` as completed.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `QA-001` as completed.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `QA-002` as completed.
+- `docs/release/RELEASE_CHECKLIST.md` now includes the clean-machine matrix verification command.
 
 ## [0.1.14] - 2026-02-13
 

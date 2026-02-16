@@ -232,7 +232,7 @@ Acceptance:
 
 ### Phase 3 - Stabilization and ship (2-3 days)
 - [x] QA-001: regression pass (meter/scanner/market/live/replay)
-- [ ] QA-002: clean machine install tests (Win/Linux/macOS)
+- [x] QA-002: clean machine install tests (Win/Linux/macOS)
 - [ ] QA-003: release + manifest + update banner validation
 
 #### Phase 3 concrete tickets
@@ -247,6 +247,18 @@ Acceptance:
 - Delivery notes:
   - added grouped regression runner covering meter/scanner/market/live/replay
   - added QA runbook with scope, commands, and exit criteria
+
+##### QA-002 - Clean machine install tests (Win/Linux/macOS)
+- Status: DONE
+- Goal: validate bootstrap install matrix through CI and a deterministic maintainer verification command.
+- Files modified:
+  1. `tools/qa/verify_clean_machine_matrix.py` (new)
+  2. `docs/qa/QA_CLEAN_MACHINE.md` (new)
+  3. `docs/release/RELEASE_CHECKLIST.md`
+  4. `docs/DELIVERY_BACKLOG.md`
+- Delivery notes:
+  - added `gh`-based verifier for required clean-machine jobs from `bootstrap-smoke.yml`
+  - documented runbook and explicit pass/fail semantics for clean-machine matrix checks
 
 ## 5) Non-goals (for this cycle)
 

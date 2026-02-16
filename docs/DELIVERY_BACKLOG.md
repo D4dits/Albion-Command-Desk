@@ -98,11 +98,12 @@ Update status checkboxes and notes after each implemented ticket.
   2. `docs/qa/QA_REGRESSION_PASS.md`
 
 ### QA-002 - Clean machine install tests (Win/Linux/macOS)
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: validate bootstrap/install path on clean OS runners and local clean profile.
 - Files:
-  1. `.github/workflows/bootstrap-smoke.yml`
-  2. `docs/release/RELEASE_CHECKLIST.md`
+  1. `tools/qa/verify_clean_machine_matrix.py`
+  2. `docs/qa/QA_CLEAN_MACHINE.md`
+  3. `docs/release/RELEASE_CHECKLIST.md`
 
 ### QA-003 - Release + manifest + update banner validation
 - [ ] Status: TODO
@@ -245,6 +246,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-16: QA-002 completed (clean-machine matrix verifier + QA runbook + release checklist gate command).
 - 2026-02-16: QA-001 completed (grouped regression runner + QA runbook for meter/scanner/market/live/replay).
 - 2026-02-16: PH1-UXR-013 completed (responsive shell breakpoints + narrow/compact overflow handling in header/nav/market panels).
 - 2026-02-16: PH1-UXR-012 completed (shared `CardPanel`/`TableSurface` primitives + tokenized table row/header colors wired across Meter/Scanner/Market).
