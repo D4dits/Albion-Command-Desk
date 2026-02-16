@@ -99,7 +99,7 @@ Acceptance:
 ### Phase 0 - Architecture lock (1-2 days)
 - [x] UXR-001: freeze target shell layout and component map
 - [x] REL-001: freeze dependency profiles (core vs live capture)
-- [ ] REL-002: decide release packaging strategy per OS
+- [x] REL-002: decide release packaging strategy per OS
 
 #### Phase 0 concrete tickets (execution-ready)
 
@@ -147,7 +147,7 @@ Acceptance:
   - CLI includes `core` mode to run GUI without live capture backend
 
 ##### REL-002 - Release packaging strategy lock (Win/Linux/macOS)
-- Status: TODO
+- Status: DONE
 - Goal: finalize packaging approach per OS so release work is deterministic.
 - Files to modify:
   1. `docs/release/RELEASE_CHECKLIST.md`
@@ -162,6 +162,9 @@ Acceptance:
   - each OS has one chosen artifact strategy documented in release checklist
   - CI checks explicitly map to those artifacts
   - release decision is no longer ad-hoc per version
+- Delivery notes:
+  - release checklist now defines blocker vs warning assets per OS
+  - bootstrap and manifest workflows now enforce/report Phase 0 gate mapping
 
 ### Phase 1 - UI refactor foundation (2-4 days)
 - [ ] UXR-010: extract/declare QML design tokens

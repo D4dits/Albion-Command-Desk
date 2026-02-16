@@ -38,7 +38,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Capture-missing path is handled with clear diagnostics.
 
 ### PH0-REL-002 - Release packaging strategy lock per OS
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: freeze artifact strategy and release gates for Windows/Linux/macOS.
 - Files:
   1. `docs/release/RELEASE_CHECKLIST.md`
@@ -183,6 +183,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-16: PH0-REL-002 completed (packaging strategy + CI gate map locked in release docs/workflows).
 - 2026-02-16: PH0-REL-001 completed (install profiles frozen: `core` default, `capture` optional; bootstrap scripts + docs aligned).
 - 2026-02-16: PH0-UXR-001 completed (shell layout contract frozen in docs + `Main.qml` zone map IDs).
 - 2026-02-16: Phase 0 kickoff started (PH0-UXR-001 IN PROGRESS, PH0-REL-001/002 queued).

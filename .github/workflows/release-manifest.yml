@@ -68,6 +68,51 @@ jobs:
           name: release-manifest-${{ env.TAG }}
           path: tools/release/manifest/manifest.json
 
+      - name: Validate manifest against Phase 0 release strategy
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest = json.loads(Path("tools/release/manifest/manifest.json").read_text(encoding="utf-8"))
+          assets = manifest.get("assets", [])
+
+          def has_asset(os_name, kind, arch=None):
+              for asset in assets:
+                  if asset.get("os") != os_name:
+                      continue
+                  if asset.get("kind") != kind:
+                      continue
+                  if arch is not None and asset.get("arch") != arch:
+                      continue
+                  return True
+              return False
+
+          blockers = []
+          warnings = []
+
+          if not has_asset("windows", "installer", "x86_64"):
+              blockers.append("Missing required Windows x86_64 installer asset.")
+
+          if not has_asset("linux", "archive") and not has_asset("linux", "bootstrap-script"):
+              warnings.append("No Linux archive/bootstrap asset attached (core install still possible via repository bootstrap script).")
+
+          if not has_asset("macos", "archive") and not has_asset("macos", "bootstrap-script"):
+              warnings.append("No macOS archive/bootstrap asset attached (core install still possible via repository bootstrap script).")
+
+          if blockers:
+              for blocker in blockers:
+                  print(f"ERROR: {blocker}")
+              raise SystemExit(1)
+
+          if warnings:
+              for warning in warnings:
+                  print(f"WARNING: {warning}")
+          else:
+              print("Manifest strategy validation: no warnings.")
+          PY
+
       - name: Upload manifest to release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

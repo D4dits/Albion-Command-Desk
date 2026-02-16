@@ -22,6 +22,11 @@ and this project uses semantic versioning.
 - Windows/Linux/macOS bootstrap installers now share `core|capture` profile selection.
 - Installer docs and root README now document profile-based install flow.
 - `docs/TROUBLESHOOTING.md` now includes profile-based recovery commands.
+- `docs/release/RELEASE_CHECKLIST.md` now locks Phase 0 packaging targets and blocker/warning release gates.
+- `.github/workflows/bootstrap-smoke.yml` now maps mandatory core checks and advisory capture checks per OS.
+- `.github/workflows/release-manifest.yml` now validates manifest assets against Phase 0 release strategy.
+- `docs/release/RELEASE_MANIFEST_SPEC.md` now documents manifest blocker/warning policy.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `REL-002` as completed.
 
 ## [0.1.14] - 2026-02-13
 
