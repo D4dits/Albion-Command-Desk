@@ -72,11 +72,13 @@ Update status checkboxes and notes after each implemented ticket.
   3. `docs/ARCHITECTURE.md`
 
 ### PH1-UXR-012 - Card/table visual unification
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: align card and table primitives to one visual language.
 - Files:
   1. `albion_dps/qt/ui/Main.qml`
-  2. `albion_dps/qt/ui/components/*` (new if extracted)
+  2. `albion_dps/qt/ui/Theme.qml`
+  3. `albion_dps/qt/ui/CardPanel.qml`
+  4. `albion_dps/qt/ui/TableSurface.qml`
 
 ### PH1-UXR-013 - Responsive breakpoints and overflow handling
 - [ ] Status: TODO
@@ -218,6 +220,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-16: PH1-UXR-012 completed (shared `CardPanel`/`TableSurface` primitives + tokenized table row/header colors wired across Meter/Scanner/Market).
 - 2026-02-16: PH1-UXR-011 completed (centered shell nav zone + shared tab button component for shell/market tabs).
 - 2026-02-16: PH1-UXR-010 completed (new `Theme.qml` tokens and `Main.qml` token wiring baseline).
 - 2026-02-16: PH0-REL-002 completed (packaging strategy + CI gate map locked in release docs/workflows).

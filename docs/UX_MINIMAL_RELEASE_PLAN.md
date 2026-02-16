@@ -169,7 +169,7 @@ Acceptance:
 ### Phase 1 - UI refactor foundation (2-4 days)
 - [x] UXR-010: extract/declare QML design tokens
 - [x] UXR-011: normalize header/nav/action zones
-- [ ] UXR-012: card/table visual unification
+- [x] UXR-012: card/table visual unification
 - [ ] UXR-013: responsive breakpoints and overflow handling
 
 #### Phase 1 concrete tickets
@@ -195,6 +195,21 @@ Acceptance:
   - main tab navigation is centered and width-clamped in a dedicated nav zone
   - shared `ShellTabButton` component now styles top and market tab controls
   - header/nav/action zones now use one tokenized style path
+
+##### UXR-012 - Card/table visual unification
+- Status: DONE
+- Goal: align card and table primitives to one visual language across Meter/Scanner/Market.
+- Files modified:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+  3. `albion_dps/qt/ui/CardPanel.qml` (new)
+  4. `albion_dps/qt/ui/TableSurface.qml` (new)
+  5. `docs/ARCHITECTURE.md`
+- Delivery notes:
+  - introduced reusable `CardPanel` and `TableSurface` QML primitives for panel/inset containers
+  - standardized alternating table row helpers (`tableRowColor`, `tableRowStrongColor`) in `Main.qml`
+  - moved remaining table/header row colors to shared tokens in `Theme.qml`
+  - migrated key Meter/Scanner/Market container sections to shared primitives to remove ad-hoc border/background styling
 
 ### Phase 2 - Install/release simplification (3-5 days)
 - [ ] REL-010: bootstrap scripts profile support + clearer diagnostics

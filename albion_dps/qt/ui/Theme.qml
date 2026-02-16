@@ -12,6 +12,12 @@ QtObject {
     readonly property color stateWarning: "#e3b341"
     readonly property color stateDanger: "#ff7b72"
     readonly property color stateInfo: "#79c0ff"
+    readonly property color surfaceInset: "#0f1620"
+    readonly property color controlIdleBackground: "#101923"
+    readonly property color tableHeaderBackground: "#111b28"
+    readonly property color tableRowEven: "#0f1620"
+    readonly property color tableRowOdd: "#101924"
+    readonly property color tableSelectedBackground: "#162231"
 
     // Layout tokens
     readonly property int spacingPage: 16

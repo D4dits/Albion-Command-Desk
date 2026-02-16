@@ -157,6 +157,14 @@ ApplicationWindow {
         marketSetupState.copyText(String(value === undefined || value === null ? "" : value))
     }
 
+    function tableRowColor(index) {
+        return index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
+    }
+
+    function tableRowStrongColor(index) {
+        return index % 2 === 0 ? theme.tableHeaderBackground : theme.tableRowEven
+    }
+
     function itemLabelWithTier(labelValue, itemIdValue) {
         var label = String(labelValue || "").trim()
         var itemId = String(itemIdValue || "").trim().toUpperCase()
@@ -521,12 +529,12 @@ ApplicationWindow {
                     anchors.fill: parent
                     spacing: 12
 
-                    Rectangle {
+                    CardPanel {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        color: panelColor
-                        radius: 8
-                        border.color: borderColor
+                        fillColor: panelColor
+                        strokeColor: borderColor
+                        cornerRadius: theme.cornerRadiusPanel
 
                         ColumnLayout {
                             anchors.fill: parent
@@ -576,12 +584,12 @@ ApplicationWindow {
                                 font.bold: true
                             }
 
-                            Rectangle {
+                            TableSurface {
                                 Layout.fillWidth: true
                                 height: 62
-                                color: "#0f1620"
-                                radius: 6
-                                border.color: "#1f2a37"
+                                fillColor: theme.surfaceInset
+                                strokeColor: theme.borderSubtle
+                                cornerRadius: 6
 
                                 ColumnLayout {
                                     anchors.fill: parent
@@ -603,7 +611,7 @@ ApplicationWindow {
                                             onClicked: uiState.setMode("battle")
                                             background: Rectangle {
                                                 radius: 6
-                                                color: battleButton.checked ? accentColor : "#101923"
+                                                color: battleButton.checked ? accentColor : theme.controlIdleBackground
                                                 border.color: battleButton.checked ? accentColor : borderColor
                                             }
                                             contentItem: Text {
@@ -620,7 +628,7 @@ ApplicationWindow {
                                             onClicked: uiState.setMode("zone")
                                             background: Rectangle {
                                                 radius: 6
-                                                color: zoneButton.checked ? accentColor : "#101923"
+                                                color: zoneButton.checked ? accentColor : theme.controlIdleBackground
                                                 border.color: zoneButton.checked ? accentColor : borderColor
                                             }
                                             contentItem: Text {
@@ -637,7 +645,7 @@ ApplicationWindow {
                                             onClicked: uiState.setMode("manual")
                                             background: Rectangle {
                                                 radius: 6
-                                                color: manualButton.checked ? accentColor : "#101923"
+                                                color: manualButton.checked ? accentColor : theme.controlIdleBackground
                                                 border.color: manualButton.checked ? accentColor : borderColor
                                             }
                                             contentItem: Text {
@@ -660,7 +668,7 @@ ApplicationWindow {
                                             onClicked: uiState.setSortKey("dps")
                                             background: Rectangle {
                                                 radius: 6
-                                                color: sortDpsButton.checked ? accentColor : "#101923"
+                                                color: sortDpsButton.checked ? accentColor : theme.controlIdleBackground
                                                 border.color: sortDpsButton.checked ? accentColor : borderColor
                                             }
                                             contentItem: Text {
@@ -677,7 +685,7 @@ ApplicationWindow {
                                             onClicked: uiState.setSortKey("dmg")
                                             background: Rectangle {
                                                 radius: 6
-                                                color: sortDmgButton.checked ? accentColor : "#101923"
+                                                color: sortDmgButton.checked ? accentColor : theme.controlIdleBackground
                                                 border.color: sortDmgButton.checked ? accentColor : borderColor
                                             }
                                             contentItem: Text {
@@ -694,7 +702,7 @@ ApplicationWindow {
                                             onClicked: uiState.setSortKey("hps")
                                             background: Rectangle {
                                                 radius: 6
-                                                color: sortHpsButton.checked ? accentColor : "#101923"
+                                                color: sortHpsButton.checked ? accentColor : theme.controlIdleBackground
                                                 border.color: sortHpsButton.checked ? accentColor : borderColor
                                             }
                                             contentItem: Text {
@@ -711,7 +719,7 @@ ApplicationWindow {
                                             onClicked: uiState.setSortKey("heal")
                                             background: Rectangle {
                                                 radius: 6
-                                                color: sortHealButton.checked ? accentColor : "#101923"
+                                                color: sortHealButton.checked ? accentColor : theme.controlIdleBackground
                                                 border.color: sortHealButton.checked ? accentColor : borderColor
                                             }
                                             contentItem: Text {
@@ -727,7 +735,7 @@ ApplicationWindow {
                         Rectangle {
                             Layout.fillWidth: true
                                 height: 26
-                                color: "#0f1620"
+                                color: theme.surfaceInset
                                 radius: 4
 
                                 RowLayout {
@@ -808,8 +816,8 @@ ApplicationWindow {
                                             Layout.fillWidth: true
                                             height: 10
                                             radius: 4
-                                            color: "#0f1620"
-                                            border.color: "#1f2a37"
+                                            color: theme.surfaceInset
+                                            border.color: theme.borderSubtle
                                             Rectangle {
                                                 height: parent.height
                                                 width: Math.max(4, parent.width * barRatio)
@@ -823,12 +831,12 @@ ApplicationWindow {
                         }
                     }
 
-                    Rectangle {
+                    CardPanel {
                         Layout.preferredWidth: 360
                         Layout.fillHeight: true
-                        color: panelColor
-                        radius: 8
-                        border.color: borderColor
+                        fillColor: panelColor
+                        strokeColor: borderColor
+                        cornerRadius: theme.cornerRadiusPanel
 
                         ColumnLayout {
                             anchors.fill: parent
@@ -861,8 +869,8 @@ ApplicationWindow {
                                     width: Math.max(0, ListView.view.width - 6)
                                     height: 98
                                     radius: 6
-                                    color: selected ? "#162231" : "#0f1620"
-                                    border.color: selected ? "#4aa3ff" : "#1f2a37"
+                                    color: selected ? theme.tableSelectedBackground : theme.surfaceInset
+                                    border.color: selected ? "#4aa3ff" : theme.borderSubtle
                                     border.width: 1
                                     TapHandler {
                                         onTapped: uiState.selectHistory(index)
@@ -896,12 +904,12 @@ ApplicationWindow {
                                 }
                             }
 
-                            Rectangle {
+                            TableSurface {
                                 Layout.fillWidth: true
                                 height: 120
-                                radius: 6
-                                color: "#0f1620"
-                                border.color: "#1f2a37"
+                                cornerRadius: 6
+                                fillColor: theme.surfaceInset
+                                strokeColor: theme.borderSubtle
                                 ColumnLayout {
                                     anchors.fill: parent
                                     anchors.margins: 8
@@ -917,11 +925,11 @@ ApplicationWindow {
                 }
             }
             Item {
-                Rectangle {
+                CardPanel {
                     anchors.fill: parent
-                    color: panelColor
-                    radius: 8
-                    border.color: borderColor
+                    fillColor: panelColor
+                    strokeColor: borderColor
+                    cornerRadius: theme.cornerRadiusPanel
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -1010,12 +1018,12 @@ ApplicationWindow {
                             }
                         }
 
-                        Rectangle {
+                        TableSurface {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: 6
-                            color: "#0f1620"
-                            border.color: "#1f2a37"
+                            cornerRadius: 6
+                            fillColor: theme.surfaceInset
+                            strokeColor: theme.borderSubtle
                             clip: true
 
                             ScrollView {
@@ -1054,11 +1062,11 @@ ApplicationWindow {
             }
 
             Item {
-                Rectangle {
+                CardPanel {
                     anchors.fill: parent
-                    color: panelColor
-                    radius: 8
-                    border.color: borderColor
+                    fillColor: panelColor
+                    strokeColor: borderColor
+                    cornerRadius: theme.cornerRadiusPanel
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -1247,15 +1255,15 @@ ApplicationWindow {
                             }
                         }
 
-                        Rectangle {
+                        TableSurface {
                             Layout.fillWidth: true
                             Layout.preferredHeight: marketDiagnosticsVisible ? 110 : 0
                             Layout.minimumHeight: marketDiagnosticsVisible ? 82 : 0
                             Layout.maximumHeight: marketDiagnosticsVisible ? 140 : 0
                             visible: marketDiagnosticsVisible
-                            radius: 6
-                            color: "#0f1620"
-                            border.color: "#1f2a37"
+                            cornerRadius: 6
+                            fillColor: theme.surfaceInset
+                            strokeColor: theme.borderSubtle
                             clip: true
 
                             ColumnLayout {
@@ -1307,14 +1315,14 @@ ApplicationWindow {
                                 Layout.fillHeight: true
                                 spacing: 12
 
-                            Rectangle {
+                            TableSurface {
                                 Layout.preferredWidth: marketSetupPanelWidth
                                 Layout.minimumWidth: marketSetupPanelWidth
                                 Layout.maximumWidth: marketSetupPanelWidth
                                 Layout.fillHeight: true
-                                radius: 6
-                                color: "#0f1620"
-                                border.color: "#1f2a37"
+                                cornerRadius: 6
+                                fillColor: theme.surfaceInset
+                                strokeColor: theme.borderSubtle
 
                                 ScrollView {
                                     anchors.fill: parent
@@ -1423,8 +1431,8 @@ ApplicationWindow {
                                                     Layout.preferredHeight: 170
                                                     visible: recipeSearchInput.activeFocus && recipeSuggestions.count > 0
                                                     radius: 4
-                                                    color: "#111b28"
-                                                    border.color: "#1f2a37"
+                                                    color: theme.tableHeaderBackground
+                                                    border.color: theme.borderSubtle
 
                                                     ListView {
                                                         id: recipeSuggestions
@@ -1440,7 +1448,7 @@ ApplicationWindow {
                                                             height: 26
                                                             color: recipeId === marketSetupState.recipeId
                                                                 ? "#1b2635"
-                                                                : (index % 2 === 0 ? "#111b28" : "#0f1620")
+                                                                : (tableRowStrongColor(index))
 
                                                             RowLayout {
                                                                 anchors.fill: parent
@@ -1593,8 +1601,8 @@ ApplicationWindow {
                                         Rectangle {
                                             Layout.fillWidth: true
                                             radius: 4
-                                            color: "#111b28"
-                                            border.color: "#1f2a37"
+                                            color: theme.tableHeaderBackground
+                                            border.color: theme.borderSubtle
                                             implicitHeight: 130
 
                                             ColumnLayout {
@@ -1696,12 +1704,12 @@ ApplicationWindow {
                                 }
                             }
 
-                            Rectangle {
+                            TableSurface {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                radius: 6
-                                color: "#0f1620"
-                                border.color: "#1f2a37"
+                                cornerRadius: 6
+                                fillColor: theme.surfaceInset
+                                strokeColor: theme.borderSubtle
 
                                 ColumnLayout {
                                     anchors.fill: parent
@@ -1767,8 +1775,8 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         height: 22
                                         radius: 4
-                                        color: "#111b28"
-                                        border.color: "#1f2a37"
+                                        color: theme.tableHeaderBackground
+                                        border.color: theme.borderSubtle
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.margins: 4
@@ -1810,7 +1818,7 @@ ApplicationWindow {
                                             height: 32
                                             color: recipeId === marketSetupState.recipeId
                                                 ? "#1b2635"
-                                                : (index % 2 === 0 ? "#0f1620" : "#101924")
+                                                : (tableRowColor(index))
 
                                             RowLayout {
                                                 anchors.fill: parent
@@ -1905,7 +1913,7 @@ ApplicationWindow {
                                                     inputMethodHints: Qt.ImhDigitsOnly
                                                     background: Rectangle {
                                                         radius: 2
-                                                        color: "#0f1620"
+                                                        color: theme.surfaceInset
                                                         border.color: "#2a3a51"
                                                     }
                                                     onEditingFinished: {
@@ -1947,12 +1955,12 @@ ApplicationWindow {
                             }
                             }
 
-                        Rectangle {
+                        TableSurface {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: 6
-                            color: "#0f1620"
-                            border.color: "#1f2a37"
+                            cornerRadius: 6
+                            fillColor: theme.surfaceInset
+                            strokeColor: theme.borderSubtle
 
                             ColumnLayout {
                                 anchors.fill: parent
@@ -1981,7 +1989,7 @@ ApplicationWindow {
                                             Layout.fillWidth: true
                                             height: 24
                                             radius: 4
-                                            color: "#111b28"
+                                            color: theme.tableHeaderBackground
 
                                             RowLayout {
                                                 anchors.fill: parent
@@ -2019,7 +2027,7 @@ ApplicationWindow {
                                             delegate: Rectangle {
                                                 width: ListView.view.width
                                                 height: 28
-                                                color: index % 2 === 0 ? "#0f1620" : "#101924"
+                                                color: tableRowColor(index)
 
                                                 RowLayout {
                                                     anchors.fill: parent
@@ -2145,7 +2153,7 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     height: 28
                                     radius: 4
-                                    color: "#111b28"
+                                    color: theme.tableHeaderBackground
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.margins: 6
@@ -2167,12 +2175,12 @@ ApplicationWindow {
                             }
                         }
 
-                        Rectangle {
+                        TableSurface {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: 6
-                            color: "#0f1620"
-                            border.color: "#1f2a37"
+                            cornerRadius: 6
+                            fillColor: theme.surfaceInset
+                            strokeColor: theme.borderSubtle
 
                             ColumnLayout {
                                 anchors.fill: parent
@@ -2201,7 +2209,7 @@ ApplicationWindow {
                                             Layout.fillWidth: true
                                             height: 24
                                             radius: 4
-                                            color: "#111b28"
+                                            color: theme.tableHeaderBackground
 
                                             RowLayout {
                                                 anchors.fill: parent
@@ -2239,7 +2247,7 @@ ApplicationWindow {
                                             delegate: Rectangle {
                                                 width: ListView.view.width
                                                 height: 28
-                                                color: index % 2 === 0 ? "#0f1620" : "#101924"
+                                                color: tableRowColor(index)
 
                                                 RowLayout {
                                                     anchors.fill: parent
@@ -2369,7 +2377,7 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     height: 28
                                     radius: 4
-                                    color: "#111b28"
+                                    color: theme.tableHeaderBackground
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.margins: 6
@@ -2404,12 +2412,12 @@ ApplicationWindow {
                             }
                         }
 
-                        Rectangle {
+                        TableSurface {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: 6
-                            color: "#0f1620"
-                            border.color: "#1f2a37"
+                            cornerRadius: 6
+                            fillColor: theme.surfaceInset
+                            strokeColor: theme.borderSubtle
                             ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10
@@ -2445,7 +2453,7 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     height: 28
                                     radius: 4
-                                    color: "#111b28"
+                                    color: theme.tableHeaderBackground
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.margins: 6
@@ -2462,7 +2470,7 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     height: 24
                                     radius: 4
-                                    color: "#111b28"
+                                    color: theme.tableHeaderBackground
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.margins: 4
@@ -2498,7 +2506,7 @@ ApplicationWindow {
                                     delegate: Rectangle {
                                         width: ListView.view.width
                                         height: 26
-                                        color: index % 2 === 0 ? "#0f1620" : "#101924"
+                                        color: tableRowColor(index)
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.margins: 4
@@ -2650,8 +2658,8 @@ ApplicationWindow {
                                     Layout.minimumHeight: 84
                                     Layout.maximumHeight: 160
                                     radius: 4
-                                    color: "#111b28"
-                                    border.color: "#1f2a37"
+                                    color: theme.tableHeaderBackground
+                                    border.color: theme.borderSubtle
                                     visible: marketBreakdownExpanded
 
                                     ListView {
@@ -2665,7 +2673,7 @@ ApplicationWindow {
                                         delegate: Rectangle {
                                             width: ListView.view.width
                                             height: 24
-                                            color: index % 2 === 0 ? "#111b28" : "#0f1620"
+                                            color: tableRowStrongColor(index)
                                             RowLayout {
                                                 anchors.fill: parent
                                                 anchors.margins: 4
