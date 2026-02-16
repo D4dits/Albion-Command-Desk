@@ -70,6 +70,21 @@ ApplicationWindow {
     property bool marketStatusExpanded: false
     property bool marketBreakdownExpanded: false
     property real craftPlanPendingContentY: -1
+    property int shellHeaderHeight: 72
+    property int shellRightZoneSpacing: 8
+    property int shellMeterMetaWidth: 180
+    property int shellUpdateControlWidth: 215
+    property int shellUpdateBannerMinWidth: 270
+    property int shellUpdateBannerMaxWidth: 420
+
+    // Phase 0 shell contract:
+    // - left zone: title + contextual status
+    // - right zone: meter meta -> update banner -> update controls -> support actions
+    // - global navigation: TabBar directly below header
+    // Phase 1 extraction map:
+    // - shellHeader
+    // - shellUpdateZone
+    // - shellSupportZone
 
     function formatInt(value) {
         var n = Number(value)
@@ -214,18 +229,21 @@ ApplicationWindow {
         }
 
         Rectangle {
+            id: shellHeader
             Layout.fillWidth: true
-            height: 72
+            height: shellHeaderHeight
             color: panelColor
             radius: 8
             border.color: borderColor
 
             RowLayout {
+                id: shellHeaderLayout
                 anchors.fill: parent
                 anchors.margins: 12
                 spacing: 20
 
                 ColumnLayout {
+                    id: shellLeftZone
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
                     spacing: 4
@@ -252,78 +270,90 @@ ApplicationWindow {
                     }
                 }
 
-                ColumnLayout {
-                    Layout.preferredWidth: 180
-                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                    opacity: meterView ? 1.0 : 0.0
-                    enabled: meterView
-                    spacing: 4
-                    Text {
-                        text: uiState.timeText
-                        color: textColor
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignRight
-                    }
-                    Text {
-                        text: "Fame: " + uiState.fameText + "  |  Fame/h: " + uiState.famePerHourText
-                        color: mutedColor
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignRight
-                    }
-                }
-
-                Rectangle {
-                    visible: uiState.updateBannerVisible
-                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                    Layout.preferredWidth: Math.max(270, Math.min(420, root.width * 0.28))
-                    Layout.preferredHeight: 34
-                    radius: 17
-                    color: "#1f3322"
-                    border.color: "#2ea043"
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 6
-                        spacing: 6
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: uiState.updateBannerText
-                            color: "#7ee787"
-                            font.pixelSize: 12
-                            elide: Text.ElideRight
-                            wrapMode: Text.NoWrap
-                        }
-
-                        Button {
-                            id: updateOpenButton
-                            text: "Open"
-                            implicitHeight: 24
-                            implicitWidth: 54
-                            onClicked: {
-                                if (uiState.updateBannerUrl.length > 0) {
-                                    Qt.openUrlExternally(uiState.updateBannerUrl)
-                                }
-                            }
-                        }
-
-                        Button {
-                            id: updateDismissButton
-                            text: "x"
-                            implicitHeight: 24
-                            implicitWidth: 28
-                            onClicked: uiState.dismissUpdateBanner()
-                        }
-                    }
+                Item {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 6
                 }
 
                 RowLayout {
+                    id: shellRightZone
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                    spacing: 8
+                    spacing: shellRightZoneSpacing
+
                     ColumnLayout {
-                        Layout.preferredWidth: 215
-                        Layout.minimumWidth: 215
+                        id: shellMeterZone
+                        Layout.preferredWidth: shellMeterMetaWidth
+                        Layout.minimumWidth: shellMeterMetaWidth
+                        Layout.maximumWidth: shellMeterMetaWidth
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        opacity: meterView ? 1.0 : 0.0
+                        enabled: meterView
+                        spacing: 4
+                        Text {
+                            text: uiState.timeText
+                            color: textColor
+                            font.pixelSize: 12
+                            horizontalAlignment: Text.AlignRight
+                        }
+                        Text {
+                            text: "Fame: " + uiState.fameText + "  |  Fame/h: " + uiState.famePerHourText
+                            color: mutedColor
+                            font.pixelSize: 12
+                            horizontalAlignment: Text.AlignRight
+                        }
+                    }
+
+                    Rectangle {
+                        id: shellUpdateBanner
+                        visible: uiState.updateBannerVisible
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        Layout.preferredWidth: Math.max(shellUpdateBannerMinWidth, Math.min(shellUpdateBannerMaxWidth, root.width * 0.28))
+                        Layout.preferredHeight: 34
+                        radius: 17
+                        color: "#1f3322"
+                        border.color: "#2ea043"
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 6
+                            spacing: 6
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: uiState.updateBannerText
+                                color: "#7ee787"
+                                font.pixelSize: 12
+                                elide: Text.ElideRight
+                                wrapMode: Text.NoWrap
+                            }
+
+                            Button {
+                                id: updateOpenButton
+                                text: "Open"
+                                implicitHeight: 24
+                                implicitWidth: 54
+                                onClicked: {
+                                    if (uiState.updateBannerUrl.length > 0) {
+                                        Qt.openUrlExternally(uiState.updateBannerUrl)
+                                    }
+                                }
+                            }
+
+                            Button {
+                                id: updateDismissButton
+                                text: "x"
+                                implicitHeight: 24
+                                implicitWidth: 28
+                                onClicked: uiState.dismissUpdateBanner()
+                            }
+                        }
+                    }
+
+                    ColumnLayout {
+                        id: shellUpdateZone
+                        Layout.preferredWidth: shellUpdateControlWidth
+                        Layout.minimumWidth: shellUpdateControlWidth
                         spacing: 2
                         RowLayout {
                             Layout.alignment: Qt.AlignRight
@@ -360,50 +390,55 @@ ApplicationWindow {
                             wrapMode: Text.NoWrap
                         }
                     }
-                    Button {
-                        id: headerPayPalButton
-                        text: "PayPal"
-                        implicitHeight: 32
-                        implicitWidth: 120
-                        onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00")
-                        background: Rectangle {
-                            radius: 16
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#0d6efd" }
-                                GradientStop { position: 1.0; color: "#00457C" }
+
+                    RowLayout {
+                        id: shellSupportZone
+                        spacing: 8
+                        Button {
+                            id: headerPayPalButton
+                            text: "PayPal"
+                            implicitHeight: 32
+                            implicitWidth: 120
+                            onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00")
+                            background: Rectangle {
+                                radius: 16
+                                gradient: Gradient {
+                                    GradientStop { position: 0.0; color: "#0d6efd" }
+                                    GradientStop { position: 1.0; color: "#00457C" }
+                                }
+                                border.color: "#66b3ff"
                             }
-                            border.color: "#66b3ff"
-                        }
-                        contentItem: Text {
-                            text: headerPayPalButton.text
-                            color: "#ffffff"
-                            font.bold: true
-                            font.pixelSize: 12
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                    }
-                    Button {
-                        id: headerCoffeeButton
-                        text: "Buy me a coffee"
-                        implicitHeight: 32
-                        implicitWidth: 148
-                        onClicked: Qt.openUrlExternally("https://buycoffee.to/ao-dps/")
-                        background: Rectangle {
-                            radius: 16
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#ffd34d" }
-                                GradientStop { position: 1.0; color: "#ff9f1a" }
+                            contentItem: Text {
+                                text: headerPayPalButton.text
+                                color: "#ffffff"
+                                font.bold: true
+                                font.pixelSize: 12
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
                             }
-                            border.color: "#ffd34d"
                         }
-                        contentItem: Text {
-                            text: headerCoffeeButton.text
-                            color: "#1c1300"
-                            font.bold: true
-                            font.pixelSize: 12
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+                        Button {
+                            id: headerCoffeeButton
+                            text: "Buy me a coffee"
+                            implicitHeight: 32
+                            implicitWidth: 148
+                            onClicked: Qt.openUrlExternally("https://buycoffee.to/ao-dps/")
+                            background: Rectangle {
+                                radius: 16
+                                gradient: Gradient {
+                                    GradientStop { position: 0.0; color: "#ffd34d" }
+                                    GradientStop { position: 1.0; color: "#ff9f1a" }
+                                }
+                                border.color: "#ffd34d"
+                            }
+                            contentItem: Text {
+                                text: headerCoffeeButton.text
+                                color: "#1c1300"
+                                font.bold: true
+                                font.pixelSize: 12
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
                         }
                     }
                 }

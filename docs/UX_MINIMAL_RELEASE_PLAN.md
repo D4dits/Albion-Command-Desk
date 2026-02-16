@@ -97,14 +97,14 @@ Acceptance:
 ## 4) Proposed execution order (tickets)
 
 ### Phase 0 - Architecture lock (1-2 days)
-- [ ] UXR-001: freeze target shell layout and component map
+- [x] UXR-001: freeze target shell layout and component map
 - [ ] REL-001: freeze dependency profiles (core vs live capture)
 - [ ] REL-002: decide release packaging strategy per OS
 
 #### Phase 0 concrete tickets (execution-ready)
 
 ##### UXR-001 - Shell layout freeze and component map
-- Status: IN PROGRESS
+- Status: DONE
 - Goal: lock one consistent app shell used by Meter/Scanner/Market before visual polish starts.
 - Files to modify:
   1. `docs/UX_MINIMAL_RELEASE_PLAN.md`
@@ -118,6 +118,9 @@ Acceptance:
   - shell layout rules are documented and no longer "to decide"
   - `Main.qml` has an identified target map (what stays inline vs what will be extracted)
   - no header/action drift between top-level tabs in the current baseline
+- Delivery notes:
+  - shell contract documented in `docs/ARCHITECTURE.md`
+  - shell zone IDs and extraction map markers added in `albion_dps/qt/ui/Main.qml`
 
 ##### REL-001 - Dependency profile freeze (core vs live capture)
 - Status: TODO

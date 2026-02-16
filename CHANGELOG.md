@@ -13,6 +13,9 @@ and this project uses semantic versioning.
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` marks `UXR-001` as completed and documents delivery notes.
+- `docs/ARCHITECTURE.md` now defines the frozen Phase 0 Qt shell layout contract.
+- `albion_dps/qt/ui/Main.qml` now uses explicit shell zone IDs and fixed ordering for header actions.
 
 ## [0.1.14] - 2026-02-13
 

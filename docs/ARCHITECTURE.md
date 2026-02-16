@@ -24,6 +24,15 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
 ## Qt UI (PySide6/QML)
 - Implemented in main: Qt runner bridges snapshots to QAbstractListModel models.
 - QML renders scoreboard, history cards, key legend, and fame stats.
+- Phase 0 shell contract (frozen):
+  - `shellHeader` in `Main.qml` has two fixed zones:
+    - `shellLeftZone`: app title + contextual status summary.
+    - `shellRightZone`: `shellMeterZone` -> `shellUpdateBanner` -> `shellUpdateZone` -> `shellSupportZone`.
+  - Global navigation remains the `TabBar` directly under header.
+- Planned extraction map for Phase 1:
+  - `shellHeader` fragment
+  - `shellUpdateZone` fragment
+  - `shellSupportZone` fragment
 - Header runtime helpers:
   - update checks (manifest-based, non-blocking),
   - persisted update preference (`Auto update`),
