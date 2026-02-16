@@ -13,6 +13,7 @@ and this project uses semantic versioning.
 - `core` GUI runtime command in `albion_dps/cli.py` for non-capture startup.
 - Install profile contract in `pyproject.toml` (`core` default, `capture` optional).
 - QML design token source in `albion_dps/qt/ui/Theme.qml`.
+- Shared tab styling component in `albion_dps/qt/ui/ShellTabButton.qml`.
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -31,6 +32,9 @@ and this project uses semantic versioning.
 - `albion_dps/qt/ui/Main.qml` now consumes shared theme tokens for app shell and baseline styles.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now start Phase 1 with `UXR-010` completed.
 - `docs/ARCHITECTURE.md` now documents centralized QML theme tokens.
+- `albion_dps/qt/ui/Main.qml` now centers top navigation in a width-clamped shell nav zone.
+- `albion_dps/qt/ui/Main.qml` now reuses `ShellTabButton` for shell and market tab bars.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `UXR-011` as completed.
 
 ## [0.1.14] - 2026-02-13
 

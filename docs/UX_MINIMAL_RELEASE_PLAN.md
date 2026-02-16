@@ -168,7 +168,7 @@ Acceptance:
 
 ### Phase 1 - UI refactor foundation (2-4 days)
 - [x] UXR-010: extract/declare QML design tokens
-- [ ] UXR-011: normalize header/nav/action zones
+- [x] UXR-011: normalize header/nav/action zones
 - [ ] UXR-012: card/table visual unification
 - [ ] UXR-013: responsive breakpoints and overflow handling
 
@@ -183,6 +183,18 @@ Acceptance:
 - Delivery notes:
   - color, spacing, shell, and market baseline tokens were extracted to `Theme.qml`
   - `Main.qml` now consumes theme tokens for global shell and baseline visual state
+
+##### UXR-011 - Normalize header/nav/action zones
+- Status: DONE
+- Goal: normalize top-level navigation and action placement using shared primitives.
+- Files modified:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/ShellTabButton.qml` (new)
+  3. `albion_dps/qt/ui/Theme.qml`
+- Delivery notes:
+  - main tab navigation is centered and width-clamped in a dedicated nav zone
+  - shared `ShellTabButton` component now styles top and market tab controls
+  - header/nav/action zones now use one tokenized style path
 
 ### Phase 2 - Install/release simplification (3-5 days)
 - [ ] REL-010: bootstrap scripts profile support + clearer diagnostics

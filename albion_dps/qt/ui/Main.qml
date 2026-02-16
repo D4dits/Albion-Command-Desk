@@ -80,6 +80,12 @@ ApplicationWindow {
     property int shellUpdateControlWidth: theme.shellUpdateControlWidth
     property int shellUpdateBannerMinWidth: theme.shellUpdateBannerMinWidth
     property int shellUpdateBannerMaxWidth: theme.shellUpdateBannerMaxWidth
+    property int shellNavHeight: theme.shellNavHeight
+    property int shellNavWidthMax: theme.shellNavWidthMax
+    property int shellNavWidthMin: theme.shellNavWidthMin
+    property int shellTabRadius: theme.shellTabRadius
+    property color shellTabIdleBackground: theme.shellTabIdleBackground
+    property color shellTabActiveText: theme.shellTabActiveText
 
     // Phase 0 shell contract:
     // - left zone: title + contextual status
@@ -449,66 +455,60 @@ ApplicationWindow {
             }
         }
 
-        TabBar {
-            id: viewTabs
+        RowLayout {
             Layout.fillWidth: true
-            implicitHeight: 34
-            padding: 0
-            background: Rectangle {
-                color: "transparent"
-                border.width: 0
-            }
-            TabButton {
-                id: meterTab
-                text: "Meter"
-                height: viewTabs.height
+            spacing: theme.spacingCompact
+
+            Item { Layout.fillWidth: true }
+
+            TabBar {
+                id: viewTabs
+                Layout.preferredWidth: Math.max(shellNavWidthMin, Math.min(shellNavWidthMax, root.width - (theme.spacingPage * 2)))
+                Layout.maximumWidth: shellNavWidthMax
+                implicitHeight: shellNavHeight
+                padding: 0
+                spacing: theme.spacingCompact
                 background: Rectangle {
-                    radius: 5
-                    color: meterTab.checked ? accentColor : "#0f1620"
-                    border.color: meterTab.checked ? accentColor : borderColor
+                    color: "transparent"
+                    border.width: 0
                 }
-                contentItem: Text {
-                    text: meterTab.text
-                    color: meterTab.checked ? "#0b0f14" : textColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.bold: true
+
+                ShellTabButton {
+                    id: meterTab
+                    text: "Meter"
+                    activeColor: accentColor
+                    inactiveColor: shellTabIdleBackground
+                    activeTextColor: shellTabActiveText
+                    inactiveTextColor: textColor
+                    borderColor: borderColor
+                    cornerRadius: shellTabRadius
+                    labelPixelSize: 13
                 }
-            }
-            TabButton {
-                id: scannerTab
-                text: "Scanner"
-                height: viewTabs.height
-                background: Rectangle {
-                    radius: 5
-                    color: scannerTab.checked ? accentColor : "#0f1620"
-                    border.color: scannerTab.checked ? accentColor : borderColor
+                ShellTabButton {
+                    id: scannerTab
+                    text: "Scanner"
+                    activeColor: accentColor
+                    inactiveColor: shellTabIdleBackground
+                    activeTextColor: shellTabActiveText
+                    inactiveTextColor: textColor
+                    borderColor: borderColor
+                    cornerRadius: shellTabRadius
+                    labelPixelSize: 13
                 }
-                contentItem: Text {
-                    text: scannerTab.text
-                    color: scannerTab.checked ? "#0b0f14" : textColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.bold: true
-                }
-            }
-            TabButton {
-                id: marketTab
-                text: "Market"
-                height: viewTabs.height
-                background: Rectangle {
-                    radius: 5
-                    color: marketTab.checked ? accentColor : "#0f1620"
-                    border.color: marketTab.checked ? accentColor : borderColor
-                }
-                contentItem: Text {
-                    text: marketTab.text
-                    color: marketTab.checked ? "#0b0f14" : textColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.bold: true
+                ShellTabButton {
+                    id: marketTab
+                    text: "Market"
+                    activeColor: accentColor
+                    inactiveColor: shellTabIdleBackground
+                    activeTextColor: shellTabActiveText
+                    inactiveTextColor: textColor
+                    borderColor: borderColor
+                    cornerRadius: shellTabRadius
+                    labelPixelSize: 13
                 }
             }
+
+            Item { Layout.fillWidth: true }
         }
 
         StackLayout {
@@ -1192,7 +1192,7 @@ ApplicationWindow {
                             id: marketTabs
                             Layout.fillWidth: true
                             implicitHeight: 30
-                            spacing: 6
+                            spacing: theme.spacingCompact
                             padding: 0
                             onCurrentIndexChanged: marketSetupState.setActiveMarketTab(currentIndex)
                             Component.onCompleted: marketSetupState.setActiveMarketTab(currentIndex)
@@ -1201,77 +1201,49 @@ ApplicationWindow {
                                 border.width: 0
                             }
 
-                            TabButton {
+                            ShellTabButton {
                                 id: marketOverviewTab
                                 text: "Setup"
-                                height: marketTabs.height
-                                background: Rectangle {
-                                    radius: 5
-                                    color: marketOverviewTab.checked ? accentColor : "#0f1620"
-                                    border.color: marketOverviewTab.checked ? accentColor : borderColor
-                                }
-                                contentItem: Text {
-                                    text: marketOverviewTab.text
-                                    color: marketOverviewTab.checked ? "#0b0f14" : textColor
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                }
+                                activeColor: accentColor
+                                inactiveColor: shellTabIdleBackground
+                                activeTextColor: shellTabActiveText
+                                inactiveTextColor: textColor
+                                borderColor: borderColor
+                                cornerRadius: shellTabRadius
+                                labelPixelSize: 11
                             }
-                            TabButton {
+                            ShellTabButton {
                                 id: marketInputsTab
                                 text: "Inputs"
-                                height: marketTabs.height
-                                background: Rectangle {
-                                    radius: 5
-                                    color: marketInputsTab.checked ? accentColor : "#0f1620"
-                                    border.color: marketInputsTab.checked ? accentColor : borderColor
-                                }
-                                contentItem: Text {
-                                    text: marketInputsTab.text
-                                    color: marketInputsTab.checked ? "#0b0f14" : textColor
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                }
+                                activeColor: accentColor
+                                inactiveColor: shellTabIdleBackground
+                                activeTextColor: shellTabActiveText
+                                inactiveTextColor: textColor
+                                borderColor: borderColor
+                                cornerRadius: shellTabRadius
+                                labelPixelSize: 11
                             }
-                            TabButton {
+                            ShellTabButton {
                                 id: marketOutputsTab
                                 text: "Outputs"
-                                height: marketTabs.height
-                                background: Rectangle {
-                                    radius: 5
-                                    color: marketOutputsTab.checked ? accentColor : "#0f1620"
-                                    border.color: marketOutputsTab.checked ? accentColor : borderColor
-                                }
-                                contentItem: Text {
-                                    text: marketOutputsTab.text
-                                    color: marketOutputsTab.checked ? "#0b0f14" : textColor
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                }
+                                activeColor: accentColor
+                                inactiveColor: shellTabIdleBackground
+                                activeTextColor: shellTabActiveText
+                                inactiveTextColor: textColor
+                                borderColor: borderColor
+                                cornerRadius: shellTabRadius
+                                labelPixelSize: 11
                             }
-                            TabButton {
+                            ShellTabButton {
                                 id: marketResultsTab
                                 text: "Results"
-                                height: marketTabs.height
-                                background: Rectangle {
-                                    radius: 5
-                                    color: marketResultsTab.checked ? accentColor : "#0f1620"
-                                    border.color: marketResultsTab.checked ? accentColor : borderColor
-                                }
-                                contentItem: Text {
-                                    text: marketResultsTab.text
-                                    color: marketResultsTab.checked ? "#0b0f14" : textColor
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                }
+                                activeColor: accentColor
+                                inactiveColor: shellTabIdleBackground
+                                activeTextColor: shellTabActiveText
+                                inactiveTextColor: textColor
+                                borderColor: borderColor
+                                cornerRadius: shellTabRadius
+                                labelPixelSize: 11
                             }
                         }
 

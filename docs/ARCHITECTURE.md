@@ -25,11 +25,12 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
 - Implemented in main: Qt runner bridges snapshots to QAbstractListModel models.
 - QML renders scoreboard, history cards, key legend, and fame stats.
 - Shared design tokens are centralized in `albion_dps/qt/ui/Theme.qml`.
+- Shared tab styling primitive is centralized in `albion_dps/qt/ui/ShellTabButton.qml`.
 - Phase 0 shell contract (frozen):
   - `shellHeader` in `Main.qml` has two fixed zones:
     - `shellLeftZone`: app title + contextual status summary.
     - `shellRightZone`: `shellMeterZone` -> `shellUpdateBanner` -> `shellUpdateZone` -> `shellSupportZone`.
-  - Global navigation remains the `TabBar` directly under header.
+  - Global navigation remains centered directly under header in a width-clamped nav zone.
 - Planned extraction map for Phase 1:
   - `shellHeader` fragment
   - `shellUpdateZone` fragment

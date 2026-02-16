@@ -27,6 +27,12 @@ QtObject {
     readonly property int shellUpdateControlWidth: 215
     readonly property int shellUpdateBannerMinWidth: 270
     readonly property int shellUpdateBannerMaxWidth: 420
+    readonly property int shellNavHeight: 34
+    readonly property int shellNavWidthMax: 920
+    readonly property int shellNavWidthMin: 520
+    readonly property int shellTabRadius: 5
+    readonly property color shellTabIdleBackground: "#0f1620"
+    readonly property color shellTabActiveText: "#0b0f14"
 
     // Market tokens
     readonly property int marketColumnSpacing: 6

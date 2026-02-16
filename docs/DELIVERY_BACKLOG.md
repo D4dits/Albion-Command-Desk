@@ -64,11 +64,12 @@ Update status checkboxes and notes after each implemented ticket.
   - main shell consumes shared theme tokens instead of ad-hoc literals
 
 ### PH1-UXR-011 - Normalize header/nav/action zones
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: finish normalizing all header and navigation interactions around frozen shell map.
 - Files:
   1. `albion_dps/qt/ui/Main.qml`
-  2. `docs/ARCHITECTURE.md`
+  2. `albion_dps/qt/ui/ShellTabButton.qml`
+  3. `docs/ARCHITECTURE.md`
 
 ### PH1-UXR-012 - Card/table visual unification
 - [ ] Status: TODO
@@ -217,6 +218,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-16: PH1-UXR-011 completed (centered shell nav zone + shared tab button component for shell/market tabs).
 - 2026-02-16: PH1-UXR-010 completed (new `Theme.qml` tokens and `Main.qml` token wiring baseline).
 - 2026-02-16: PH0-REL-002 completed (packaging strategy + CI gate map locked in release docs/workflows).
 - 2026-02-16: PH0-REL-001 completed (install profiles frozen: `core` default, `capture` optional; bootstrap scripts + docs aligned).
