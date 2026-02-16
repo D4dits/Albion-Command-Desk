@@ -321,41 +321,6 @@ ApplicationWindow {
                 RowLayout {
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                     spacing: 8
-                    ColumnLayout {
-                        spacing: 2
-                        RowLayout {
-                            spacing: 6
-                            CheckBox {
-                                id: autoUpdateCheckBox
-                                checked: uiState.updateAutoCheck
-                                text: "Auto update"
-                                onToggled: uiState.setUpdateAutoCheck(checked)
-                                contentItem: Text {
-                                    text: autoUpdateCheckBox.text
-                                    color: mutedColor
-                                    font.pixelSize: 11
-                                    verticalAlignment: Text.AlignVCenter
-                                    leftPadding: autoUpdateCheckBox.indicator.width + autoUpdateCheckBox.spacing
-                                }
-                            }
-                            Button {
-                                id: checkUpdatesButton
-                                text: "Check now"
-                                implicitHeight: 28
-                                implicitWidth: 88
-                                onClicked: uiState.requestManualUpdateCheck()
-                            }
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            visible: uiState.updateCheckStatus.length > 0
-                            text: uiState.updateCheckStatus
-                            color: mutedColor
-                            font.pixelSize: 10
-                            elide: Text.ElideRight
-                            wrapMode: Text.NoWrap
-                        }
-                    }
                     Button {
                         id: headerPayPalButton
                         text: "PayPal"
@@ -400,6 +365,45 @@ ApplicationWindow {
                             font.pixelSize: 12
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
+                        }
+                    }
+                    ColumnLayout {
+                        Layout.preferredWidth: 215
+                        Layout.minimumWidth: 215
+                        spacing: 2
+                        RowLayout {
+                            Layout.alignment: Qt.AlignRight
+                            spacing: 6
+                            CheckBox {
+                                id: autoUpdateCheckBox
+                                checked: uiState.updateAutoCheck
+                                text: "Auto update"
+                                onToggled: uiState.setUpdateAutoCheck(checked)
+                                contentItem: Text {
+                                    text: autoUpdateCheckBox.text
+                                    color: mutedColor
+                                    font.pixelSize: 11
+                                    verticalAlignment: Text.AlignVCenter
+                                    leftPadding: autoUpdateCheckBox.indicator.width + autoUpdateCheckBox.spacing
+                                }
+                            }
+                            Button {
+                                id: checkUpdatesButton
+                                text: "Check now"
+                                implicitHeight: 28
+                                implicitWidth: 88
+                                onClicked: uiState.requestManualUpdateCheck()
+                            }
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            visible: uiState.updateCheckStatus.length > 0
+                            text: uiState.updateCheckStatus
+                            color: mutedColor
+                            font.pixelSize: 10
+                            horizontalAlignment: Text.AlignRight
+                            elide: Text.ElideRight
+                            wrapMode: Text.NoWrap
                         }
                     }
                 }
