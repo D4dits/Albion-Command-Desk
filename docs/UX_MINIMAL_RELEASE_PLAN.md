@@ -233,7 +233,7 @@ Acceptance:
 ### Phase 3 - Stabilization and ship (2-3 days)
 - [x] QA-001: regression pass (meter/scanner/market/live/replay)
 - [x] QA-002: clean machine install tests (Win/Linux/macOS)
-- [ ] QA-003: release + manifest + update banner validation
+- [x] QA-003: release + manifest + update banner validation
 
 #### Phase 3 concrete tickets
 
@@ -259,6 +259,21 @@ Acceptance:
 - Delivery notes:
   - added `gh`-based verifier for required clean-machine jobs from `bootstrap-smoke.yml`
   - documented runbook and explicit pass/fail semantics for clean-machine matrix checks
+
+##### QA-003 - Release + manifest + update banner validation
+- Status: DONE
+- Goal: validate that release metadata contract maps correctly to user-visible update banner behavior.
+- Files modified:
+  1. `tests/test_release_manifest_contract.py` (new)
+  2. `tests/test_qt_update_banner.py` (new)
+  3. `tools/qa/verify_release_update_flow.py` (new)
+  4. `docs/qa/QA_RELEASE_UPDATE.md` (new)
+  5. `docs/release/RELEASE_CHECKLIST.md`
+  6. `docs/DELIVERY_BACKLOG.md`
+- Delivery notes:
+  - added explicit manifest contract test and UI update banner state tests
+  - added end-to-end local smoke verifier from manifest payload to Qt update banner state
+  - updated release checklist with mandatory QA-003 validation commands
 
 ## 5) Non-goals (for this cycle)
 

@@ -38,6 +38,9 @@ Use this checklist before publishing a new release.
   - Manifest build must pass (**BLOCKER**).
   - Manifest strategy validation requires Windows installer asset (**BLOCKER**).
   - Missing Linux/macOS assets is warning-only in workflow logs.
+  - Run local contract checks:
+    - `python -m pytest -q tests/test_update_checker.py tests/test_release_manifest_contract.py tests/test_qt_update_banner.py`
+    - `python .\tools\qa\verify_release_update_flow.py`
 
 ## 5) Release publication
 

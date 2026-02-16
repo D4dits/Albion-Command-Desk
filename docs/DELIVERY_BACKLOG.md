@@ -106,12 +106,14 @@ Update status checkboxes and notes after each implemented ticket.
   3. `docs/release/RELEASE_CHECKLIST.md`
 
 ### QA-003 - Release + manifest + update banner validation
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: verify release metadata publication and in-app update signaling end-to-end.
 - Files:
-  1. `.github/workflows/release-manifest.yml`
-  2. `tools/release/manifest/build_manifest.py`
-  3. `tests/test_update_checker.py`
+  1. `tests/test_release_manifest_contract.py`
+  2. `tests/test_qt_update_banner.py`
+  3. `tools/qa/verify_release_update_flow.py`
+  4. `docs/qa/QA_RELEASE_UPDATE.md`
+  5. `docs/release/RELEASE_CHECKLIST.md`
 
 ## Ticket Queue (Execution Order)
 
@@ -246,6 +248,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-16: QA-003 completed (manifest contract test + update banner test + release/update validation runbook).
 - 2026-02-16: QA-002 completed (clean-machine matrix verifier + QA runbook + release checklist gate command).
 - 2026-02-16: QA-001 completed (grouped regression runner + QA runbook for meter/scanner/market/live/replay).
 - 2026-02-16: PH1-UXR-013 completed (responsive shell breakpoints + narrow/compact overflow handling in header/nav/market panels).
