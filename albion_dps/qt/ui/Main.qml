@@ -8,16 +8,20 @@ ApplicationWindow {
     width: 1120
     height: 720
     title: "Albion Command Desk"
-    color: "#0b0f14"
+    color: theme.surfaceApp
 
-    property color textColor: "#e6edf3"
-    property color mutedColor: "#9aa4af"
-    property color accentColor: "#4aa3ff"
-    property color panelColor: "#131a22"
-    property color borderColor: "#1f2a37"
-    property int compactControlHeight: 24
-    property int marketColumnSpacing: 6
-    property int marketSetupPanelWidth: 360
+    Theme {
+        id: theme
+    }
+
+    property color textColor: theme.textPrimary
+    property color mutedColor: theme.textMuted
+    property color accentColor: theme.accentPrimary
+    property color panelColor: theme.surfacePanel
+    property color borderColor: theme.borderSubtle
+    property int compactControlHeight: theme.controlHeightCompact
+    property int marketColumnSpacing: theme.marketColumnSpacing
+    property int marketSetupPanelWidth: theme.marketSetupPanelWidth
     property int marketInputsItemWidth: Math.max(150, Math.min(240, Math.round(width * 0.17)))
     property int marketInputsQtyWidth: 62
     property int marketInputsStockWidth: 72
@@ -70,12 +74,12 @@ ApplicationWindow {
     property bool marketStatusExpanded: false
     property bool marketBreakdownExpanded: false
     property real craftPlanPendingContentY: -1
-    property int shellHeaderHeight: 72
-    property int shellRightZoneSpacing: 8
-    property int shellMeterMetaWidth: 180
-    property int shellUpdateControlWidth: 215
-    property int shellUpdateBannerMinWidth: 270
-    property int shellUpdateBannerMaxWidth: 420
+    property int shellHeaderHeight: theme.shellHeaderHeight
+    property int shellRightZoneSpacing: theme.shellRightZoneSpacing
+    property int shellMeterMetaWidth: theme.shellMeterMetaWidth
+    property int shellUpdateControlWidth: theme.shellUpdateControlWidth
+    property int shellUpdateBannerMinWidth: theme.shellUpdateBannerMinWidth
+    property int shellUpdateBannerMaxWidth: theme.shellUpdateBannerMaxWidth
 
     // Phase 0 shell contract:
     // - left zone: title + contextual status
@@ -114,7 +118,7 @@ ApplicationWindow {
     function adpAgeColor(ageText) {
         var raw = String(ageText || "").trim().toLowerCase()
         if (raw === "manual") {
-            return "#79c0ff"
+            return theme.stateInfo
         }
         if (raw === "n/a" || raw === "unknown" || raw.length === 0) {
             return mutedColor
@@ -135,12 +139,12 @@ ApplicationWindow {
             minutes += 0
         }
         if (minutes <= 20) {
-            return "#2ea043"
+            return theme.stateSuccess
         }
         if (minutes <= 60) {
-            return "#e3b341"
+            return theme.stateWarning
         }
-        return "#ff7b72"
+        return theme.stateDanger
     }
 
     function copyCellText(value) {
@@ -211,8 +215,8 @@ ApplicationWindow {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 16
-        spacing: 12
+        anchors.margins: theme.spacingPage
+        spacing: theme.spacingSection
 
         Timer {
             id: craftPlanRestoreTimer
@@ -233,7 +237,7 @@ ApplicationWindow {
             Layout.fillWidth: true
             height: shellHeaderHeight
             color: panelColor
-            radius: 8
+            radius: theme.cornerRadiusPanel
             border.color: borderColor
 
             RowLayout {

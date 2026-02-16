@@ -167,10 +167,22 @@ Acceptance:
   - bootstrap and manifest workflows now enforce/report Phase 0 gate mapping
 
 ### Phase 1 - UI refactor foundation (2-4 days)
-- [ ] UXR-010: extract/declare QML design tokens
+- [x] UXR-010: extract/declare QML design tokens
 - [ ] UXR-011: normalize header/nav/action zones
 - [ ] UXR-012: card/table visual unification
 - [ ] UXR-013: responsive breakpoints and overflow handling
+
+#### Phase 1 concrete tickets
+
+##### UXR-010 - Extract/declare QML design tokens
+- Status: DONE
+- Goal: move core style constants into a reusable token source before visual restyling.
+- Files modified:
+  1. `albion_dps/qt/ui/Theme.qml` (new)
+  2. `albion_dps/qt/ui/Main.qml`
+- Delivery notes:
+  - color, spacing, shell, and market baseline tokens were extracted to `Theme.qml`
+  - `Main.qml` now consumes theme tokens for global shell and baseline visual state
 
 ### Phase 2 - Install/release simplification (3-5 days)
 - [ ] REL-010: bootstrap scripts profile support + clearer diagnostics

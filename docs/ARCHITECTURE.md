@@ -24,6 +24,7 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
 ## Qt UI (PySide6/QML)
 - Implemented in main: Qt runner bridges snapshots to QAbstractListModel models.
 - QML renders scoreboard, history cards, key legend, and fame stats.
+- Shared design tokens are centralized in `albion_dps/qt/ui/Theme.qml`.
 - Phase 0 shell contract (frozen):
   - `shellHeader` in `Main.qml` has two fixed zones:
     - `shellLeftZone`: app title + contextual status summary.

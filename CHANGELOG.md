@@ -12,6 +12,7 @@ and this project uses semantic versioning.
 - Active Phase 0 milestone queue in `docs/DELIVERY_BACKLOG.md`.
 - `core` GUI runtime command in `albion_dps/cli.py` for non-capture startup.
 - Install profile contract in `pyproject.toml` (`core` default, `capture` optional).
+- QML design token source in `albion_dps/qt/ui/Theme.qml`.
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -27,6 +28,9 @@ and this project uses semantic versioning.
 - `.github/workflows/release-manifest.yml` now validates manifest assets against Phase 0 release strategy.
 - `docs/release/RELEASE_MANIFEST_SPEC.md` now documents manifest blocker/warning policy.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `REL-002` as completed.
+- `albion_dps/qt/ui/Main.qml` now consumes shared theme tokens for app shell and baseline styles.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now start Phase 1 with `UXR-010` completed.
+- `docs/ARCHITECTURE.md` now documents centralized QML theme tokens.
 
 ## [0.1.14] - 2026-02-13
 

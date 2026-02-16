@@ -50,6 +50,40 @@ Update status checkboxes and notes after each implemented ticket.
   - CI checks are mapped to every artifact.
   - Publish blockers vs warnings are explicitly defined.
 
+## Active Milestone - Phase 1 (UI Refactor Foundation)
+
+### PH1-UXR-010 - Extract/declare QML design tokens
+- [x] Status: DONE
+- Goal: centralize visual constants before deeper component refactor.
+- Files:
+  1. `albion_dps/qt/ui/Theme.qml`
+  2. `albion_dps/qt/ui/Main.qml`
+  3. `docs/UX_MINIMAL_RELEASE_PLAN.md`
+- Done when:
+  - core design tokens exist in a dedicated QML file
+  - main shell consumes shared theme tokens instead of ad-hoc literals
+
+### PH1-UXR-011 - Normalize header/nav/action zones
+- [ ] Status: TODO
+- Goal: finish normalizing all header and navigation interactions around frozen shell map.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `docs/ARCHITECTURE.md`
+
+### PH1-UXR-012 - Card/table visual unification
+- [ ] Status: TODO
+- Goal: align card and table primitives to one visual language.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/components/*` (new if extracted)
+
+### PH1-UXR-013 - Responsive breakpoints and overflow handling
+- [ ] Status: TODO
+- Goal: enforce stable behavior for small/medium/large app widths.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `docs/TROUBLESHOOTING.md`
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract
@@ -183,6 +217,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-16: PH1-UXR-010 completed (new `Theme.qml` tokens and `Main.qml` token wiring baseline).
 - 2026-02-16: PH0-REL-002 completed (packaging strategy + CI gate map locked in release docs/workflows).
 - 2026-02-16: PH0-REL-001 completed (install profiles frozen: `core` default, `capture` optional; bootstrap scripts + docs aligned).
 - 2026-02-16: PH0-UXR-001 completed (shell layout contract frozen in docs + `Main.qml` zone map IDs).
