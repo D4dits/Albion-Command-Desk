@@ -9,6 +9,47 @@ Update status checkboxes and notes after each implemented ticket.
 - Every ticket completion must also update `CHANGELOG.md` (`[Unreleased]`).
 - If ticket scope changes, update this file in the same commit.
 
+## Active Milestone - Phase 0 (UX + Minimal Release)
+
+### PH0-UXR-001 - Shell layout freeze and component map
+- [ ] Status: IN PROGRESS
+- Goal: lock one global shell structure and remove layout drift before visual redesign.
+- Files:
+  1. `docs/UX_MINIMAL_RELEASE_PLAN.md`
+  2. `docs/ARCHITECTURE.md`
+  3. `albion_dps/qt/ui/Main.qml`
+- Done when:
+  - Header zones/order are fully documented and frozen.
+  - Reusable component extraction map is defined for `Main.qml`.
+  - Top-level tabs keep stable action placement.
+
+### PH0-REL-001 - Dependency profile freeze (core vs capture)
+- [ ] Status: TODO
+- Goal: separate required core dependencies from optional live-capture dependencies.
+- Files:
+  1. `pyproject.toml`
+  2. `tools/install/windows/install.ps1`
+  3. `tools/install/linux/install.sh`
+  4. `tools/install/macos/install.sh`
+  5. `docs/TROUBLESHOOTING.md`
+- Done when:
+  - Install profiles are consistent across all bootstrap scripts.
+  - Core profile runs without capture extras.
+  - Capture-missing path is handled with clear diagnostics.
+
+### PH0-REL-002 - Release packaging strategy lock per OS
+- [ ] Status: TODO
+- Goal: freeze artifact strategy and release gates for Windows/Linux/macOS.
+- Files:
+  1. `docs/release/RELEASE_CHECKLIST.md`
+  2. `docs/release/RELEASE_MANIFEST_SPEC.md`
+  3. `.github/workflows/bootstrap-smoke.yml`
+  4. `.github/workflows/release-manifest.yml`
+- Done when:
+  - Packaging target per OS is documented and approved.
+  - CI checks are mapped to every artifact.
+  - Publish blockers vs warnings are explicitly defined.
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract
@@ -142,6 +183,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-16: Phase 0 kickoff started (PH0-UXR-001 IN PROGRESS, PH0-REL-001/002 queued).
 - 2026-02-13: backlog initialized.
 - 2026-02-13: ACD-REL-001 completed (`RELEASE_MANIFEST_SPEC.md`, manifest example, README links).
 - 2026-02-13: ACD-REL-002 completed (Windows installer script + docs + README quick bootstrap).

@@ -101,6 +101,61 @@ Acceptance:
 - [ ] REL-001: freeze dependency profiles (core vs live capture)
 - [ ] REL-002: decide release packaging strategy per OS
 
+#### Phase 0 concrete tickets (execution-ready)
+
+##### UXR-001 - Shell layout freeze and component map
+- Status: IN PROGRESS
+- Goal: lock one consistent app shell used by Meter/Scanner/Market before visual polish starts.
+- Files to modify:
+  1. `docs/UX_MINIMAL_RELEASE_PLAN.md`
+  2. `docs/ARCHITECTURE.md`
+  3. `albion_dps/qt/ui/Main.qml`
+- Tasks:
+  - define final header zones and strict ordering (left context, center tabs, right utilities/support)
+  - inventory duplicated/legacy QML sections and mark candidates for extraction into reusable components
+  - set hard constraints for table/card spacing, minimum widths, and overflow behavior
+- Done when:
+  - shell layout rules are documented and no longer "to decide"
+  - `Main.qml` has an identified target map (what stays inline vs what will be extracted)
+  - no header/action drift between top-level tabs in the current baseline
+
+##### REL-001 - Dependency profile freeze (core vs live capture)
+- Status: TODO
+- Goal: define mandatory runtime dependencies for "core app" and optional dependencies for "live capture".
+- Files to modify:
+  1. `pyproject.toml`
+  2. `tools/install/windows/install.ps1`
+  3. `tools/install/linux/install.sh`
+  4. `tools/install/macos/install.sh`
+  5. `docs/TROUBLESHOOTING.md`
+- Tasks:
+  - freeze two install profiles:
+    - `core`: UI + scanner/market/replay (no capture extras)
+    - `capture`: adds live capture backend requirements
+  - enforce capability checks on startup with direct install guidance when capture is unavailable
+  - align bootstrap scripts to the same profile naming and behavior
+- Done when:
+  - one profile matrix is documented and reflected by install scripts
+  - clean install can run core features without capture dependencies
+  - missing capture backend produces actionable message, not hard crash
+
+##### REL-002 - Release packaging strategy lock (Win/Linux/macOS)
+- Status: TODO
+- Goal: finalize packaging approach per OS so release work is deterministic.
+- Files to modify:
+  1. `docs/release/RELEASE_CHECKLIST.md`
+  2. `docs/release/RELEASE_MANIFEST_SPEC.md`
+  3. `.github/workflows/release-manifest.yml`
+  4. `.github/workflows/bootstrap-smoke.yml`
+- Tasks:
+  - freeze packaging targets per OS (artifact type, install flow, fallback mode)
+  - map required CI checks to each target artifact
+  - define release gates (what blocks publish vs what is warning-only)
+- Done when:
+  - each OS has one chosen artifact strategy documented in release checklist
+  - CI checks explicitly map to those artifacts
+  - release decision is no longer ad-hoc per version
+
 ### Phase 1 - UI refactor foundation (2-4 days)
 - [ ] UXR-010: extract/declare QML design tokens
 - [ ] UXR-011: normalize header/nav/action zones

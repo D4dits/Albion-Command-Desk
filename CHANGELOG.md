@@ -7,7 +7,12 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
-- No unreleased changes.
+### Added
+- Phase 0 execution tickets for UX/minimal-release work in `docs/UX_MINIMAL_RELEASE_PLAN.md`.
+- Active Phase 0 milestone queue in `docs/DELIVERY_BACKLOG.md`.
+
+### Changed
+- Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
 
 ## [0.1.14] - 2026-02-13
 
