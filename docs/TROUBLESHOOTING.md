@@ -80,9 +80,9 @@ Common issues when running on a different OS or machine:
 - **Missing `items.json`:** if you see `Items catalog loaded but produced no entries`, re-run the extractor and confirm it generated `data/items.json`.
 
 ## Too many "unknown payload" files
-Unknown payloads are saved to `artifacts/unknown/` to support protocol updates.
-Log lines for unknown payloads are printed only in `--debug`, but files are still written.
-If you also enable raw dumps (`--debug` or `--dump-raw`), `artifacts/raw/` can grow quickly.
+Unknown payload files are written to `artifacts/unknown/` only when `--debug` is enabled.
+In normal runs, unknown dumps are disabled by default.
+If you enable debug dumps (`--debug` or `--dump-raw`), `artifacts/raw/` and `artifacts/unknown/` can grow quickly.
 Cleanup:
 ```
 ./tools/cleanup_artifacts.sh

@@ -347,9 +347,9 @@ def _build_runtime(
     CombatEventMapper,
 ]:
     decoder = PhotonDecoder(
-        registry=default_registry(), debug=args.debug, dump_unknowns=True
+        registry=default_registry(), debug=args.debug, dump_unknowns=args.debug
     )
-    mapper = CombatEventMapper(dump_unknowns=True, clamp_overkill=True)
+    mapper = CombatEventMapper(dump_unknowns=args.debug, clamp_overkill=True)
     names = NameRegistry()
     party = PartyRegistry()
     fame = FameTracker()
