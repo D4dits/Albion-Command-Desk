@@ -1,0 +1,132 @@
+# UX + Minimal Release Plan
+
+Goal: modernize the UI (clean/minimal look) and reduce end-user installation friction to near one-click on each OS.
+
+## 1) Product targets
+
+- UI target:
+  - consistent visual system across Meter/Scanner/Market
+  - cleaner hierarchy, less visual noise, better spacing/readability
+  - fixed global action placement (updates/support/settings)
+- Release target:
+  - end user should not install Python/toolchains manually
+  - avoid requiring build-time SDKs on user machines
+  - clear fallback behavior when live capture dependency is missing
+
+## 2) Current pain points (baseline)
+
+- Header/action placement is inconsistent and shifts by view.
+- Legacy styles and mixed component patterns in `Main.qml`.
+- End-user setup is too long (manual dependencies + environment steps).
+- Windows capture path is fragile (Npcap + capture backend dependency chain).
+
+## 3) Work streams
+
+### Stream A - UI system and visual redesign
+
+Files:
+- `albion_dps/qt/ui/Main.qml`
+- `albion_dps/qt/models.py` (only if data formatting/state updates are needed)
+- optionally split reusable QML components under `albion_dps/qt/ui/components/`
+
+Tasks:
+1. Define design tokens (spacing, typography, color, border radii, elevation).
+2. Standardize shell layout:
+   - left: context/title
+   - center: tab navigation
+   - right: update controls, support buttons, settings
+3. Simplify sections/cards:
+   - reduce border noise
+   - increase content density without crowding
+   - align tables and controls to one rhythm grid
+4. Improve responsive behavior (small/medium/large widths).
+5. Apply one visual language to Meter, Scanner, Market.
+
+Acceptance:
+- No major layout shift when switching tabs.
+- Header controls remain anchored and predictable.
+- Core views usable at common laptop resolutions.
+
+### Stream B - Dependency and runtime simplification
+
+Files:
+- `pyproject.toml`
+- `albion_dps/capture/*`
+- `tools/install/windows/install.ps1`
+- `tools/install/linux/install.sh`
+- `tools/install/macos/install.sh`
+- `README.md`, `docs/TROUBLESHOOTING.md`
+
+Tasks:
+1. Split runtime modes clearly:
+   - replay/market/scanner should run without capture extras
+   - live capture remains optional
+2. Keep unknown/raw dumps opt-in (`--debug`) to avoid artifact explosion.
+3. Minimize hard dependencies:
+   - remove any user-side SDK requirement from normal install path
+   - keep only runtime dependencies for live capture
+4. Add deterministic capability checks at startup:
+   - show exact missing dependency + direct fix path
+5. Harden bootstrap scripts with explicit "install profile":
+   - default profile: full app
+   - safe fallback profile when capture cannot be installed
+
+Acceptance:
+- Fresh machine can run app core features with one command/script.
+- Missing capture backend does not block non-capture features.
+
+### Stream C - Cross-platform release pipeline
+
+Files:
+- `.github/workflows/*`
+- `tools/release/*`
+- `docs/release/RELEASE_CHECKLIST.md`
+- `tools/release/manifest/*`
+
+Tasks:
+1. Build release artifacts per OS with bundled runtime.
+2. Ensure release outputs are directly runnable by users.
+3. Keep manifest publication automatic for each release.
+4. Add smoke checks on produced artifacts (launch + basic UI load).
+5. Define rollback/hotfix path in checklist (already present, validate in practice).
+
+Acceptance:
+- Windows/Linux/macOS release assets exist and are tested.
+- "Latest" release can be installed without developer tooling.
+
+## 4) Proposed execution order (tickets)
+
+### Phase 0 - Architecture lock (1-2 days)
+- [ ] UXR-001: freeze target shell layout and component map
+- [ ] REL-001: freeze dependency profiles (core vs live capture)
+- [ ] REL-002: decide release packaging strategy per OS
+
+### Phase 1 - UI refactor foundation (2-4 days)
+- [ ] UXR-010: extract/declare QML design tokens
+- [ ] UXR-011: normalize header/nav/action zones
+- [ ] UXR-012: card/table visual unification
+- [ ] UXR-013: responsive breakpoints and overflow handling
+
+### Phase 2 - Install/release simplification (3-5 days)
+- [ ] REL-010: bootstrap scripts profile support + clearer diagnostics
+- [ ] REL-011: ensure no SDK requirement in end-user path
+- [ ] REL-012: release artifact smoke checks per OS
+- [ ] REL-013: docs rewrite for one-click install paths
+
+### Phase 3 - Stabilization and ship (2-3 days)
+- [ ] QA-001: regression pass (meter/scanner/market/live/replay)
+- [ ] QA-002: clean machine install tests (Win/Linux/macOS)
+- [ ] QA-003: release + manifest + update banner validation
+
+## 5) Non-goals (for this cycle)
+
+- No full feature redesign of combat/market logic.
+- No protocol overhaul unless blocking release stability.
+- No broad plugin architecture changes.
+
+## 6) Definition of done
+
+- UI is visually consistent and clearly more modern/minimal.
+- End-user install path is short, documented, and reproducible.
+- Release artifacts are validated on all target OSes.
+- Update manifest flow works from released artifacts.
