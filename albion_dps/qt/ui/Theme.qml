@@ -25,6 +25,8 @@ QtObject {
     readonly property int spacingCompact: 8
     readonly property int cornerRadiusPanel: 8
     readonly property int controlHeightCompact: 24
+    readonly property int breakpointCompact: 1320
+    readonly property int breakpointNarrow: 1160
 
     // Shell tokens
     readonly property int shellHeaderHeight: 72

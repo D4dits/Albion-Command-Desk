@@ -19,10 +19,13 @@ ApplicationWindow {
     property color accentColor: theme.accentPrimary
     property color panelColor: theme.surfacePanel
     property color borderColor: theme.borderSubtle
+    property bool compactLayout: width < theme.breakpointCompact
+    property bool narrowLayout: width < theme.breakpointNarrow
     property int compactControlHeight: theme.controlHeightCompact
     property int marketColumnSpacing: theme.marketColumnSpacing
     property int marketSetupPanelWidth: theme.marketSetupPanelWidth
-    property int marketInputsItemWidth: Math.max(150, Math.min(240, Math.round(width * 0.17)))
+    property int marketSetupPanelActiveWidth: narrowLayout ? 300 : (compactLayout ? 330 : marketSetupPanelWidth)
+    property int marketInputsItemWidth: Math.max(narrowLayout ? 130 : 150, Math.min(240, Math.round(width * (narrowLayout ? 0.15 : 0.17))))
     property int marketInputsQtyWidth: 62
     property int marketInputsStockWidth: 72
     property int marketInputsBuyWidth: 62
@@ -44,7 +47,7 @@ ApplicationWindow {
         + marketInputsBuyWidth
         + marketColumnSpacing * 9
         + 12
-    property int marketOutputsItemWidth: Math.max(145, Math.min(230, Math.round(width * 0.16)))
+    property int marketOutputsItemWidth: Math.max(narrowLayout ? 130 : 145, Math.min(230, Math.round(width * (narrowLayout ? 0.14 : 0.16))))
     property int marketOutputsQtyWidth: 58
     property int marketOutputsCityWidth: 108
     property int marketOutputsModeWidth: 92
@@ -54,7 +57,7 @@ ApplicationWindow {
     property int marketOutputsFeeWidth: 74
     property int marketOutputsTaxWidth: 74
     property int marketOutputsNetMinWidth: 116
-    property int marketResultsItemWidth: Math.max(220, Math.min(340, Math.round(width * 0.28)))
+    property int marketResultsItemWidth: Math.max(narrowLayout ? 180 : 220, Math.min(340, Math.round(width * (narrowLayout ? 0.24 : 0.28))))
     property int marketOutputsContentMinWidth: marketOutputsItemWidth
         + marketOutputsQtyWidth
         + marketOutputsCityWidth
@@ -83,9 +86,20 @@ ApplicationWindow {
     property int shellNavHeight: theme.shellNavHeight
     property int shellNavWidthMax: theme.shellNavWidthMax
     property int shellNavWidthMin: theme.shellNavWidthMin
+    property int shellNavWidthMinActive: narrowLayout ? 320 : shellNavWidthMin
+    property int shellNavAvailableWidth: Math.max(300, root.width - (theme.spacingPage * 2))
     property int shellTabRadius: theme.shellTabRadius
     property color shellTabIdleBackground: theme.shellTabIdleBackground
     property color shellTabActiveText: theme.shellTabActiveText
+    property int shellMeterMetaWidthActive: compactLayout ? 0 : shellMeterMetaWidth
+    property int shellUpdateControlWidthActive: compactLayout ? 170 : shellUpdateControlWidth
+    property int shellUpdateBannerMinWidthActive: compactLayout ? 180 : shellUpdateBannerMinWidth
+    property int shellUpdateBannerMaxWidthActive: compactLayout ? 280 : shellUpdateBannerMaxWidth
+    property int shellHeaderMargin: narrowLayout ? 8 : 12
+    property int shellHeaderZoneSpacing: narrowLayout ? 10 : 20
+    property string autoUpdateLabel: narrowLayout ? "Auto" : "Auto update"
+    property string payPalButtonLabel: narrowLayout ? "Pay" : "PayPal"
+    property string coffeeButtonLabel: narrowLayout ? "Coffee" : "Buy me a coffee"
 
     // Phase 0 shell contract:
     // - left zone: title + contextual status
@@ -257,8 +271,8 @@ ApplicationWindow {
             RowLayout {
                 id: shellHeaderLayout
                 anchors.fill: parent
-                anchors.margins: 12
-                spacing: 20
+                anchors.margins: shellHeaderMargin
+                spacing: shellHeaderZoneSpacing
 
                 ColumnLayout {
                     id: shellLeftZone
@@ -296,16 +310,17 @@ ApplicationWindow {
                 RowLayout {
                     id: shellRightZone
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                    spacing: shellRightZoneSpacing
+                    spacing: narrowLayout ? 6 : shellRightZoneSpacing
 
                     ColumnLayout {
                         id: shellMeterZone
-                        Layout.preferredWidth: shellMeterMetaWidth
-                        Layout.minimumWidth: shellMeterMetaWidth
-                        Layout.maximumWidth: shellMeterMetaWidth
+                        Layout.preferredWidth: shellMeterMetaWidthActive
+                        Layout.minimumWidth: shellMeterMetaWidthActive
+                        Layout.maximumWidth: shellMeterMetaWidthActive
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        opacity: meterView ? 1.0 : 0.0
-                        enabled: meterView
+                        visible: meterView && !compactLayout
+                        opacity: visible ? 1.0 : 0.0
+                        enabled: visible
                         spacing: 4
                         Text {
                             text: uiState.timeText
@@ -323,9 +338,9 @@ ApplicationWindow {
 
                     Rectangle {
                         id: shellUpdateBanner
-                        visible: uiState.updateBannerVisible
+                        visible: uiState.updateBannerVisible && !narrowLayout
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                        Layout.preferredWidth: Math.max(shellUpdateBannerMinWidth, Math.min(shellUpdateBannerMaxWidth, root.width * 0.28))
+                        Layout.preferredWidth: Math.max(shellUpdateBannerMinWidthActive, Math.min(shellUpdateBannerMaxWidthActive, root.width * 0.24))
                         Layout.preferredHeight: 34
                         radius: 17
                         color: "#1f3322"
@@ -370,8 +385,9 @@ ApplicationWindow {
 
                     ColumnLayout {
                         id: shellUpdateZone
-                        Layout.preferredWidth: shellUpdateControlWidth
-                        Layout.minimumWidth: shellUpdateControlWidth
+                        Layout.preferredWidth: shellUpdateControlWidthActive
+                        Layout.minimumWidth: shellUpdateControlWidthActive
+                        Layout.maximumWidth: shellUpdateControlWidthActive
                         spacing: 2
                         RowLayout {
                             Layout.alignment: Qt.AlignRight
@@ -379,7 +395,7 @@ ApplicationWindow {
                             CheckBox {
                                 id: autoUpdateCheckBox
                                 checked: uiState.updateAutoCheck
-                                text: "Auto update"
+                                text: autoUpdateLabel
                                 onToggled: uiState.setUpdateAutoCheck(checked)
                                 contentItem: Text {
                                     text: autoUpdateCheckBox.text
@@ -393,7 +409,7 @@ ApplicationWindow {
                                 id: checkUpdatesButton
                                 text: "Check now"
                                 implicitHeight: 28
-                                implicitWidth: 88
+                                implicitWidth: narrowLayout ? 78 : 88
                                 onClicked: uiState.requestManualUpdateCheck()
                             }
                         }
@@ -411,12 +427,12 @@ ApplicationWindow {
 
                     RowLayout {
                         id: shellSupportZone
-                        spacing: 8
+                        spacing: narrowLayout ? 6 : 8
                         Button {
                             id: headerPayPalButton
-                            text: "PayPal"
-                            implicitHeight: 32
-                            implicitWidth: 120
+                            text: payPalButtonLabel
+                            implicitHeight: narrowLayout ? 28 : 32
+                            implicitWidth: narrowLayout ? 92 : 120
                             onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00")
                             background: Rectangle {
                                 radius: 16
@@ -437,9 +453,9 @@ ApplicationWindow {
                         }
                         Button {
                             id: headerCoffeeButton
-                            text: "Buy me a coffee"
-                            implicitHeight: 32
-                            implicitWidth: 148
+                            text: coffeeButtonLabel
+                            implicitHeight: narrowLayout ? 28 : 32
+                            implicitWidth: narrowLayout ? 96 : 148
                             onClicked: Qt.openUrlExternally("https://buycoffee.to/ao-dps/")
                             background: Rectangle {
                                 radius: 16
@@ -471,8 +487,9 @@ ApplicationWindow {
 
             TabBar {
                 id: viewTabs
-                Layout.preferredWidth: Math.max(shellNavWidthMin, Math.min(shellNavWidthMax, root.width - (theme.spacingPage * 2)))
-                Layout.maximumWidth: shellNavWidthMax
+                Layout.preferredWidth: Math.min(shellNavWidthMax, Math.max(shellNavWidthMinActive, shellNavAvailableWidth))
+                Layout.maximumWidth: Math.min(shellNavWidthMax, shellNavAvailableWidth)
+                Layout.minimumWidth: Math.min(shellNavWidthMinActive, shellNavAvailableWidth)
                 implicitHeight: shellNavHeight
                 padding: 0
                 spacing: theme.spacingCompact
@@ -1316,9 +1333,9 @@ ApplicationWindow {
                                 spacing: 12
 
                             TableSurface {
-                                Layout.preferredWidth: marketSetupPanelWidth
-                                Layout.minimumWidth: marketSetupPanelWidth
-                                Layout.maximumWidth: marketSetupPanelWidth
+                                Layout.preferredWidth: marketSetupPanelActiveWidth
+                                Layout.minimumWidth: marketSetupPanelActiveWidth
+                                Layout.maximumWidth: marketSetupPanelActiveWidth
                                 Layout.fillHeight: true
                                 cornerRadius: 6
                                 fillColor: theme.surfaceInset

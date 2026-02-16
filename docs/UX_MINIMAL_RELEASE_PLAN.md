@@ -170,7 +170,7 @@ Acceptance:
 - [x] UXR-010: extract/declare QML design tokens
 - [x] UXR-011: normalize header/nav/action zones
 - [x] UXR-012: card/table visual unification
-- [ ] UXR-013: responsive breakpoints and overflow handling
+- [x] UXR-013: responsive breakpoints and overflow handling
 
 #### Phase 1 concrete tickets
 
@@ -210,6 +210,19 @@ Acceptance:
   - standardized alternating table row helpers (`tableRowColor`, `tableRowStrongColor`) in `Main.qml`
   - moved remaining table/header row colors to shared tokens in `Theme.qml`
   - migrated key Meter/Scanner/Market container sections to shared primitives to remove ad-hoc border/background styling
+
+##### UXR-013 - Responsive breakpoints and overflow handling
+- Status: DONE
+- Goal: enforce stable behavior for small/medium/large app widths and reduce header/content overflow.
+- Files modified:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+  3. `docs/TROUBLESHOOTING.md`
+- Delivery notes:
+  - added shared shell breakpoints (`compact`, `narrow`) and responsive sizing tokens in `Theme.qml`
+  - updated shell header/nav controls to adapt widths/labels and hide non-critical banner on narrow windows
+  - reduced market setup panel width on compact/narrow layouts and adjusted key table column widths
+  - documented responsive behavior and recovery steps in troubleshooting docs
 
 ### Phase 2 - Install/release simplification (3-5 days)
 - [ ] REL-010: bootstrap scripts profile support + clearer diagnostics

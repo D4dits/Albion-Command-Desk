@@ -38,6 +38,16 @@ python -m albion_dps core
 - `No update state persistence`:
   - Verify write access to config dir or set `ALBION_COMMAND_DESK_CONFIG_DIR`.
 
+## UI is cramped or controls overlap on small window sizes
+The shell now switches to compact/narrow breakpoints automatically:
+- narrow: support/update labels shrink, update banner is hidden, nav width clamps lower
+- compact: meter meta zone collapses to free header space
+
+If the UI still feels tight:
+- maximize the window before using Market tables
+- keep OS display scaling at 100-125% for dense table workflows
+- use horizontal scrolling in Inputs/Outputs/Results tables (enabled by design for small widths)
+
 ## Live mode shows "no data"
 Common causes:
 - You are on the wrong interface: run `albion-command-desk live --list-interfaces` and pick the one that carries game traffic.

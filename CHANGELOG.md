@@ -41,6 +41,10 @@ and this project uses semantic versioning.
 - `albion_dps/qt/ui/Theme.qml` now includes explicit table/header/control surface tokens for the unified Phase 1 visual system.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `UXR-012` as completed.
 - `docs/ARCHITECTURE.md` now documents `CardPanel`/`TableSurface` shared UI primitives.
+- `albion_dps/qt/ui/Main.qml` now applies compact/narrow breakpoints for shell/header/nav and market panel widths to reduce overflow on small windows.
+- `albion_dps/qt/ui/Theme.qml` now exposes shared breakpoint tokens for responsive layout behavior.
+- `docs/TROUBLESHOOTING.md` now includes compact-layout guidance for small-window table workflows.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `UXR-013` as completed.
 
 ## [0.1.14] - 2026-02-13
 

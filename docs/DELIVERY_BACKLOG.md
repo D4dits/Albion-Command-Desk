@@ -81,11 +81,12 @@ Update status checkboxes and notes after each implemented ticket.
   4. `albion_dps/qt/ui/TableSurface.qml`
 
 ### PH1-UXR-013 - Responsive breakpoints and overflow handling
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: enforce stable behavior for small/medium/large app widths.
 - Files:
   1. `albion_dps/qt/ui/Main.qml`
-  2. `docs/TROUBLESHOOTING.md`
+  2. `albion_dps/qt/ui/Theme.qml`
+  3. `docs/TROUBLESHOOTING.md`
 
 ## Ticket Queue (Execution Order)
 
@@ -220,6 +221,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-16: PH1-UXR-013 completed (responsive shell breakpoints + narrow/compact overflow handling in header/nav/market panels).
 - 2026-02-16: PH1-UXR-012 completed (shared `CardPanel`/`TableSurface` primitives + tokenized table row/header colors wired across Meter/Scanner/Market).
 - 2026-02-16: PH1-UXR-011 completed (centered shell nav zone + shared tab button component for shell/market tabs).
 - 2026-02-16: PH1-UXR-010 completed (new `Theme.qml` tokens and `Main.qml` token wiring baseline).
