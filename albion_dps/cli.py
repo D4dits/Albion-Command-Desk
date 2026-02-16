@@ -6,7 +6,7 @@ import sys
 from albion_dps.logging_config import configure_logging
 from albion_dps.qt.runner import run_qt
 
-_COMMANDS = ("live", "replay")
+_COMMANDS = ("live", "replay", "core")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -19,8 +19,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version="0.1.14")
 
     subparsers = parser.add_subparsers(dest="command")
+    core = subparsers.add_parser("core", help="Run GUI without live capture backend")
     live = subparsers.add_parser("live", help="Run GUI with live capture")
     replay = subparsers.add_parser("replay", help="Run GUI with PCAP replay")
+    _add_common_gui_args(core)
     _add_common_gui_args(live)
     _add_common_gui_args(replay)
 

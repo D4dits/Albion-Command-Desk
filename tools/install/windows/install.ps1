@@ -3,6 +3,8 @@ param(
     [string]$ProjectRoot = "",
     [string]$VenvPath = "",
     [string]$Python = "",
+    [ValidateSet("core", "capture")]
+    [string]$Profile = "core",
     [switch]$SkipRun,
     [switch]$ForceRecreateVenv,
     [switch]$SkipCaptureExtras
@@ -235,15 +237,21 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if ($SkipCaptureExtras) {
-    Write-InstallWarn "Skipping capture extras for this install run."
+    Write-InstallWarn "SkipCaptureExtras is deprecated. Use -Profile core."
+    $Profile = "core"
 }
-$installTarget = if ($SkipCaptureExtras) { "." } else { ".[capture]" }
+if ($Profile -eq "core") {
+    Write-InstallInfo "Install profile: core (UI + market/scanner/replay, no live capture backend)"
+} else {
+    Write-InstallInfo "Install profile: capture (includes live capture backend)"
+}
+$installTarget = if ($Profile -eq "capture") { ".[capture]" } else { "." }
 Write-InstallInfo "Installing Albion Command Desk ($installTarget)"
 Push-Location $ProjectRoot
 try {
     & $venvPython -m pip install -e $installTarget
     if ($LASTEXITCODE -ne 0) {
-        if ($SkipCaptureExtras) {
+        if ($Profile -eq "core") {
             Throw-InstallError "Package install failed."
         }
         Throw-InstallError "Package install failed. Verify build tools and packet capture prerequisites."
@@ -277,15 +285,32 @@ if ($LASTEXITCODE -ne 0) {
 
 if ($SkipRun) {
     Write-InstallInfo "Installation complete. Launch manually with:"
-    Write-Host "  $venvCli live"
+    if ($Profile -eq "capture") {
+        Write-Host "  $venvCli live"
+    } else {
+        Write-Host "  $venvCli core"
+        Write-Host "  $venvCli live   # after reinstall with -Profile capture"
+    }
     exit 0
 }
 
-Write-InstallInfo "Starting Albion Command Desk (live mode)"
+if ($Profile -eq "capture") {
+    Write-InstallInfo "Starting Albion Command Desk (live mode)"
+} else {
+    Write-InstallInfo "Starting Albion Command Desk (core mode)"
+}
 if (Test-Path $venvCli) {
-    & $venvCli live
+    if ($Profile -eq "capture") {
+        & $venvCli live
+    } else {
+        & $venvCli core
+    }
     exit $LASTEXITCODE
 }
 
-& $venvPython -m albion_dps.cli live
+if ($Profile -eq "capture") {
+    & $venvPython -m albion_dps.cli live
+} else {
+    & $venvPython -m albion_dps.cli core
+}
 exit $LASTEXITCODE

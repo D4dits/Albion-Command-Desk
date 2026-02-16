@@ -16,7 +16,7 @@ albion-command-desk --help
 Alternative (no install): run from the repo checkout
 ```
 python -m albion_dps --help
-python -m albion_dps live
+python -m albion_dps core
 ```
 
 ## Installer / update errors (quick map)
@@ -25,6 +25,10 @@ python -m albion_dps live
 - `Package install failed` during `.[capture]`:
   - Use Python 3.11 or 3.12 (3.13 can fail for some capture wheels).
   - Install system build tools where required (Linux/macOS).
+  - Or install core profile only:
+    - Windows: `powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile core`
+    - Linux: `bash ./tools/install/linux/install.sh --profile core`
+    - macOS: `bash ./tools/install/macos/install.sh --profile core`
 - `Shared smoke checks failed`:
   - Ensure PySide6 installed and Qt runtime works.
   - Recreate venv (`--force-recreate-venv`) and rerun installer.
@@ -38,7 +42,7 @@ python -m albion_dps live
 Common causes:
 - You are on the wrong interface: run `albion-command-desk live --list-interfaces` and pick the one that carries game traffic.
 - No packets yet: start the game and generate traffic (zone change / combat).
-- Capture dependencies missing: install `pcapy-ng` via `python -m pip install -e ".[capture]"`.
+- Capture dependencies missing: reinstall capture profile (`python -m pip install -e ".[capture]"`).
 - Windows: Npcap not installed (or installed without WinPcap API compatibility).
 
 ## I see empty results while fighting

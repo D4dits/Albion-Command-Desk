@@ -7,6 +7,7 @@ VENV_PATH="${PROJECT_ROOT}/venv"
 PYTHON_CMD_OVERRIDE=""
 SKIP_RUN=0
 FORCE_RECREATE_VENV=0
+INSTALL_PROFILE="core"
 
 log_info() {
   printf '[ACD install] %s\n' "$1"
@@ -29,6 +30,7 @@ Options:
   --project-root <path>      Override repository root path.
   --venv-path <path>         Override virtual environment path.
   --python <path-or-command> Force Python interpreter command/path.
+  --profile <core|capture>   Install profile (`core` default, `capture` for live mode).
   --skip-run                 Install only (do not start app).
   --force-recreate-venv      Remove and recreate virtual environment.
   -h, --help                 Show this help.
@@ -52,6 +54,11 @@ while [[ $# -gt 0 ]]; do
       PYTHON_CMD_OVERRIDE="$2"
       shift 2
       ;;
+    --profile)
+      [[ $# -ge 2 ]] || fail "--profile requires a value."
+      INSTALL_PROFILE="$2"
+      shift 2
+      ;;
     --skip-run)
       SKIP_RUN=1
       shift
@@ -69,6 +76,10 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ "$INSTALL_PROFILE" != "core" && "$INSTALL_PROFILE" != "capture" ]]; then
+  fail "Invalid --profile value: ${INSTALL_PROFILE} (expected core|capture)"
+fi
 
 [[ -f "${PROJECT_ROOT}/pyproject.toml" ]] || fail "pyproject.toml not found under '${PROJECT_ROOT}'."
 
@@ -135,7 +146,7 @@ PYTHON_CMD="${resolved%%|*}"
 PYTHON_VERSION="${resolved##*|}"
 log_info "Using Python launcher: ${PYTHON_CMD} (version ${PYTHON_VERSION})"
 
-if [[ "$PYTHON_VERSION" == 3.13* ]]; then
+if [[ "$INSTALL_PROFILE" == "capture" && "$PYTHON_VERSION" == 3.13* ]]; then
   log_warn "Python 3.13 may fail to install capture extras on some systems. Prefer Python 3.11 or 3.12."
 fi
 
@@ -159,10 +170,18 @@ SMOKE_SCRIPT="${PROJECT_ROOT}/tools/install/common/smoke_check.py"
 log_info "Upgrading pip"
 "$VENV_PYTHON" -m pip install --upgrade pip
 
-log_info "Installing Albion Command Desk with capture extras"
+if [[ "$INSTALL_PROFILE" == "capture" ]]; then
+  INSTALL_TARGET=".[capture]"
+  log_info "Install profile: capture (includes live capture backend)"
+else
+  INSTALL_TARGET="."
+  log_info "Install profile: core (UI + market/scanner/replay, no live capture backend)"
+fi
+
+log_info "Installing Albion Command Desk (${INSTALL_TARGET})"
 (
   cd "$PROJECT_ROOT"
-  "$VENV_PYTHON" -m pip install -e ".[capture]"
+  "$VENV_PYTHON" -m pip install -e "$INSTALL_TARGET"
 )
 
 log_info "Verifying CLI entrypoint"
@@ -178,12 +197,27 @@ log_info "Running shared install smoke checks"
 
 if (( SKIP_RUN )); then
   log_info "Installation complete. Launch manually with:"
-  printf '  %s live\n' "$VENV_CLI"
+  if [[ "$INSTALL_PROFILE" == "capture" ]]; then
+    printf '  %s live\n' "$VENV_CLI"
+  else
+    printf '  %s core\n' "$VENV_CLI"
+    printf '  %s live   # after reinstall with --profile capture\n' "$VENV_CLI"
+  fi
   exit 0
 fi
 
-log_info "Starting Albion Command Desk (live mode)"
-if [[ -x "$VENV_CLI" ]]; then
-  exec "$VENV_CLI" live
+if [[ "$INSTALL_PROFILE" == "capture" ]]; then
+  log_info "Starting Albion Command Desk (live mode)"
+else
+  log_info "Starting Albion Command Desk (core mode)"
 fi
-exec "$VENV_PYTHON" -m albion_dps.cli live
+if [[ -x "$VENV_CLI" ]]; then
+  if [[ "$INSTALL_PROFILE" == "capture" ]]; then
+    exec "$VENV_CLI" live
+  fi
+  exec "$VENV_CLI" core
+fi
+if [[ "$INSTALL_PROFILE" == "capture" ]]; then
+  exec "$VENV_PYTHON" -m albion_dps.cli live
+fi
+exec "$VENV_PYTHON" -m albion_dps.cli core

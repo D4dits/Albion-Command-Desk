@@ -50,6 +50,21 @@ def test_main_supports_replay(monkeypatch) -> None:
     assert captured["pcap"] == "sample.pcap"
 
 
+def test_main_supports_core_mode(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run_qt(args) -> int:
+        captured["command"] = getattr(args, "command", None)
+        captured["qt_command"] = getattr(args, "qt_command", None)
+        return 0
+
+    monkeypatch.setattr(cli, "run_qt", fake_run_qt)
+    exit_code = cli.main(["core"])
+    assert exit_code == 0
+    assert captured["command"] == "core"
+    assert captured["qt_command"] == "core"
+
+
 def test_main_uses_sys_argv_when_no_explicit_argv(monkeypatch) -> None:
     captured: dict[str, object] = {}
 

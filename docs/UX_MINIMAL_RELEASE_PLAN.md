@@ -68,8 +68,8 @@ Tasks:
 4. Add deterministic capability checks at startup:
    - show exact missing dependency + direct fix path
 5. Harden bootstrap scripts with explicit "install profile":
-   - default profile: full app
-   - safe fallback profile when capture cannot be installed
+   - default profile: `core` (no live capture backend)
+   - optional profile: `capture` (enables live mode backend)
 
 Acceptance:
 - Fresh machine can run app core features with one command/script.
@@ -98,7 +98,7 @@ Acceptance:
 
 ### Phase 0 - Architecture lock (1-2 days)
 - [x] UXR-001: freeze target shell layout and component map
-- [ ] REL-001: freeze dependency profiles (core vs live capture)
+- [x] REL-001: freeze dependency profiles (core vs live capture)
 - [ ] REL-002: decide release packaging strategy per OS
 
 #### Phase 0 concrete tickets (execution-ready)
@@ -123,7 +123,7 @@ Acceptance:
   - shell zone IDs and extraction map markers added in `albion_dps/qt/ui/Main.qml`
 
 ##### REL-001 - Dependency profile freeze (core vs live capture)
-- Status: TODO
+- Status: DONE
 - Goal: define mandatory runtime dependencies for "core app" and optional dependencies for "live capture".
 - Files to modify:
   1. `pyproject.toml`
@@ -141,6 +141,10 @@ Acceptance:
   - one profile matrix is documented and reflected by install scripts
   - clean install can run core features without capture dependencies
   - missing capture backend produces actionable message, not hard crash
+- Delivery notes:
+  - profile matrix defined in `pyproject.toml` under `tool.albion_command_desk.install_profiles`
+  - unified profile switches added to Windows/Linux/macOS installers (`core` default, `capture` optional)
+  - CLI includes `core` mode to run GUI without live capture backend
 
 ##### REL-002 - Release packaging strategy lock (Win/Linux/macOS)
 - Status: TODO

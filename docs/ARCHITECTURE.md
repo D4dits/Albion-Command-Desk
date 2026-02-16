@@ -37,6 +37,9 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
   - update checks (manifest-based, non-blocking),
   - persisted update preference (`Auto update`),
   - manual check trigger (`Check now`).
+- Runtime startup profiles:
+  - `core`: starts GUI without live capture backend (market/scanner/replay workflows available).
+  - `live`: starts GUI with packet capture backend.
 
 ## Install and update delivery
 - Bootstrap installers:
@@ -64,6 +67,10 @@ The meter must never attribute damage/heal to unrelated nearby players:
 
 ## Useful entry points
 - Desktop launcher (Qt GUI): `albion_dps/cli.py`
+- Profile commands:
+  - `albion-command-desk core`
+  - `albion-command-desk live`
+  - `albion-command-desk replay <pcap>`
 - Pipeline: `albion_dps/pipeline.py`
 - Session + history: `albion_dps/meter/session_meter.py`
 - Aggregation window: `albion_dps/meter/aggregate.py`

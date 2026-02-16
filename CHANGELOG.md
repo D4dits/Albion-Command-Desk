@@ -10,12 +10,18 @@ and this project uses semantic versioning.
 ### Added
 - Phase 0 execution tickets for UX/minimal-release work in `docs/UX_MINIMAL_RELEASE_PLAN.md`.
 - Active Phase 0 milestone queue in `docs/DELIVERY_BACKLOG.md`.
+- `core` GUI runtime command in `albion_dps/cli.py` for non-capture startup.
+- Install profile contract in `pyproject.toml` (`core` default, `capture` optional).
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` marks `UXR-001` as completed and documents delivery notes.
 - `docs/ARCHITECTURE.md` now defines the frozen Phase 0 Qt shell layout contract.
 - `albion_dps/qt/ui/Main.qml` now uses explicit shell zone IDs and fixed ordering for header actions.
+- `albion_dps/qt/runner.py` now supports `core` mode startup without capture backend.
+- Windows/Linux/macOS bootstrap installers now share `core|capture` profile selection.
+- Installer docs and root README now document profile-based install flow.
+- `docs/TROUBLESHOOTING.md` now includes profile-based recovery commands.
 
 ## [0.1.14] - 2026-02-13
 

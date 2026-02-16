@@ -24,7 +24,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Top-level tabs keep stable action placement.
 
 ### PH0-REL-001 - Dependency profile freeze (core vs capture)
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: separate required core dependencies from optional live-capture dependencies.
 - Files:
   1. `pyproject.toml`
@@ -183,6 +183,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-16: PH0-REL-001 completed (install profiles frozen: `core` default, `capture` optional; bootstrap scripts + docs aligned).
 - 2026-02-16: PH0-UXR-001 completed (shell layout contract frozen in docs + `Main.qml` zone map IDs).
 - 2026-02-16: Phase 0 kickoff started (PH0-UXR-001 IN PROGRESS, PH0-REL-001/002 queued).
 - 2026-02-13: backlog initialized.
