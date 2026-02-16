@@ -13,6 +13,7 @@ __pycache__/
 .coverage
 htmlcov/
 tmp/
+.state/
 
 # Build / packaging
 dist/

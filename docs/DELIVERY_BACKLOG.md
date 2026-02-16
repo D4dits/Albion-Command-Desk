@@ -88,6 +88,30 @@ Update status checkboxes and notes after each implemented ticket.
   2. `albion_dps/qt/ui/Theme.qml`
   3. `docs/TROUBLESHOOTING.md`
 
+## Active Milestone - Phase 3 (Stabilization and ship)
+
+### QA-001 - Regression pass (meter/scanner/market/live/replay)
+- [x] Status: DONE
+- Goal: run deterministic grouped regression checks across core app domains.
+- Files:
+  1. `tools/qa/run_regression_suite.py`
+  2. `docs/qa/QA_REGRESSION_PASS.md`
+
+### QA-002 - Clean machine install tests (Win/Linux/macOS)
+- [ ] Status: TODO
+- Goal: validate bootstrap/install path on clean OS runners and local clean profile.
+- Files:
+  1. `.github/workflows/bootstrap-smoke.yml`
+  2. `docs/release/RELEASE_CHECKLIST.md`
+
+### QA-003 - Release + manifest + update banner validation
+- [ ] Status: TODO
+- Goal: verify release metadata publication and in-app update signaling end-to-end.
+- Files:
+  1. `.github/workflows/release-manifest.yml`
+  2. `tools/release/manifest/build_manifest.py`
+  3. `tests/test_update_checker.py`
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract
@@ -221,6 +245,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-16: QA-001 completed (grouped regression runner + QA runbook for meter/scanner/market/live/replay).
 - 2026-02-16: PH1-UXR-013 completed (responsive shell breakpoints + narrow/compact overflow handling in header/nav/market panels).
 - 2026-02-16: PH1-UXR-012 completed (shared `CardPanel`/`TableSurface` primitives + tokenized table row/header colors wired across Meter/Scanner/Market).
 - 2026-02-16: PH1-UXR-011 completed (centered shell nav zone + shared tab button component for shell/market tabs).

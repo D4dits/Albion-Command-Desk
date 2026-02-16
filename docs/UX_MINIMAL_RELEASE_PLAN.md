@@ -231,9 +231,22 @@ Acceptance:
 - [ ] REL-013: docs rewrite for one-click install paths
 
 ### Phase 3 - Stabilization and ship (2-3 days)
-- [ ] QA-001: regression pass (meter/scanner/market/live/replay)
+- [x] QA-001: regression pass (meter/scanner/market/live/replay)
 - [ ] QA-002: clean machine install tests (Win/Linux/macOS)
 - [ ] QA-003: release + manifest + update banner validation
+
+#### Phase 3 concrete tickets
+
+##### QA-001 - Regression pass (meter/scanner/market/live/replay)
+- Status: DONE
+- Goal: run a repeatable grouped regression pass for core product areas before release.
+- Files modified:
+  1. `tools/qa/run_regression_suite.py` (new)
+  2. `docs/qa/QA_REGRESSION_PASS.md` (new)
+  3. `docs/DELIVERY_BACKLOG.md`
+- Delivery notes:
+  - added grouped regression runner covering meter/scanner/market/live/replay
+  - added QA runbook with scope, commands, and exit criteria
 
 ## 5) Non-goals (for this cycle)
 
