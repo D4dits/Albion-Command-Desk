@@ -27,6 +27,7 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
 - Shared design tokens are centralized in `albion_dps/qt/ui/Theme.qml`.
 - Shared tab styling primitive is centralized in `albion_dps/qt/ui/ShellTabButton.qml`.
 - Shared panel/table primitives are centralized in `albion_dps/qt/ui/CardPanel.qml` and `albion_dps/qt/ui/TableSurface.qml`.
+- Shared panel/table primitives use level-based surface hierarchy to reduce per-view style duplication.
 - Shell/layout breakpoints are centralized in `Theme.qml` and consumed by `Main.qml` for compact/narrow responsive behavior.
 - Phase PH2-UXR visual direction (active):
   - dark neutral base surfaces (`surface*`) with cool blue action accents (`brandPrimary*`)

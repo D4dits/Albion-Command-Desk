@@ -27,6 +27,7 @@ and this project uses semantic versioning.
 - PH2 semantic visual token families in `albion_dps/qt/ui/Theme.qml` (brand/surface/border/text/state/control/button/table/layout/elevation).
 - Reusable button primitive in `albion_dps/qt/ui/AppButton.qml` with semantic variants and state handling.
 - Reusable form control primitives: `AppTextField.qml`, `AppComboBox.qml`, `AppSpinBox.qml`, and `AppCheckBox.qml`.
+- Level-driven panel primitives in `CardPanel.qml` and `TableSurface.qml` for cleaner card hierarchy.
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -68,6 +69,9 @@ and this project uses semantic versioning.
 - `albion_dps/qt/ui/Main.qml` now routes form controls through shared App* input components for consistent field styling.
 - `albion_dps/qt/ui/Theme.qml` now includes dedicated input tokens for background and focus border handling.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-022` as completed.
+- `albion_dps/qt/ui/Main.qml` now removes repeated panel fill/stroke literals and relies on shared card/table level styling.
+- `docs/ARCHITECTURE.md` now documents level-based panel/table primitives in the Qt UI layer.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-023` as completed.
 
 ## [0.1.14] - 2026-02-13
 

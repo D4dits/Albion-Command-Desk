@@ -141,7 +141,7 @@ Update status checkboxes and notes after each implemented ticket.
   2. `albion_dps/qt/ui/Theme.qml`
 
 ### PH2-UXR-023 - Card layout hierarchy cleanup
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: reduce border noise and enforce cleaner panel depth hierarchy.
 - Files:
   1. `albion_dps/qt/ui/CardPanel.qml`
@@ -332,6 +332,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-17: PH2-UXR-023 completed (level-based panel/table primitives + Main.qml hierarchy cleanup and style deduplication).
 - 2026-02-17: PH2-UXR-022 completed (shared form control components + input tokenization + Main.qml migration).
 - 2026-02-17: PH2-UXR-021 completed (new `AppButton` variant system + migration of `Main.qml` button usage to shared control).
 - 2026-02-17: PH2-UXR-020 completed (semantic token expansion in `Theme.qml` + architecture-level visual direction/taxonomy notes).

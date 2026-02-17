@@ -279,7 +279,7 @@ Acceptance:
 - [x] PH2-UXR-020: visual direction + token expansion
 - [x] PH2-UXR-021: button system (primary/secondary/ghost/danger + states)
 - [x] PH2-UXR-022: input/select/spinbox refresh
-- [ ] PH2-UXR-023: card layout hierarchy cleanup
+- [x] PH2-UXR-023: card layout hierarchy cleanup
 - [ ] PH2-UXR-024: table redesign (meter/market/history)
 - [ ] PH2-UXR-025: header + action bar polish
 - [ ] PH2-UXR-026: color semantics for data states (profit/age/status)
@@ -326,12 +326,16 @@ Acceptance:
   - introduced dedicated input tokens in `Theme.qml` to keep field backgrounds/borders consistent
 
 ##### PH2-UXR-023 - Card layout hierarchy cleanup
-- Status: TODO
+- Status: DONE
 - Goal: simplify panel depth and improve section hierarchy with less border noise.
-- Files to modify:
+- Files modified:
   1. `albion_dps/qt/ui/CardPanel.qml`
   2. `albion_dps/qt/ui/TableSurface.qml`
   3. `albion_dps/qt/ui/Main.qml`
+- Delivery notes:
+  - extended `CardPanel`/`TableSurface` with semantic level-based surfaces and calmer border rules
+  - removed repetitive per-instance panel color/border overrides from `Main.qml`
+  - migrated panel/table containers in `Main.qml` to shared level-driven hierarchy tokens
 
 ##### PH2-UXR-024 - Table redesign
 - Status: TODO

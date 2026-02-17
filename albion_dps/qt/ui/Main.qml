@@ -522,12 +522,9 @@ ApplicationWindow {
                     spacing: 12
 
                     CardPanel {
+                        level: 1
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        fillColor: panelColor
-                        strokeColor: borderColor
-                        cornerRadius: theme.cornerRadiusPanel
-
                         ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 12
@@ -577,12 +574,9 @@ ApplicationWindow {
                             }
 
                             TableSurface {
+                                level: 1
                                 Layout.fillWidth: true
                                 height: 62
-                                fillColor: theme.surfaceInset
-                                strokeColor: theme.borderSubtle
-                                cornerRadius: 6
-
                                 ColumnLayout {
                                     anchors.fill: parent
                                     anchors.margins: 6
@@ -824,12 +818,9 @@ ApplicationWindow {
                     }
 
                     CardPanel {
+                        level: 1
                         Layout.preferredWidth: 360
                         Layout.fillHeight: true
-                        fillColor: panelColor
-                        strokeColor: borderColor
-                        cornerRadius: theme.cornerRadiusPanel
-
                         ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 12
@@ -897,11 +888,9 @@ ApplicationWindow {
                             }
 
                             TableSurface {
+                                level: 1
                                 Layout.fillWidth: true
                                 height: 120
-                                cornerRadius: 6
-                                fillColor: theme.surfaceInset
-                                strokeColor: theme.borderSubtle
                                 ColumnLayout {
                                     anchors.fill: parent
                                     anchors.margins: 8
@@ -918,11 +907,8 @@ ApplicationWindow {
             }
             Item {
                 CardPanel {
+                        level: 1
                     anchors.fill: parent
-                    fillColor: panelColor
-                    strokeColor: borderColor
-                    cornerRadius: theme.cornerRadiusPanel
-
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 12
@@ -1011,11 +997,9 @@ ApplicationWindow {
                         }
 
                         TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            cornerRadius: 6
-                            fillColor: theme.surfaceInset
-                            strokeColor: theme.borderSubtle
                             clip: true
 
                             ScrollView {
@@ -1055,11 +1039,8 @@ ApplicationWindow {
 
             Item {
                 CardPanel {
+                        level: 1
                     anchors.fill: parent
-                    fillColor: panelColor
-                    strokeColor: borderColor
-                    cornerRadius: theme.cornerRadiusPanel
-
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 12
@@ -1248,14 +1229,12 @@ ApplicationWindow {
                         }
 
                         TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                             Layout.preferredHeight: marketDiagnosticsVisible ? 110 : 0
                             Layout.minimumHeight: marketDiagnosticsVisible ? 82 : 0
                             Layout.maximumHeight: marketDiagnosticsVisible ? 140 : 0
                             visible: marketDiagnosticsVisible
-                            cornerRadius: 6
-                            fillColor: theme.surfaceInset
-                            strokeColor: theme.borderSubtle
                             clip: true
 
                             ColumnLayout {
@@ -1308,14 +1287,11 @@ ApplicationWindow {
                                 spacing: 12
 
                             TableSurface {
+                                level: 1
                                 Layout.preferredWidth: marketSetupPanelActiveWidth
                                 Layout.minimumWidth: marketSetupPanelActiveWidth
                                 Layout.maximumWidth: marketSetupPanelActiveWidth
                                 Layout.fillHeight: true
-                                cornerRadius: 6
-                                fillColor: theme.surfaceInset
-                                strokeColor: theme.borderSubtle
-
                                 ScrollView {
                                     anchors.fill: parent
                                     anchors.margins: 10
@@ -1697,12 +1673,9 @@ ApplicationWindow {
                             }
 
                             TableSurface {
+                                level: 1
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                cornerRadius: 6
-                                fillColor: theme.surfaceInset
-                                strokeColor: theme.borderSubtle
-
                                 ColumnLayout {
                                     anchors.fill: parent
                                     anchors.margins: 10
@@ -1948,12 +1921,9 @@ ApplicationWindow {
                             }
 
                         TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            cornerRadius: 6
-                            fillColor: theme.surfaceInset
-                            strokeColor: theme.borderSubtle
-
                             ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10
@@ -2168,12 +2138,9 @@ ApplicationWindow {
                         }
 
                         TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            cornerRadius: 6
-                            fillColor: theme.surfaceInset
-                            strokeColor: theme.borderSubtle
-
                             ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10
@@ -2405,11 +2372,9 @@ ApplicationWindow {
                         }
 
                         TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            cornerRadius: 6
-                            fillColor: theme.surfaceInset
-                            strokeColor: theme.borderSubtle
                             ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10

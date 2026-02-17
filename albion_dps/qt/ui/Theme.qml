@@ -20,12 +20,16 @@ QtObject {
     readonly property color surfaceOverlay: "#0d1826"
     readonly property color surfaceInteractive: "#111e2d"
     readonly property color surfaceInset: "#0f1620"
+    readonly property color cardLevel0: "#121922"
+    readonly property color cardLevel1: "#16202d"
+    readonly property color cardLevel2: "#1a2634"
 
     // Border tokens
     readonly property color borderSubtle: "#1f2a37"
     readonly property color borderStrong: "#2a3a4f"
     readonly property color borderFocus: "#4aa3ff"
     readonly property color borderDanger: "#ff7b72"
+    readonly property color dividerMuted: "#1a2533"
 
     // Text tokens
     readonly property color textPrimary: "#e6edf3"
