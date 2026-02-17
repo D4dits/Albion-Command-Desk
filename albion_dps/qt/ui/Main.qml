@@ -24,6 +24,7 @@ ApplicationWindow {
     property int compactControlHeight: theme.controlHeightCompact
     property int marketColumnSpacing: theme.marketColumnSpacing
     property int marketSetupPanelWidth: theme.marketSetupPanelWidth
+    property bool marketSetupStackedLayout: width < 1480
     property int marketSetupPanelActiveWidth: narrowLayout ? 300 : (compactLayout ? 330 : marketSetupPanelWidth)
     property int marketInputsItemWidth: Math.max(narrowLayout ? 130 : 150, Math.min(240, Math.round(width * (narrowLayout ? 0.15 : 0.17))))
     property int marketInputsQtyWidth: 62
@@ -333,14 +334,11 @@ ApplicationWindow {
                     }
                 }
 
-                Item {
-                    Layout.fillWidth: true
-                    Layout.minimumWidth: 6
-                }
-
                 RowLayout {
                     id: shellRightZone
+                    Layout.fillWidth: false
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                    Layout.minimumWidth: implicitWidth
                     spacing: narrowLayout ? 6 : shellRightZoneSpacing
 
                     ColumnLayout {
@@ -429,9 +427,8 @@ ApplicationWindow {
 
                     ColumnLayout {
                         id: shellUpdateZone
-                        Layout.preferredWidth: shellUpdateControlWidthActive
-                        Layout.minimumWidth: shellUpdateControlWidthActive
-                        Layout.maximumWidth: shellUpdateControlWidthActive
+                        Layout.preferredWidth: implicitWidth
+                        Layout.minimumWidth: implicitWidth
                         spacing: 2
                         RowLayout {
                             Layout.alignment: Qt.AlignRight
@@ -447,6 +444,7 @@ ApplicationWindow {
                                 id: checkUpdatesButton
                                 text: "Check now"
                                 variant: "primary"
+                                compact: true
                                 implicitHeight: theme.shellActionHeight
                                 implicitWidth: narrowLayout ? 78 : 88
                                 onClicked: uiState.requestManualUpdateCheck()
@@ -471,6 +469,7 @@ ApplicationWindow {
                             id: headerPayPalButton
                             text: payPalButtonLabel
                             variant: "primary"
+                            compact: true
                             implicitHeight: theme.shellActionHeight
                             implicitWidth: shellSupportPrimaryWidth
                             onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00")
@@ -479,6 +478,7 @@ ApplicationWindow {
                             id: headerCoffeeButton
                             text: coffeeButtonLabel
                             variant: "warm"
+                            compact: true
                             implicitHeight: theme.shellActionHeight
                             implicitWidth: shellSupportSecondaryWidth
                             onClicked: Qt.openUrlExternally("https://buycoffee.to/ao-dps/")
@@ -626,6 +626,9 @@ ApplicationWindow {
                                         AppButton {
                                             id: battleButton
                                             text: "Battle"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 62
                                             checkable: true
                                             checked: uiState.mode === "battle"
                                             onClicked: uiState.setMode("battle")
@@ -643,6 +646,9 @@ ApplicationWindow {
                                         AppButton {
                                             id: zoneButton
                                             text: "Zone"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 56
                                             checkable: true
                                             checked: uiState.mode === "zone"
                                             onClicked: uiState.setMode("zone")
@@ -660,6 +666,9 @@ ApplicationWindow {
                                         AppButton {
                                             id: manualButton
                                             text: "Manual"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 64
                                             checkable: true
                                             checked: uiState.mode === "manual"
                                             onClicked: uiState.setMode("manual")
@@ -683,6 +692,9 @@ ApplicationWindow {
                                         AppButton {
                                             id: sortDpsButton
                                             text: "DPS"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 56
                                             checkable: true
                                             checked: uiState.sortKey === "dps"
                                             onClicked: uiState.setSortKey("dps")
@@ -700,6 +712,9 @@ ApplicationWindow {
                                         AppButton {
                                             id: sortDmgButton
                                             text: "DMG"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 56
                                             checkable: true
                                             checked: uiState.sortKey === "dmg"
                                             onClicked: uiState.setSortKey("dmg")
@@ -717,6 +732,9 @@ ApplicationWindow {
                                         AppButton {
                                             id: sortHpsButton
                                             text: "HPS"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 56
                                             checkable: true
                                             checked: uiState.sortKey === "hps"
                                             onClicked: uiState.setSortKey("hps")
@@ -734,6 +752,9 @@ ApplicationWindow {
                                         AppButton {
                                             id: sortHealButton
                                             text: "HEAL"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 60
                                             checkable: true
                                             checked: uiState.sortKey === "heal"
                                             onClicked: uiState.setSortKey("heal")
@@ -1051,33 +1072,40 @@ ApplicationWindow {
                             font.pixelSize: 11
                         }
 
-                        RowLayout {
+                        Flow {
+                            Layout.fillWidth: true
                             spacing: 8
                             AppButton {
                                 text: "Check updates"
+                                compact: true
                                 onClicked: scannerState.checkForUpdates()
                             }
                             AppButton {
                                 text: "Sync repo"
+                                compact: true
                                 onClicked: scannerState.syncClientRepo()
                             }
                             AppButton {
                                 text: "Start scanner"
+                                compact: true
                                 enabled: !scannerState.running
                                 onClicked: scannerState.startScanner()
                             }
                             AppButton {
                                 text: "Start scanner (sudo)"
+                                compact: true
                                 enabled: !scannerState.running
                                 onClicked: scannerState.startScannerSudo()
                             }
                             AppButton {
                                 text: "Stop scanner"
+                                compact: true
                                 enabled: scannerState.running
                                 onClicked: scannerState.stopScanner()
                             }
                             AppButton {
                                 text: "Clear log"
+                                compact: true
                                 onClicked: scannerState.clearLog()
                             }
                         }
@@ -1174,9 +1202,9 @@ ApplicationWindow {
                             Item { Layout.fillWidth: true }
                         }
 
-                        RowLayout {
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: 6
 
                             Text {
                                 Layout.fillWidth: true
@@ -1192,50 +1220,54 @@ ApplicationWindow {
                                 elide: Text.ElideRight
                             }
 
-                            Text {
-                                text: "Region"
-                                color: mutedColor
-                                font.pixelSize: 11
-                            }
-                            AppComboBox {
-                                implicitWidth: 110
-                                implicitHeight: 24
-                                font.pixelSize: 11
-                                model: ["europe", "west", "east"]
-                                currentIndex: Math.max(0, model.indexOf(marketSetupState.region))
-                                onActivated: marketSetupState.setRegion(currentText)
-                            }
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 8
 
-                            AppCheckBox {
-                                id: premiumCheck
-                                implicitHeight: 24
-                                checked: marketSetupState.premium
-                                text: "Premium"
-                                palette.windowText: textColor
-                                palette.text: textColor
-                                onToggled: marketSetupState.setPremium(checked)
-                            }
+                                Text {
+                                    text: "Region"
+                                    color: mutedColor
+                                    font.pixelSize: 11
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                AppComboBox {
+                                    implicitWidth: 110
+                                    implicitHeight: 24
+                                    font.pixelSize: 11
+                                    model: ["europe", "west", "east"]
+                                    currentIndex: Math.max(0, model.indexOf(marketSetupState.region))
+                                    onActivated: marketSetupState.setRegion(currentText)
+                                }
 
-                            AppButton {
-                                text: marketSetupState.refreshPricesButtonText
-                                implicitHeight: 24
-                                enabled: marketSetupState.canRefreshPrices
-                                onClicked: marketSetupState.refreshPrices()
-                            }
-                            AppButton {
-                                text: "Show raw AOData"
-                                implicitHeight: 24
-                                onClicked: marketSetupState.showAoDataRaw()
-                            }
-                            AppButton {
-                                text: marketStatusExpanded ? "Hide details" : "Show details"
-                                implicitHeight: 24
-                                onClicked: marketStatusExpanded = !marketStatusExpanded
-                            }
-                            AppButton {
-                                text: marketDiagnosticsVisible ? "Hide diagnostics" : "Show diagnostics"
-                                implicitHeight: 24
-                                onClicked: marketDiagnosticsVisible = !marketDiagnosticsVisible
+                                AppCheckBox {
+                                    id: premiumCheck
+                                    implicitHeight: 24
+                                    checked: marketSetupState.premium
+                                    text: "Premium"
+                                    palette.windowText: textColor
+                                    palette.text: textColor
+                                    onToggled: marketSetupState.setPremium(checked)
+                                }
+
+                                AppButton {
+                                    text: marketSetupState.refreshPricesButtonText
+                                    compact: true
+                                    implicitHeight: 24
+                                    enabled: marketSetupState.canRefreshPrices
+                                    onClicked: marketSetupState.refreshPrices()
+                                }
+                                AppButton {
+                                    text: marketStatusExpanded ? "Hide details" : "Show details"
+                                    compact: true
+                                    implicitHeight: 24
+                                    onClicked: marketStatusExpanded = !marketStatusExpanded
+                                }
+                                AppButton {
+                                    text: marketDiagnosticsVisible ? "Hide diagnostics" : "Show diagnostics"
+                                    compact: true
+                                    implicitHeight: 24
+                                    onClicked: marketDiagnosticsVisible = !marketDiagnosticsVisible
+                                }
                             }
                         }
 
@@ -1375,17 +1407,21 @@ ApplicationWindow {
                             Layout.fillHeight: true
                             currentIndex: marketTabs.currentIndex
 
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
+                                columns: marketSetupStackedLayout ? 1 : 2
                                 spacing: 12
 
                             TableSurface {
                                 level: 1
-                                Layout.preferredWidth: marketSetupPanelActiveWidth
-                                Layout.minimumWidth: marketSetupPanelActiveWidth
-                                Layout.maximumWidth: marketSetupPanelActiveWidth
+                                Layout.column: 0
+                                Layout.row: 0
                                 Layout.fillHeight: true
+                                Layout.fillWidth: marketSetupStackedLayout
+                                Layout.preferredWidth: marketSetupStackedLayout ? -1 : marketSetupPanelActiveWidth
+                                Layout.minimumWidth: marketSetupStackedLayout ? 260 : marketSetupPanelActiveWidth
+                                Layout.maximumWidth: marketSetupStackedLayout ? 16777215 : marketSetupPanelActiveWidth
                                 ScrollView {
                                     anchors.fill: parent
                                     anchors.margins: 10
@@ -1436,6 +1472,8 @@ ApplicationWindow {
                                                     spacing: 6
                                                     AppButton {
                                                         text: "Add filtered"
+                                                        variant: "primary"
+                                                        compact: true
                                                         Layout.fillWidth: true
                                                         implicitHeight: 22
                                                         font.pixelSize: 10
@@ -1444,6 +1482,8 @@ ApplicationWindow {
                                                     }
                                                     AppButton {
                                                         text: "Add family"
+                                                        variant: "secondary"
+                                                        compact: true
                                                         Layout.fillWidth: true
                                                         implicitHeight: 22
                                                         font.pixelSize: 10
@@ -1768,6 +1808,8 @@ ApplicationWindow {
 
                             TableSurface {
                                 level: 1
+                                Layout.column: marketSetupStackedLayout ? 0 : 1
+                                Layout.row: marketSetupStackedLayout ? 1 : 0
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 ColumnLayout {

@@ -19,6 +19,7 @@ TabButton {
 
     height: parent ? parent.height : implicitHeight
     scale: root.pressed ? 0.99 : 1.0
+    hoverEnabled: true
 
     Behavior on scale {
         NumberAnimation {
@@ -30,8 +31,24 @@ TabButton {
     background: Rectangle {
         id: tabBg
         radius: root.cornerRadius
-        color: root.checked ? root.activeColor : root.inactiveColor
-        border.color: root.checked ? root.activeColor : root.borderColor
+        color: "transparent"
+        border.width: root.checked || root.hovered ? 1 : 1
+        border.color: root.checked ? Qt.darker(root.activeColor, 1.15) : (root.hovered ? "#35516f" : root.borderColor)
+
+        gradient: Gradient {
+            GradientStop {
+                position: 0.0
+                color: root.checked
+                    ? Qt.lighter(root.activeColor, 1.08)
+                    : (root.hovered ? "#18263a" : "#111b2a")
+            }
+            GradientStop {
+                position: 1.0
+                color: root.checked
+                    ? Qt.darker(root.activeColor, 1.06)
+                    : (root.hovered ? "#132235" : root.inactiveColor)
+            }
+        }
 
         Behavior on color {
             ColorAnimation {
@@ -49,7 +66,7 @@ TabButton {
     contentItem: Text {
         id: tabLabel
         text: root.text
-        color: root.checked ? root.activeTextColor : root.inactiveTextColor
+        color: root.checked ? "#07121f" : (root.hovered ? "#f0f6ff" : root.inactiveTextColor)
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         font.pixelSize: root.labelPixelSize

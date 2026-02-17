@@ -79,9 +79,14 @@ ComboBox {
     }
 
     popup: Popup {
+        parent: Overlay.overlay
         y: root.height + 2
         width: root.width
+        z: 2000
         padding: 1
+        modal: false
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
         background: Rectangle {
             radius: theme.radiusMd
             color: theme.surfaceRaised
