@@ -767,6 +767,7 @@ ApplicationWindow {
                             }
 
                             ListView {
+                                id: meterPlayersList
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 clip: true
@@ -850,6 +851,19 @@ ApplicationWindow {
                                         acceptedButtons: Qt.NoButton
                                     }
                                 }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: meterPlayersList.count === 0
+                                    text: uiState.selectedHistoryIndex >= 0
+                                        ? "No players in selected history entry."
+                                        : "No live combat data yet. Start fighting or switch replay."
+                                    color: theme.textSecondary
+                                    font.pixelSize: 12
+                                    horizontalAlignment: Text.AlignHCenter
+                                    wrapMode: Text.WordWrap
+                                    width: parent.width - 24
+                                }
                             }
                         }
                     }
@@ -879,6 +893,7 @@ ApplicationWindow {
                             }
 
                             ListView {
+                                id: historyList
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 clip: true
@@ -934,6 +949,14 @@ ApplicationWindow {
                                         hoverEnabled: true
                                         acceptedButtons: Qt.NoButton
                                     }
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: historyList.count === 0
+                                    text: "No archived battles yet."
+                                    color: theme.textSecondary
+                                    font.pixelSize: 12
                                 }
                             }
 
@@ -1081,6 +1104,14 @@ ApplicationWindow {
                                     onTextChanged: Qt.callLater(followTail)
                                     Component.onCompleted: Qt.callLater(followTail)
                                 }
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                visible: scannerState.logText.length === 0
+                                text: "Scanner log is empty. Run a scanner action to see diagnostics."
+                                color: theme.textSecondary
+                                font.pixelSize: 11
                             }
                         }
                     }
@@ -2028,6 +2059,7 @@ ApplicationWindow {
                                         }
 
                                         ListView {
+                                            id: marketInputsList
                                             Layout.fillWidth: true
                                             Layout.fillHeight: true
                                             Layout.minimumHeight: 120
@@ -2168,6 +2200,17 @@ ApplicationWindow {
                                                 }
                                             }
                                         }
+
+                                        Text {
+                                            visible: marketInputsList.count === 0
+                                            text: marketSetupState.priceFetchInProgress
+                                                ? "Loading input prices..."
+                                                : "No input rows. Add craft recipes in Setup."
+                                            color: theme.textSecondary
+                                            font.pixelSize: 11
+                                            Layout.fillWidth: true
+                                            horizontalAlignment: Text.AlignHCenter
+                                        }
                                     }
                                 }
 
@@ -2255,6 +2298,7 @@ ApplicationWindow {
                                         }
 
                                         ListView {
+                                            id: marketOutputsList
                                             Layout.fillWidth: true
                                             Layout.fillHeight: true
                                             Layout.minimumHeight: 120
@@ -2399,6 +2443,17 @@ ApplicationWindow {
                                                 }
                                             }
                                         }
+
+                                        Text {
+                                            visible: marketOutputsList.count === 0
+                                            text: marketSetupState.priceFetchInProgress
+                                                ? "Loading output prices..."
+                                                : "No output rows. Build crafts to generate outputs."
+                                            color: theme.textSecondary
+                                            font.pixelSize: 11
+                                            Layout.fillWidth: true
+                                            horizontalAlignment: Text.AlignHCenter
+                                        }
                                     }
                                 }
 
@@ -2522,6 +2577,7 @@ ApplicationWindow {
                                 }
 
                                 ListView {
+                                    id: marketResultsList
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     Layout.minimumHeight: 160
@@ -2670,6 +2726,20 @@ ApplicationWindow {
                                             acceptedButtons: Qt.NoButton
                                         }
                                     }
+                                }
+
+                                Text {
+                                    visible: marketResultsList.count === 0
+                                    text: marketSetupState.validationText.length > 0
+                                        ? ("Fix configuration: " + marketSetupState.validationText)
+                                        : (marketSetupState.priceFetchInProgress
+                                            ? "Loading results..."
+                                            : "No results yet. Refresh prices and review setup.")
+                                    color: marketSetupState.validationText.length > 0 ? theme.stateDanger : theme.textSecondary
+                                    font.pixelSize: 11
+                                    wrapMode: Text.WordWrap
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: Text.AlignHCenter
                                 }
 
                                 RowLayout {

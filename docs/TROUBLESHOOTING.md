@@ -66,6 +66,18 @@ or
 albion-command-desk live --self-id 123456
 ```
 
+## Empty/loading placeholders in UI
+The UI now shows explicit placeholders instead of blank panels:
+- Meter players table: no live data / no selected-history players.
+- History: no archived battles.
+- Scanner log: no scanner output yet.
+- Market Inputs/Outputs/Results: loading state during price refresh and empty state when no rows exist.
+
+If placeholders do not clear:
+- use `Refresh prices` in Market,
+- confirm setup is valid (no validation error in header),
+- for Meter live mode, generate combat traffic and verify capture interface selection.
+
 ## A mob appears as the top "player" (e.g., `@MOB_*`)
 This happens when self-name inference guesses from nearby targets.
 NPC names are now ignored for self inference, but if you still see this:

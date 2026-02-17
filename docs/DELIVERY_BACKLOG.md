@@ -170,7 +170,7 @@ Update status checkboxes and notes after each implemented ticket.
   2. `albion_dps/qt/ui/Theme.qml`
 
 ### PH2-UXR-027 - Empty/loading/error states
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: add intentional placeholders and recovery actions.
 - Files:
   1. `albion_dps/qt/ui/Main.qml`
@@ -332,6 +332,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-17: PH2-UXR-027 completed (empty/loading/error placeholders added for Meter/History/Scanner/Market views).
 - 2026-02-17: PH2-UXR-026 completed (semantic data-color helpers + replacement of hardcoded profit/status colors).
 - 2026-02-17: PH2-UXR-025 completed (header action tokens + aligned compact controls + stable update-banner slot behavior).
 - 2026-02-17: PH2-UXR-024 completed (table header/text token refresh + row hover/selection polish in Meter/Market/History).

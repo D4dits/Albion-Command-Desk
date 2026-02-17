@@ -283,7 +283,7 @@ Acceptance:
 - [x] PH2-UXR-024: table redesign (meter/market/history)
 - [x] PH2-UXR-025: header + action bar polish
 - [x] PH2-UXR-026: color semantics for data states (profit/age/status)
-- [ ] PH2-UXR-027: empty/loading/error states
+- [x] PH2-UXR-027: empty/loading/error states
 - [ ] PH2-UXR-028: subtle micro-interactions
 - [ ] PH2-UXR-029: accessibility + contrast pass
 - [ ] PH2-UXR-030: visual regression baseline (screenshots/checklist)
@@ -371,11 +371,15 @@ Acceptance:
   - aligned profitability and status text coloring across market headers, rows, and setup controls
 
 ##### PH2-UXR-027 - Empty/loading/error states
-- Status: TODO
+- Status: DONE
 - Goal: provide intentional placeholders and recovery actions instead of blank areas.
-- Files to modify:
+- Files modified:
   1. `albion_dps/qt/ui/Main.qml`
   2. `docs/TROUBLESHOOTING.md`
+- Delivery notes:
+  - added explicit empty/loading/error placeholder text in Meter, History, Scanner log, and Market Inputs/Outputs/Results lists
+  - wired placeholders to runtime state (`priceFetchInProgress`, validation errors, selected history/live state)
+  - documented new placeholder behavior in troubleshooting guidance
 
 ##### PH2-UXR-028 - Subtle micro-interactions
 - Status: TODO

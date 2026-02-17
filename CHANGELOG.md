@@ -31,6 +31,7 @@ and this project uses semantic versioning.
 - Expanded table typography/separator tokens in `Theme.qml` for Meter/Market/History readability.
 - Shell header action tokens in `Theme.qml` for unified action-bar dimensions and banner styling.
 - Semantic data-color helpers in `Main.qml` for signed values, validation, and price-source freshness.
+- Empty/loading placeholder states across Meter/History/Scanner/Market views.
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -81,6 +82,9 @@ and this project uses semantic versioning.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-025` as completed.
 - `albion_dps/qt/ui/Main.qml` now maps market status/profit/margin colors through semantic theme states instead of hardcoded hex colors.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-026` as completed.
+- `albion_dps/qt/ui/Main.qml` now renders explicit empty/loading/error placeholders for key list/table areas.
+- `docs/TROUBLESHOOTING.md` now documents placeholder behavior and recovery checks.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-027` as completed.
 
 ## [0.1.14] - 2026-02-13
 
