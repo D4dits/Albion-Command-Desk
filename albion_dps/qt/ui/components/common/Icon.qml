@@ -46,8 +46,6 @@ Text {
     property string name: ""
     property int size: theme.iconSizeMd
     property real rotation: 0
-    property real opacity: 1.0
-
     // Icon character mapping
     readonly property var iconChars: {
         "close": "\u00D7",           // ×
