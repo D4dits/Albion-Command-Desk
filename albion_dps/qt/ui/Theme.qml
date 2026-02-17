@@ -98,6 +98,12 @@ QtObject {
     readonly property color tableSortIndicatorInactive: "#5f6b7a"
     readonly property int focusRingWidth: 2
 
+    // Scrollbar tokens
+    readonly property color scrollbarTrack: "#1a2533"
+    readonly property color scrollbarThumb: "#3d4b5f"
+    readonly property color scrollbarThumbHover: "#5a6b85"
+    readonly property color scrollbarThumbPressed: "#7a8ba5"
+
     // Layout tokens
     readonly property int spacingXs: 4
     readonly property int spacingSm: 8

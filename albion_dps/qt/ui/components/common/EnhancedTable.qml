@@ -166,7 +166,7 @@ TableSurface {
             cacheBuffer: 300
 
             // Scrollbar
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: StyledScrollBar {
                 policy: ScrollBar.AsNeeded
             }
 
