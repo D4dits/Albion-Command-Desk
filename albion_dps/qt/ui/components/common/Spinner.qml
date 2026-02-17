@@ -83,12 +83,9 @@ RowLayout {
                     return baseOpacity
                 }
                 x: spinnerContainer.width / 2
-                y: spinnerContainer.height / 2 - height / 2
+                y: spinnerContainer.height / 2 - height / 2 - root.currentSize / 3
                 transformOrigin: Item.Center
 
-                transform: Translate {
-                    y: -root.currentSize / 3
-                }
 
                 transform: Rotation {
                     angle: index * 45
