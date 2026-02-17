@@ -12,6 +12,7 @@ ApplicationWindow {
     width: 1120
     height: 720
     title: "Albion Command Desk"
+    color: Theme.surfaceApp
 
     property var theme: Theme
 
@@ -280,13 +281,6 @@ ApplicationWindow {
             withoutTier = label
         }
         return withoutTier + suffix
-    }
-
-    // Background color
-    Rectangle {
-        anchors.fill: parent
-        color: Theme.surfaceApp
-        z: -1
     }
 
     ColumnLayout {
