@@ -49,6 +49,7 @@ ComboBox {
     }
 
     delegate: ItemDelegate {
+        implicitHeight: theme.controlHeightRegular
         readonly property string delegateText: {
             if (typeof modelData === "string" || typeof modelData === "number") {
                 return String(modelData)

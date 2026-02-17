@@ -24,9 +24,9 @@ ApplicationWindow {
     property int compactControlHeight: theme.controlHeightCompact
     property int marketColumnSpacing: theme.marketColumnSpacing
     property int marketSetupPanelWidth: theme.marketSetupPanelWidth
-    property int marketSetupTwoColumnMinWidth: 920
+    property int marketSetupTwoColumnMinWidth: 980
     property bool marketSetupStackedLayout: width < marketSetupTwoColumnMinWidth
-    property int marketSetupPanelActiveWidth: Math.max(300, Math.min(marketSetupPanelWidth, Math.round(root.width * 0.34)))
+    property int marketSetupPanelActiveWidth: marketSetupStackedLayout ? -1 : marketSetupPanelWidth
     property int marketInputsItemWidth: Math.max(narrowLayout ? 130 : 150, Math.min(240, Math.round(width * (narrowLayout ? 0.15 : 0.17))))
     property int marketInputsQtyWidth: 62
     property int marketInputsStockWidth: 72
@@ -1361,13 +1361,15 @@ ApplicationWindow {
                                 Layout.minimumWidth: marketSetupStackedLayout ? 260 : marketSetupPanelActiveWidth
                                 Layout.maximumWidth: marketSetupStackedLayout ? 16777215 : marketSetupPanelActiveWidth
                                 ScrollView {
+                                    id: marketSetupScroll
                                     anchors.fill: parent
                                     anchors.margins: 10
                                     clip: true
                                     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                                     ColumnLayout {
-                                        width: parent.width
+                                        // Keep a reserved gutter so controls never render under the vertical scrollbar.
+                                        width: Math.max(0, parent.width - 14)
                                         spacing: 8
 
                                         Text {
