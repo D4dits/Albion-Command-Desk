@@ -19,6 +19,18 @@ Rectangle {
     border.color: emphasizeBorder ? theme.borderFocus : strokeColor
     border.width: 1
 
+    Behavior on color {
+        ColorAnimation {
+            duration: theme.motionSlowMs
+        }
+    }
+
+    Behavior on border.color {
+        ColorAnimation {
+            duration: theme.motionNormalMs
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         anchors.margins: 1

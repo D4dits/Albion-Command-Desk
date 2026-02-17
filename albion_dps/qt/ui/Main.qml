@@ -379,6 +379,13 @@ ApplicationWindow {
                         color: theme.shellBannerBackground
                         border.color: theme.shellBannerBorder
 
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 180
+                                easing.type: Easing.OutCubic
+                            }
+                        }
+
                         RowLayout {
                             anchors.fill: parent
                             anchors.leftMargin: 10
@@ -779,6 +786,9 @@ ApplicationWindow {
                                     property bool hovered: meterHoverArea.containsMouse
                                     color: hovered ? theme.tableRowHover : tableRowColor(index)
                                     radius: 4
+                                    Behavior on color {
+                                        ColorAnimation { duration: 120 }
+                                    }
 
                                     RowLayout {
                                         anchors.fill: parent
@@ -911,6 +921,9 @@ ApplicationWindow {
                                         : (hovered ? theme.tableRowHover : tableRowColor(index))
                                     border.color: selected ? theme.tableSelectedBorder : theme.tableDivider
                                     border.width: 1
+                                    Behavior on color {
+                                        ColorAnimation { duration: 120 }
+                                    }
                                     TapHandler {
                                         onTapped: uiState.selectHistory(index)
                                     }
@@ -2075,6 +2088,9 @@ ApplicationWindow {
                                                 property bool hovered: inputRowHover.containsMouse
                                                 color: hovered ? theme.tableRowHover : tableRowColor(index)
                                                 radius: 4
+                                                Behavior on color {
+                                                    ColorAnimation { duration: 120 }
+                                                }
 
                                                 RowLayout {
                                                     anchors.fill: parent
@@ -2314,6 +2330,9 @@ ApplicationWindow {
                                                 property bool hovered: outputRowHover.containsMouse
                                                 color: hovered ? theme.tableRowHover : tableRowColor(index)
                                                 radius: 4
+                                                Behavior on color {
+                                                    ColorAnimation { duration: 120 }
+                                                }
 
                                                 RowLayout {
                                                     anchors.fill: parent
@@ -2593,6 +2612,9 @@ ApplicationWindow {
                                         property bool hovered: resultRowHover.containsMouse
                                         color: hovered ? theme.tableRowHover : tableRowColor(index)
                                         radius: 4
+                                        Behavior on color {
+                                            ColorAnimation { duration: 120 }
+                                        }
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.margins: 4

@@ -177,7 +177,7 @@ Update status checkboxes and notes after each implemented ticket.
   2. `docs/TROUBLESHOOTING.md`
 
 ### PH2-UXR-028 - Subtle micro-interactions
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: add lightweight transitions to improve perceived quality.
 - Files:
   1. `albion_dps/qt/ui/Main.qml`
@@ -332,6 +332,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-17: PH2-UXR-028 completed (tokenized motion timings + subtle hover/press/fade transitions for controls and rows).
 - 2026-02-17: PH2-UXR-027 completed (empty/loading/error placeholders added for Meter/History/Scanner/Market views).
 - 2026-02-17: PH2-UXR-026 completed (semantic data-color helpers + replacement of hardcoded profit/status colors).
 - 2026-02-17: PH2-UXR-025 completed (header action tokens + aligned compact controls + stable update-banner slot behavior).

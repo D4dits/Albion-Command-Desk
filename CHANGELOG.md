@@ -32,6 +32,7 @@ and this project uses semantic versioning.
 - Shell header action tokens in `Theme.qml` for unified action-bar dimensions and banner styling.
 - Semantic data-color helpers in `Main.qml` for signed values, validation, and price-source freshness.
 - Empty/loading placeholder states across Meter/History/Scanner/Market views.
+- Tokenized motion timings in `Theme.qml` for consistent micro-interactions.
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -85,6 +86,8 @@ and this project uses semantic versioning.
 - `albion_dps/qt/ui/Main.qml` now renders explicit empty/loading/error placeholders for key list/table areas.
 - `docs/TROUBLESHOOTING.md` now documents placeholder behavior and recovery checks.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-027` as completed.
+- `albion_dps/qt/ui/Main.qml` now applies subtle row/banner transitions, and shared controls now animate press/hover state changes.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-028` as completed.
 
 ## [0.1.14] - 2026-02-13
 

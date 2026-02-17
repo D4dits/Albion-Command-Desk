@@ -22,6 +22,21 @@ Button {
     hoverEnabled: enabled
     font.pixelSize: 12
     font.bold: variant === "primary" || variant === "danger" || variant === "warm"
+    scale: down ? 0.985 : 1.0
+    opacity: enabled ? 1.0 : 0.62
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: theme.motionFastMs
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: theme.motionNormalMs
+        }
+    }
 
     function colorForState(baseColor, hoverColor, pressedColor) {
         if (!enabled) {
@@ -161,12 +176,12 @@ Button {
 
         Behavior on color {
             ColorAnimation {
-                duration: 120
+                duration: theme.motionNormalMs
             }
         }
         Behavior on border.color {
             ColorAnimation {
-                duration: 100
+                duration: theme.motionFastMs
             }
         }
     }

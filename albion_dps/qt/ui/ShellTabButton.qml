@@ -13,15 +13,41 @@ TabButton {
     property int labelPixelSize: 12
     property bool labelBold: true
 
+    Theme {
+        id: theme
+    }
+
     height: parent ? parent.height : implicitHeight
+    scale: root.pressed ? 0.99 : 1.0
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: theme.motionFastMs
+            easing.type: Easing.OutCubic
+        }
+    }
 
     background: Rectangle {
+        id: tabBg
         radius: root.cornerRadius
         color: root.checked ? root.activeColor : root.inactiveColor
         border.color: root.checked ? root.activeColor : root.borderColor
+
+        Behavior on color {
+            ColorAnimation {
+                duration: theme.motionNormalMs
+            }
+        }
+
+        Behavior on border.color {
+            ColorAnimation {
+                duration: theme.motionNormalMs
+            }
+        }
     }
 
     contentItem: Text {
+        id: tabLabel
         text: root.text
         color: root.checked ? root.activeTextColor : root.inactiveTextColor
         horizontalAlignment: Text.AlignHCenter
@@ -29,5 +55,11 @@ TabButton {
         font.pixelSize: root.labelPixelSize
         font.bold: root.labelBold
         elide: Text.ElideRight
+
+        Behavior on color {
+            ColorAnimation {
+                duration: theme.motionNormalMs
+            }
+        }
     }
 }

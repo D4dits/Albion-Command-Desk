@@ -18,6 +18,18 @@ Rectangle {
     border.color: strokeColor
     border.width: 1
 
+    Behavior on color {
+        ColorAnimation {
+            duration: theme.motionNormalMs
+        }
+    }
+
+    Behavior on border.color {
+        ColorAnimation {
+            duration: theme.motionNormalMs
+        }
+    }
+
     Rectangle {
         visible: showTopRule
         anchors.left: parent.left

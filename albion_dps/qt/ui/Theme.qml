@@ -115,6 +115,9 @@ QtObject {
     readonly property real elevationLowOpacity: 0.12
     readonly property real elevationMediumOpacity: 0.20
     readonly property real elevationHighOpacity: 0.28
+    readonly property int motionFastMs: 100
+    readonly property int motionNormalMs: 140
+    readonly property int motionSlowMs: 180
     readonly property int breakpointCompact: 1320
     readonly property int breakpointNarrow: 1160
 

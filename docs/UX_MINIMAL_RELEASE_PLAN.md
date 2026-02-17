@@ -284,7 +284,7 @@ Acceptance:
 - [x] PH2-UXR-025: header + action bar polish
 - [x] PH2-UXR-026: color semantics for data states (profit/age/status)
 - [x] PH2-UXR-027: empty/loading/error states
-- [ ] PH2-UXR-028: subtle micro-interactions
+- [x] PH2-UXR-028: subtle micro-interactions
 - [ ] PH2-UXR-029: accessibility + contrast pass
 - [ ] PH2-UXR-030: visual regression baseline (screenshots/checklist)
 
@@ -382,11 +382,15 @@ Acceptance:
   - documented new placeholder behavior in troubleshooting guidance
 
 ##### PH2-UXR-028 - Subtle micro-interactions
-- Status: TODO
+- Status: DONE
 - Goal: add lightweight motion for state transitions without UI clutter.
-- Files to modify:
+- Files modified:
   1. `albion_dps/qt/ui/Main.qml`
   2. `albion_dps/qt/ui/Theme.qml`
+- Delivery notes:
+  - added lightweight button/tab press and color transitions in shared controls (`AppButton`, `ShellTabButton`)
+  - added subtle fade transition for update banner visibility
+  - added table-row hover color transitions to reduce abrupt visual jumps
 
 ##### PH2-UXR-029 - Accessibility + contrast pass
 - Status: TODO
