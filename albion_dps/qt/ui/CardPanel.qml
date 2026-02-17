@@ -4,30 +4,27 @@ Rectangle {
     id: root
 
     property int level: 0 // 0=base,1=raised,2=highlight
-    property color fillColor: level === 2 ? theme.cardLevel2 : (level === 1 ? theme.cardLevel1 : theme.cardLevel0)
-    property color strokeColor: level > 0 ? theme.borderStrong : theme.borderSubtle
-    property int cornerRadius: theme.radiusLg
+    property color fillColor: level === 2 ? Theme.cardLevel2 : (level === 1 ? Theme.cardLevel1 : Theme.cardLevel0)
+    property color strokeColor: level > 0 ? Theme.borderStrong : Theme.borderSubtle
+    property int cornerRadius: Theme.radiusLg
     property bool emphasizeBorder: false
-    property real shadowOpacity: level === 0 ? theme.elevationLowOpacity : theme.elevationMediumOpacity
+    property real shadowOpacity: level === 0 ? Theme.elevationLowOpacity : Theme.elevationMediumOpacity
 
-    Theme {
-        id: theme
-    }
 
     color: fillColor
     radius: cornerRadius
-    border.color: emphasizeBorder ? theme.borderFocus : strokeColor
+    border.color: emphasizeBorder ? Theme.borderFocus : strokeColor
     border.width: 1
 
     Behavior on color {
         ColorAnimation {
-            duration: theme.motionSlowMs
+            duration: Theme.motionSlowMs
         }
     }
 
     Behavior on border.color {
         ColorAnimation {
-            duration: theme.motionNormalMs
+            duration: Theme.motionNormalMs
         }
     }
 

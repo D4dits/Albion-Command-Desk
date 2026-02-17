@@ -13,13 +13,10 @@ Button {
     property color customTextColor: "transparent"
     property color customBorderColor: "transparent"
 
-    Theme {
-        id: theme
-    }
 
-    implicitHeight: compact ? theme.buttonHeightCompact : theme.buttonHeightRegular
+    implicitHeight: compact ? Theme.buttonHeightCompact : Theme.buttonHeightRegular
     implicitWidth: Math.max(64, contentItem.implicitWidth + 20)
-    padding: compact ? theme.spacingSm : theme.spacingMd
+    padding: compact ? Theme.spacingSm : Theme.spacingMd
     hoverEnabled: enabled
     focusPolicy: Qt.StrongFocus
     font.pixelSize: 12
@@ -51,7 +48,7 @@ Button {
 
     function colorForState(baseColor, hoverColor, pressedColor) {
         if (!enabled) {
-            return theme.controlDisabledBackground
+            return Theme.controlDisabledBackground
         }
         if (checkable && checked) {
             return pressedColor
@@ -70,18 +67,18 @@ Button {
             return customBackground
         }
         if (variant === "primary") {
-            return theme.buttonPrimaryBackground
+            return Theme.buttonPrimaryBackground
         }
         if (variant === "danger") {
-            return theme.buttonDangerBackground
+            return Theme.buttonDangerBackground
         }
         if (variant === "ghost") {
-            return theme.buttonGhostBackground
+            return Theme.buttonGhostBackground
         }
         if (variant === "warm") {
-            return theme.brandWarmAccent
+            return Theme.brandWarmAccent
         }
-        return theme.buttonSecondaryBackground
+        return Theme.buttonSecondaryBackground
     }
 
     function hoverBackground() {
@@ -89,18 +86,18 @@ Button {
             return customHover
         }
         if (variant === "primary") {
-            return theme.buttonPrimaryHover
+            return Theme.buttonPrimaryHover
         }
         if (variant === "danger") {
-            return theme.buttonDangerHover
+            return Theme.buttonDangerHover
         }
         if (variant === "ghost") {
-            return theme.buttonGhostHover
+            return Theme.buttonGhostHover
         }
         if (variant === "warm") {
             return "#ffd980"
         }
-        return theme.buttonSecondaryHover
+        return Theme.buttonSecondaryHover
     }
 
     function pressedBackground() {
@@ -108,18 +105,18 @@ Button {
             return customPressed
         }
         if (variant === "primary") {
-            return theme.buttonPrimaryPressed
+            return Theme.buttonPrimaryPressed
         }
         if (variant === "danger") {
-            return theme.buttonDangerPressed
+            return Theme.buttonDangerPressed
         }
         if (variant === "ghost") {
-            return theme.buttonGhostPressed
+            return Theme.buttonGhostPressed
         }
         if (variant === "warm") {
             return "#e0a93c"
         }
-        return theme.buttonSecondaryPressed
+        return Theme.buttonSecondaryPressed
     }
 
     function resolvedBorderColor() {
@@ -127,33 +124,33 @@ Button {
             return customBorderColor
         }
         if (!enabled) {
-            return theme.controlDisabledBorder
+            return Theme.controlDisabledBorder
         }
         if (checkable && checked) {
             if (variant === "primary") {
-                return theme.buttonPrimaryPressed
+                return Theme.buttonPrimaryPressed
             }
             if (variant === "danger") {
-                return theme.buttonDangerPressed
+                return Theme.buttonDangerPressed
             }
             if (variant === "warm") {
                 return "#d89f35"
             }
-            return theme.borderFocus
+            return Theme.borderFocus
         }
         if (variant === "ghost") {
-            return hovered ? theme.borderStrong : theme.borderSubtle
+            return hovered ? Theme.borderStrong : Theme.borderSubtle
         }
         if (variant === "primary") {
-            return theme.buttonPrimaryBackground
+            return Theme.buttonPrimaryBackground
         }
         if (variant === "danger") {
-            return theme.buttonDangerBackground
+            return Theme.buttonDangerBackground
         }
         if (variant === "warm") {
             return "#f0bf57"
         }
-        return theme.borderStrong
+        return Theme.borderStrong
     }
 
     function resolvedTextColor() {
@@ -161,30 +158,30 @@ Button {
             return customTextColor
         }
         if (!enabled) {
-            return theme.textDisabled
+            return Theme.textDisabled
         }
         if (variant === "primary") {
-            return theme.buttonPrimaryText
+            return Theme.buttonPrimaryText
         }
         if (variant === "danger") {
-            return theme.buttonDangerText
+            return Theme.buttonDangerText
         }
         if (variant === "warm") {
             return "#1f1400"
         }
         if (variant === "ghost") {
-            return theme.buttonGhostText
+            return Theme.buttonGhostText
         }
-        return theme.buttonSecondaryText
+        return Theme.buttonSecondaryText
     }
 
     background: Rectangle {
         id: backgroundRect
         readonly property color activeBg: root.colorForState(root.baseBackground(), root.hoverBackground(), root.pressedBackground())
-        radius: compact ? theme.buttonRadiusCompact : theme.buttonRadiusRegular
+        radius: compact ? Theme.buttonRadiusCompact : Theme.buttonRadiusRegular
         color: "transparent"
-        border.width: root.visualFocus ? theme.focusRingWidth : 1
-        border.color: root.visualFocus ? theme.borderFocus : root.resolvedBorderColor()
+        border.width: root.visualFocus ? Theme.focusRingWidth : 1
+        border.color: root.visualFocus ? Theme.borderFocus : root.resolvedBorderColor()
 
         gradient: Gradient {
             GradientStop {

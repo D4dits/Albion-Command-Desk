@@ -14,9 +14,7 @@ ApplicationWindow {
     title: "Albion Command Desk"
     color: theme.surfaceApp
 
-    Theme {
-        id: theme
-    }
+    property var theme: Theme
 
     property color textColor: theme.textPrimary
     property color mutedColor: theme.textMuted

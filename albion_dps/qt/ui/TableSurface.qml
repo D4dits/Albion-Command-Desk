@@ -4,14 +4,11 @@ Rectangle {
     id: root
 
     property int level: 0
-    property color fillColor: level > 0 ? theme.surfaceInteractive : theme.surfaceInset
-    property color strokeColor: level > 0 ? theme.borderStrong : theme.borderSubtle
-    property int cornerRadius: theme.radiusMd
+    property color fillColor: level > 0 ? Theme.surfaceInteractive : Theme.surfaceInset
+    property color strokeColor: level > 0 ? Theme.borderStrong : Theme.borderSubtle
+    property int cornerRadius: Theme.radiusMd
     property bool showTopRule: true
 
-    Theme {
-        id: theme
-    }
 
     color: fillColor
     radius: cornerRadius
@@ -20,13 +17,13 @@ Rectangle {
 
     Behavior on color {
         ColorAnimation {
-            duration: theme.motionNormalMs
+            duration: Theme.motionNormalMs
         }
     }
 
     Behavior on border.color {
         ColorAnimation {
-            duration: theme.motionNormalMs
+            duration: Theme.motionNormalMs
         }
     }
 

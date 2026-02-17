@@ -4,13 +4,10 @@ import QtQuick.Controls 2.15
 ComboBox {
     id: root
 
-    Theme {
-        id: theme
-    }
 
-    implicitHeight: theme.controlHeightRegular
+    implicitHeight: Theme.controlHeightRegular
     focusPolicy: Qt.StrongFocus
-    leftPadding: theme.spacingSm
+    leftPadding: Theme.spacingSm
     rightPadding: 24
     font.pixelSize: 12
 
@@ -19,7 +16,7 @@ ComboBox {
         rightPadding: root.rightPadding
         text: root.displayText
         font: root.font
-        color: root.enabled ? theme.textPrimary : theme.textDisabled
+        color: root.enabled ? Theme.textPrimary : Theme.textDisabled
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
     }
@@ -36,20 +33,20 @@ ComboBox {
             context.lineTo(width, 0)
             context.lineTo(width / 2, height)
             context.closePath()
-            context.fillStyle = root.enabled ? theme.textMuted : theme.textDisabled
+            context.fillStyle = root.enabled ? Theme.textMuted : Theme.textDisabled
             context.fill()
         }
     }
 
     background: Rectangle {
-        radius: theme.radiusMd
-        color: root.enabled ? theme.inputBackground : theme.inputBackgroundDisabled
-        border.width: root.visualFocus ? theme.focusRingWidth : 1
-        border.color: root.visualFocus ? theme.inputBorderFocus : (root.enabled ? theme.inputBorder : theme.controlDisabledBorder)
+        radius: Theme.radiusMd
+        color: root.enabled ? Theme.inputBackground : Theme.inputBackgroundDisabled
+        border.width: root.visualFocus ? Theme.focusRingWidth : 1
+        border.color: root.visualFocus ? Theme.inputBorderFocus : (root.enabled ? Theme.inputBorder : Theme.controlDisabledBorder)
     }
 
     delegate: ItemDelegate {
-        implicitHeight: theme.controlHeightRegular
+        implicitHeight: Theme.controlHeightRegular
         readonly property string delegateText: {
             if (typeof modelData === "string" || typeof modelData === "number") {
                 return String(modelData)
@@ -68,11 +65,11 @@ ComboBox {
         text: delegateText
         highlighted: root.highlightedIndex === index
         background: Rectangle {
-            color: parent.highlighted ? theme.tableSelectedBackground : theme.surfaceInteractive
+            color: parent.highlighted ? Theme.tableSelectedBackground : Theme.surfaceInteractive
         }
         contentItem: Text {
             text: parent.text
-            color: theme.textPrimary
+            color: Theme.textPrimary
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
             font.pixelSize: 12
@@ -96,9 +93,9 @@ ComboBox {
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
         background: Rectangle {
-            radius: theme.radiusMd
-            color: theme.surfaceRaised
-            border.color: theme.borderStrong
+            radius: Theme.radiusMd
+            color: Theme.surfaceRaised
+            border.color: Theme.borderStrong
         }
         contentItem: ListView {
             clip: true

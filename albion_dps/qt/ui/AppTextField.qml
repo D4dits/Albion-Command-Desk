@@ -4,24 +4,21 @@ import QtQuick.Controls 2.15
 TextField {
     id: root
 
-    Theme {
-        id: theme
-    }
 
-    implicitHeight: theme.controlHeightRegular
+    implicitHeight: Theme.controlHeightRegular
     focusPolicy: Qt.StrongFocus
-    padding: theme.spacingSm
-    color: enabled ? theme.textPrimary : theme.textDisabled
-    placeholderTextColor: theme.textMuted
+    padding: Theme.spacingSm
+    color: enabled ? Theme.textPrimary : Theme.textDisabled
+    placeholderTextColor: Theme.textMuted
     selectByMouse: true
-    selectionColor: theme.brandPrimary
-    selectedTextColor: theme.textOnAccent
+    selectionColor: Theme.brandPrimary
+    selectedTextColor: Theme.textOnAccent
 
     background: Rectangle {
-        radius: theme.radiusMd
-        color: root.enabled ? theme.inputBackground : theme.inputBackgroundDisabled
-        border.width: root.activeFocus ? theme.focusRingWidth : 1
-        border.color: root.activeFocus ? theme.inputBorderFocus : (root.enabled ? theme.inputBorder : theme.controlDisabledBorder)
+        radius: Theme.radiusMd
+        color: root.enabled ? Theme.inputBackground : Theme.inputBackgroundDisabled
+        border.width: root.activeFocus ? Theme.focusRingWidth : 1
+        border.color: root.activeFocus ? Theme.inputBorderFocus : (root.enabled ? Theme.inputBorder : Theme.controlDisabledBorder)
 
         Behavior on color {
             ColorAnimation { duration: 120 }
