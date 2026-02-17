@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import "." // for Theme access
 import "utils" 1.0 as Utils
 
 Button {
