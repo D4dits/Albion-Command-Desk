@@ -2,7 +2,6 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import "." // for all component access
-import "." // for MarketStatusBar, MarketSetupPanel, MarketCraftSearch, MarketPresets, MarketCraftsTable, MarketDiagnostics access
 
 /**
  * MarketTab - Main market tab container
