@@ -13,8 +13,6 @@ import "." // for TableSurface access
 TableSurface {
     id: root
     level: 1
-    Layout.fillWidth: true
-    Layout.fillHeight: true
     clip: true
 
     // Properties to bind to parent state
