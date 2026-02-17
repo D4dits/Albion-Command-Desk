@@ -17,7 +17,7 @@ Item {
     property bool showProgress: true
 
     // Access to theme
-    property var theme: Theme {}
+    property var theme: null
 
     // Private properties
     property var toasts: []

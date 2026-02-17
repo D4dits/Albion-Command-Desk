@@ -74,7 +74,7 @@ Text {
     }
 
     // Access to theme
-    property var theme: Theme {}
+    property var theme: null
 
     // Set text content from icon name
     text: iconChars[name] || name

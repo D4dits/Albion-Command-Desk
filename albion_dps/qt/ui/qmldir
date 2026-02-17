@@ -10,7 +10,7 @@ CardPanel 1.0 CardPanel.qml
 ShellTabButton 1.0 ShellTabButton.qml
 SupportButtons 1.0 SupportButtons.qml
 TableSurface 1.0 TableSurface.qml
-Theme 1.0 Theme.qml
+singleton Theme 1.0 Theme.qml
 UpdateBanner 1.0 UpdateBanner.qml
 # Tab components
 ScannerTab 1.0 ScannerTab.qml

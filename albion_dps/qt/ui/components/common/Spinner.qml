@@ -30,7 +30,7 @@ RowLayout {
     property string label: ""
 
     // Access to theme
-    property var theme: Theme {}
+    property var theme: null
 
     // Size mappings
     readonly property int sizeXs: 16
