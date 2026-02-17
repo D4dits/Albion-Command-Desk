@@ -156,7 +156,7 @@ Update status checkboxes and notes after each implemented ticket.
   2. `albion_dps/qt/ui/Theme.qml`
 
 ### PH2-UXR-025 - Header + action bar polish
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: stabilize action placement and visual priority at all breakpoints.
 - Files:
   1. `albion_dps/qt/ui/Main.qml`
@@ -332,6 +332,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-17: PH2-UXR-025 completed (header action tokens + aligned compact controls + stable update-banner slot behavior).
 - 2026-02-17: PH2-UXR-024 completed (table header/text token refresh + row hover/selection polish in Meter/Market/History).
 - 2026-02-17: PH2-UXR-023 completed (level-based panel/table primitives + Main.qml hierarchy cleanup and style deduplication).
 - 2026-02-17: PH2-UXR-022 completed (shared form control components + input tokenization + Main.qml migration).

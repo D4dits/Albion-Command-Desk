@@ -281,7 +281,7 @@ Acceptance:
 - [x] PH2-UXR-022: input/select/spinbox refresh
 - [x] PH2-UXR-023: card layout hierarchy cleanup
 - [x] PH2-UXR-024: table redesign (meter/market/history)
-- [ ] PH2-UXR-025: header + action bar polish
+- [x] PH2-UXR-025: header + action bar polish
 - [ ] PH2-UXR-026: color semantics for data states (profit/age/status)
 - [ ] PH2-UXR-027: empty/loading/error states
 - [ ] PH2-UXR-028: subtle micro-interactions
@@ -349,11 +349,15 @@ Acceptance:
   - normalized table row surfaces and selection borders across list delegates
 
 ##### PH2-UXR-025 - Header + action bar polish
-- Status: TODO
+- Status: DONE
 - Goal: keep global actions stable and visually intentional across all widths.
-- Files to modify:
+- Files modified:
   1. `albion_dps/qt/ui/Main.qml`
   2. `albion_dps/qt/ui/Theme.qml`
+- Delivery notes:
+  - refined shell header action tokens in `Theme.qml` (pill radius/action height/banner colors)
+  - aligned update/support controls to one compact action bar rhythm with stable button sizing
+  - kept update-banner slot width stable across views to reduce header jump when banner visibility changes
 
 ##### PH2-UXR-026 - Color semantics for data
 - Status: TODO

@@ -100,6 +100,8 @@ ApplicationWindow {
     property string autoUpdateLabel: narrowLayout ? "Auto" : "Auto update"
     property string payPalButtonLabel: narrowLayout ? "Pay" : "PayPal"
     property string coffeeButtonLabel: narrowLayout ? "Coffee" : "Buy me a coffee"
+    property int shellSupportPrimaryWidth: narrowLayout ? 90 : 118
+    property int shellSupportSecondaryWidth: narrowLayout ? 98 : 146
 
     // Phase 0 shell contract:
     // - left zone: title + contextual status
@@ -264,9 +266,9 @@ ApplicationWindow {
             id: shellHeader
             Layout.fillWidth: true
             height: shellHeaderHeight
-            color: panelColor
+            color: theme.cardLevel1
             radius: theme.cornerRadiusPanel
-            border.color: borderColor
+            border.color: theme.borderStrong
 
             RowLayout {
                 id: shellHeaderLayout
@@ -338,13 +340,15 @@ ApplicationWindow {
 
                     Rectangle {
                         id: shellUpdateBanner
-                        visible: uiState.updateBannerVisible && !narrowLayout
+                        visible: !narrowLayout
+                        opacity: uiState.updateBannerVisible ? 1.0 : 0.0
+                        enabled: uiState.updateBannerVisible
                         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                         Layout.preferredWidth: Math.max(shellUpdateBannerMinWidthActive, Math.min(shellUpdateBannerMaxWidthActive, root.width * 0.24))
-                        Layout.preferredHeight: 34
-                        radius: 17
-                        color: "#1f3322"
-                        border.color: "#2ea043"
+                        Layout.preferredHeight: theme.shellActionHeight + 4
+                        radius: theme.shellPillRadius
+                        color: theme.shellBannerBackground
+                        border.color: theme.shellBannerBorder
 
                         RowLayout {
                             anchors.fill: parent
@@ -355,7 +359,7 @@ ApplicationWindow {
                             Text {
                                 Layout.fillWidth: true
                                 text: uiState.updateBannerText
-                                color: "#7ee787"
+                                color: theme.shellBannerText
                                 font.pixelSize: 12
                                 elide: Text.ElideRight
                                 wrapMode: Text.NoWrap
@@ -366,7 +370,7 @@ ApplicationWindow {
                                 text: "Open"
                                 variant: "primary"
                                 compact: true
-                                implicitHeight: 24
+                                implicitHeight: theme.shellActionHeight
                                 implicitWidth: 54
                                 onClicked: {
                                     if (uiState.updateBannerUrl.length > 0) {
@@ -380,7 +384,7 @@ ApplicationWindow {
                                 text: "x"
                                 variant: "ghost"
                                 compact: true
-                                implicitHeight: 24
+                                implicitHeight: theme.shellActionHeight
                                 implicitWidth: 28
                                 onClicked: uiState.dismissUpdateBanner()
                             }
@@ -398,22 +402,16 @@ ApplicationWindow {
                             spacing: 6
                             AppCheckBox {
                                 id: autoUpdateCheckBox
+                                implicitHeight: theme.shellActionHeight
                                 checked: uiState.updateAutoCheck
                                 text: autoUpdateLabel
                                 onToggled: uiState.setUpdateAutoCheck(checked)
-                                contentItem: Text {
-                                    text: autoUpdateCheckBox.text
-                                    color: mutedColor
-                                    font.pixelSize: 11
-                                    verticalAlignment: Text.AlignVCenter
-                                    leftPadding: autoUpdateCheckBox.indicator.width + autoUpdateCheckBox.spacing
-                                }
                             }
                             AppButton {
                                 id: checkUpdatesButton
                                 text: "Check now"
                                 variant: "primary"
-                                implicitHeight: 28
+                                implicitHeight: theme.shellActionHeight
                                 implicitWidth: narrowLayout ? 78 : 88
                                 onClicked: uiState.requestManualUpdateCheck()
                             }
@@ -437,16 +435,16 @@ ApplicationWindow {
                             id: headerPayPalButton
                             text: payPalButtonLabel
                             variant: "primary"
-                            implicitHeight: narrowLayout ? 28 : 32
-                            implicitWidth: narrowLayout ? 92 : 120
+                            implicitHeight: theme.shellActionHeight
+                            implicitWidth: shellSupportPrimaryWidth
                             onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00")
                         }
                         AppButton {
                             id: headerCoffeeButton
                             text: coffeeButtonLabel
                             variant: "warm"
-                            implicitHeight: narrowLayout ? 28 : 32
-                            implicitWidth: narrowLayout ? 96 : 148
+                            implicitHeight: theme.shellActionHeight
+                            implicitWidth: shellSupportSecondaryWidth
                             onClicked: Qt.openUrlExternally("https://buycoffee.to/ao-dps/")
                         }
                     }

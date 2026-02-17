@@ -131,6 +131,11 @@ QtObject {
     readonly property int shellTabRadius: 5
     readonly property color shellTabIdleBackground: "#0f1620"
     readonly property color shellTabActiveText: "#0b0f14"
+    readonly property int shellPillRadius: 16
+    readonly property int shellActionHeight: 28
+    readonly property color shellBannerBackground: "#1a2d20"
+    readonly property color shellBannerBorder: "#2ea043"
+    readonly property color shellBannerText: "#7ee787"
 
     // Market tokens
     readonly property int marketColumnSpacing: 6
