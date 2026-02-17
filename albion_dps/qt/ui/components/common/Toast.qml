@@ -62,13 +62,13 @@ Rectangle {
             default: return theme.stateInfo
         }
     }
-    readonly property string iconChar: {
+    readonly property string iconName: {
         switch (root.type) {
-            case "success": return "✓"
-            case "warning": return "⚠"
-            case "error": return "✕"
-            case "info": return "ℹ"
-            default: return "ℹ"
+            case "success": return "check"
+            case "warning": return "warning"
+            case "error": return "error"
+            case "info": return "info"
+            default: return "info"
         }
     }
 
@@ -185,12 +185,11 @@ Rectangle {
             spacing: root.spacing
 
             // Icon
-            Text {
+            Icon {
                 id: icon
-                text: root.iconChar
+                name: root.iconName
+                size: 16
                 color: root.iconColor
-                font.pixelSize: 16
-                font.bold: true
                 Layout.alignment: Qt.AlignTop
             }
 

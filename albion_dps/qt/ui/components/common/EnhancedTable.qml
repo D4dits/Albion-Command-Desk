@@ -122,14 +122,14 @@ TableSurface {
                             }
 
                             // Sort indicator
-                            Text {
+                            Icon {
                                 visible: model.sortable !== false
-                                text: {
-                                    if (root.sortColumn !== index) return "⇅"
-                                    return root.sortDescending ? "▼" : "▲"
+                                name: {
+                                    if (root.sortColumn !== index) return "sort"
+                                    return root.sortDescending ? "sortDown" : "sortUp"
                                 }
                                 color: root.sortColumn === index ? root.theme.tableSortIndicator : root.theme.tableSortIndicatorInactive
-                                font.pixelSize: 9
+                                size: 9
                                 Layout.alignment: Qt.AlignVCenter
                             }
 
