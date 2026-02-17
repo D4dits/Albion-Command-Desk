@@ -7,7 +7,8 @@ param(
     [string]$Profile = "core",
     [switch]$SkipRun,
     [switch]$ForceRecreateVenv,
-    [switch]$SkipCaptureExtras
+    [switch]$SkipCaptureExtras,
+    [switch]$StrictCapture
 )
 
 $ErrorActionPreference = "Stop"
@@ -53,6 +54,26 @@ function Test-NpcapRuntime {
     }
 }
 
+function Test-NpcapSdk {
+    $includeCandidates = @(
+        "C:\\WpdPack\\Include\\pcap.h",
+        "$env:ProgramFiles\\Npcap SDK\\Include\\pcap.h",
+        "${env:ProgramFiles(x86)}\\Npcap SDK\\Include\\pcap.h"
+    )
+    foreach ($candidate in $includeCandidates) {
+        if (Test-Path $candidate) {
+            return @{
+                Available = $true
+                Detail = "Detected SDK header: $candidate"
+            }
+        }
+    }
+    return @{
+        Available = $false
+        Detail = "Npcap SDK header (pcap.h) not found."
+    }
+}
+
 function Show-InstallDiagnostics {
     param(
         [string]$ProjectRootPath,
@@ -79,6 +100,13 @@ function Show-InstallDiagnostics {
         } else {
             Write-InstallWarn "  npcap_runtime: missing ($($npcap.Detail))"
             Write-InstallHint "Install Npcap Runtime from https://npcap.com/#download before running live mode."
+        }
+        $sdk = Test-NpcapSdk
+        if ($sdk.Available) {
+            Write-InstallInfo "  npcap_sdk: available ($($sdk.Detail))"
+        } else {
+            Write-InstallWarn "  npcap_sdk: missing ($($sdk.Detail))"
+            Write-InstallHint "Capture profile will fall back to core mode unless -StrictCapture is used."
         }
     } else {
         Write-InstallInfo "  npcap_runtime: optional (core mode selected)"
@@ -304,6 +332,18 @@ if ($Profile -eq "core") {
     Write-InstallInfo "Install profile: capture (includes live capture backend)"
 }
 Show-InstallDiagnostics -ProjectRootPath $ProjectRoot -VirtualEnvPath $VenvPath -InstallProfile $Profile -LauncherInfo $launcher
+$captureSdkStatus = $null
+if ($Profile -eq "capture") {
+    $captureSdkStatus = Test-NpcapSdk
+    if (-not $captureSdkStatus.Available) {
+        if ($StrictCapture) {
+            Throw-InstallError "Capture profile requested with -StrictCapture, but Npcap SDK was not found."
+        }
+        Write-InstallWarn "Capture profile requested, but SDK is unavailable. Falling back to core profile."
+        Write-InstallHint "Install Npcap SDK + build tools if you want capture build on Windows."
+        $Profile = "core"
+    }
+}
 $installTarget = if ($Profile -eq "capture") { ".[capture]" } else { "." }
 Write-InstallInfo "Installing Albion Command Desk ($installTarget)"
 Push-Location $ProjectRoot
@@ -313,7 +353,17 @@ try {
         if ($Profile -eq "core") {
             Throw-InstallError "Package install failed."
         }
-        Throw-InstallError "Package install failed. Verify build tools and packet capture prerequisites."
+        if ($StrictCapture) {
+            Throw-InstallError "Capture profile installation failed in strict mode. Verify build tools and packet capture prerequisites."
+        }
+        Write-InstallWarn "Capture profile installation failed; falling back to core profile."
+        Write-InstallHint "Use -StrictCapture if you want this to fail instead of fallback."
+        $Profile = "core"
+        $installTarget = "."
+        & $venvPython -m pip install -e $installTarget
+        if ($LASTEXITCODE -ne 0) {
+            Throw-InstallError "Core profile fallback install failed."
+        }
     }
 } finally {
     Pop-Location

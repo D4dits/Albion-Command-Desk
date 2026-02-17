@@ -10,7 +10,7 @@ One-command setup for Albion Command Desk from a source checkout.
 4. Upgrades `pip`.
 5. Installs package using selected profile:
    - `core` (default): base package `.` without live capture backend.
-   - `capture`: package with live backend `.[capture]`.
+   - `capture`: tries live backend `.[capture]`; falls back to `core` when capture prerequisites are missing.
 6. Verifies CLI startup.
 7. Runs shared smoke checks (CLI import + Qt startup probe).
 8. Starts app in mode matching selected profile (unless `--skip-run` is used).
@@ -27,6 +27,12 @@ Install with live capture backend:
 
 ```bash
 bash ./tools/install/macos/install.sh --profile capture
+```
+
+Require strict capture (no fallback to core):
+
+```bash
+bash ./tools/install/macos/install.sh --profile capture --strict-capture
 ```
 
 Install only (do not start app):
@@ -50,5 +56,7 @@ bash ./tools/install/macos/install.sh --python "$(command -v python3.12)"
 ## Notes
 
 - If command line tools are missing, run `xcode-select --install`.
-- If capture profile fails, use `--profile core` for non-live usage.
+- Default path (`core`) does not require packet-capture development headers.
+- Capture profile auto-falls back to `core` if `libpcap`/toolchain prerequisites are missing.
+- Use `--strict-capture` only when you want capture install to fail instead of fallback.
 - If `--profile capture` fails on Python 3.13, retry with Python 3.11 or 3.12.

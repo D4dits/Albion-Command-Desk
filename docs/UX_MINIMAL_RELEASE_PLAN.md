@@ -226,7 +226,7 @@ Acceptance:
 
 ### Phase 2 - Install/release simplification (3-5 days)
 - [x] REL-010: bootstrap scripts profile support + clearer diagnostics
-- [ ] REL-011: ensure no SDK requirement in end-user path
+- [x] REL-011: ensure no SDK requirement in end-user path
 - [ ] REL-012: release artifact smoke checks per OS
 - [ ] REL-013: docs rewrite for one-click install paths
 
@@ -243,6 +243,21 @@ Acceptance:
   - added explicit diagnostics block (project root, venv path, profile, python version)
   - added capture preflight hints (Npcap/libpcap/compiler visibility)
   - kept `core` as no-friction default while surfacing capture requirements clearly
+
+##### REL-011 - no SDK dependency in default user path
+- Status: DONE
+- Goal: guarantee that regular install path never blocks on capture SDK/toolchain.
+- Files modified:
+  1. `tools/install/windows/install.ps1`
+  2. `tools/install/linux/install.sh`
+  3. `tools/install/macos/install.sh`
+  4. `tools/install/windows/README.md`
+  5. `tools/install/linux/README.md`
+  6. `tools/install/macos/README.md`
+- Delivery notes:
+  - added strict/non-strict capture behavior (`StrictCapture` / `--strict-capture`)
+  - capture profile now auto-falls back to `core` by default when prerequisites are missing
+  - documented fallback behavior so end-user install remains SDK-free unless explicitly forced
 
 ### Phase 3 - Stabilization and ship (2-3 days)
 - [x] QA-001: regression pass (meter/scanner/market/live/replay)

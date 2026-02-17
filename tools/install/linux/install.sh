@@ -8,6 +8,7 @@ PYTHON_CMD_OVERRIDE=""
 SKIP_RUN=0
 FORCE_RECREATE_VENV=0
 INSTALL_PROFILE="core"
+STRICT_CAPTURE=0
 
 log_info() {
   printf '[ACD install] %s\n' "$1"
@@ -37,6 +38,7 @@ Options:
   --profile <core|capture>   Install profile (`core` default, `capture` for live mode).
   --skip-run                 Install only (do not start app).
   --force-recreate-venv      Remove and recreate virtual environment.
+  --strict-capture           Fail if capture profile cannot be installed.
   -h, --help                 Show this help.
 EOF
 }
@@ -69,6 +71,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --force-recreate-venv)
       FORCE_RECREATE_VENV=1
+      shift
+      ;;
+    --strict-capture)
+      STRICT_CAPTURE=1
       shift
       ;;
     -h|--help)
@@ -218,11 +224,35 @@ else
 fi
 show_diagnostics
 
+if [[ "$INSTALL_PROFILE" == "capture" ]]; then
+  if [[ "$(detect_libpcap || true)" == "missing" ]]; then
+    if (( STRICT_CAPTURE )); then
+      fail "Capture profile requested with --strict-capture but libpcap was not detected."
+    fi
+    log_warn "Capture profile requested, but libpcap was not detected. Falling back to core profile."
+    log_hint "Install libpcap-dev and rerun with --profile capture when ready."
+    INSTALL_PROFILE="core"
+    INSTALL_TARGET="."
+  fi
+fi
+
 log_info "Installing Albion Command Desk (${INSTALL_TARGET})"
-(
+if ! (
   cd "$PROJECT_ROOT"
   "$VENV_PYTHON" -m pip install -e "$INSTALL_TARGET"
-)
+); then
+  if [[ "$INSTALL_PROFILE" == "capture" && $STRICT_CAPTURE -eq 0 ]]; then
+    log_warn "Capture profile install failed; falling back to core profile."
+    log_hint "Use --strict-capture if you want this to fail instead of fallback."
+    (
+      cd "$PROJECT_ROOT"
+      "$VENV_PYTHON" -m pip install -e "."
+    )
+    INSTALL_PROFILE="core"
+  else
+    fail "Package install failed."
+  fi
+fi
 
 log_info "Verifying CLI entrypoint"
 if [[ -x "$VENV_CLI" ]]; then

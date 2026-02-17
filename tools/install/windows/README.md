@@ -9,7 +9,7 @@ One-command setup for Albion Command Desk from source checkout.
 3. Upgrades `pip`.
 4. Installs package using selected profile:
    - `core` (default): base package `.` without live capture backend.
-   - `capture`: package with live backend `.[capture]`.
+   - `capture`: tries live backend `.[capture]`; falls back to `core` when capture prerequisites are missing.
 5. Verifies CLI startup.
 6. Runs shared smoke checks (CLI import + Qt startup probe).
 7. Starts app in mode matching selected profile (unless `-SkipRun` is used).
@@ -26,6 +26,12 @@ Install with live capture backend:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile capture
+```
+
+Require strict capture (no fallback to core):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile capture -StrictCapture
 ```
 
 Install only (do not start app):
@@ -54,7 +60,9 @@ powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Sk
 
 ## Notes
 
-- If packet capture dependencies fail, reinstall with `-Profile core`.
+- Default path (`core`) does not require Npcap SDK.
+- Capture profile automatically falls back to `core` when SDK/build prerequisites are missing.
+- Use `-StrictCapture` only when you explicitly want capture install to fail instead of fallback.
 - If using `-Profile capture`, prefer Python 3.11 or 3.12.
 - For local firewalls/AV restrictions, run PowerShell as Administrator.
 - `live` mode checks Npcap Runtime on startup and logs detected install path.
