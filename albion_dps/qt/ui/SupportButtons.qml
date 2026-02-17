@@ -11,7 +11,6 @@ import "." // for AppButton access
  */
 RowLayout {
     id: root
-    spacing: 8
 
     // Layout properties
     property int spacingOverride: 8
