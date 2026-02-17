@@ -24,7 +24,8 @@ ApplicationWindow {
     property int compactControlHeight: theme.controlHeightCompact
     property int marketColumnSpacing: theme.marketColumnSpacing
     property int marketSetupPanelWidth: theme.marketSetupPanelWidth
-    property bool marketSetupStackedLayout: width < 1020
+    property int marketSetupTwoColumnMinWidth: 1340
+    property bool marketSetupStackedLayout: width < marketSetupTwoColumnMinWidth
     property int marketSetupPanelActiveWidth: narrowLayout ? 320 : (compactLayout ? 360 : marketSetupPanelWidth)
     property int marketInputsItemWidth: Math.max(narrowLayout ? 130 : 150, Math.min(240, Math.round(width * (narrowLayout ? 0.15 : 0.17))))
     property int marketInputsQtyWidth: 62
@@ -1363,6 +1364,7 @@ ApplicationWindow {
                                     anchors.fill: parent
                                     anchors.margins: 10
                                     clip: true
+                                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                                     ColumnLayout {
                                         width: parent.width
@@ -1749,6 +1751,7 @@ ApplicationWindow {
                                 Layout.row: marketSetupStackedLayout ? 1 : 0
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
+                                Layout.minimumWidth: 0
                                 ColumnLayout {
                                     anchors.fill: parent
                                     anchors.margins: 10
