@@ -1,7 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import "../../." // for all component access
+import "." // for all component access
 
 /**
  * AppShell - Main application shell container

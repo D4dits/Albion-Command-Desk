@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
+import "." // for AppHeader, AppShell, AppButton, AppCheckBox, AppComboBox, Theme, ShellTabButton
 import "components"  // All components available directly
 import "utils" 1.0 as Utils
 

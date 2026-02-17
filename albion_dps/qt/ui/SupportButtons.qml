@@ -1,6 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
-import "../../." // for AppButton access
+import "." // for AppButton access
 
 /**
  * SupportButtons - PayPal and Buy Me a Coffee donation buttons

@@ -13,10 +13,6 @@ MarketCraftSearch 1.0 market/MarketCraftSearch.qml
 MarketPresets 1.0 market/MarketPresets.qml
 MarketCraftsTable 1.0 market/MarketCraftsTable.qml
 MarketDiagnostics 1.0 market/MarketDiagnostics.qml
-AppShell 1.0 shell/AppShell.qml
-AppHeader 1.0 shell/AppHeader.qml
-UpdateBanner 1.0 shell/UpdateBanner.qml
-SupportButtons 1.0 shell/SupportButtons.qml
 Icon 1.0 common/Icon.qml
 Toast 1.0 common/Toast.qml
 ToastManager 1.0 common/ToastManager.qml
