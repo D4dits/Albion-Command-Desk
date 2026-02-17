@@ -24,7 +24,7 @@ ApplicationWindow {
     property int compactControlHeight: theme.controlHeightCompact
     property int marketColumnSpacing: theme.marketColumnSpacing
     property int marketSetupPanelWidth: theme.marketSetupPanelWidth
-    property bool marketSetupStackedLayout: width < 1480
+    property bool marketSetupStackedLayout: width < 1020
     property int marketSetupPanelActiveWidth: narrowLayout ? 300 : (compactLayout ? 330 : marketSetupPanelWidth)
     property int marketInputsItemWidth: Math.max(narrowLayout ? 130 : 150, Math.min(240, Math.round(width * (narrowLayout ? 0.15 : 0.17))))
     property int marketInputsQtyWidth: 62
@@ -629,19 +629,10 @@ ApplicationWindow {
                                             compact: true
                                             implicitHeight: 24
                                             implicitWidth: 62
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.mode === "battle"
                                             onClicked: uiState.setMode("battle")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: battleButton.checked ? accentColor : theme.controlIdleBackground
-                                                border.color: battleButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: battleButton.text
-                                                color: battleButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
                                         AppButton {
                                             id: zoneButton
@@ -649,19 +640,10 @@ ApplicationWindow {
                                             compact: true
                                             implicitHeight: 24
                                             implicitWidth: 56
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.mode === "zone"
                                             onClicked: uiState.setMode("zone")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: zoneButton.checked ? accentColor : theme.controlIdleBackground
-                                                border.color: zoneButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: zoneButton.text
-                                                color: zoneButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
                                         AppButton {
                                             id: manualButton
@@ -669,19 +651,10 @@ ApplicationWindow {
                                             compact: true
                                             implicitHeight: 24
                                             implicitWidth: 64
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.mode === "manual"
                                             onClicked: uiState.setMode("manual")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: manualButton.checked ? accentColor : theme.controlIdleBackground
-                                                border.color: manualButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: manualButton.text
-                                                color: manualButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
                                         Item { Layout.fillWidth: true }
                                         Text {
@@ -695,19 +668,10 @@ ApplicationWindow {
                                             compact: true
                                             implicitHeight: 24
                                             implicitWidth: 56
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.sortKey === "dps"
                                             onClicked: uiState.setSortKey("dps")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: sortDpsButton.checked ? accentColor : theme.controlIdleBackground
-                                                border.color: sortDpsButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: sortDpsButton.text
-                                                color: sortDpsButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
                                         AppButton {
                                             id: sortDmgButton
@@ -715,19 +679,10 @@ ApplicationWindow {
                                             compact: true
                                             implicitHeight: 24
                                             implicitWidth: 56
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.sortKey === "dmg"
                                             onClicked: uiState.setSortKey("dmg")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: sortDmgButton.checked ? accentColor : theme.controlIdleBackground
-                                                border.color: sortDmgButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: sortDmgButton.text
-                                                color: sortDmgButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
                                         AppButton {
                                             id: sortHpsButton
@@ -735,19 +690,10 @@ ApplicationWindow {
                                             compact: true
                                             implicitHeight: 24
                                             implicitWidth: 56
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.sortKey === "hps"
                                             onClicked: uiState.setSortKey("hps")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: sortHpsButton.checked ? accentColor : theme.controlIdleBackground
-                                                border.color: sortHpsButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: sortHpsButton.text
-                                                color: sortHpsButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
                                         AppButton {
                                             id: sortHealButton
@@ -755,19 +701,10 @@ ApplicationWindow {
                                             compact: true
                                             implicitHeight: 24
                                             implicitWidth: 60
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.sortKey === "heal"
                                             onClicked: uiState.setSortKey("heal")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: sortHealButton.checked ? accentColor : theme.controlIdleBackground
-                                                border.color: sortHealButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: sortHealButton.text
-                                                color: sortHealButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
                                     }
                                 }

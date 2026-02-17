@@ -80,7 +80,8 @@ ComboBox {
 
     popup: Popup {
         parent: Overlay.overlay
-        y: root.height + 2
+        x: root.mapToItem(Overlay.overlay, 0, 0).x
+        y: root.mapToItem(Overlay.overlay, 0, root.height + 2).y
         width: root.width
         z: 2000
         padding: 1

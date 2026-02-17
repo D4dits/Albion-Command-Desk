@@ -174,10 +174,22 @@ Button {
 
     background: Rectangle {
         id: backgroundRect
+        readonly property color activeBg: root.colorForState(root.baseBackground(), root.hoverBackground(), root.pressedBackground())
         radius: compact ? theme.buttonRadiusCompact : theme.buttonRadiusRegular
-        color: root.colorForState(root.baseBackground(), root.hoverBackground(), root.pressedBackground())
+        color: "transparent"
         border.width: root.visualFocus ? theme.focusRingWidth : 1
         border.color: root.visualFocus ? theme.borderFocus : root.resolvedBorderColor()
+
+        gradient: Gradient {
+            GradientStop {
+                position: 0.0
+                color: Qt.lighter(backgroundRect.activeBg, root.variant === "ghost" ? 1.0 : 1.08)
+            }
+            GradientStop {
+                position: 1.0
+                color: Qt.darker(backgroundRect.activeBg, root.variant === "ghost" ? 1.0 : 1.08)
+            }
+        }
 
         Behavior on color {
             ColorAnimation {
