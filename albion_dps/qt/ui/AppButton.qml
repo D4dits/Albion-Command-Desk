@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import "utils" 1.0 as Utils
 
 Button {
     id: root
@@ -23,19 +24,24 @@ Button {
     focusPolicy: Qt.StrongFocus
     font.pixelSize: 12
     font.bold: variant === "primary" || variant === "danger" || variant === "warm"
-    scale: down ? 0.985 : 1.0
-    opacity: enabled ? 1.0 : 0.62
+    scale: {
+        if (down) return 0.97
+        if (hovered && enabled && variant !== "ghost") return 1.02
+        return 1.0
+    }
+    opacity: enabled ? 1.0 : 0.5
 
     Behavior on scale {
         NumberAnimation {
-            duration: theme.motionFastMs
-            easing.type: Easing.OutCubic
+            duration: Utils.AnimationUtils.durationNormal
+            easing.type: Utils.AnimationUtils.easingOut
         }
     }
 
     Behavior on opacity {
         NumberAnimation {
-            duration: theme.motionNormalMs
+            duration: Utils.AnimationUtils.durationNormal
+            easing.type: Utils.AnimationUtils.easingOut
         }
     }
 
@@ -193,12 +199,14 @@ Button {
 
         Behavior on color {
             ColorAnimation {
-                duration: theme.motionNormalMs
+                duration: Utils.AnimationUtils.durationNormal
+                easing.type: Utils.AnimationUtils.easingOut
             }
         }
         Behavior on border.color {
             ColorAnimation {
-                duration: theme.motionFastMs
+                duration: Utils.AnimationUtils.durationFast
+                easing.type: Utils.AnimationUtils.easingOut
             }
         }
     }

@@ -6,6 +6,7 @@ import "components/scanner" as ScannerComponents
 import "components/market" as MarketComponents
 import "components/shell" as ShellComponents
 import "components/common" as CommonComponents
+import "utils" 1.0 as Utils
 
 ApplicationWindow {
     id: root
@@ -419,86 +420,130 @@ ApplicationWindow {
             Layout.fillHeight: true
             currentIndex: viewTabs.currentIndex
 
+            // Add fade-in animation for tab transitions
+            property int prevIndex: -1
+            onCurrentIndexChanged: {
+                prevIndex = currentIndex
+            }
+
             // Meter Tab - Extracted component
-            MeterComponents.MeterTab {
-                id: meterTab
-
-                // State properties from uiState
-                mode: uiState.mode
-                zone: uiState.zone
-                sortKey: uiState.sortKey
-                selectedHistoryIndex: uiState.selectedHistoryIndex
-                timeText: uiState.timeText
-                fameText: uiState.fameText
-                famePerHourText: uiState.famePerHourText
-
-                // Models
-                playersModel: uiState.playersModel
-                historyModel: uiState.historyModel
-
-                // UI flags
-                compactLayout: root.compactLayout
-
-                // Theme access
-                theme: root.theme
-
-                // Signal handlers
-                onSetMode: function(mode) { uiState.setMode(mode) }
-                onSetSortKey: function(sortKey) { uiState.setSortKey(sortKey) }
-                onClearHistorySelection: function() {
-                    uiState.clearHistorySelection()
-                    toastManager.showInfo("Selection cleared", "History selection cleared")
+            Item {
+                id: meterTabContainer
+                opacity: viewTabs.currentIndex === 0 ? 1.0 : 0.0
+                visible: opacity > 0
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Utils.AnimationUtils.durationNormal
+                        easing.type: Utils.AnimationUtils.easingOut
+                    }
                 }
-                onSelectHistory: function(index) { uiState.selectHistory(index) }
-                onCopyHistory: function(index) {
-                    uiState.copyHistory(index)
-                    toastManager.showSuccess("Copied to clipboard", "Battle data copied")
+
+                MeterComponents.MeterTab {
+                    id: meterTab
+                    anchors.fill: parent
+
+                    // State properties from uiState
+                    mode: uiState.mode
+                    zone: uiState.zone
+                    sortKey: uiState.sortKey
+                    selectedHistoryIndex: uiState.selectedHistoryIndex
+                    timeText: uiState.timeText
+                    fameText: uiState.fameText
+                    famePerHourText: uiState.famePerHourText
+
+                    // Models
+                    playersModel: uiState.playersModel
+                    historyModel: uiState.historyModel
+
+                    // UI flags
+                    compactLayout: root.compactLayout
+
+                    // Theme access
+                    theme: root.theme
+
+                    // Signal handlers
+                    onSetMode: function(mode) { uiState.setMode(mode) }
+                    onSetSortKey: function(sortKey) { uiState.setSortKey(sortKey) }
+                    onClearHistorySelection: function() {
+                        uiState.clearHistorySelection()
+                        toastManager.showInfo("Selection cleared", "History selection cleared")
+                    }
+                    onSelectHistory: function(index) { uiState.selectHistory(index) }
+                    onCopyHistory: function(index) {
+                        uiState.copyHistory(index)
+                        toastManager.showSuccess("Copied to clipboard", "Battle data copied")
+                    }
                 }
             }
             // Scanner Tab - Extracted component
-            ScannerComponents.ScannerTab {
-                id: scannerTab
+            Item {
+                id: scannerTabContainer
+                opacity: viewTabs.currentIndex === 1 ? 1.0 : 0.0
+                visible: opacity > 0
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Utils.AnimationUtils.durationNormal
+                        easing.type: Utils.AnimationUtils.easingOut
+                    }
+                }
 
-                // State properties from scannerState
-                statusText: scannerState.statusText
-                updateText: scannerState.updateText
-                clientDir: scannerState.clientDir
-                scannerRunning: scannerState.running
-                logText: scannerState.logText
+                ScannerComponents.ScannerTab {
+                    id: scannerTab
+                    anchors.fill: parent
 
-                // Theme access
-                theme: root.theme
+                    // State properties from scannerState
+                    statusText: scannerState.statusText
+                    updateText: scannerState.updateText
+                    clientDir: scannerState.clientDir
+                    scannerRunning: scannerState.running
+                    logText: scannerState.logText
 
-                // Signal handlers
-                onCheckForUpdates: function() {
-                    scannerState.checkForUpdates()
-                    toastManager.showInfo("Checking for updates", "Scanner data update check started")
-                }
-                onSyncClientRepo: function() {
-                    scannerState.syncClientRepo()
-                    toastManager.showInfo("Syncing client repo", "Client repository sync started")
-                }
-                onStartScanner: function() {
-                    scannerState.startScanner()
-                    toastManager.showSuccess("Scanner started", "Packet capture is now running")
-                }
-                onStartScannerSudo: function() {
-                    scannerState.startScannerSudo()
-                    toastManager.showSuccess("Scanner started", "Packet capture is now running (with elevated permissions)")
-                }
-                onStopScanner: function() {
-                    scannerState.stopScanner()
-                    toastManager.showInfo("Scanner stopped", "Packet capture has been stopped")
-                }
-                onClearLog: function() {
-                    scannerState.clearLog()
-                    toastManager.showInfo("Log cleared", "Scanner log has been cleared")
+                    // Theme access
+                    theme: root.theme
+
+                    // Signal handlers
+                    onCheckForUpdates: function() {
+                        scannerState.checkForUpdates()
+                        toastManager.showInfo("Checking for updates", "Scanner data update check started")
+                    }
+                    onSyncClientRepo: function() {
+                        scannerState.syncClientRepo()
+                        toastManager.showInfo("Syncing client repo", "Client repository sync started")
+                    }
+                    onStartScanner: function() {
+                        scannerState.startScanner()
+                        toastManager.showSuccess("Scanner started", "Packet capture is now running")
+                    }
+                    onStartScannerSudo: function() {
+                        scannerState.startScannerSudo()
+                        toastManager.showSuccess("Scanner started", "Packet capture is now running (with elevated permissions)")
+                    }
+                    onStopScanner: function() {
+                        scannerState.stopScanner()
+                        toastManager.showInfo("Scanner stopped", "Packet capture has been stopped")
+                    }
+                    onClearLog: function() {
+                        scannerState.clearLog()
+                        toastManager.showInfo("Log cleared", "Scanner log has been cleared")
+                    }
                 }
             }
 
             // Market Tab - Extracted component (inline Inputs/Outputs/Results preserved for full functionality)
-            MarketComponents.MarketTab {
+            Item {
+                id: marketTabContainer
+                opacity: viewTabs.currentIndex === 2 ? 1.0 : 0.0
+                visible: opacity > 0
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Utils.AnimationUtils.durationNormal
+                        easing.type: Utils.AnimationUtils.easingOut
+                    }
+                }
+
+                MarketComponents.MarketTab {
                 id: marketTab
+                anchors.fill: parent
 
                 // Market state properties from marketSetupState
                 region: marketSetupState.region
@@ -611,6 +656,7 @@ ApplicationWindow {
                 onSetOutputManualPrice: function(itemId, price) { marketSetupState.setOutputManualPrice(itemId, price) }
                 onSetResultsSortKey: function(key) { marketSetupState.setResultsSortKey(key) }
                 onCopyText: function(text) { root.copyText(text) }
+                }
             }
         }
 
