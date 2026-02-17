@@ -25,7 +25,7 @@ ApplicationWindow {
     property int marketColumnSpacing: theme.marketColumnSpacing
     property int marketSetupPanelWidth: theme.marketSetupPanelWidth
     property bool marketSetupStackedLayout: width < 1020
-    property int marketSetupPanelActiveWidth: narrowLayout ? 300 : (compactLayout ? 330 : marketSetupPanelWidth)
+    property int marketSetupPanelActiveWidth: narrowLayout ? 320 : (compactLayout ? 360 : marketSetupPanelWidth)
     property int marketInputsItemWidth: Math.max(narrowLayout ? 130 : 150, Math.min(240, Math.round(width * (narrowLayout ? 0.15 : 0.17))))
     property int marketInputsQtyWidth: 62
     property int marketInputsStockWidth: 72
@@ -1467,7 +1467,7 @@ ApplicationWindow {
 
                                                 Rectangle {
                                                     Layout.fillWidth: true
-                                                    Layout.preferredHeight: 170
+                                                    Layout.preferredHeight: 196
                                                     visible: recipeSearchInput.activeFocus && recipeSuggestions.count > 0
                                                     radius: 4
                                                     color: theme.tableHeaderBackground
@@ -1498,13 +1498,13 @@ ApplicationWindow {
                                                                     color: textColor
                                                                     font.pixelSize: 11
                                                                     Layout.fillWidth: true
-                                                                    elide: Text.ElideRight
+                                                                    elide: Text.ElideNone
                                                                 }
                                                                 Text {
                                                                     text: "T" + tier + "." + enchant
                                                                     color: mutedColor
                                                                     font.pixelSize: 11
-                                                                    Layout.preferredWidth: 58
+                                                                    Layout.preferredWidth: 62
                                                                     horizontalAlignment: Text.AlignLeft
                                                                 }
                                                             }

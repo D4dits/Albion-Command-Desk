@@ -80,8 +80,14 @@ ComboBox {
 
     popup: Popup {
         parent: Overlay.overlay
-        x: root.mapToItem(Overlay.overlay, 0, 0).x
-        y: root.mapToItem(Overlay.overlay, 0, root.height + 2).y
+        x: {
+            var p = root.mapToItem(Overlay.overlay, 0, 0)
+            return p ? p.x : 0
+        }
+        y: {
+            var p = root.mapToItem(Overlay.overlay, 0, root.height + 2)
+            return p ? p.y : root.height + 2
+        }
         width: root.width
         z: 2000
         padding: 1
@@ -95,6 +101,7 @@ ComboBox {
         }
         contentItem: ListView {
             clip: true
+            implicitHeight: Math.min(contentHeight, 260)
             model: root.delegateModel
             currentIndex: root.highlightedIndex
         }
