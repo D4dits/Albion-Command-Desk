@@ -45,7 +45,6 @@ Text {
     // Public properties
     property string name: ""
     property int size: theme.iconSizeMd
-    property color color: theme.textPrimary
     property real rotation: 0
     property real opacity: 1.0
 
@@ -84,7 +83,7 @@ Text {
 
     // Apply styling
     font.pixelSize: size
-    color: root.color
+    color: theme.textPrimary
     font.bold: false
     horizontalAlignment: Text.AlignHCenter
     verticalAlignment: Text.AlignVCenter
