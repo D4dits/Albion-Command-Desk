@@ -564,14 +564,14 @@ ApplicationWindow {
                 dailyBonusPreset: marketSetupState.dailyBonusPreset
                 focusEnabled: marketSetupState.focusEnabled
 
-                searchQuery: marketSetupState.searchQuery
+                searchQuery: marketSetupState.searchQuery || ""
                 recipeEnchantFilter: marketSetupState.recipeEnchantFilter
                 suggestionsCount: marketSetupState.recipeOptionsModel.rowCount()
                 recipeOptionsModel: marketSetupState.recipeOptionsModel
-                currentRecipeId: marketSetupState.recipeId
+                currentRecipeId: marketSetupState.recipeId || ""
 
                 presetNames: marketSetupState.presetNames
-                selectedPresetName: marketSetupState.selectedPresetName
+                selectedPresetName: marketSetupState.selectedPresetName || ""
 
                 craftPlanModel: marketSetupState.craftPlanModel
                 craftPlanCount: marketSetupState.craftPlanCount

@@ -26,7 +26,7 @@ RowLayout {
     // Public properties
     property bool active: true
     property string size: "md"  // xs, sm, md, lg, xl
-    property color spinnerColor: theme.brandPrimary
+    property color spinnerColor: Theme.brandPrimary
     property string label: ""
 
     // Access to theme
@@ -125,7 +125,7 @@ RowLayout {
         id: spinnerLabel
         visible: root.label.length > 0
         text: root.label
-        color: theme.textPrimary
+        color: Theme.textPrimary
         font.pixelSize: 12
         Layout.alignment: Qt.AlignVCenter
     }

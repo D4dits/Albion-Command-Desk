@@ -7,7 +7,6 @@ import "../../." // for Theme access
  */
 Item {
     id: root
-    anchors.fill: parent
 
     // Public properties
     property int maxToasts: 4
