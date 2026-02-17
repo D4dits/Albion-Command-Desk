@@ -376,7 +376,7 @@ ApplicationWindow {
                 }
 
                 ShellTabButton {
-                    id: meterTab
+                    id: meterTabButton
                     text: "Meter"
                     activeColor: accentColor
                     inactiveColor: shellTabIdleBackground
@@ -387,7 +387,7 @@ ApplicationWindow {
                     labelPixelSize: 13
                 }
                 ShellTabButton {
-                    id: scannerTab
+                    id: scannerTabButton
                     text: "Scanner"
                     activeColor: accentColor
                     inactiveColor: shellTabIdleBackground
@@ -398,7 +398,7 @@ ApplicationWindow {
                     labelPixelSize: 13
                 }
                 ShellTabButton {
-                    id: marketTab
+                    id: marketTabButton
                     text: "Market"
                     activeColor: accentColor
                     inactiveColor: shellTabIdleBackground
