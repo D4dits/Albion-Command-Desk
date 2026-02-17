@@ -1,0 +1,14 @@
+# Root-level QML components
+AppButton 1.0 AppButton.qml
+AppCheckBox 1.0 AppCheckBox.qml
+AppComboBox 1.0 AppComboBox.qml
+AppHeader 1.0 AppHeader.qml
+AppShell 1.0 AppShell.qml
+AppSpinBox 1.0 AppSpinBox.qml
+AppTextField 1.0 AppTextField.qml
+CardPanel 1.0 CardPanel.qml
+ShellTabButton 1.0 ShellTabButton.qml
+SupportButtons 1.0 SupportButtons.qml
+TableSurface 1.0 TableSurface.qml
+Theme 1.0 Theme.qml
+UpdateBanner 1.0 UpdateBanner.qml
