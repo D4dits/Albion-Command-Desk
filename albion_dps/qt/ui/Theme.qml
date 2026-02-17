@@ -94,6 +94,8 @@ QtObject {
     readonly property color tableTextPrimary: "#e6edf3"
     readonly property color tableTextSecondary: "#aebbc9"
     readonly property color tableDivider: "#1e2a39"
+    readonly property color tableSortIndicator: brandPrimary
+    readonly property color tableSortIndicatorInactive: "#5f6b7a"
     readonly property int focusRingWidth: 2
 
     // Layout tokens
@@ -111,6 +113,13 @@ QtObject {
     readonly property int cornerRadiusPanel: 8
     readonly property int controlHeightCompact: 24
     readonly property int controlHeightRegular: 30
+
+    // Icon tokens
+    readonly property int iconSizeXs: 12
+    readonly property int iconSizeSm: 16
+    readonly property int iconSizeMd: 20
+    readonly property int iconSizeLg: 24
+    readonly property int iconSizeXl: 32
 
     // Elevation tokens (for shadow/overlay usage when needed)
     readonly property real elevationLowOpacity: 0.12
