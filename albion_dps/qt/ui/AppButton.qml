@@ -39,6 +39,10 @@ Button {
         }
     }
 
+    function isCustomColor(colorValue) {
+        return colorValue.a > 0 || colorValue.r > 0 || colorValue.g > 0 || colorValue.b > 0
+    }
+
     function colorForState(baseColor, hoverColor, pressedColor) {
         if (!enabled) {
             return theme.controlDisabledBackground
@@ -56,7 +60,7 @@ Button {
     }
 
     function baseBackground() {
-        if (customBackground !== "transparent") {
+        if (isCustomColor(customBackground)) {
             return customBackground
         }
         if (variant === "primary") {
@@ -75,7 +79,7 @@ Button {
     }
 
     function hoverBackground() {
-        if (customHover !== "transparent") {
+        if (isCustomColor(customHover)) {
             return customHover
         }
         if (variant === "primary") {
@@ -94,7 +98,7 @@ Button {
     }
 
     function pressedBackground() {
-        if (customPressed !== "transparent") {
+        if (isCustomColor(customPressed)) {
             return customPressed
         }
         if (variant === "primary") {
@@ -113,7 +117,7 @@ Button {
     }
 
     function resolvedBorderColor() {
-        if (customBorderColor !== "transparent") {
+        if (isCustomColor(customBorderColor)) {
             return customBorderColor
         }
         if (!enabled) {
@@ -147,7 +151,7 @@ Button {
     }
 
     function resolvedTextColor() {
-        if (customTextColor !== "transparent") {
+        if (isCustomColor(customTextColor)) {
             return customTextColor
         }
         if (!enabled) {
@@ -189,10 +193,14 @@ Button {
 
     contentItem: Text {
         text: root.text
+        anchors.fill: parent
+        anchors.leftMargin: root.padding
+        anchors.rightMargin: root.padding
         color: root.resolvedTextColor()
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
+        wrapMode: Text.NoWrap
         font: root.font
     }
 }
