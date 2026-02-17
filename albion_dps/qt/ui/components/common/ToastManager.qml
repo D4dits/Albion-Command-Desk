@@ -1,0 +1,155 @@
+import QtQuick 2.15
+import QtQuick.Layouts 1.15
+import "../../." // for Theme access
+
+/**
+ * ToastManager - Notification manager for displaying toast messages
+ *
+ * Features:
+ * - Display multiple toasts simultaneously
+ * - Auto-dismiss with configurable duration
+ * - Stack toasts vertically
+ * - Maximum toast limit (removes oldest when exceeded)
+ * - Multiple toast types (success, warning, error, info)
+ *
+ * Usage:
+ *   ToastManager {
+ *       id: toastManager
+ *       anchors.fill: parent
+ *
+ *       Component.onCompleted: {
+ *           toastManager.show("success", "Action completed", "Data saved successfully")
+ *           toastManager.show("info", "Processing", "Please wait...")
+ *           toastManager.show("error", "Error occurred", "Failed to load data")
+ *       }
+ *   }
+ */
+Item {
+    id: root
+    anchors.fill: parent
+
+    // Public properties
+    property int maxToasts: 4
+    property int defaultDuration: 3000
+    property int toastSpacing: 8
+    property int toastMargin: 16
+    property bool showProgress: true
+
+    // Access to theme
+    property var theme: Theme {}
+
+    // Private properties
+    property var toasts: []
+
+    // Signal to show a toast (convenience method)
+    function show(type, title, message, duration) {
+        if (duration === undefined) duration = root.defaultDuration
+        addToast(type, title, message, duration)
+    }
+
+    // Add a toast notification
+    function addToast(type, title, message, duration) {
+        // Remove oldest toast if max limit reached
+        if (toasts.length >= maxToasts) {
+            removeToast(0)
+        }
+
+        // Create toast component
+        var toast = toastComponent.createObject(root, {
+            type: type || "info",
+            title: title || "",
+            message: message || "",
+            duration: duration || root.defaultDuration,
+            showProgress: root.showProgress,
+            anchors.right: parent.right
+            anchors.margins: root.toastMargin
+        })
+
+        toast.y = root.height + toast.height
+        toast.visible = true
+
+        // Connect dismissed signal
+        toast.dismissed.connect(function() {
+            removeToast(toasts.indexOf(toast))
+        })
+
+        // Add to array
+        toasts.push(toast)
+        repositionToasts()
+    }
+
+    // Remove a toast by index
+    function removeToast(index) {
+        if (index >= 0 && index < toasts.length) {
+            var toast = toasts[index]
+            toast.visible = false
+
+            // Destroy toast after animation completes
+            removeTimer.createObject(root, {
+                toast: toast,
+                index: index
+            })
+        }
+    }
+
+    // Reposition all toasts
+    function repositionToasts() {
+        var totalHeight = root.toastMargin
+
+        for (var i = toasts.length - 1; i >= 0; i--) {
+            var toast = toasts[i]
+            var targetY = root.height - totalHeight - toast.height
+
+            // Animate to new position
+            toast.y = Qt.binding(function() { return targetY })
+            totalHeight += toast.height + root.toastSpacing
+        }
+    }
+
+    // Component for creating toasts
+    Component {
+        id: toastComponent
+        Toast {}
+    }
+
+    // Component for delayed removal
+    Component {
+        id: removeTimer
+        Timer {
+            id: timer
+            interval: 200  // Wait for hide animation
+            property var toast: null
+            property int index: -1
+            onTriggered: {
+                if (toast) {
+                    toast.destroy()
+                    toasts.splice(index, 1)
+                }
+            }
+        }
+    }
+
+    // Convenience methods for different toast types
+    function showSuccess(title, message, duration) {
+        show("success", title, message, duration)
+    }
+
+    function showWarning(title, message, duration) {
+        show("warning", title, message, duration)
+    }
+
+    function showError(title, message, duration) {
+        show("error", title, message, duration)
+    }
+
+    function showInfo(title, message, duration) {
+        show("info", title, message, duration)
+    }
+
+    // Clear all toasts
+    function clearAll() {
+        for (var i = toasts.length - 1; i >= 0; i--) {
+            removeToast(i)
+        }
+    }
+}

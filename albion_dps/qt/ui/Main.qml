@@ -5,6 +5,7 @@ import "components/meter" as MeterComponents
 import "components/scanner" as ScannerComponents
 import "components/market" as MarketComponents
 import "components/shell" as ShellComponents
+import "components/common" as CommonComponents
 
 ApplicationWindow {
     id: root
@@ -205,7 +206,14 @@ ApplicationWindow {
     }
 
     function copyCellText(value) {
-        marketSetupState.copyText(String(value === undefined || value === null ? "" : value))
+        var text = String(value === undefined || value === null ? "" : value)
+        marketSetupState.copyText(text)
+        toastManager.showSuccess("Copied to clipboard", text.length > 50 ? text.substring(0, 50) + "..." : text)
+    }
+
+    function copyText(text) {
+        marketSetupState.copyText(String(text))
+        toastManager.showSuccess("Copied to clipboard", text.length > 50 ? text.substring(0, 50) + "..." : text)
     }
 
     function tableRowColor(index) {
@@ -335,9 +343,18 @@ ApplicationWindow {
             textColor: root.textColor
             mutedColor: root.mutedColor
             formatInt: root.formatInt
-            onSetUpdateAutoCheck: function(checked) { uiState.setUpdateAutoCheck(checked) }
-            onRequestManualUpdateCheck: uiState.requestManualUpdateCheck()
-            onDismissUpdateBanner: uiState.dismissUpdateBanner()
+            onSetUpdateAutoCheck: function(checked) {
+                uiState.setUpdateAutoCheck(checked)
+                toastManager.showInfo(checked ? "Auto-update enabled" : "Auto-update disabled", "")
+            }
+            onRequestManualUpdateCheck: function() {
+                uiState.requestManualUpdateCheck()
+                toastManager.showInfo("Checking for updates", "Looking for new version...")
+            }
+            onDismissUpdateBanner: function() {
+                uiState.dismissUpdateBanner()
+                toastManager.showInfo("Update dismissed", "")
+            }
         }
 
         RowLayout {
@@ -428,9 +445,15 @@ ApplicationWindow {
                 // Signal handlers
                 onSetMode: function(mode) { uiState.setMode(mode) }
                 onSetSortKey: function(sortKey) { uiState.setSortKey(sortKey) }
-                onClearHistorySelection: uiState.clearHistorySelection()
+                onClearHistorySelection: function() {
+                    uiState.clearHistorySelection()
+                    toastManager.showInfo("Selection cleared", "History selection cleared")
+                }
                 onSelectHistory: function(index) { uiState.selectHistory(index) }
-                onCopyHistory: function(index) { uiState.copyHistory(index) }
+                onCopyHistory: function(index) {
+                    uiState.copyHistory(index)
+                    toastManager.showSuccess("Copied to clipboard", "Battle data copied")
+                }
             }
             // Scanner Tab - Extracted component
             ScannerComponents.ScannerTab {
@@ -447,12 +470,30 @@ ApplicationWindow {
                 theme: root.theme
 
                 // Signal handlers
-                onCheckForUpdates: scannerState.checkForUpdates()
-                onSyncClientRepo: scannerState.syncClientRepo()
-                onStartScanner: scannerState.startScanner()
-                onStartScannerSudo: scannerState.startScannerSudo()
-                onStopScanner: scannerState.stopScanner()
-                onClearLog: scannerState.clearLog()
+                onCheckForUpdates: function() {
+                    scannerState.checkForUpdates()
+                    toastManager.showInfo("Checking for updates", "Scanner data update check started")
+                }
+                onSyncClientRepo: function() {
+                    scannerState.syncClientRepo()
+                    toastManager.showInfo("Syncing client repo", "Client repository sync started")
+                }
+                onStartScanner: function() {
+                    scannerState.startScanner()
+                    toastManager.showSuccess("Scanner started", "Packet capture is now running")
+                }
+                onStartScannerSudo: function() {
+                    scannerState.startScannerSudo()
+                    toastManager.showSuccess("Scanner started", "Packet capture is now running (with elevated permissions)")
+                }
+                onStopScanner: function() {
+                    scannerState.stopScanner()
+                    toastManager.showInfo("Scanner stopped", "Packet capture has been stopped")
+                }
+                onClearLog: function() {
+                    scannerState.clearLog()
+                    toastManager.showInfo("Log cleared", "Scanner log has been cleared")
+                }
             }
 
             // Market Tab - Extracted component (inline Inputs/Outputs/Results preserved for full functionality)
@@ -517,8 +558,14 @@ ApplicationWindow {
                 // Signal handlers
                 onSetRegion: function(region) { marketSetupState.setRegion(region) }
                 onSetPremium: function(premium) { marketSetupState.setPremium(premium) }
-                onRefreshPrices: marketSetupState.refreshPrices()
-                onClearDiagnostics: marketSetupState.clearDiagnostics()
+                onRefreshPrices: function() {
+                    marketSetupState.refreshPrices()
+                    toastManager.showInfo("Refreshing prices", "Fetching market prices...")
+                }
+                onClearDiagnostics: function() {
+                    marketSetupState.clearDiagnostics()
+                    toastManager.showInfo("Diagnostics cleared", "")
+                }
                 onSetActiveMarketTab: function(index) { marketSetupState.setActiveMarketTab(index) }
                 onSetCraftCity: function(city) { marketSetupState.setCraftCity(city) }
                 onSetDefaultBuyCity: function(city) { marketSetupState.setDefaultBuyCity(city) }
@@ -534,12 +581,24 @@ ApplicationWindow {
                 onSetRecipeEnchantFilter: function(filter) { marketSetupState.setRecipeEnchantFilter(filter) }
                 onAddRecipeAtIndex: function(index) { marketSetupState.addRecipeAtIndex(index) }
                 onSetSelectedPresetName: function(name) { marketSetupState.setSelectedPresetName(name) }
-                onSavePreset: function(name) { marketSetupState.savePreset(name) }
-                onLoadPreset: function(name) { marketSetupState.loadPreset(name) }
-                onDeletePreset: function(name) { marketSetupState.deletePreset(name) }
+                onSavePreset: function(name) {
+                    marketSetupState.savePreset(name)
+                    toastManager.showSuccess("Preset saved", name)
+                }
+                onLoadPreset: function(name) {
+                    marketSetupState.loadPreset(name)
+                    toastManager.showInfo("Preset loaded", name)
+                }
+                onDeletePreset: function(name) {
+                    marketSetupState.deletePreset(name)
+                    toastManager.showWarning("Preset deleted", name)
+                }
                 onSetCraftPlanSortKey: function(key) { marketSetupState.setCraftPlanSortKey(key) }
                 onToggleCraftPlanSortDescending: marketSetupState.toggleCraftPlanSortDescending()
-                onClearCraftPlan: marketSetupState.clearCraftPlan()
+                onClearCraftPlan: function() {
+                    marketSetupState.clearCraftPlan()
+                    toastManager.showInfo("Craft plan cleared", "")
+                }
                 onSetPlanRowEnabled: function(rowId, enabled) { marketSetupState.setPlanRowEnabled(rowId, enabled) }
                 onSetPlanRowCraftCity: function(rowId, city) { marketSetupState.setPlanRowCraftCity(rowId, city) }
                 onSetPlanRowDailyBonus: function(rowId, bonus) { marketSetupState.setPlanRowDailyBonus(rowId, bonus) }
@@ -553,6 +612,14 @@ ApplicationWindow {
                 onSetResultsSortKey: function(key) { marketSetupState.setResultsSortKey(key) }
                 onCopyText: function(text) { root.copyText(text) }
             }
+        }
+
+        // Toast notifications overlay
+        CommonComponents.ToastManager {
+            id: toastManager
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            theme: root.theme
         }
     }
     Shortcut { sequence: "B"; onActivated: uiState.setMode("battle") }
