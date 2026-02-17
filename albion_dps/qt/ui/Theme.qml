@@ -85,11 +85,15 @@ QtObject {
 
     // Table tokens
     readonly property color tableHeaderBackground: "#111b28"
+    readonly property color tableHeaderText: "#c8d6e5"
     readonly property color tableRowEven: "#0f1620"
     readonly property color tableRowOdd: "#101924"
     readonly property color tableRowHover: "#142437"
     readonly property color tableSelectedBackground: "#162231"
     readonly property color tableSelectedBorder: "#4aa3ff"
+    readonly property color tableTextPrimary: "#e6edf3"
+    readonly property color tableTextSecondary: "#aebbc9"
+    readonly property color tableDivider: "#1e2a39"
 
     // Layout tokens
     readonly property int spacingXs: 4

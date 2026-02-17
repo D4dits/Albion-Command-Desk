@@ -176,7 +176,7 @@ ApplicationWindow {
     }
 
     function tableRowStrongColor(index) {
-        return index % 2 === 0 ? theme.tableHeaderBackground : theme.tableRowEven
+        return index % 2 === 0 ? theme.surfaceInteractive : theme.tableRowEven
     }
 
     function itemLabelWithTier(labelValue, itemIdValue) {
@@ -718,24 +718,24 @@ ApplicationWindow {
                                 }
                             }
 
-                        Rectangle {
+                        TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                                 height: 26
-                                color: theme.surfaceInset
-                                radius: 4
+                                showTopRule: false
 
                                 RowLayout {
                                     anchors.fill: parent
                                     anchors.margins: 6
                                     spacing: 12
 
-                                    Text { text: "Name"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 140 }
-                                    Text { text: "Weapon"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
-                                    Text { text: "DMG"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                    Text { text: "HEAL"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                    Text { text: "DPS"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                    Text { text: "HPS"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                    Text { text: "BAR"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                    Text { text: "Name"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 140 }
+                                    Text { text: "Weapon"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                    Text { text: "DMG"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "HEAL"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "DPS"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "HPS"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "BAR"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.fillWidth: true }
                                 }
                             }
 
@@ -745,9 +745,12 @@ ApplicationWindow {
                                 clip: true
                                 model: uiState.playersModel
                                 delegate: Rectangle {
+                                    id: meterRow
                                     width: ListView.view.width
                                     height: 34
-                                    color: "transparent"
+                                    property bool hovered: meterHoverArea.containsMouse
+                                    color: hovered ? theme.tableRowHover : tableRowColor(index)
+                                    radius: 4
 
                                     RowLayout {
                                         anchors.fill: parent
@@ -756,7 +759,7 @@ ApplicationWindow {
 
                                         Text {
                                             text: name
-                                            color: "#e6edf3"
+                                            color: theme.tableTextPrimary
                                             font.pixelSize: 12
                                             elide: Text.ElideRight
                                             Layout.preferredWidth: 140
@@ -780,7 +783,7 @@ ApplicationWindow {
                                                 }
                                                 Text {
                                                     text: weaponTier && weaponTier.length > 0 ? weaponTier : "-"
-                                                    color: mutedColor
+                                                    color: theme.tableTextSecondary
                                                     font.pixelSize: 11
                                                     elide: Text.ElideRight
                                                 }
@@ -793,10 +796,10 @@ ApplicationWindow {
                                                 hoverEnabled: true
                                             }
                                         }
-                                        Text { text: damage; color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
-                                        Text { text: heal; color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
-                                        Text { text: dps.toFixed(1); color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
-                                        Text { text: hps.toFixed(1); color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                                        Text { text: damage; color: theme.tableTextSecondary; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                                        Text { text: heal; color: theme.tableTextSecondary; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                                        Text { text: dps.toFixed(1); color: theme.tableTextSecondary; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                                        Text { text: hps.toFixed(1); color: theme.tableTextSecondary; font.pixelSize: 12; Layout.preferredWidth: 60 }
 
                                         Rectangle {
                                             Layout.fillWidth: true
@@ -811,6 +814,13 @@ ApplicationWindow {
                                                 color: barColor
                                             }
                                         }
+                                    }
+
+                                    MouseArea {
+                                        id: meterHoverArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        acceptedButtons: Qt.NoButton
                                     }
                                 }
                             }
@@ -849,11 +859,15 @@ ApplicationWindow {
                                 rightMargin: 6
                                 model: uiState.historyModel
                                 delegate: Rectangle {
+                                    id: historyRow
                                     width: Math.max(0, ListView.view.width - 6)
                                     height: 98
                                     radius: 6
-                                    color: selected ? theme.tableSelectedBackground : theme.surfaceInset
-                                    border.color: selected ? "#4aa3ff" : theme.borderSubtle
+                                    property bool hovered: historyHover.containsMouse
+                                    color: selected
+                                        ? theme.tableSelectedBackground
+                                        : (hovered ? theme.tableRowHover : tableRowColor(index))
+                                    border.color: selected ? theme.tableSelectedBorder : theme.tableDivider
                                     border.width: 1
                                     TapHandler {
                                         onTapped: uiState.selectHistory(index)
@@ -870,19 +884,28 @@ ApplicationWindow {
                                             Item { Layout.fillWidth: true }
                                             AppButton {
                                                 text: "Copy"
+                                                variant: "ghost"
+                                                compact: true
                                                 implicitWidth: 64
-                                                implicitHeight: 26
+                                                implicitHeight: 24
                                                 onClicked: uiState.copyHistory(index)
                                             }
                                         }
-                                        Text { text: meta; color: mutedColor; font.pixelSize: 11 }
+                                        Text { text: meta; color: theme.tableTextSecondary; font.pixelSize: 11 }
                                         Text {
                                             text: players
-                                            color: textColor
+                                            color: theme.tableTextPrimary
                                             font.pixelSize: 11
                                             wrapMode: Text.NoWrap
                                             elide: Text.ElideRight
                                         }
+                                    }
+
+                                    MouseArea {
+                                        id: historyHover
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        acceptedButtons: Qt.NoButton
                                     }
                                 }
                             }
@@ -1957,18 +1980,18 @@ ApplicationWindow {
                                                 anchors.fill: parent
                                                 anchors.margins: 4
                                                 spacing: marketColumnSpacing
-                                                Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Need"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Stock"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsStockWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Buy"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsModeWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Item"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Need"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Stock"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsStockWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Buy"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "City"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Mode"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsModeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Manual"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Unit"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "ADP age"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth; horizontalAlignment: Text.AlignLeft }
                                                 Text {
                                                     text: "Total"
-                                                    color: mutedColor
+                                                    color: theme.tableHeaderText
                                                     font.pixelSize: 11
                                                     Layout.fillWidth: true
                                                     Layout.minimumWidth: marketInputsTotalMinWidth
@@ -1987,9 +2010,12 @@ ApplicationWindow {
                                             model: marketSetupState.inputsModel
 
                                             delegate: Rectangle {
+                                                id: inputRow
                                                 width: ListView.view.width
                                                 height: 28
-                                                color: tableRowColor(index)
+                                                property bool hovered: inputRowHover.containsMouse
+                                                color: hovered ? theme.tableRowHover : tableRowColor(index)
+                                                radius: 4
 
                                                 RowLayout {
                                                     anchors.fill: parent
@@ -1997,7 +2023,7 @@ ApplicationWindow {
                                                     spacing: marketColumnSpacing
                                                     Text {
                                                         text: itemLabelWithTier(item, itemId)
-                                                        color: textColor
+                                                        color: theme.tableTextPrimary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketInputsItemWidth
                                                         elide: Text.ElideRight
@@ -2009,7 +2035,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(quantity)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketInputsQtyWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2029,7 +2055,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatFixed(buyQuantity, 2)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketInputsBuyWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2041,7 +2067,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: city
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketInputsCityWidth
                                                         elide: Text.ElideRight
@@ -2070,7 +2096,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(unitPrice)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketInputsUnitWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2094,7 +2120,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(totalCost)
-                                                        color: textColor
+                                                        color: theme.tableTextPrimary
                                                         font.pixelSize: 11
                                                         Layout.fillWidth: true
                                                         Layout.minimumWidth: marketInputsTotalMinWidth
@@ -2105,6 +2131,13 @@ ApplicationWindow {
                                                             onDoubleClicked: copyCellText(parent.text)
                                                         }
                                                     }
+                                                }
+
+                                                MouseArea {
+                                                    id: inputRowHover
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    acceptedButtons: Qt.NoButton
                                                 }
                                             }
                                         }
@@ -2174,18 +2207,18 @@ ApplicationWindow {
                                                 anchors.fill: parent
                                                 anchors.margins: 4
                                                 spacing: marketColumnSpacing
-                                                Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsModeWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsManualWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Item"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Qty"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "City"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Mode"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsModeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Manual"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsManualWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Unit"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Gross"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Fee"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Tax"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth; horizontalAlignment: Text.AlignLeft }
                                                 Text {
                                                     text: "Net"
-                                                    color: mutedColor
+                                                    color: theme.tableHeaderText
                                                     font.pixelSize: 11
                                                     Layout.fillWidth: true
                                                     Layout.minimumWidth: marketOutputsNetMinWidth
@@ -2204,9 +2237,12 @@ ApplicationWindow {
                                             model: marketSetupState.outputsModel
 
                                             delegate: Rectangle {
+                                                id: outputRow
                                                 width: ListView.view.width
                                                 height: 28
-                                                color: tableRowColor(index)
+                                                property bool hovered: outputRowHover.containsMouse
+                                                color: hovered ? theme.tableRowHover : tableRowColor(index)
+                                                radius: 4
 
                                                 RowLayout {
                                                     anchors.fill: parent
@@ -2214,7 +2250,7 @@ ApplicationWindow {
                                                     spacing: marketColumnSpacing
                                                     Text {
                                                         text: itemLabelWithTier(item, itemId)
-                                                        color: textColor
+                                                        color: theme.tableTextPrimary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsItemWidth
                                                         elide: Text.ElideRight
@@ -2226,7 +2262,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatFixed(quantity, 2)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsQtyWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2238,7 +2274,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: city
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsCityWidth
                                                         elide: Text.ElideRight
@@ -2267,7 +2303,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(unitPrice)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsUnitWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2279,7 +2315,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(totalValue)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsGrossWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2291,7 +2327,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(feeValue)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsFeeWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2303,7 +2339,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(taxValue)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsTaxWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2315,7 +2351,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(netValue)
-                                                        color: textColor
+                                                        color: theme.tableTextPrimary
                                                         font.pixelSize: 11
                                                         Layout.fillWidth: true
                                                         Layout.minimumWidth: marketOutputsNetMinWidth
@@ -2326,6 +2362,13 @@ ApplicationWindow {
                                                             onDoubleClicked: copyCellText(parent.text)
                                                         }
                                                     }
+                                                }
+
+                                                MouseArea {
+                                                    id: outputRowHover
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    acceptedButtons: Qt.NoButton
                                                 }
                                             }
                                         }
@@ -2432,16 +2475,16 @@ ApplicationWindow {
                                         anchors.fill: parent
                                         anchors.margins: 4
                                         spacing: 6
-                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsItemWidth }
-                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 100 }
-                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
-                                        Text { text: "Revenue"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
-                                        Text { text: "Cost"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
-                                        Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
-                                        Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
-                                        Text { text: "Profit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
-                                        Text { text: "Margin"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                        Text { text: "Demand*"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                        Text { text: "Item"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketResultsItemWidth }
+                                        Text { text: "City"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 100 }
+                                        Text { text: "Qty"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 55 }
+                                        Text { text: "Revenue"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "Cost"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "Fee"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 55 }
+                                        Text { text: "Tax"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 55 }
+                                        Text { text: "Profit"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "Margin"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                        Text { text: "Demand*"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.fillWidth: true }
                                     }
                                 }
 
@@ -2461,16 +2504,19 @@ ApplicationWindow {
                                     model: marketSetupState.resultsItemsModel
 
                                     delegate: Rectangle {
+                                        id: resultRow
                                         width: ListView.view.width
                                         height: 26
-                                        color: tableRowColor(index)
+                                        property bool hovered: resultRowHover.containsMouse
+                                        color: hovered ? theme.tableRowHover : tableRowColor(index)
+                                        radius: 4
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.margins: 4
                                             spacing: 6
                                             Text {
                                                 text: itemLabelWithTier(item, itemId)
-                                                color: textColor
+                                                color: theme.tableTextPrimary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: marketResultsItemWidth
                                                 elide: Text.ElideRight
@@ -2482,7 +2528,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: city
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 100
                                                 elide: Text.ElideRight
@@ -2494,7 +2540,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatFixed(quantity, 2)
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
                                                 horizontalAlignment: Text.AlignLeft
@@ -2506,7 +2552,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatInt(revenue)
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 70
                                                 horizontalAlignment: Text.AlignLeft
@@ -2518,7 +2564,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatInt(cost)
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 70
                                                 horizontalAlignment: Text.AlignLeft
@@ -2530,7 +2576,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatInt(feeValue)
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
                                                 horizontalAlignment: Text.AlignLeft
@@ -2542,7 +2588,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatInt(taxValue)
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
                                                 horizontalAlignment: Text.AlignLeft
@@ -2578,7 +2624,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatFixed(demandProxy, 1) + "%"
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.fillWidth: true
                                                 horizontalAlignment: Text.AlignLeft
@@ -2588,6 +2634,13 @@ ApplicationWindow {
                                                     onDoubleClicked: copyCellText(parent.text)
                                                 }
                                             }
+                                        }
+
+                                        MouseArea {
+                                            id: resultRowHover
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            acceptedButtons: Qt.NoButton
                                         }
                                     }
                                 }
@@ -2634,11 +2687,11 @@ ApplicationWindow {
                                             RowLayout {
                                                 anchors.fill: parent
                                                 anchors.margins: 4
-                                                Text { text: label; color: mutedColor; font.pixelSize: 11 }
+                                                Text { text: label; color: theme.tableTextSecondary; font.pixelSize: 11 }
                                                 Item { Layout.fillWidth: true }
                                                 Text {
                                                     text: formatFixed(value, 2)
-                                                    color: (label === "Net profit" && value < 0) ? "#ff7b72" : textColor
+                                                    color: (label === "Net profit" && value < 0) ? theme.stateDanger : theme.tableTextPrimary
                                                     font.pixelSize: 11
                                                     MouseArea {
                                                         anchors.fill: parent

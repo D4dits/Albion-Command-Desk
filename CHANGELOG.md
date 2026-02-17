@@ -28,6 +28,7 @@ and this project uses semantic versioning.
 - Reusable button primitive in `albion_dps/qt/ui/AppButton.qml` with semantic variants and state handling.
 - Reusable form control primitives: `AppTextField.qml`, `AppComboBox.qml`, `AppSpinBox.qml`, and `AppCheckBox.qml`.
 - Level-driven panel primitives in `CardPanel.qml` and `TableSurface.qml` for cleaner card hierarchy.
+- Expanded table typography/separator tokens in `Theme.qml` for Meter/Market/History readability.
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -72,6 +73,8 @@ and this project uses semantic versioning.
 - `albion_dps/qt/ui/Main.qml` now removes repeated panel fill/stroke literals and relies on shared card/table level styling.
 - `docs/ARCHITECTURE.md` now documents level-based panel/table primitives in the Qt UI layer.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-023` as completed.
+- `albion_dps/qt/ui/Main.qml` now applies refreshed table header/text hierarchy and row hover polish in Meter/Market/History.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-024` as completed.
 
 ## [0.1.14] - 2026-02-13
 

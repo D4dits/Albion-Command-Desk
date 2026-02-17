@@ -280,7 +280,7 @@ Acceptance:
 - [x] PH2-UXR-021: button system (primary/secondary/ghost/danger + states)
 - [x] PH2-UXR-022: input/select/spinbox refresh
 - [x] PH2-UXR-023: card layout hierarchy cleanup
-- [ ] PH2-UXR-024: table redesign (meter/market/history)
+- [x] PH2-UXR-024: table redesign (meter/market/history)
 - [ ] PH2-UXR-025: header + action bar polish
 - [ ] PH2-UXR-026: color semantics for data states (profit/age/status)
 - [ ] PH2-UXR-027: empty/loading/error states
@@ -338,11 +338,15 @@ Acceptance:
   - migrated panel/table containers in `Main.qml` to shared level-driven hierarchy tokens
 
 ##### PH2-UXR-024 - Table redesign
-- Status: TODO
+- Status: DONE
 - Goal: improve readability and consistency of meter/market/history tables.
-- Files to modify:
+- Files modified:
   1. `albion_dps/qt/ui/Main.qml`
   2. `albion_dps/qt/ui/Theme.qml`
+- Delivery notes:
+  - upgraded table token set in `Theme.qml` (`tableHeaderText`, `tableTextPrimary`, `tableTextSecondary`, `tableDivider`)
+  - refreshed Meter/Market/History table headers and rows with consistent text hierarchy and hover treatment
+  - normalized table row surfaces and selection borders across list delegates
 
 ##### PH2-UXR-025 - Header + action bar polish
 - Status: TODO
