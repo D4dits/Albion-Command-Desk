@@ -97,6 +97,8 @@ QtObject {
     readonly property color tableSortIndicator: brandPrimary
     readonly property color tableSortIndicatorInactive: "#5f6b7a"
     readonly property int focusRingWidth: 2
+    readonly property color focusRingColor: borderFocus
+    readonly property color focusRingWeak: "#2a3a4f"
 
     // Scrollbar tokens
     readonly property color scrollbarTrack: "#1a2533"

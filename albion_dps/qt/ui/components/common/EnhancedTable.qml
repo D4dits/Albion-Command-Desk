@@ -164,10 +164,57 @@ TableSurface {
             spacing: 0
             reuseItems: true
             cacheBuffer: 300
+            focus: true
+            keyNavigationEnabled: true
 
             // Scrollbar
             ScrollBar.vertical: StyledScrollBar {
                 policy: ScrollBar.AsNeeded
+            }
+
+            // Keyboard navigation
+            Keys.onPressed: function(event) {
+                if (event.key === Qt.Key_Down) {
+                    if (root.selectedRow < tableBody.count - 1) {
+                        root.selectedRow = root.selectedRow + 1
+                        root.rowSelected(root.selectedRow)
+                        event.accepted = true
+                    }
+                } else if (event.key === Qt.Key_Up) {
+                    if (root.selectedRow > 0) {
+                        root.selectedRow = root.selectedRow - 1
+                        root.rowSelected(root.selectedRow)
+                        event.accepted = true
+                    }
+                } else if (event.key === Qt.Key_Home) {
+                    root.selectedRow = 0
+                    root.rowSelected(0)
+                    event.accepted = true
+                } else if (event.key === Qt.Key_End) {
+                    root.selectedRow = tableBody.count - 1
+                    root.rowSelected(tableBody.count - 1)
+                    event.accepted = true
+                } else if (event.key === Qt.Key_PageDown) {
+                    var pageStep = Math.max(1, Math.floor(tableBody.height / root.rowHeight) - 1)
+                    root.selectedRow = Math.min(tableBody.count - 1, root.selectedRow + pageStep)
+                    root.rowSelected(root.selectedRow)
+                    event.accepted = true
+                } else if (event.key === Qt.Key_PageUp) {
+                    var pageStep = Math.max(1, Math.floor(tableBody.height / root.rowHeight) - 1)
+                    root.selectedRow = Math.max(0, root.selectedRow - pageStep)
+                    root.rowSelected(root.selectedRow)
+                    event.accepted = true
+                } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                    if (root.selectedRow >= 0 && root.selectedRow < tableBody.count) {
+                        tableBody.currentIndex = root.selectedRow
+                        // Trigger double-click action
+                        var rowData = tableBody.model.get(root.selectedRow)
+                        if (rowData !== undefined) {
+                            root.rowDoubleClicked(root.selectedRow, rowData)
+                        }
+                        event.accepted = true
+                    }
+                }
             }
 
             delegate: Rectangle {
