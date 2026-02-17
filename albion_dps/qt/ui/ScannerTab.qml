@@ -1,8 +1,8 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import "../../." // for CardPanel access
-import ".." // for ScannerControls, ScannerLogView access
+import "." // for CardPanel access
+import "." // for ScannerControls, ScannerLogView access
 
 /**
  * ScannerTab - Main scanner tab container

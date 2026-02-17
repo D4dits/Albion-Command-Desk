@@ -1,6 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
-import "../../." // for Theme, AppButton, AppComboBox, AppCheckBox access
+import "." // for Theme, AppButton, AppComboBox, AppCheckBox access
 import "../common" as CommonComponents
 
 /**

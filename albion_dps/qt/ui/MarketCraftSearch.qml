@@ -1,7 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import "../../." // for Theme, AppButton, AppTextField, AppComboBox access
+import "." // for Theme, AppButton, AppTextField, AppComboBox access
 
 /**
  * MarketCraftSearch - Recipe search with suggestions dropdown

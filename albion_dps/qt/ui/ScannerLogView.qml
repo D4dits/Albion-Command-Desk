@@ -1,6 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import "../../." // for TableSurface access
+import "." // for TableSurface access
 
 /**
  * ScannerLogView - Log output area for scanner diagnostics
