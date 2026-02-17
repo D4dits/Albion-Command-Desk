@@ -282,7 +282,7 @@ Acceptance:
 - [x] PH2-UXR-023: card layout hierarchy cleanup
 - [x] PH2-UXR-024: table redesign (meter/market/history)
 - [x] PH2-UXR-025: header + action bar polish
-- [ ] PH2-UXR-026: color semantics for data states (profit/age/status)
+- [x] PH2-UXR-026: color semantics for data states (profit/age/status)
 - [ ] PH2-UXR-027: empty/loading/error states
 - [ ] PH2-UXR-028: subtle micro-interactions
 - [ ] PH2-UXR-029: accessibility + contrast pass
@@ -360,11 +360,15 @@ Acceptance:
   - kept update-banner slot width stable across views to reduce header jump when banner visibility changes
 
 ##### PH2-UXR-026 - Color semantics for data
-- Status: TODO
+- Status: DONE
 - Goal: enforce semantic color meaning for profit, freshness, warnings, and errors.
-- Files to modify:
+- Files modified:
   1. `albion_dps/qt/ui/Main.qml`
   2. `albion_dps/qt/ui/Theme.qml`
+- Delivery notes:
+  - added semantic color helpers in `Main.qml` (`signedValueColor`, `validationColor`, `priceSourceColor`)
+  - replaced hardcoded success/warning/danger hex values with theme semantic tokens
+  - aligned profitability and status text coloring across market headers, rows, and setup controls
 
 ##### PH2-UXR-027 - Empty/loading/error states
 - Status: TODO

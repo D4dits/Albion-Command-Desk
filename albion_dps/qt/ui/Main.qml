@@ -169,6 +169,35 @@ ApplicationWindow {
         return theme.stateDanger
     }
 
+    function signedValueColor(value) {
+        var n = Number(value)
+        if (!isFinite(n)) {
+            return mutedColor
+        }
+        if (n > 0) {
+            return theme.stateSuccess
+        }
+        if (n < 0) {
+            return theme.stateDanger
+        }
+        return theme.stateInfo
+    }
+
+    function validationColor(isValid) {
+        return isValid ? theme.stateSuccess : theme.stateDanger
+    }
+
+    function priceSourceColor(sourceName) {
+        var source = String(sourceName || "").toLowerCase()
+        if (source === "fallback" || source === "stale_cache") {
+            return theme.stateWarning
+        }
+        if (source === "live" || source === "cache") {
+            return theme.stateSuccess
+        }
+        return mutedColor
+    }
+
     function copyCellText(value) {
         marketSetupState.copyText(String(value === undefined || value === null ? "" : value))
     }
@@ -1113,8 +1142,8 @@ ApplicationWindow {
                                     + "  |  Prices: " + marketSetupState.pricesSource
                                     + (marketSetupState.listActionText.length > 0 ? "  |  " + marketSetupState.listActionText : "")
                                 color: marketSetupState.validationText.length === 0
-                                    ? (marketSetupState.pricesSource === "fallback" ? "#ffb86b" : "#7ee787")
-                                    : "#ff7b72"
+                                    ? priceSourceColor(marketSetupState.pricesSource)
+                                    : validationColor(false)
                                 font.pixelSize: 11
                                 elide: Text.ElideRight
                             }
@@ -1176,7 +1205,7 @@ ApplicationWindow {
                                 text: marketSetupState.validationText.length === 0
                                     ? "Configuration valid."
                                     : "Validation: " + marketSetupState.validationText
-                                color: marketSetupState.validationText.length === 0 ? "#7ee787" : "#ff7b72"
+                                color: validationColor(marketSetupState.validationText.length === 0)
                                 font.pixelSize: 11
                                 elide: Text.ElideRight
                             }
@@ -1184,7 +1213,7 @@ ApplicationWindow {
                             Text {
                                 Layout.fillWidth: true
                                 text: "Prices details: " + marketSetupState.pricesStatusText
-                                color: marketSetupState.pricesSource === "fallback" ? "#ffb86b" : mutedColor
+                                color: priceSourceColor(marketSetupState.pricesSource)
                                 font.pixelSize: 11
                                 elide: Text.ElideRight
                             }
@@ -1563,7 +1592,7 @@ ApplicationWindow {
                                                 onActivated: marketSetupState.setDailyBonusPreset(currentText)
                                             }
 
-                                            Text { text: "Use Focus (RRR)"; color: mutedColor; font.pixelSize: 11 }
+                                            Text { text: "Use Focus (RRR)"; color: theme.tableTextSecondary; font.pixelSize: 11 }
                                             AppCheckBox {
                                                 id: focusRrrCheck
                                                 Layout.fillWidth: true
@@ -1574,12 +1603,12 @@ ApplicationWindow {
                                                     implicitHeight: 14
                                                     radius: 3
                                                     border.color: "#6b7b8f"
-                                                    color: focusRrrCheck.checked ? "#2ea043" : "transparent"
+                                                    color: focusRrrCheck.checked ? theme.stateSuccess : "transparent"
                                                 }
                                                 contentItem: Text {
                                                     leftPadding: focusRrrCheck.indicator.width + 8
                                                     text: focusRrrCheck.text
-                                                    color: focusRrrCheck.checked ? "#7ee787" : "#f2b8b5"
+                                                    color: focusRrrCheck.checked ? theme.stateSuccess : theme.textDisabled
                                                     font.pixelSize: 11
                                                     verticalAlignment: Text.AlignVCenter
                                                 }
@@ -1919,7 +1948,7 @@ ApplicationWindow {
                                                         : Number(profitPercent).toFixed(1) + "%"
                                                     color: profitPercent === undefined || profitPercent === null
                                                         ? mutedColor
-                                                        : (Number(profitPercent) >= 0 ? "#7ee787" : "#ff7b72")
+                                                        : signedValueColor(Number(profitPercent))
                                                     font.pixelSize: 10
                                                     horizontalAlignment: Text.AlignLeft
                                                 }
@@ -2458,9 +2487,9 @@ ApplicationWindow {
                                         spacing: 12
                                         Text { text: "Investment: " + formatInt(marketSetupState.inputsTotalCost); color: mutedColor; font.pixelSize: 11 }
                                         Text { text: "Revenue: " + formatInt(marketSetupState.outputsTotalValue); color: mutedColor; font.pixelSize: 11 }
-                                        Text { text: "Net: " + formatInt(marketSetupState.netProfitValue); color: marketSetupState.netProfitValue >= 0 ? "#7ee787" : "#ff7b72"; font.pixelSize: 11 }
+                                        Text { text: "Net: " + formatInt(marketSetupState.netProfitValue); color: signedValueColor(marketSetupState.netProfitValue); font.pixelSize: 11 }
                                         Item { Layout.fillWidth: true }
-                                        Text { text: "Margin: " + formatFixed(marketSetupState.marginPercent, 2) + "%"; color: marketSetupState.marginPercent >= 0 ? "#7ee787" : "#ff7b72"; font.pixelSize: 11 }
+                                        Text { text: "Margin: " + formatFixed(marketSetupState.marginPercent, 2) + "%"; color: signedValueColor(marketSetupState.marginPercent); font.pixelSize: 11 }
                                     }
                                 }
 
@@ -2598,7 +2627,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatInt(profit)
-                                                color: profit >= 0 ? "#7ee787" : "#ff7b72"
+                                                color: signedValueColor(profit)
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 70
                                                 horizontalAlignment: Text.AlignLeft
@@ -2610,7 +2639,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatFixed(marginPercent, 1) + "%"
-                                                color: marginPercent >= 0 ? "#7ee787" : "#ff7b72"
+                                                color: signedValueColor(marginPercent)
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 60
                                                 horizontalAlignment: Text.AlignLeft

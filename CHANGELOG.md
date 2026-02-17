@@ -30,6 +30,7 @@ and this project uses semantic versioning.
 - Level-driven panel primitives in `CardPanel.qml` and `TableSurface.qml` for cleaner card hierarchy.
 - Expanded table typography/separator tokens in `Theme.qml` for Meter/Market/History readability.
 - Shell header action tokens in `Theme.qml` for unified action-bar dimensions and banner styling.
+- Semantic data-color helpers in `Main.qml` for signed values, validation, and price-source freshness.
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -78,6 +79,8 @@ and this project uses semantic versioning.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-024` as completed.
 - `albion_dps/qt/ui/Main.qml` now uses a polished action-bar rhythm for update/support controls with stable banner slot behavior.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-025` as completed.
+- `albion_dps/qt/ui/Main.qml` now maps market status/profit/margin colors through semantic theme states instead of hardcoded hex colors.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-026` as completed.
 
 ## [0.1.14] - 2026-02-13
 
