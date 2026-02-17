@@ -1228,7 +1228,6 @@ ApplicationWindow {
                                     text: "Region"
                                     color: mutedColor
                                     font.pixelSize: 11
-                                    anchors.verticalCenter: parent.verticalCenter
                                 }
                                 AppComboBox {
                                     implicitWidth: 110
