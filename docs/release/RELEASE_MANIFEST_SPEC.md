@@ -97,3 +97,15 @@ Top-level:
   - Uploads `manifest.json` as:
     - workflow artifact,
     - release asset for the same tag.
+
+## Phase 0 packaging strategy lock (artifact expectations)
+
+Manifest validation currently uses this policy:
+
+- Blockers (workflow fails):
+  - Missing Windows `installer` asset for `x86_64`.
+- Warnings only (workflow logs warning, release can continue):
+  - Missing Linux asset of kind `archive` or `bootstrap-script`.
+  - Missing macOS asset of kind `archive` or `bootstrap-script`.
+
+This lock keeps release decisions deterministic during the current phase while Linux/macOS packaging is still being finalized.

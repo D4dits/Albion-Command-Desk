@@ -17,7 +17,7 @@ on:
       - ".github/workflows/bootstrap-smoke.yml"
 
 jobs:
-  windows:
+  windows-core:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,11 +32,11 @@ jobs:
             -ProjectRoot "$PWD" `
             -VenvPath "$PWD\.venv-smoke" `
             -Python "$env:pythonLocation\python.exe" `
+            -Profile core `
             -ForceRecreateVenv `
-            -SkipCaptureExtras `
             -SkipRun
 
-  linux:
+  linux-core:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,10 +72,34 @@ jobs:
             --project-root "$PWD" \
             --venv-path "$RUNNER_TEMP/acd-smoke-venv" \
             --python "$pythonLocation/bin/python" \
+            --profile core \
             --force-recreate-venv \
             --skip-run
 
-  macos:
+  linux-capture-advisory:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libpcap-dev
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run Linux capture profile smoke (advisory)
+        run: |
+          bash ./tools/install/linux/install.sh \
+            --project-root "$PWD" \
+            --venv-path "$RUNNER_TEMP/acd-smoke-capture-venv" \
+            --python "$pythonLocation/bin/python" \
+            --profile capture \
+            --force-recreate-venv \
+            --skip-run
+
+  macos-core:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,5 +117,29 @@ jobs:
             --project-root "$PWD" \
             --venv-path "$RUNNER_TEMP/acd-smoke-venv" \
             --python "$pythonLocation/bin/python" \
+            --profile core \
+            --force-recreate-venv \
+            --skip-run
+
+  macos-capture-advisory:
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          brew update
+          brew install libpcap || true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run macOS capture profile smoke (advisory)
+        run: |
+          bash ./tools/install/macos/install.sh \
+            --project-root "$PWD" \
+            --venv-path "$RUNNER_TEMP/acd-smoke-capture-venv" \
+            --python "$pythonLocation/bin/python" \
+            --profile capture \
             --force-recreate-venv \
             --skip-run

@@ -9,6 +9,196 @@ Update status checkboxes and notes after each implemented ticket.
 - Every ticket completion must also update `CHANGELOG.md` (`[Unreleased]`).
 - If ticket scope changes, update this file in the same commit.
 
+## Active Milestone - Phase 0 (UX + Minimal Release)
+
+### PH0-UXR-001 - Shell layout freeze and component map
+- [x] Status: DONE
+- Goal: lock one global shell structure and remove layout drift before visual redesign.
+- Files:
+  1. `docs/UX_MINIMAL_RELEASE_PLAN.md`
+  2. `docs/ARCHITECTURE.md`
+  3. `albion_dps/qt/ui/Main.qml`
+- Done when:
+  - Header zones/order are fully documented and frozen.
+  - Reusable component extraction map is defined for `Main.qml`.
+  - Top-level tabs keep stable action placement.
+
+### PH0-REL-001 - Dependency profile freeze (core vs capture)
+- [x] Status: DONE
+- Goal: separate required core dependencies from optional live-capture dependencies.
+- Files:
+  1. `pyproject.toml`
+  2. `tools/install/windows/install.ps1`
+  3. `tools/install/linux/install.sh`
+  4. `tools/install/macos/install.sh`
+  5. `docs/TROUBLESHOOTING.md`
+- Done when:
+  - Install profiles are consistent across all bootstrap scripts.
+  - Core profile runs without capture extras.
+  - Capture-missing path is handled with clear diagnostics.
+
+### PH0-REL-002 - Release packaging strategy lock per OS
+- [x] Status: DONE
+- Goal: freeze artifact strategy and release gates for Windows/Linux/macOS.
+- Files:
+  1. `docs/release/RELEASE_CHECKLIST.md`
+  2. `docs/release/RELEASE_MANIFEST_SPEC.md`
+  3. `.github/workflows/bootstrap-smoke.yml`
+  4. `.github/workflows/release-manifest.yml`
+- Done when:
+  - Packaging target per OS is documented and approved.
+  - CI checks are mapped to every artifact.
+  - Publish blockers vs warnings are explicitly defined.
+
+## Active Milestone - Phase 1 (UI Refactor Foundation)
+
+### PH1-UXR-010 - Extract/declare QML design tokens
+- [x] Status: DONE
+- Goal: centralize visual constants before deeper component refactor.
+- Files:
+  1. `albion_dps/qt/ui/Theme.qml`
+  2. `albion_dps/qt/ui/Main.qml`
+  3. `docs/UX_MINIMAL_RELEASE_PLAN.md`
+- Done when:
+  - core design tokens exist in a dedicated QML file
+  - main shell consumes shared theme tokens instead of ad-hoc literals
+
+### PH1-UXR-011 - Normalize header/nav/action zones
+- [x] Status: DONE
+- Goal: finish normalizing all header and navigation interactions around frozen shell map.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/ShellTabButton.qml`
+  3. `docs/ARCHITECTURE.md`
+
+### PH1-UXR-012 - Card/table visual unification
+- [x] Status: DONE
+- Goal: align card and table primitives to one visual language.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+  3. `albion_dps/qt/ui/CardPanel.qml`
+  4. `albion_dps/qt/ui/TableSurface.qml`
+
+### PH1-UXR-013 - Responsive breakpoints and overflow handling
+- [x] Status: DONE
+- Goal: enforce stable behavior for small/medium/large app widths.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+  3. `docs/TROUBLESHOOTING.md`
+
+## Active Milestone - Phase 3 (Stabilization and ship)
+
+### QA-001 - Regression pass (meter/scanner/market/live/replay)
+- [x] Status: DONE
+- Goal: run deterministic grouped regression checks across core app domains.
+- Files:
+  1. `tools/qa/run_regression_suite.py`
+  2. `docs/qa/QA_REGRESSION_PASS.md`
+
+### QA-002 - Clean machine install tests (Win/Linux/macOS)
+- [x] Status: DONE
+- Goal: validate bootstrap/install path on clean OS runners and local clean profile.
+- Files:
+  1. `tools/qa/verify_clean_machine_matrix.py`
+  2. `docs/qa/QA_CLEAN_MACHINE.md`
+  3. `docs/release/RELEASE_CHECKLIST.md`
+
+### QA-003 - Release + manifest + update banner validation
+- [x] Status: DONE
+- Goal: verify release metadata publication and in-app update signaling end-to-end.
+- Files:
+  1. `tests/test_release_manifest_contract.py`
+  2. `tests/test_qt_update_banner.py`
+  3. `tools/qa/verify_release_update_flow.py`
+  4. `docs/qa/QA_RELEASE_UPDATE.md`
+  5. `docs/release/RELEASE_CHECKLIST.md`
+
+## Active Milestone - Phase PH2-UXR (Visual modernization)
+
+### PH2-UXR-020 - Visual direction + token expansion
+- [x] Status: DONE
+- Goal: define full semantic token set for modern/minimal UI styling.
+- Files:
+  1. `albion_dps/qt/ui/Theme.qml`
+  2. `docs/ARCHITECTURE.md`
+  3. `docs/UX_MINIMAL_RELEASE_PLAN.md`
+
+### PH2-UXR-021 - Button system
+- [x] Status: DONE
+- Goal: standardize button variants/states and remove legacy gray controls.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/AppButton.qml`
+  3. `albion_dps/qt/ui/Theme.qml`
+
+### PH2-UXR-022 - Input/select/spinbox refresh
+- [x] Status: DONE
+- Goal: unify form control appearance and interaction states.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+
+### PH2-UXR-023 - Card layout hierarchy cleanup
+- [x] Status: DONE
+- Goal: reduce border noise and enforce cleaner panel depth hierarchy.
+- Files:
+  1. `albion_dps/qt/ui/CardPanel.qml`
+  2. `albion_dps/qt/ui/TableSurface.qml`
+  3. `albion_dps/qt/ui/Main.qml`
+
+### PH2-UXR-024 - Table redesign
+- [x] Status: DONE
+- Goal: improve table readability and consistency across Meter/Market/History.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+
+### PH2-UXR-025 - Header + action bar polish
+- [x] Status: DONE
+- Goal: stabilize action placement and visual priority at all breakpoints.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+
+### PH2-UXR-026 - Color semantics for data
+- [x] Status: DONE
+- Goal: enforce semantic color mapping for KPI status and warnings.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+
+### PH2-UXR-027 - Empty/loading/error states
+- [x] Status: DONE
+- Goal: add intentional placeholders and recovery actions.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `docs/TROUBLESHOOTING.md`
+
+### PH2-UXR-028 - Subtle micro-interactions
+- [x] Status: DONE
+- Goal: add lightweight transitions to improve perceived quality.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+
+### PH2-UXR-029 - Accessibility + contrast pass
+- [x] Status: DONE
+- Goal: ensure focus visibility and readable contrast in all themes/states.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+  3. `docs/TROUBLESHOOTING.md`
+
+### PH2-UXR-030 - Visual regression baseline
+- [x] Status: DONE
+- Goal: capture reference screenshots/checklist to prevent UI regressions.
+- Files:
+  1. `assets/`
+  2. `README.md`
+  3. `docs/release/RELEASE_CHECKLIST.md`
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract
@@ -142,6 +332,33 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-17: REL-010 completed (installer diagnostics/preflight summary for Windows/Linux/macOS with capture-specific hints).
+- 2026-02-17: REL-011 completed (capture profile fallback to core by default; strict capture mode added for advanced users).
+- 2026-02-17: REL-012 completed (release asset smoke workflow + manifest asset verifier script + QA runbook).
+- 2026-02-17: REL-013 completed (README + troubleshooting rewritten for one-click bootstrap install and short recovery path).
+- 2026-02-17: PH2-UXR-030 completed (PH2 baseline screenshot set + README screenshot refresh + release checklist baseline gate).
+- 2026-02-17: PH2-UXR-029 completed (stronger text contrast + tokenized focus ring + keyboard focus guidance in docs).
+- 2026-02-17: PH2-UXR-028 completed (tokenized motion timings + subtle hover/press/fade transitions for controls and rows).
+- 2026-02-17: PH2-UXR-027 completed (empty/loading/error placeholders added for Meter/History/Scanner/Market views).
+- 2026-02-17: PH2-UXR-026 completed (semantic data-color helpers + replacement of hardcoded profit/status colors).
+- 2026-02-17: PH2-UXR-025 completed (header action tokens + aligned compact controls + stable update-banner slot behavior).
+- 2026-02-17: PH2-UXR-024 completed (table header/text token refresh + row hover/selection polish in Meter/Market/History).
+- 2026-02-17: PH2-UXR-023 completed (level-based panel/table primitives + Main.qml hierarchy cleanup and style deduplication).
+- 2026-02-17: PH2-UXR-022 completed (shared form control components + input tokenization + Main.qml migration).
+- 2026-02-17: PH2-UXR-021 completed (new `AppButton` variant system + migration of `Main.qml` button usage to shared control).
+- 2026-02-17: PH2-UXR-020 completed (semantic token expansion in `Theme.qml` + architecture-level visual direction/taxonomy notes).
+- 2026-02-17: Added PH2-UXR visual modernization phase (020-030) and locked execution order for commit-per-ticket flow.
+- 2026-02-16: QA-003 completed (manifest contract test + update banner test + release/update validation runbook).
+- 2026-02-16: QA-002 completed (clean-machine matrix verifier + QA runbook + release checklist gate command).
+- 2026-02-16: QA-001 completed (grouped regression runner + QA runbook for meter/scanner/market/live/replay).
+- 2026-02-16: PH1-UXR-013 completed (responsive shell breakpoints + narrow/compact overflow handling in header/nav/market panels).
+- 2026-02-16: PH1-UXR-012 completed (shared `CardPanel`/`TableSurface` primitives + tokenized table row/header colors wired across Meter/Scanner/Market).
+- 2026-02-16: PH1-UXR-011 completed (centered shell nav zone + shared tab button component for shell/market tabs).
+- 2026-02-16: PH1-UXR-010 completed (new `Theme.qml` tokens and `Main.qml` token wiring baseline).
+- 2026-02-16: PH0-REL-002 completed (packaging strategy + CI gate map locked in release docs/workflows).
+- 2026-02-16: PH0-REL-001 completed (install profiles frozen: `core` default, `capture` optional; bootstrap scripts + docs aligned).
+- 2026-02-16: PH0-UXR-001 completed (shell layout contract frozen in docs + `Main.qml` zone map IDs).
+- 2026-02-16: Phase 0 kickoff started (PH0-UXR-001 IN PROGRESS, PH0-REL-001/002 queued).
 - 2026-02-13: backlog initialized.
 - 2026-02-13: ACD-REL-001 completed (`RELEASE_MANIFEST_SPEC.md`, manifest example, README links).
 - 2026-02-13: ACD-REL-002 completed (Windows installer script + docs + README quick bootstrap).

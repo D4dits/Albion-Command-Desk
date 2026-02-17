@@ -200,6 +200,12 @@ def _build_snapshot_stream(
     decoder: PhotonDecoder,
     mapper: CombatEventMapper,
 ) -> Iterable[MeterSnapshot] | None:
+    if args.qt_command == "core":
+        logging.getLogger(__name__).info(
+            "Core mode active: GUI started without live capture backend."
+        )
+        return ()
+
     if args.qt_command == "replay":
         return replay_snapshots(
             args.pcap,
@@ -240,7 +246,7 @@ def _build_snapshot_stream(
 
         if not capture_backend_available():
             logging.getLogger(__name__).error(
-                "Live capture backend is missing. Reinstall with capture extras: pip install -e \".[capture]\""
+                "Live capture backend is missing. Reinstall with capture profile: pip install -e \".[capture]\""
             )
             if os.name == "nt":
                 logging.getLogger(__name__).error(

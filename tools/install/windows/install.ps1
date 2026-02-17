@@ -3,9 +3,12 @@ param(
     [string]$ProjectRoot = "",
     [string]$VenvPath = "",
     [string]$Python = "",
+    [ValidateSet("core", "capture")]
+    [string]$Profile = "core",
     [switch]$SkipRun,
     [switch]$ForceRecreateVenv,
-    [switch]$SkipCaptureExtras
+    [switch]$SkipCaptureExtras,
+    [switch]$StrictCapture
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,9 +23,94 @@ function Write-InstallWarn {
     Write-Host "[ACD install] $Message" -ForegroundColor Yellow
 }
 
+function Write-InstallHint {
+    param([string]$Message)
+    Write-Host "[ACD install] hint: $Message" -ForegroundColor DarkGray
+}
+
 function Throw-InstallError {
     param([string]$Message)
     throw "[ACD install] $Message"
+}
+
+function Test-NpcapRuntime {
+    $dllCandidates = @(
+        "$env:WINDIR\\System32\\Npcap\\wpcap.dll",
+        "$env:WINDIR\\System32\\Npcap\\Packet.dll",
+        "$env:WINDIR\\SysWOW64\\Npcap\\wpcap.dll",
+        "$env:WINDIR\\SysWOW64\\Npcap\\Packet.dll"
+    )
+    foreach ($candidate in $dllCandidates) {
+        if (Test-Path $candidate) {
+            return @{
+                Available = $true
+                Detail = "Detected runtime DLL: $candidate"
+            }
+        }
+    }
+    return @{
+        Available = $false
+        Detail = "Npcap Runtime not detected in standard locations."
+    }
+}
+
+function Test-NpcapSdk {
+    $includeCandidates = @(
+        "C:\\WpdPack\\Include\\pcap.h",
+        "$env:ProgramFiles\\Npcap SDK\\Include\\pcap.h",
+        "${env:ProgramFiles(x86)}\\Npcap SDK\\Include\\pcap.h"
+    )
+    foreach ($candidate in $includeCandidates) {
+        if (Test-Path $candidate) {
+            return @{
+                Available = $true
+                Detail = "Detected SDK header: $candidate"
+            }
+        }
+    }
+    return @{
+        Available = $false
+        Detail = "Npcap SDK header (pcap.h) not found."
+    }
+}
+
+function Show-InstallDiagnostics {
+    param(
+        [string]$ProjectRootPath,
+        [string]$VirtualEnvPath,
+        [string]$InstallProfile,
+        [hashtable]$LauncherInfo
+    )
+    Write-InstallInfo "Diagnostic summary:"
+    Write-InstallInfo "  project_root: $ProjectRootPath"
+    Write-InstallInfo "  venv_path: $VirtualEnvPath"
+    Write-InstallInfo "  profile: $InstallProfile"
+    Write-InstallInfo "  python: $($LauncherInfo.Command -join ' ') (version $($LauncherInfo.Version))"
+    $vcTools = Get-Command "cl.exe" -ErrorAction SilentlyContinue
+    if ($vcTools) {
+        Write-InstallInfo "  c_compiler: available ($($vcTools.Source))"
+    } else {
+        Write-InstallWarn "  c_compiler: not detected (capture profile may fail to build pcap backend)"
+        Write-InstallHint "For core mode this is expected and safe."
+    }
+    if ($InstallProfile -eq "capture") {
+        $npcap = Test-NpcapRuntime
+        if ($npcap.Available) {
+            Write-InstallInfo "  npcap_runtime: available ($($npcap.Detail))"
+        } else {
+            Write-InstallWarn "  npcap_runtime: missing ($($npcap.Detail))"
+            Write-InstallHint "Install Npcap Runtime from https://npcap.com/#download before running live mode."
+        }
+        $sdk = Test-NpcapSdk
+        if ($sdk.Available) {
+            Write-InstallInfo "  npcap_sdk: available ($($sdk.Detail))"
+        } else {
+            Write-InstallWarn "  npcap_sdk: missing ($($sdk.Detail))"
+            Write-InstallHint "Capture profile will fall back to core mode unless -StrictCapture is used."
+        }
+    } else {
+        Write-InstallInfo "  npcap_runtime: optional (core mode selected)"
+    }
 }
 
 function Resolve-PythonLauncher {
@@ -235,18 +323,47 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if ($SkipCaptureExtras) {
-    Write-InstallWarn "Skipping capture extras for this install run."
+    Write-InstallWarn "SkipCaptureExtras is deprecated. Use -Profile core."
+    $Profile = "core"
 }
-$installTarget = if ($SkipCaptureExtras) { "." } else { ".[capture]" }
+if ($Profile -eq "core") {
+    Write-InstallInfo "Install profile: core (UI + market/scanner/replay, no live capture backend)"
+} else {
+    Write-InstallInfo "Install profile: capture (includes live capture backend)"
+}
+Show-InstallDiagnostics -ProjectRootPath $ProjectRoot -VirtualEnvPath $VenvPath -InstallProfile $Profile -LauncherInfo $launcher
+$captureSdkStatus = $null
+if ($Profile -eq "capture") {
+    $captureSdkStatus = Test-NpcapSdk
+    if (-not $captureSdkStatus.Available) {
+        if ($StrictCapture) {
+            Throw-InstallError "Capture profile requested with -StrictCapture, but Npcap SDK was not found."
+        }
+        Write-InstallWarn "Capture profile requested, but SDK is unavailable. Falling back to core profile."
+        Write-InstallHint "Install Npcap SDK + build tools if you want capture build on Windows."
+        $Profile = "core"
+    }
+}
+$installTarget = if ($Profile -eq "capture") { ".[capture]" } else { "." }
 Write-InstallInfo "Installing Albion Command Desk ($installTarget)"
 Push-Location $ProjectRoot
 try {
     & $venvPython -m pip install -e $installTarget
     if ($LASTEXITCODE -ne 0) {
-        if ($SkipCaptureExtras) {
+        if ($Profile -eq "core") {
             Throw-InstallError "Package install failed."
         }
-        Throw-InstallError "Package install failed. Verify build tools and packet capture prerequisites."
+        if ($StrictCapture) {
+            Throw-InstallError "Capture profile installation failed in strict mode. Verify build tools and packet capture prerequisites."
+        }
+        Write-InstallWarn "Capture profile installation failed; falling back to core profile."
+        Write-InstallHint "Use -StrictCapture if you want this to fail instead of fallback."
+        $Profile = "core"
+        $installTarget = "."
+        & $venvPython -m pip install -e $installTarget
+        if ($LASTEXITCODE -ne 0) {
+            Throw-InstallError "Core profile fallback install failed."
+        }
     }
 } finally {
     Pop-Location
@@ -277,15 +394,32 @@ if ($LASTEXITCODE -ne 0) {
 
 if ($SkipRun) {
     Write-InstallInfo "Installation complete. Launch manually with:"
-    Write-Host "  $venvCli live"
+    if ($Profile -eq "capture") {
+        Write-Host "  $venvCli live"
+    } else {
+        Write-Host "  $venvCli core"
+        Write-Host "  $venvCli live   # after reinstall with -Profile capture"
+    }
     exit 0
 }
 
-Write-InstallInfo "Starting Albion Command Desk (live mode)"
+if ($Profile -eq "capture") {
+    Write-InstallInfo "Starting Albion Command Desk (live mode)"
+} else {
+    Write-InstallInfo "Starting Albion Command Desk (core mode)"
+}
 if (Test-Path $venvCli) {
-    & $venvCli live
+    if ($Profile -eq "capture") {
+        & $venvCli live
+    } else {
+        & $venvCli core
+    }
     exit $LASTEXITCODE
 }
 
-& $venvPython -m albion_dps.cli live
+if ($Profile -eq "capture") {
+    & $venvPython -m albion_dps.cli live
+} else {
+    & $venvPython -m albion_dps.cli core
+}
 exit $LASTEXITCODE

@@ -8,17 +8,26 @@ ApplicationWindow {
     width: 1120
     height: 720
     title: "Albion Command Desk"
-    color: "#0b0f14"
+    color: theme.surfaceApp
 
-    property color textColor: "#e6edf3"
-    property color mutedColor: "#9aa4af"
-    property color accentColor: "#4aa3ff"
-    property color panelColor: "#131a22"
-    property color borderColor: "#1f2a37"
-    property int compactControlHeight: 24
-    property int marketColumnSpacing: 6
-    property int marketSetupPanelWidth: 360
-    property int marketInputsItemWidth: Math.max(150, Math.min(240, Math.round(width * 0.17)))
+    Theme {
+        id: theme
+    }
+
+    property color textColor: theme.textPrimary
+    property color mutedColor: theme.textMuted
+    property color accentColor: theme.accentPrimary
+    property color panelColor: theme.surfacePanel
+    property color borderColor: theme.borderSubtle
+    property bool compactLayout: width < theme.breakpointCompact
+    property bool narrowLayout: width < theme.breakpointNarrow
+    property int compactControlHeight: theme.controlHeightCompact
+    property int marketColumnSpacing: theme.marketColumnSpacing
+    property int marketSetupPanelWidth: theme.marketSetupPanelWidth
+    property int marketSetupTwoColumnMinWidth: 980
+    property bool marketSetupStackedLayout: width < marketSetupTwoColumnMinWidth
+    property int marketSetupPanelActiveWidth: marketSetupStackedLayout ? -1 : marketSetupPanelWidth
+    property int marketInputsItemWidth: Math.max(narrowLayout ? 130 : 150, Math.min(240, Math.round(width * (narrowLayout ? 0.15 : 0.17))))
     property int marketInputsQtyWidth: 62
     property int marketInputsStockWidth: 72
     property int marketInputsBuyWidth: 62
@@ -40,7 +49,7 @@ ApplicationWindow {
         + marketInputsBuyWidth
         + marketColumnSpacing * 9
         + 12
-    property int marketOutputsItemWidth: Math.max(145, Math.min(230, Math.round(width * 0.16)))
+    property int marketOutputsItemWidth: Math.max(narrowLayout ? 130 : 145, Math.min(230, Math.round(width * (narrowLayout ? 0.14 : 0.16))))
     property int marketOutputsQtyWidth: 58
     property int marketOutputsCityWidth: 108
     property int marketOutputsModeWidth: 92
@@ -50,7 +59,7 @@ ApplicationWindow {
     property int marketOutputsFeeWidth: 74
     property int marketOutputsTaxWidth: 74
     property int marketOutputsNetMinWidth: 116
-    property int marketResultsItemWidth: Math.max(220, Math.min(340, Math.round(width * 0.28)))
+    property int marketResultsItemWidth: Math.max(narrowLayout ? 180 : 220, Math.min(340, Math.round(width * (narrowLayout ? 0.24 : 0.28))))
     property int marketOutputsContentMinWidth: marketOutputsItemWidth
         + marketOutputsQtyWidth
         + marketOutputsCityWidth
@@ -70,6 +79,40 @@ ApplicationWindow {
     property bool marketStatusExpanded: false
     property bool marketBreakdownExpanded: false
     property real craftPlanPendingContentY: -1
+    property int shellHeaderHeight: theme.shellHeaderHeight
+    property int shellRightZoneSpacing: theme.shellRightZoneSpacing
+    property int shellMeterMetaWidth: theme.shellMeterMetaWidth
+    property int shellUpdateControlWidth: theme.shellUpdateControlWidth
+    property int shellUpdateBannerMinWidth: theme.shellUpdateBannerMinWidth
+    property int shellUpdateBannerMaxWidth: theme.shellUpdateBannerMaxWidth
+    property int shellNavHeight: theme.shellNavHeight
+    property int shellNavWidthMax: theme.shellNavWidthMax
+    property int shellNavWidthMin: theme.shellNavWidthMin
+    property int shellNavWidthMinActive: narrowLayout ? 320 : shellNavWidthMin
+    property int shellNavAvailableWidth: Math.max(300, root.width - (theme.spacingPage * 2))
+    property int shellTabRadius: theme.shellTabRadius
+    property color shellTabIdleBackground: theme.shellTabIdleBackground
+    property color shellTabActiveText: theme.shellTabActiveText
+    property int shellMeterMetaWidthActive: compactLayout ? 0 : shellMeterMetaWidth
+    property int shellUpdateControlWidthActive: compactLayout ? 170 : shellUpdateControlWidth
+    property int shellUpdateBannerMinWidthActive: compactLayout ? 180 : shellUpdateBannerMinWidth
+    property int shellUpdateBannerMaxWidthActive: compactLayout ? 280 : shellUpdateBannerMaxWidth
+    property int shellHeaderMargin: narrowLayout ? 8 : 12
+    property int shellHeaderZoneSpacing: narrowLayout ? 10 : 20
+    property string autoUpdateLabel: narrowLayout ? "Auto" : "Auto update"
+    property string payPalButtonLabel: narrowLayout ? "Pay" : "PayPal"
+    property string coffeeButtonLabel: narrowLayout ? "Coffee" : "Buy me a coffee"
+    property int shellSupportPrimaryWidth: narrowLayout ? 90 : 118
+    property int shellSupportSecondaryWidth: narrowLayout ? 98 : 146
+
+    // Phase 0 shell contract:
+    // - left zone: title + contextual status
+    // - right zone: meter meta -> update banner -> update controls -> support actions
+    // - global navigation: TabBar directly below header
+    // Phase 1 extraction map:
+    // - shellHeader
+    // - shellUpdateZone
+    // - shellSupportZone
 
     function formatInt(value) {
         var n = Number(value)
@@ -99,7 +142,7 @@ ApplicationWindow {
     function adpAgeColor(ageText) {
         var raw = String(ageText || "").trim().toLowerCase()
         if (raw === "manual") {
-            return "#79c0ff"
+            return theme.stateInfo
         }
         if (raw === "n/a" || raw === "unknown" || raw.length === 0) {
             return mutedColor
@@ -120,16 +163,53 @@ ApplicationWindow {
             minutes += 0
         }
         if (minutes <= 20) {
-            return "#2ea043"
+            return theme.stateSuccess
         }
         if (minutes <= 60) {
-            return "#e3b341"
+            return theme.stateWarning
         }
-        return "#ff7b72"
+        return theme.stateDanger
+    }
+
+    function signedValueColor(value) {
+        var n = Number(value)
+        if (!isFinite(n)) {
+            return mutedColor
+        }
+        if (n > 0) {
+            return theme.stateSuccess
+        }
+        if (n < 0) {
+            return theme.stateDanger
+        }
+        return theme.stateInfo
+    }
+
+    function validationColor(isValid) {
+        return isValid ? theme.stateSuccess : theme.stateDanger
+    }
+
+    function priceSourceColor(sourceName) {
+        var source = String(sourceName || "").toLowerCase()
+        if (source === "fallback" || source === "stale_cache") {
+            return theme.stateWarning
+        }
+        if (source === "live" || source === "cache") {
+            return theme.stateSuccess
+        }
+        return mutedColor
     }
 
     function copyCellText(value) {
         marketSetupState.copyText(String(value === undefined || value === null ? "" : value))
+    }
+
+    function tableRowColor(index) {
+        return index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
+    }
+
+    function tableRowStrongColor(index) {
+        return index % 2 === 0 ? theme.surfaceInteractive : theme.tableRowEven
     }
 
     function itemLabelWithTier(labelValue, itemIdValue) {
@@ -196,8 +276,8 @@ ApplicationWindow {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 16
-        spacing: 12
+        anchors.margins: theme.spacingPage
+        spacing: theme.spacingSection
 
         Timer {
             id: craftPlanRestoreTimer
@@ -214,18 +294,21 @@ ApplicationWindow {
         }
 
         Rectangle {
+            id: shellHeader
             Layout.fillWidth: true
-            height: 72
-            color: panelColor
-            radius: 8
-            border.color: borderColor
+            height: shellHeaderHeight
+            color: theme.cardLevel1
+            radius: theme.cornerRadiusPanel
+            border.color: theme.borderStrong
 
             RowLayout {
+                id: shellHeaderLayout
                 anchors.fill: parent
-                anchors.margins: 12
-                spacing: 20
+                anchors.margins: shellHeaderMargin
+                spacing: shellHeaderZoneSpacing
 
                 ColumnLayout {
+                    id: shellLeftZone
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
                     spacing: 4
@@ -252,100 +335,119 @@ ApplicationWindow {
                     }
                 }
 
-                ColumnLayout {
-                    Layout.preferredWidth: 180
+                RowLayout {
+                    id: shellRightZone
+                    Layout.fillWidth: false
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                    opacity: meterView ? 1.0 : 0.0
-                    enabled: meterView
-                    spacing: 4
-                    Text {
-                        text: uiState.timeText
-                        color: textColor
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignRight
-                    }
-                    Text {
-                        text: "Fame: " + uiState.fameText + "  |  Fame/h: " + uiState.famePerHourText
-                        color: mutedColor
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignRight
-                    }
-                }
+                    Layout.minimumWidth: implicitWidth
+                    spacing: narrowLayout ? 6 : shellRightZoneSpacing
 
-                Rectangle {
-                    visible: uiState.updateBannerVisible
-                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                    Layout.preferredWidth: Math.max(270, Math.min(420, root.width * 0.28))
-                    Layout.preferredHeight: 34
-                    radius: 17
-                    color: "#1f3322"
-                    border.color: "#2ea043"
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 6
-                        spacing: 6
-
+                    ColumnLayout {
+                        id: shellMeterZone
+                        Layout.preferredWidth: shellMeterMetaWidthActive
+                        Layout.minimumWidth: shellMeterMetaWidthActive
+                        Layout.maximumWidth: shellMeterMetaWidthActive
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        visible: meterView && !compactLayout
+                        opacity: visible ? 1.0 : 0.0
+                        enabled: visible
+                        spacing: 4
                         Text {
-                            Layout.fillWidth: true
-                            text: uiState.updateBannerText
-                            color: "#7ee787"
+                            text: uiState.timeText
+                            color: textColor
                             font.pixelSize: 12
-                            elide: Text.ElideRight
-                            wrapMode: Text.NoWrap
+                            horizontalAlignment: Text.AlignRight
                         }
+                        Text {
+                            text: "Fame: " + uiState.fameText + "  |  Fame/h: " + uiState.famePerHourText
+                            color: mutedColor
+                            font.pixelSize: 12
+                            horizontalAlignment: Text.AlignRight
+                        }
+                    }
 
-                        Button {
-                            id: updateOpenButton
-                            text: "Open"
-                            implicitHeight: 24
-                            implicitWidth: 54
-                            onClicked: {
-                                if (uiState.updateBannerUrl.length > 0) {
-                                    Qt.openUrlExternally(uiState.updateBannerUrl)
-                                }
+                    Rectangle {
+                        id: shellUpdateBanner
+                        visible: !narrowLayout
+                        opacity: uiState.updateBannerVisible ? 1.0 : 0.0
+                        enabled: uiState.updateBannerVisible
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        Layout.preferredWidth: Math.max(shellUpdateBannerMinWidthActive, Math.min(shellUpdateBannerMaxWidthActive, root.width * 0.24))
+                        Layout.preferredHeight: theme.shellActionHeight + 4
+                        radius: theme.shellPillRadius
+                        color: theme.shellBannerBackground
+                        border.color: theme.shellBannerBorder
+
+                        Behavior on opacity {
+                            NumberAnimation {
+                                duration: 180
+                                easing.type: Easing.OutCubic
                             }
                         }
 
-                        Button {
-                            id: updateDismissButton
-                            text: "x"
-                            implicitHeight: 24
-                            implicitWidth: 28
-                            onClicked: uiState.dismissUpdateBanner()
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 10
+                            anchors.rightMargin: 6
+                            spacing: 6
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: uiState.updateBannerText
+                                color: theme.shellBannerText
+                                font.pixelSize: 12
+                                elide: Text.ElideRight
+                                wrapMode: Text.NoWrap
+                            }
+
+                            AppButton {
+                                id: updateOpenButton
+                                text: "Open"
+                                variant: "primary"
+                                compact: true
+                                implicitHeight: theme.shellActionHeight
+                                implicitWidth: 54
+                                onClicked: {
+                                    if (uiState.updateBannerUrl.length > 0) {
+                                        Qt.openUrlExternally(uiState.updateBannerUrl)
+                                    }
+                                }
+                            }
+
+                            AppButton {
+                                id: updateDismissButton
+                                text: "x"
+                                variant: "ghost"
+                                compact: true
+                                implicitHeight: theme.shellActionHeight
+                                implicitWidth: 28
+                                onClicked: uiState.dismissUpdateBanner()
+                            }
                         }
                     }
-                }
 
-                RowLayout {
-                    Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
-                    spacing: 8
                     ColumnLayout {
-                        Layout.preferredWidth: 215
-                        Layout.minimumWidth: 215
+                        id: shellUpdateZone
+                        Layout.preferredWidth: implicitWidth
+                        Layout.minimumWidth: implicitWidth
                         spacing: 2
                         RowLayout {
                             Layout.alignment: Qt.AlignRight
                             spacing: 6
-                            CheckBox {
+                            AppCheckBox {
                                 id: autoUpdateCheckBox
+                                implicitHeight: theme.shellActionHeight
                                 checked: uiState.updateAutoCheck
-                                text: "Auto update"
+                                text: autoUpdateLabel
                                 onToggled: uiState.setUpdateAutoCheck(checked)
-                                contentItem: Text {
-                                    text: autoUpdateCheckBox.text
-                                    color: mutedColor
-                                    font.pixelSize: 11
-                                    verticalAlignment: Text.AlignVCenter
-                                    leftPadding: autoUpdateCheckBox.indicator.width + autoUpdateCheckBox.spacing
-                                }
                             }
-                            Button {
+                            AppButton {
                                 id: checkUpdatesButton
                                 text: "Check now"
-                                implicitHeight: 28
-                                implicitWidth: 88
+                                variant: "primary"
+                                compact: true
+                                implicitHeight: theme.shellActionHeight
+                                implicitWidth: narrowLayout ? 78 : 88
                                 onClicked: uiState.requestManualUpdateCheck()
                             }
                         }
@@ -360,116 +462,88 @@ ApplicationWindow {
                             wrapMode: Text.NoWrap
                         }
                     }
-                    Button {
-                        id: headerPayPalButton
-                        text: "PayPal"
-                        implicitHeight: 32
-                        implicitWidth: 120
-                        onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00")
-                        background: Rectangle {
-                            radius: 16
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#0d6efd" }
-                                GradientStop { position: 1.0; color: "#00457C" }
-                            }
-                            border.color: "#66b3ff"
+
+                    RowLayout {
+                        id: shellSupportZone
+                        spacing: narrowLayout ? 6 : 8
+                        AppButton {
+                            id: headerPayPalButton
+                            text: payPalButtonLabel
+                            variant: "primary"
+                            compact: true
+                            implicitHeight: theme.shellActionHeight
+                            implicitWidth: shellSupportPrimaryWidth
+                            onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00")
                         }
-                        contentItem: Text {
-                            text: headerPayPalButton.text
-                            color: "#ffffff"
-                            font.bold: true
-                            font.pixelSize: 12
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                    }
-                    Button {
-                        id: headerCoffeeButton
-                        text: "Buy me a coffee"
-                        implicitHeight: 32
-                        implicitWidth: 148
-                        onClicked: Qt.openUrlExternally("https://buycoffee.to/ao-dps/")
-                        background: Rectangle {
-                            radius: 16
-                            gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#ffd34d" }
-                                GradientStop { position: 1.0; color: "#ff9f1a" }
-                            }
-                            border.color: "#ffd34d"
-                        }
-                        contentItem: Text {
-                            text: headerCoffeeButton.text
-                            color: "#1c1300"
-                            font.bold: true
-                            font.pixelSize: 12
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
+                        AppButton {
+                            id: headerCoffeeButton
+                            text: coffeeButtonLabel
+                            variant: "warm"
+                            compact: true
+                            implicitHeight: theme.shellActionHeight
+                            implicitWidth: shellSupportSecondaryWidth
+                            onClicked: Qt.openUrlExternally("https://buycoffee.to/ao-dps/")
                         }
                     }
                 }
             }
         }
 
-        TabBar {
-            id: viewTabs
+        RowLayout {
             Layout.fillWidth: true
-            implicitHeight: 34
-            padding: 0
-            background: Rectangle {
-                color: "transparent"
-                border.width: 0
-            }
-            TabButton {
-                id: meterTab
-                text: "Meter"
-                height: viewTabs.height
+            spacing: theme.spacingCompact
+
+            Item { Layout.fillWidth: true }
+
+            TabBar {
+                id: viewTabs
+                Layout.preferredWidth: Math.min(shellNavWidthMax, Math.max(shellNavWidthMinActive, shellNavAvailableWidth))
+                Layout.maximumWidth: Math.min(shellNavWidthMax, shellNavAvailableWidth)
+                Layout.minimumWidth: Math.min(shellNavWidthMinActive, shellNavAvailableWidth)
+                implicitHeight: shellNavHeight
+                padding: 0
+                spacing: theme.spacingCompact
                 background: Rectangle {
-                    radius: 5
-                    color: meterTab.checked ? accentColor : "#0f1620"
-                    border.color: meterTab.checked ? accentColor : borderColor
+                    color: "transparent"
+                    border.width: 0
                 }
-                contentItem: Text {
-                    text: meterTab.text
-                    color: meterTab.checked ? "#0b0f14" : textColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.bold: true
+
+                ShellTabButton {
+                    id: meterTab
+                    text: "Meter"
+                    activeColor: accentColor
+                    inactiveColor: shellTabIdleBackground
+                    activeTextColor: shellTabActiveText
+                    inactiveTextColor: textColor
+                    borderColor: borderColor
+                    cornerRadius: shellTabRadius
+                    labelPixelSize: 13
                 }
-            }
-            TabButton {
-                id: scannerTab
-                text: "Scanner"
-                height: viewTabs.height
-                background: Rectangle {
-                    radius: 5
-                    color: scannerTab.checked ? accentColor : "#0f1620"
-                    border.color: scannerTab.checked ? accentColor : borderColor
+                ShellTabButton {
+                    id: scannerTab
+                    text: "Scanner"
+                    activeColor: accentColor
+                    inactiveColor: shellTabIdleBackground
+                    activeTextColor: shellTabActiveText
+                    inactiveTextColor: textColor
+                    borderColor: borderColor
+                    cornerRadius: shellTabRadius
+                    labelPixelSize: 13
                 }
-                contentItem: Text {
-                    text: scannerTab.text
-                    color: scannerTab.checked ? "#0b0f14" : textColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.bold: true
-                }
-            }
-            TabButton {
-                id: marketTab
-                text: "Market"
-                height: viewTabs.height
-                background: Rectangle {
-                    radius: 5
-                    color: marketTab.checked ? accentColor : "#0f1620"
-                    border.color: marketTab.checked ? accentColor : borderColor
-                }
-                contentItem: Text {
-                    text: marketTab.text
-                    color: marketTab.checked ? "#0b0f14" : textColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    font.bold: true
+                ShellTabButton {
+                    id: marketTab
+                    text: "Market"
+                    activeColor: accentColor
+                    inactiveColor: shellTabIdleBackground
+                    activeTextColor: shellTabActiveText
+                    inactiveTextColor: textColor
+                    borderColor: borderColor
+                    cornerRadius: shellTabRadius
+                    labelPixelSize: 13
                 }
             }
+
+            Item { Layout.fillWidth: true }
         }
 
         StackLayout {
@@ -482,13 +556,10 @@ ApplicationWindow {
                     anchors.fill: parent
                     spacing: 12
 
-                    Rectangle {
+                    CardPanel {
+                        level: 1
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        color: panelColor
-                        radius: 8
-                        border.color: borderColor
-
                         ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 12
@@ -537,13 +608,10 @@ ApplicationWindow {
                                 font.bold: true
                             }
 
-                            Rectangle {
+                            TableSurface {
+                                level: 1
                                 Layout.fillWidth: true
                                 height: 62
-                                color: "#0f1620"
-                                radius: 6
-                                border.color: "#1f2a37"
-
                                 ColumnLayout {
                                     anchors.fill: parent
                                     anchors.margins: 6
@@ -556,56 +624,38 @@ ApplicationWindow {
                                             color: mutedColor
                                             font.pixelSize: 11
                                         }
-                                        Button {
+                                        AppButton {
                                             id: battleButton
                                             text: "Battle"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 62
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.mode === "battle"
                                             onClicked: uiState.setMode("battle")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: battleButton.checked ? accentColor : "#101923"
-                                                border.color: battleButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: battleButton.text
-                                                color: battleButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
-                                        Button {
+                                        AppButton {
                                             id: zoneButton
                                             text: "Zone"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 56
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.mode === "zone"
                                             onClicked: uiState.setMode("zone")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: zoneButton.checked ? accentColor : "#101923"
-                                                border.color: zoneButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: zoneButton.text
-                                                color: zoneButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
-                                        Button {
+                                        AppButton {
                                             id: manualButton
                                             text: "Manual"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 64
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.mode === "manual"
                                             onClicked: uiState.setMode("manual")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: manualButton.checked ? accentColor : "#101923"
-                                                border.color: manualButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: manualButton.text
-                                                color: manualButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
                                         Item { Layout.fillWidth: true }
                                         Text {
@@ -613,108 +663,91 @@ ApplicationWindow {
                                             color: mutedColor
                                             font.pixelSize: 11
                                         }
-                                        Button {
+                                        AppButton {
                                             id: sortDpsButton
                                             text: "DPS"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 56
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.sortKey === "dps"
                                             onClicked: uiState.setSortKey("dps")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: sortDpsButton.checked ? accentColor : "#101923"
-                                                border.color: sortDpsButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: sortDpsButton.text
-                                                color: sortDpsButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
-                                        Button {
+                                        AppButton {
                                             id: sortDmgButton
                                             text: "DMG"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 56
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.sortKey === "dmg"
                                             onClicked: uiState.setSortKey("dmg")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: sortDmgButton.checked ? accentColor : "#101923"
-                                                border.color: sortDmgButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: sortDmgButton.text
-                                                color: sortDmgButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
-                                        Button {
+                                        AppButton {
                                             id: sortHpsButton
                                             text: "HPS"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 56
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.sortKey === "hps"
                                             onClicked: uiState.setSortKey("hps")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: sortHpsButton.checked ? accentColor : "#101923"
-                                                border.color: sortHpsButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: sortHpsButton.text
-                                                color: sortHpsButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
-                                        Button {
+                                        AppButton {
                                             id: sortHealButton
                                             text: "HEAL"
+                                            compact: true
+                                            implicitHeight: 24
+                                            implicitWidth: 60
+                                            variant: checked ? "primary" : "secondary"
                                             checkable: true
                                             checked: uiState.sortKey === "heal"
                                             onClicked: uiState.setSortKey("heal")
-                                            background: Rectangle {
-                                                radius: 6
-                                                color: sortHealButton.checked ? accentColor : "#101923"
-                                                border.color: sortHealButton.checked ? accentColor : borderColor
-                                            }
-                                            contentItem: Text {
-                                                text: sortHealButton.text
-                                                color: sortHealButton.checked ? "#0b0f14" : textColor
-                                                font.pixelSize: 11
-                                            }
                                         }
                                     }
                                 }
                             }
 
-                        Rectangle {
+                        TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                                 height: 26
-                                color: "#0f1620"
-                                radius: 4
+                                showTopRule: false
 
                                 RowLayout {
                                     anchors.fill: parent
                                     anchors.margins: 6
                                     spacing: 12
 
-                                    Text { text: "Name"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 140 }
-                                    Text { text: "Weapon"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 90 }
-                                    Text { text: "DMG"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                    Text { text: "HEAL"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                    Text { text: "DPS"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                    Text { text: "HPS"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                    Text { text: "BAR"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                    Text { text: "Name"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 140 }
+                                    Text { text: "Weapon"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 90 }
+                                    Text { text: "DMG"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "HEAL"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "DPS"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "HPS"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                    Text { text: "BAR"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.fillWidth: true }
                                 }
                             }
 
                             ListView {
+                                id: meterPlayersList
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 clip: true
                                 model: uiState.playersModel
                                 delegate: Rectangle {
+                                    id: meterRow
                                     width: ListView.view.width
                                     height: 34
-                                    color: "transparent"
+                                    property bool hovered: meterHoverArea.containsMouse
+                                    color: hovered ? theme.tableRowHover : tableRowColor(index)
+                                    radius: 4
+                                    Behavior on color {
+                                        ColorAnimation { duration: 120 }
+                                    }
 
                                     RowLayout {
                                         anchors.fill: parent
@@ -723,7 +756,7 @@ ApplicationWindow {
 
                                         Text {
                                             text: name
-                                            color: "#e6edf3"
+                                            color: theme.tableTextPrimary
                                             font.pixelSize: 12
                                             elide: Text.ElideRight
                                             Layout.preferredWidth: 140
@@ -747,7 +780,7 @@ ApplicationWindow {
                                                 }
                                                 Text {
                                                     text: weaponTier && weaponTier.length > 0 ? weaponTier : "-"
-                                                    color: mutedColor
+                                                    color: theme.tableTextSecondary
                                                     font.pixelSize: 11
                                                     elide: Text.ElideRight
                                                 }
@@ -760,17 +793,17 @@ ApplicationWindow {
                                                 hoverEnabled: true
                                             }
                                         }
-                                        Text { text: damage; color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
-                                        Text { text: heal; color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
-                                        Text { text: dps.toFixed(1); color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
-                                        Text { text: hps.toFixed(1); color: mutedColor; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                                        Text { text: damage; color: theme.tableTextSecondary; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                                        Text { text: heal; color: theme.tableTextSecondary; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                                        Text { text: dps.toFixed(1); color: theme.tableTextSecondary; font.pixelSize: 12; Layout.preferredWidth: 60 }
+                                        Text { text: hps.toFixed(1); color: theme.tableTextSecondary; font.pixelSize: 12; Layout.preferredWidth: 60 }
 
                                         Rectangle {
                                             Layout.fillWidth: true
                                             height: 10
                                             radius: 4
-                                            color: "#0f1620"
-                                            border.color: "#1f2a37"
+                                            color: theme.surfaceInset
+                                            border.color: theme.borderSubtle
                                             Rectangle {
                                                 height: parent.height
                                                 width: Math.max(4, parent.width * barRatio)
@@ -779,18 +812,35 @@ ApplicationWindow {
                                             }
                                         }
                                     }
+
+                                    MouseArea {
+                                        id: meterHoverArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        acceptedButtons: Qt.NoButton
+                                    }
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: meterPlayersList.count === 0
+                                    text: uiState.selectedHistoryIndex >= 0
+                                        ? "No players in selected history entry."
+                                        : "No live combat data yet. Start fighting or switch replay."
+                                    color: theme.textSecondary
+                                    font.pixelSize: 12
+                                    horizontalAlignment: Text.AlignHCenter
+                                    wrapMode: Text.WordWrap
+                                    width: parent.width - 24
                                 }
                             }
                         }
                     }
 
-                    Rectangle {
+                    CardPanel {
+                        level: 1
                         Layout.preferredWidth: 360
                         Layout.fillHeight: true
-                        color: panelColor
-                        radius: 8
-                        border.color: borderColor
-
                         ColumnLayout {
                             anchors.fill: parent
                             anchors.margins: 12
@@ -803,7 +853,7 @@ ApplicationWindow {
                                 font.bold: true
                             }
 
-                            Button {
+                            AppButton {
                                 visible: uiState.selectedHistoryIndex >= 0
                                 text: "Back to live"
                                 implicitHeight: 30
@@ -812,6 +862,7 @@ ApplicationWindow {
                             }
 
                             ListView {
+                                id: historyList
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 clip: true
@@ -819,12 +870,19 @@ ApplicationWindow {
                                 rightMargin: 6
                                 model: uiState.historyModel
                                 delegate: Rectangle {
+                                    id: historyRow
                                     width: Math.max(0, ListView.view.width - 6)
                                     height: 98
                                     radius: 6
-                                    color: selected ? "#162231" : "#0f1620"
-                                    border.color: selected ? "#4aa3ff" : "#1f2a37"
+                                    property bool hovered: historyHover.containsMouse
+                                    color: selected
+                                        ? theme.tableSelectedBackground
+                                        : (hovered ? theme.tableRowHover : tableRowColor(index))
+                                    border.color: selected ? theme.tableSelectedBorder : theme.tableDivider
                                     border.width: 1
+                                    Behavior on color {
+                                        ColorAnimation { duration: 120 }
+                                    }
                                     TapHandler {
                                         onTapped: uiState.selectHistory(index)
                                     }
@@ -838,31 +896,46 @@ ApplicationWindow {
                                             Layout.fillWidth: true
                                             Text { text: label; color: textColor; font.pixelSize: 12; font.bold: true }
                                             Item { Layout.fillWidth: true }
-                                            Button {
+                                            AppButton {
                                                 text: "Copy"
+                                                variant: "ghost"
+                                                compact: true
                                                 implicitWidth: 64
-                                                implicitHeight: 26
+                                                implicitHeight: 24
                                                 onClicked: uiState.copyHistory(index)
                                             }
                                         }
-                                        Text { text: meta; color: mutedColor; font.pixelSize: 11 }
+                                        Text { text: meta; color: theme.tableTextSecondary; font.pixelSize: 11 }
                                         Text {
                                             text: players
-                                            color: textColor
+                                            color: theme.tableTextPrimary
                                             font.pixelSize: 11
                                             wrapMode: Text.NoWrap
                                             elide: Text.ElideRight
                                         }
                                     }
+
+                                    MouseArea {
+                                        id: historyHover
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        acceptedButtons: Qt.NoButton
+                                    }
+                                }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    visible: historyList.count === 0
+                                    text: "No archived battles yet."
+                                    color: theme.textSecondary
+                                    font.pixelSize: 12
                                 }
                             }
 
-                            Rectangle {
+                            TableSurface {
+                                level: 1
                                 Layout.fillWidth: true
                                 height: 120
-                                radius: 6
-                                color: "#0f1620"
-                                border.color: "#1f2a37"
                                 ColumnLayout {
                                     anchors.fill: parent
                                     anchors.margins: 8
@@ -878,12 +951,9 @@ ApplicationWindow {
                 }
             }
             Item {
-                Rectangle {
+                CardPanel {
+                        level: 1
                     anchors.fill: parent
-                    color: panelColor
-                    radius: 8
-                    border.color: borderColor
-
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 12
@@ -940,43 +1010,48 @@ ApplicationWindow {
                             font.pixelSize: 11
                         }
 
-                        RowLayout {
+                        Flow {
+                            Layout.fillWidth: true
                             spacing: 8
-                            Button {
+                            AppButton {
                                 text: "Check updates"
+                                compact: true
                                 onClicked: scannerState.checkForUpdates()
                             }
-                            Button {
+                            AppButton {
                                 text: "Sync repo"
+                                compact: true
                                 onClicked: scannerState.syncClientRepo()
                             }
-                            Button {
+                            AppButton {
                                 text: "Start scanner"
+                                compact: true
                                 enabled: !scannerState.running
                                 onClicked: scannerState.startScanner()
                             }
-                            Button {
+                            AppButton {
                                 text: "Start scanner (sudo)"
+                                compact: true
                                 enabled: !scannerState.running
                                 onClicked: scannerState.startScannerSudo()
                             }
-                            Button {
+                            AppButton {
                                 text: "Stop scanner"
+                                compact: true
                                 enabled: scannerState.running
                                 onClicked: scannerState.stopScanner()
                             }
-                            Button {
+                            AppButton {
                                 text: "Clear log"
+                                compact: true
                                 onClicked: scannerState.clearLog()
                             }
                         }
 
-                        Rectangle {
+                        TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: 6
-                            color: "#0f1620"
-                            border.color: "#1f2a37"
                             clip: true
 
                             ScrollView {
@@ -1009,18 +1084,23 @@ ApplicationWindow {
                                     Component.onCompleted: Qt.callLater(followTail)
                                 }
                             }
+
+                            Text {
+                                anchors.centerIn: parent
+                                visible: scannerState.logText.length === 0
+                                text: "Scanner log is empty. Run a scanner action to see diagnostics."
+                                color: theme.textSecondary
+                                font.pixelSize: 11
+                            }
                         }
                     }
                 }
             }
 
             Item {
-                Rectangle {
+                CardPanel {
+                        level: 1
                     anchors.fill: parent
-                    color: panelColor
-                    radius: 8
-                    border.color: borderColor
-
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 12
@@ -1060,9 +1140,9 @@ ApplicationWindow {
                             Item { Layout.fillWidth: true }
                         }
 
-                        RowLayout {
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 8
+                            spacing: 6
 
                             Text {
                                 Layout.fillWidth: true
@@ -1072,56 +1152,59 @@ ApplicationWindow {
                                     + "  |  Prices: " + marketSetupState.pricesSource
                                     + (marketSetupState.listActionText.length > 0 ? "  |  " + marketSetupState.listActionText : "")
                                 color: marketSetupState.validationText.length === 0
-                                    ? (marketSetupState.pricesSource === "fallback" ? "#ffb86b" : "#7ee787")
-                                    : "#ff7b72"
+                                    ? priceSourceColor(marketSetupState.pricesSource)
+                                    : validationColor(false)
                                 font.pixelSize: 11
                                 elide: Text.ElideRight
                             }
 
-                            Text {
-                                text: "Region"
-                                color: mutedColor
-                                font.pixelSize: 11
-                            }
-                            ComboBox {
-                                implicitWidth: 110
-                                implicitHeight: 24
-                                font.pixelSize: 11
-                                model: ["europe", "west", "east"]
-                                currentIndex: Math.max(0, model.indexOf(marketSetupState.region))
-                                onActivated: marketSetupState.setRegion(currentText)
-                            }
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 8
 
-                            CheckBox {
-                                id: premiumCheck
-                                implicitHeight: 24
-                                checked: marketSetupState.premium
-                                text: "Premium"
-                                palette.windowText: textColor
-                                palette.text: textColor
-                                onToggled: marketSetupState.setPremium(checked)
-                            }
+                                Text {
+                                    text: "Region"
+                                    color: mutedColor
+                                    font.pixelSize: 11
+                                }
+                                AppComboBox {
+                                    implicitWidth: 110
+                                    implicitHeight: 24
+                                    font.pixelSize: 11
+                                    model: ["europe", "west", "east"]
+                                    currentIndex: Math.max(0, model.indexOf(marketSetupState.region))
+                                    onActivated: marketSetupState.setRegion(currentText)
+                                }
 
-                            Button {
-                                text: marketSetupState.refreshPricesButtonText
-                                implicitHeight: 24
-                                enabled: marketSetupState.canRefreshPrices
-                                onClicked: marketSetupState.refreshPrices()
-                            }
-                            Button {
-                                text: "Show raw AOData"
-                                implicitHeight: 24
-                                onClicked: marketSetupState.showAoDataRaw()
-                            }
-                            Button {
-                                text: marketStatusExpanded ? "Hide details" : "Show details"
-                                implicitHeight: 24
-                                onClicked: marketStatusExpanded = !marketStatusExpanded
-                            }
-                            Button {
-                                text: marketDiagnosticsVisible ? "Hide diagnostics" : "Show diagnostics"
-                                implicitHeight: 24
-                                onClicked: marketDiagnosticsVisible = !marketDiagnosticsVisible
+                                AppCheckBox {
+                                    id: premiumCheck
+                                    implicitHeight: 24
+                                    checked: marketSetupState.premium
+                                    text: "Premium"
+                                    palette.windowText: textColor
+                                    palette.text: textColor
+                                    onToggled: marketSetupState.setPremium(checked)
+                                }
+
+                                AppButton {
+                                    text: marketSetupState.refreshPricesButtonText
+                                    compact: true
+                                    implicitHeight: 24
+                                    enabled: marketSetupState.canRefreshPrices
+                                    onClicked: marketSetupState.refreshPrices()
+                                }
+                                AppButton {
+                                    text: marketStatusExpanded ? "Hide details" : "Show details"
+                                    compact: true
+                                    implicitHeight: 24
+                                    onClicked: marketStatusExpanded = !marketStatusExpanded
+                                }
+                                AppButton {
+                                    text: marketDiagnosticsVisible ? "Hide diagnostics" : "Show diagnostics"
+                                    compact: true
+                                    implicitHeight: 24
+                                    onClicked: marketDiagnosticsVisible = !marketDiagnosticsVisible
+                                }
                             }
                         }
 
@@ -1135,7 +1218,7 @@ ApplicationWindow {
                                 text: marketSetupState.validationText.length === 0
                                     ? "Configuration valid."
                                     : "Validation: " + marketSetupState.validationText
-                                color: marketSetupState.validationText.length === 0 ? "#7ee787" : "#ff7b72"
+                                color: validationColor(marketSetupState.validationText.length === 0)
                                 font.pixelSize: 11
                                 elide: Text.ElideRight
                             }
@@ -1143,7 +1226,7 @@ ApplicationWindow {
                             Text {
                                 Layout.fillWidth: true
                                 text: "Prices details: " + marketSetupState.pricesStatusText
-                                color: marketSetupState.pricesSource === "fallback" ? "#ffb86b" : mutedColor
+                                color: priceSourceColor(marketSetupState.pricesSource)
                                 font.pixelSize: 11
                                 elide: Text.ElideRight
                             }
@@ -1153,7 +1236,7 @@ ApplicationWindow {
                             id: marketTabs
                             Layout.fillWidth: true
                             implicitHeight: 30
-                            spacing: 6
+                            spacing: theme.spacingCompact
                             padding: 0
                             onCurrentIndexChanged: marketSetupState.setActiveMarketTab(currentIndex)
                             Component.onCompleted: marketSetupState.setActiveMarketTab(currentIndex)
@@ -1162,89 +1245,59 @@ ApplicationWindow {
                                 border.width: 0
                             }
 
-                            TabButton {
+                            ShellTabButton {
                                 id: marketOverviewTab
                                 text: "Setup"
-                                height: marketTabs.height
-                                background: Rectangle {
-                                    radius: 5
-                                    color: marketOverviewTab.checked ? accentColor : "#0f1620"
-                                    border.color: marketOverviewTab.checked ? accentColor : borderColor
-                                }
-                                contentItem: Text {
-                                    text: marketOverviewTab.text
-                                    color: marketOverviewTab.checked ? "#0b0f14" : textColor
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                }
+                                activeColor: accentColor
+                                inactiveColor: shellTabIdleBackground
+                                activeTextColor: shellTabActiveText
+                                inactiveTextColor: textColor
+                                borderColor: borderColor
+                                cornerRadius: shellTabRadius
+                                labelPixelSize: 11
                             }
-                            TabButton {
+                            ShellTabButton {
                                 id: marketInputsTab
                                 text: "Inputs"
-                                height: marketTabs.height
-                                background: Rectangle {
-                                    radius: 5
-                                    color: marketInputsTab.checked ? accentColor : "#0f1620"
-                                    border.color: marketInputsTab.checked ? accentColor : borderColor
-                                }
-                                contentItem: Text {
-                                    text: marketInputsTab.text
-                                    color: marketInputsTab.checked ? "#0b0f14" : textColor
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                }
+                                activeColor: accentColor
+                                inactiveColor: shellTabIdleBackground
+                                activeTextColor: shellTabActiveText
+                                inactiveTextColor: textColor
+                                borderColor: borderColor
+                                cornerRadius: shellTabRadius
+                                labelPixelSize: 11
                             }
-                            TabButton {
+                            ShellTabButton {
                                 id: marketOutputsTab
                                 text: "Outputs"
-                                height: marketTabs.height
-                                background: Rectangle {
-                                    radius: 5
-                                    color: marketOutputsTab.checked ? accentColor : "#0f1620"
-                                    border.color: marketOutputsTab.checked ? accentColor : borderColor
-                                }
-                                contentItem: Text {
-                                    text: marketOutputsTab.text
-                                    color: marketOutputsTab.checked ? "#0b0f14" : textColor
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                }
+                                activeColor: accentColor
+                                inactiveColor: shellTabIdleBackground
+                                activeTextColor: shellTabActiveText
+                                inactiveTextColor: textColor
+                                borderColor: borderColor
+                                cornerRadius: shellTabRadius
+                                labelPixelSize: 11
                             }
-                            TabButton {
+                            ShellTabButton {
                                 id: marketResultsTab
                                 text: "Results"
-                                height: marketTabs.height
-                                background: Rectangle {
-                                    radius: 5
-                                    color: marketResultsTab.checked ? accentColor : "#0f1620"
-                                    border.color: marketResultsTab.checked ? accentColor : borderColor
-                                }
-                                contentItem: Text {
-                                    text: marketResultsTab.text
-                                    color: marketResultsTab.checked ? "#0b0f14" : textColor
-                                    horizontalAlignment: Text.AlignHCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                }
+                                activeColor: accentColor
+                                inactiveColor: shellTabIdleBackground
+                                activeTextColor: shellTabActiveText
+                                inactiveTextColor: textColor
+                                borderColor: borderColor
+                                cornerRadius: shellTabRadius
+                                labelPixelSize: 11
                             }
                         }
 
-                        Rectangle {
+                        TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                             Layout.preferredHeight: marketDiagnosticsVisible ? 110 : 0
                             Layout.minimumHeight: marketDiagnosticsVisible ? 82 : 0
                             Layout.maximumHeight: marketDiagnosticsVisible ? 140 : 0
                             visible: marketDiagnosticsVisible
-                            radius: 6
-                            color: "#0f1620"
-                            border.color: "#1f2a37"
                             clip: true
 
                             ColumnLayout {
@@ -1261,7 +1314,7 @@ ApplicationWindow {
                                         font.bold: true
                                     }
                                     Item { Layout.fillWidth: true }
-                                    Button {
+                                    AppButton {
                                         text: "Clear"
                                         implicitHeight: 20
                                         font.pixelSize: 10
@@ -1291,27 +1344,32 @@ ApplicationWindow {
                             Layout.fillHeight: true
                             currentIndex: marketTabs.currentIndex
 
-                            RowLayout {
+                            GridLayout {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                spacing: 12
+                                columns: marketSetupStackedLayout ? 1 : 2
+                                columnSpacing: 12
+                                rowSpacing: 12
 
-                            Rectangle {
-                                Layout.preferredWidth: marketSetupPanelWidth
-                                Layout.minimumWidth: marketSetupPanelWidth
-                                Layout.maximumWidth: marketSetupPanelWidth
+                            TableSurface {
+                                level: 1
+                                Layout.column: 0
+                                Layout.row: 0
                                 Layout.fillHeight: true
-                                radius: 6
-                                color: "#0f1620"
-                                border.color: "#1f2a37"
-
+                                Layout.fillWidth: marketSetupStackedLayout
+                                Layout.preferredWidth: marketSetupStackedLayout ? -1 : marketSetupPanelActiveWidth
+                                Layout.minimumWidth: marketSetupStackedLayout ? 260 : marketSetupPanelActiveWidth
+                                Layout.maximumWidth: marketSetupStackedLayout ? 16777215 : marketSetupPanelActiveWidth
                                 ScrollView {
+                                    id: marketSetupScroll
                                     anchors.fill: parent
                                     anchors.margins: 10
                                     clip: true
+                                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                                     ColumnLayout {
-                                        width: parent.width
+                                        // Keep a reserved gutter so controls never render under the vertical scrollbar.
+                                        width: Math.max(0, parent.width - 14)
                                         spacing: 8
 
                                         Text {
@@ -1336,7 +1394,7 @@ ApplicationWindow {
                                                     Layout.fillWidth: true
                                                     spacing: 6
 
-                                                    TextField {
+                                                    AppTextField {
                                                         id: recipeSearchInput
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
@@ -1353,16 +1411,20 @@ ApplicationWindow {
                                                 RowLayout {
                                                     Layout.fillWidth: true
                                                     spacing: 6
-                                                    Button {
+                                                    AppButton {
                                                         text: "Add filtered"
+                                                        variant: "primary"
+                                                        compact: true
                                                         Layout.fillWidth: true
                                                         implicitHeight: 22
                                                         font.pixelSize: 10
                                                         enabled: recipeSuggestions.count > 0
                                                         onClicked: marketSetupState.addFilteredRecipeOptions()
                                                     }
-                                                    Button {
+                                                    AppButton {
                                                         text: "Add family"
+                                                        variant: "secondary"
+                                                        compact: true
                                                         Layout.fillWidth: true
                                                         implicitHeight: 22
                                                         font.pixelSize: 10
@@ -1380,7 +1442,7 @@ ApplicationWindow {
                                                         font.pixelSize: 10
                                                         Layout.preferredWidth: 52
                                                     }
-                                                    ComboBox {
+                                                    AppComboBox {
                                                         implicitWidth: 72
                                                         implicitHeight: 22
                                                         font.pixelSize: 10
@@ -1409,11 +1471,11 @@ ApplicationWindow {
 
                                                 Rectangle {
                                                     Layout.fillWidth: true
-                                                    Layout.preferredHeight: 170
+                                                    Layout.preferredHeight: 196
                                                     visible: recipeSearchInput.activeFocus && recipeSuggestions.count > 0
                                                     radius: 4
-                                                    color: "#111b28"
-                                                    border.color: "#1f2a37"
+                                                    color: theme.tableHeaderBackground
+                                                    border.color: theme.borderSubtle
 
                                                     ListView {
                                                         id: recipeSuggestions
@@ -1429,7 +1491,7 @@ ApplicationWindow {
                                                             height: 26
                                                             color: recipeId === marketSetupState.recipeId
                                                                 ? "#1b2635"
-                                                                : (index % 2 === 0 ? "#111b28" : "#0f1620")
+                                                                : (tableRowStrongColor(index))
 
                                                             RowLayout {
                                                                 anchors.fill: parent
@@ -1440,13 +1502,13 @@ ApplicationWindow {
                                                                     color: textColor
                                                                     font.pixelSize: 11
                                                                     Layout.fillWidth: true
-                                                                    elide: Text.ElideRight
+                                                                    elide: Text.ElideNone
                                                                 }
                                                                 Text {
                                                                     text: "T" + tier + "." + enchant
                                                                     color: mutedColor
                                                                     font.pixelSize: 11
-                                                                    Layout.preferredWidth: 58
+                                                                    Layout.preferredWidth: 62
                                                                     horizontalAlignment: Text.AlignLeft
                                                                 }
                                                             }
@@ -1471,7 +1533,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Craft City"; color: mutedColor; font.pixelSize: 11 }
-                                            ComboBox {
+                                            AppComboBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1484,7 +1546,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Buy City"; color: mutedColor; font.pixelSize: 11 }
-                                            ComboBox {
+                                            AppComboBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1494,7 +1556,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Sell City"; color: mutedColor; font.pixelSize: 11 }
-                                            ComboBox {
+                                            AppComboBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1504,7 +1566,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Default Runs"; color: mutedColor; font.pixelSize: 11 }
-                                            SpinBox {
+                                            AppSpinBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1517,7 +1579,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Usage Fee (1-999)"; color: mutedColor; font.pixelSize: 11 }
-                                            SpinBox {
+                                            AppSpinBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1546,7 +1608,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Default Daily Bonus"; color: mutedColor; font.pixelSize: 11 }
-                                            ComboBox {
+                                            AppComboBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1555,8 +1617,8 @@ ApplicationWindow {
                                                 onActivated: marketSetupState.setDailyBonusPreset(currentText)
                                             }
 
-                                            Text { text: "Use Focus (RRR)"; color: mutedColor; font.pixelSize: 11 }
-                                            CheckBox {
+                                            Text { text: "Use Focus (RRR)"; color: theme.tableTextSecondary; font.pixelSize: 11 }
+                                            AppCheckBox {
                                                 id: focusRrrCheck
                                                 Layout.fillWidth: true
                                                 checked: marketSetupState.focusEnabled
@@ -1566,12 +1628,12 @@ ApplicationWindow {
                                                     implicitHeight: 14
                                                     radius: 3
                                                     border.color: "#6b7b8f"
-                                                    color: focusRrrCheck.checked ? "#2ea043" : "transparent"
+                                                    color: focusRrrCheck.checked ? theme.stateSuccess : "transparent"
                                                 }
                                                 contentItem: Text {
                                                     leftPadding: focusRrrCheck.indicator.width + 8
                                                     text: focusRrrCheck.text
-                                                    color: focusRrrCheck.checked ? "#7ee787" : "#f2b8b5"
+                                                    color: focusRrrCheck.checked ? theme.stateSuccess : theme.textDisabled
                                                     font.pixelSize: 11
                                                     verticalAlignment: Text.AlignVCenter
                                                 }
@@ -1582,8 +1644,8 @@ ApplicationWindow {
                                         Rectangle {
                                             Layout.fillWidth: true
                                             radius: 4
-                                            color: "#111b28"
-                                            border.color: "#1f2a37"
+                                            color: theme.tableHeaderBackground
+                                            border.color: theme.borderSubtle
                                             implicitHeight: 130
 
                                             ColumnLayout {
@@ -1607,7 +1669,7 @@ ApplicationWindow {
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: 42
                                                     }
-                                                    ComboBox {
+                                                    AppComboBox {
                                                         id: presetCombo
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
@@ -1621,7 +1683,7 @@ ApplicationWindow {
                                                     }
                                                 }
 
-                                                TextField {
+                                                AppTextField {
                                                     id: presetNameField
                                                     Layout.fillWidth: true
                                                     implicitHeight: compactControlHeight
@@ -1633,7 +1695,7 @@ ApplicationWindow {
                                                 RowLayout {
                                                     Layout.fillWidth: true
                                                     spacing: 6
-                                                    Button {
+                                                    AppButton {
                                                         text: "Save"
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
@@ -1647,7 +1709,7 @@ ApplicationWindow {
                                                             presetNameField.text = name
                                                         }
                                                     }
-                                                    Button {
+                                                    AppButton {
                                                         text: "Load"
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
@@ -1662,7 +1724,7 @@ ApplicationWindow {
                                                             presetNameField.text = name
                                                         }
                                                     }
-                                                    Button {
+                                                    AppButton {
                                                         text: "Del"
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
@@ -1685,13 +1747,13 @@ ApplicationWindow {
                                 }
                             }
 
-                            Rectangle {
+                            TableSurface {
+                                level: 1
+                                Layout.column: marketSetupStackedLayout ? 0 : 1
+                                Layout.row: marketSetupStackedLayout ? 1 : 0
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                radius: 6
-                                color: "#0f1620"
-                                border.color: "#1f2a37"
-
+                                Layout.minimumWidth: 0
                                 ColumnLayout {
                                     anchors.fill: parent
                                     anchors.margins: 10
@@ -1716,7 +1778,7 @@ ApplicationWindow {
                                             color: mutedColor
                                             font.pixelSize: 10
                                         }
-                                        ComboBox {
+                                        AppComboBox {
                                             implicitWidth: 84
                                             implicitHeight: 20
                                             font.pixelSize: 10
@@ -1736,14 +1798,14 @@ ApplicationWindow {
                                                 }
                                             }
                                         }
-                                        Button {
+                                        AppButton {
                                             text: marketSetupState.craftPlanSortDescending ? "Desc" : "Asc"
                                             implicitHeight: 20
                                             implicitWidth: 48
                                             font.pixelSize: 10
                                             onClicked: marketSetupState.toggleCraftPlanSortDescending()
                                         }
-                                        Button {
+                                        AppButton {
                                             text: "Clear"
                                             implicitHeight: 20
                                             implicitWidth: 52
@@ -1756,8 +1818,8 @@ ApplicationWindow {
                                         Layout.fillWidth: true
                                         height: 22
                                         radius: 4
-                                        color: "#111b28"
-                                        border.color: "#1f2a37"
+                                        color: theme.tableHeaderBackground
+                                        border.color: theme.borderSubtle
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.margins: 4
@@ -1799,7 +1861,7 @@ ApplicationWindow {
                                             height: 32
                                             color: recipeId === marketSetupState.recipeId
                                                 ? "#1b2635"
-                                                : (index % 2 === 0 ? "#0f1620" : "#101924")
+                                                : (tableRowColor(index))
 
                                             RowLayout {
                                                 anchors.fill: parent
@@ -1807,7 +1869,7 @@ ApplicationWindow {
                                                 anchors.rightMargin: 4
                                                 spacing: 6
 
-                                                CheckBox {
+                                                AppCheckBox {
                                                     id: enabledCheck
                                                     Layout.preferredWidth: 24
                                                     checked: isEnabled
@@ -1848,7 +1910,7 @@ ApplicationWindow {
                                                     }
                                                 }
 
-                                                ComboBox {
+                                                AppComboBox {
                                                     Layout.preferredWidth: 118
                                                     implicitHeight: 24
                                                     font.pixelSize: 10
@@ -1860,7 +1922,7 @@ ApplicationWindow {
                                                     onActivated: marketSetupState.setPlanRowCraftCity(rowId, currentText)
                                                 }
 
-                                                ComboBox {
+                                                AppComboBox {
                                                     Layout.preferredWidth: 70
                                                     implicitHeight: 24
                                                     font.pixelSize: 10
@@ -1879,7 +1941,7 @@ ApplicationWindow {
                                                     horizontalAlignment: Text.AlignLeft
                                                 }
 
-                                                TextField {
+                                                AppTextField {
                                                     Layout.preferredWidth: 68
                                                     implicitHeight: 24
                                                     font.pixelSize: 10
@@ -1894,7 +1956,7 @@ ApplicationWindow {
                                                     inputMethodHints: Qt.ImhDigitsOnly
                                                     background: Rectangle {
                                                         radius: 2
-                                                        color: "#0f1620"
+                                                        color: theme.surfaceInset
                                                         border.color: "#2a3a51"
                                                     }
                                                     onEditingFinished: {
@@ -1914,12 +1976,12 @@ ApplicationWindow {
                                                         : Number(profitPercent).toFixed(1) + "%"
                                                     color: profitPercent === undefined || profitPercent === null
                                                         ? mutedColor
-                                                        : (Number(profitPercent) >= 0 ? "#7ee787" : "#ff7b72")
+                                                        : signedValueColor(Number(profitPercent))
                                                     font.pixelSize: 10
                                                     horizontalAlignment: Text.AlignLeft
                                                 }
 
-                                                Button {
+                                                AppButton {
                                                     Layout.preferredWidth: 40
                                                     implicitHeight: 22
                                                     font.pixelSize: 10
@@ -1936,13 +1998,10 @@ ApplicationWindow {
                             }
                             }
 
-                        Rectangle {
+                        TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: 6
-                            color: "#0f1620"
-                            border.color: "#1f2a37"
-
                             ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10
@@ -1970,24 +2029,24 @@ ApplicationWindow {
                                             Layout.fillWidth: true
                                             height: 24
                                             radius: 4
-                                            color: "#111b28"
+                                            color: theme.tableHeaderBackground
 
                                             RowLayout {
                                                 anchors.fill: parent
                                                 anchors.margins: 4
                                                 spacing: marketColumnSpacing
-                                                Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Need"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Stock"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsStockWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Buy"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsModeWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Item"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Need"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Stock"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsStockWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Buy"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "City"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Mode"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsModeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Manual"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Unit"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "ADP age"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth; horizontalAlignment: Text.AlignLeft }
                                                 Text {
                                                     text: "Total"
-                                                    color: mutedColor
+                                                    color: theme.tableHeaderText
                                                     font.pixelSize: 11
                                                     Layout.fillWidth: true
                                                     Layout.minimumWidth: marketInputsTotalMinWidth
@@ -1997,6 +2056,7 @@ ApplicationWindow {
                                         }
 
                                         ListView {
+                                            id: marketInputsList
                                             Layout.fillWidth: true
                                             Layout.fillHeight: true
                                             Layout.minimumHeight: 120
@@ -2006,9 +2066,15 @@ ApplicationWindow {
                                             model: marketSetupState.inputsModel
 
                                             delegate: Rectangle {
+                                                id: inputRow
                                                 width: ListView.view.width
                                                 height: 28
-                                                color: index % 2 === 0 ? "#0f1620" : "#101924"
+                                                property bool hovered: inputRowHover.containsMouse
+                                                color: hovered ? theme.tableRowHover : tableRowColor(index)
+                                                radius: 4
+                                                Behavior on color {
+                                                    ColorAnimation { duration: 120 }
+                                                }
 
                                                 RowLayout {
                                                     anchors.fill: parent
@@ -2016,7 +2082,7 @@ ApplicationWindow {
                                                     spacing: marketColumnSpacing
                                                     Text {
                                                         text: itemLabelWithTier(item, itemId)
-                                                        color: textColor
+                                                        color: theme.tableTextPrimary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketInputsItemWidth
                                                         elide: Text.ElideRight
@@ -2028,7 +2094,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(quantity)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketInputsQtyWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2038,7 +2104,7 @@ ApplicationWindow {
                                                             onDoubleClicked: copyCellText(parent.text)
                                                         }
                                                     }
-                                                    TextField {
+                                                    AppTextField {
                                                         Layout.preferredWidth: marketInputsStockWidth
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
@@ -2048,7 +2114,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatFixed(buyQuantity, 2)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketInputsBuyWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2060,7 +2126,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: city
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketInputsCityWidth
                                                         elide: Text.ElideRight
@@ -2070,7 +2136,7 @@ ApplicationWindow {
                                                             onDoubleClicked: copyCellText(parent.text)
                                                         }
                                                     }
-                                                    ComboBox {
+                                                    AppComboBox {
                                                         Layout.preferredWidth: marketInputsModeWidth
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
@@ -2078,7 +2144,7 @@ ApplicationWindow {
                                                         currentIndex: Math.max(0, model.indexOf(priceType))
                                                         onActivated: marketSetupState.setInputPriceType(itemId, currentText)
                                                     }
-                                                    TextField {
+                                                    AppTextField {
                                                         Layout.preferredWidth: marketInputsManualWidth
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
@@ -2089,7 +2155,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(unitPrice)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketInputsUnitWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2113,7 +2179,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(totalCost)
-                                                        color: textColor
+                                                        color: theme.tableTextPrimary
                                                         font.pixelSize: 11
                                                         Layout.fillWidth: true
                                                         Layout.minimumWidth: marketInputsTotalMinWidth
@@ -2125,7 +2191,25 @@ ApplicationWindow {
                                                         }
                                                     }
                                                 }
+
+                                                MouseArea {
+                                                    id: inputRowHover
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    acceptedButtons: Qt.NoButton
+                                                }
                                             }
+                                        }
+
+                                        Text {
+                                            visible: marketInputsList.count === 0
+                                            text: marketSetupState.priceFetchInProgress
+                                                ? "Loading input prices..."
+                                                : "No input rows. Add craft recipes in Setup."
+                                            color: theme.textSecondary
+                                            font.pixelSize: 11
+                                            Layout.fillWidth: true
+                                            horizontalAlignment: Text.AlignHCenter
                                         }
                                     }
                                 }
@@ -2134,7 +2218,7 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     height: 28
                                     radius: 4
-                                    color: "#111b28"
+                                    color: theme.tableHeaderBackground
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.margins: 6
@@ -2156,13 +2240,10 @@ ApplicationWindow {
                             }
                         }
 
-                        Rectangle {
+                        TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: 6
-                            color: "#0f1620"
-                            border.color: "#1f2a37"
-
                             ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10
@@ -2190,24 +2271,24 @@ ApplicationWindow {
                                             Layout.fillWidth: true
                                             height: 24
                                             radius: 4
-                                            color: "#111b28"
+                                            color: theme.tableHeaderBackground
 
                                             RowLayout {
                                                 anchors.fill: parent
                                                 anchors.margins: 4
                                                 spacing: marketColumnSpacing
-                                                Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsModeWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsManualWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth; horizontalAlignment: Text.AlignLeft }
-                                                Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Item"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Qty"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "City"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Mode"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsModeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Manual"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsManualWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Unit"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Gross"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Fee"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth; horizontalAlignment: Text.AlignLeft }
+                                                Text { text: "Tax"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth; horizontalAlignment: Text.AlignLeft }
                                                 Text {
                                                     text: "Net"
-                                                    color: mutedColor
+                                                    color: theme.tableHeaderText
                                                     font.pixelSize: 11
                                                     Layout.fillWidth: true
                                                     Layout.minimumWidth: marketOutputsNetMinWidth
@@ -2217,6 +2298,7 @@ ApplicationWindow {
                                         }
 
                                         ListView {
+                                            id: marketOutputsList
                                             Layout.fillWidth: true
                                             Layout.fillHeight: true
                                             Layout.minimumHeight: 120
@@ -2226,9 +2308,15 @@ ApplicationWindow {
                                             model: marketSetupState.outputsModel
 
                                             delegate: Rectangle {
+                                                id: outputRow
                                                 width: ListView.view.width
                                                 height: 28
-                                                color: index % 2 === 0 ? "#0f1620" : "#101924"
+                                                property bool hovered: outputRowHover.containsMouse
+                                                color: hovered ? theme.tableRowHover : tableRowColor(index)
+                                                radius: 4
+                                                Behavior on color {
+                                                    ColorAnimation { duration: 120 }
+                                                }
 
                                                 RowLayout {
                                                     anchors.fill: parent
@@ -2236,7 +2324,7 @@ ApplicationWindow {
                                                     spacing: marketColumnSpacing
                                                     Text {
                                                         text: itemLabelWithTier(item, itemId)
-                                                        color: textColor
+                                                        color: theme.tableTextPrimary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsItemWidth
                                                         elide: Text.ElideRight
@@ -2248,7 +2336,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatFixed(quantity, 2)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsQtyWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2260,7 +2348,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: city
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsCityWidth
                                                         elide: Text.ElideRight
@@ -2270,7 +2358,7 @@ ApplicationWindow {
                                                             onDoubleClicked: copyCellText(parent.text)
                                                         }
                                                     }
-                                                    ComboBox {
+                                                    AppComboBox {
                                                         Layout.preferredWidth: marketOutputsModeWidth
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
@@ -2278,7 +2366,7 @@ ApplicationWindow {
                                                         currentIndex: Math.max(0, model.indexOf(priceType))
                                                         onActivated: marketSetupState.setOutputPriceType(itemId, currentText)
                                                     }
-                                                    TextField {
+                                                    AppTextField {
                                                         Layout.preferredWidth: marketOutputsManualWidth
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
@@ -2289,7 +2377,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(unitPrice)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsUnitWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2301,7 +2389,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(totalValue)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsGrossWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2313,7 +2401,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(feeValue)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsFeeWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2325,7 +2413,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(taxValue)
-                                                        color: mutedColor
+                                                        color: theme.tableTextSecondary
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: marketOutputsTaxWidth
                                                         horizontalAlignment: Text.AlignLeft
@@ -2337,7 +2425,7 @@ ApplicationWindow {
                                                     }
                                                     Text {
                                                         text: formatInt(netValue)
-                                                        color: textColor
+                                                        color: theme.tableTextPrimary
                                                         font.pixelSize: 11
                                                         Layout.fillWidth: true
                                                         Layout.minimumWidth: marketOutputsNetMinWidth
@@ -2349,7 +2437,25 @@ ApplicationWindow {
                                                         }
                                                     }
                                                 }
+
+                                                MouseArea {
+                                                    id: outputRowHover
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    acceptedButtons: Qt.NoButton
+                                                }
                                             }
+                                        }
+
+                                        Text {
+                                            visible: marketOutputsList.count === 0
+                                            text: marketSetupState.priceFetchInProgress
+                                                ? "Loading output prices..."
+                                                : "No output rows. Build crafts to generate outputs."
+                                            color: theme.textSecondary
+                                            font.pixelSize: 11
+                                            Layout.fillWidth: true
+                                            horizontalAlignment: Text.AlignHCenter
                                         }
                                     }
                                 }
@@ -2358,7 +2464,7 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     height: 28
                                     radius: 4
-                                    color: "#111b28"
+                                    color: theme.tableHeaderBackground
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.margins: 6
@@ -2393,12 +2499,10 @@ ApplicationWindow {
                             }
                         }
 
-                        Rectangle {
+                        TableSurface {
+                                level: 1
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            radius: 6
-                            color: "#0f1620"
-                            border.color: "#1f2a37"
                             ColumnLayout {
                                 anchors.fill: parent
                                 anchors.margins: 10
@@ -2420,7 +2524,7 @@ ApplicationWindow {
                                         color: mutedColor
                                         font.pixelSize: 11
                                     }
-                                    ComboBox {
+                                    AppComboBox {
                                         Layout.preferredWidth: 120
                                         implicitHeight: compactControlHeight
                                         font.pixelSize: 11
@@ -2434,16 +2538,16 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     height: 28
                                     radius: 4
-                                    color: "#111b28"
+                                    color: theme.tableHeaderBackground
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.margins: 6
                                         spacing: 12
                                         Text { text: "Investment: " + formatInt(marketSetupState.inputsTotalCost); color: mutedColor; font.pixelSize: 11 }
                                         Text { text: "Revenue: " + formatInt(marketSetupState.outputsTotalValue); color: mutedColor; font.pixelSize: 11 }
-                                        Text { text: "Net: " + formatInt(marketSetupState.netProfitValue); color: marketSetupState.netProfitValue >= 0 ? "#7ee787" : "#ff7b72"; font.pixelSize: 11 }
+                                        Text { text: "Net: " + formatInt(marketSetupState.netProfitValue); color: signedValueColor(marketSetupState.netProfitValue); font.pixelSize: 11 }
                                         Item { Layout.fillWidth: true }
-                                        Text { text: "Margin: " + formatFixed(marketSetupState.marginPercent, 2) + "%"; color: marketSetupState.marginPercent >= 0 ? "#7ee787" : "#ff7b72"; font.pixelSize: 11 }
+                                        Text { text: "Margin: " + formatFixed(marketSetupState.marginPercent, 2) + "%"; color: signedValueColor(marketSetupState.marginPercent); font.pixelSize: 11 }
                                     }
                                 }
 
@@ -2451,21 +2555,21 @@ ApplicationWindow {
                                     Layout.fillWidth: true
                                     height: 24
                                     radius: 4
-                                    color: "#111b28"
+                                    color: theme.tableHeaderBackground
                                     RowLayout {
                                         anchors.fill: parent
                                         anchors.margins: 4
                                         spacing: 6
-                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsItemWidth }
-                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 100 }
-                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
-                                        Text { text: "Revenue"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
-                                        Text { text: "Cost"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
-                                        Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
-                                        Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 55 }
-                                        Text { text: "Profit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
-                                        Text { text: "Margin"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 60 }
-                                        Text { text: "Demand*"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                                        Text { text: "Item"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: marketResultsItemWidth }
+                                        Text { text: "City"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 100 }
+                                        Text { text: "Qty"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 55 }
+                                        Text { text: "Revenue"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "Cost"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "Fee"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 55 }
+                                        Text { text: "Tax"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 55 }
+                                        Text { text: "Profit"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                                        Text { text: "Margin"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.preferredWidth: 60 }
+                                        Text { text: "Demand*"; color: theme.tableHeaderText; font.pixelSize: 11; Layout.fillWidth: true }
                                     }
                                 }
 
@@ -2476,6 +2580,7 @@ ApplicationWindow {
                                 }
 
                                 ListView {
+                                    id: marketResultsList
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     Layout.minimumHeight: 160
@@ -2485,16 +2590,22 @@ ApplicationWindow {
                                     model: marketSetupState.resultsItemsModel
 
                                     delegate: Rectangle {
+                                        id: resultRow
                                         width: ListView.view.width
                                         height: 26
-                                        color: index % 2 === 0 ? "#0f1620" : "#101924"
+                                        property bool hovered: resultRowHover.containsMouse
+                                        color: hovered ? theme.tableRowHover : tableRowColor(index)
+                                        radius: 4
+                                        Behavior on color {
+                                            ColorAnimation { duration: 120 }
+                                        }
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.margins: 4
                                             spacing: 6
                                             Text {
                                                 text: itemLabelWithTier(item, itemId)
-                                                color: textColor
+                                                color: theme.tableTextPrimary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: marketResultsItemWidth
                                                 elide: Text.ElideRight
@@ -2506,7 +2617,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: city
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 100
                                                 elide: Text.ElideRight
@@ -2518,7 +2629,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatFixed(quantity, 2)
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
                                                 horizontalAlignment: Text.AlignLeft
@@ -2530,7 +2641,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatInt(revenue)
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 70
                                                 horizontalAlignment: Text.AlignLeft
@@ -2542,7 +2653,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatInt(cost)
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 70
                                                 horizontalAlignment: Text.AlignLeft
@@ -2554,7 +2665,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatInt(feeValue)
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
                                                 horizontalAlignment: Text.AlignLeft
@@ -2566,7 +2677,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatInt(taxValue)
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 55
                                                 horizontalAlignment: Text.AlignLeft
@@ -2578,7 +2689,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatInt(profit)
-                                                color: profit >= 0 ? "#7ee787" : "#ff7b72"
+                                                color: signedValueColor(profit)
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 70
                                                 horizontalAlignment: Text.AlignLeft
@@ -2590,7 +2701,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatFixed(marginPercent, 1) + "%"
-                                                color: marginPercent >= 0 ? "#7ee787" : "#ff7b72"
+                                                color: signedValueColor(marginPercent)
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: 60
                                                 horizontalAlignment: Text.AlignLeft
@@ -2602,7 +2713,7 @@ ApplicationWindow {
                                             }
                                             Text {
                                                 text: formatFixed(demandProxy, 1) + "%"
-                                                color: mutedColor
+                                                color: theme.tableTextSecondary
                                                 font.pixelSize: 11
                                                 Layout.fillWidth: true
                                                 horizontalAlignment: Text.AlignLeft
@@ -2613,7 +2724,28 @@ ApplicationWindow {
                                                 }
                                             }
                                         }
+
+                                        MouseArea {
+                                            id: resultRowHover
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            acceptedButtons: Qt.NoButton
+                                        }
                                     }
+                                }
+
+                                Text {
+                                    visible: marketResultsList.count === 0
+                                    text: marketSetupState.validationText.length > 0
+                                        ? ("Fix configuration: " + marketSetupState.validationText)
+                                        : (marketSetupState.priceFetchInProgress
+                                            ? "Loading results..."
+                                            : "No results yet. Refresh prices and review setup.")
+                                    color: marketSetupState.validationText.length > 0 ? theme.stateDanger : theme.textSecondary
+                                    font.pixelSize: 11
+                                    wrapMode: Text.WordWrap
+                                    Layout.fillWidth: true
+                                    horizontalAlignment: Text.AlignHCenter
                                 }
 
                                 RowLayout {
@@ -2626,7 +2758,7 @@ ApplicationWindow {
                                         font.bold: true
                                     }
                                     Item { Layout.fillWidth: true }
-                                    Button {
+                                    AppButton {
                                         text: marketBreakdownExpanded ? "Hide" : "Show"
                                         implicitHeight: 22
                                         onClicked: marketBreakdownExpanded = !marketBreakdownExpanded
@@ -2639,8 +2771,8 @@ ApplicationWindow {
                                     Layout.minimumHeight: 84
                                     Layout.maximumHeight: 160
                                     radius: 4
-                                    color: "#111b28"
-                                    border.color: "#1f2a37"
+                                    color: theme.tableHeaderBackground
+                                    border.color: theme.borderSubtle
                                     visible: marketBreakdownExpanded
 
                                     ListView {
@@ -2654,15 +2786,15 @@ ApplicationWindow {
                                         delegate: Rectangle {
                                             width: ListView.view.width
                                             height: 24
-                                            color: index % 2 === 0 ? "#111b28" : "#0f1620"
+                                            color: tableRowStrongColor(index)
                                             RowLayout {
                                                 anchors.fill: parent
                                                 anchors.margins: 4
-                                                Text { text: label; color: mutedColor; font.pixelSize: 11 }
+                                                Text { text: label; color: theme.tableTextSecondary; font.pixelSize: 11 }
                                                 Item { Layout.fillWidth: true }
                                                 Text {
                                                     text: formatFixed(value, 2)
-                                                    color: (label === "Net profit" && value < 0) ? "#ff7b72" : textColor
+                                                    color: (label === "Net profit" && value < 0) ? theme.stateDanger : theme.tableTextPrimary
                                                     font.pixelSize: 11
                                                     MouseArea {
                                                         anchors.fill: parent

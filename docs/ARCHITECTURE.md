@@ -24,10 +24,33 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
 ## Qt UI (PySide6/QML)
 - Implemented in main: Qt runner bridges snapshots to QAbstractListModel models.
 - QML renders scoreboard, history cards, key legend, and fame stats.
+- Shared design tokens are centralized in `albion_dps/qt/ui/Theme.qml`.
+- Shared tab styling primitive is centralized in `albion_dps/qt/ui/ShellTabButton.qml`.
+- Shared panel/table primitives are centralized in `albion_dps/qt/ui/CardPanel.qml` and `albion_dps/qt/ui/TableSurface.qml`.
+- Shared panel/table primitives use level-based surface hierarchy to reduce per-view style duplication.
+- Shell/layout breakpoints are centralized in `Theme.qml` and consumed by `Main.qml` for compact/narrow responsive behavior.
+- Phase PH2-UXR visual direction (active):
+  - dark neutral base surfaces (`surface*`) with cool blue action accents (`brandPrimary*`)
+  - warm support/highlight accent (`brandWarmAccent`) reserved for premium/support cues
+  - semantic state layers include both foreground and background tokens (`state*` + `state*Bg`)
+  - control/button/table families have dedicated state tokens to prevent ad-hoc color literals
+  - spacing/radius/elevation scales are tokenized to keep component rhythm consistent during visual modernization
+- Phase 0 shell contract (frozen):
+  - `shellHeader` in `Main.qml` has two fixed zones:
+    - `shellLeftZone`: app title + contextual status summary.
+    - `shellRightZone`: `shellMeterZone` -> `shellUpdateBanner` -> `shellUpdateZone` -> `shellSupportZone`.
+  - Global navigation remains centered directly under header in a width-clamped nav zone.
+- Planned extraction map for Phase 1:
+  - `shellHeader` fragment
+  - `shellUpdateZone` fragment
+  - `shellSupportZone` fragment
 - Header runtime helpers:
   - update checks (manifest-based, non-blocking),
   - persisted update preference (`Auto update`),
   - manual check trigger (`Check now`).
+- Runtime startup profiles:
+  - `core`: starts GUI without live capture backend (market/scanner/replay workflows available).
+  - `live`: starts GUI with packet capture backend.
 
 ## Install and update delivery
 - Bootstrap installers:
@@ -55,6 +78,10 @@ The meter must never attribute damage/heal to unrelated nearby players:
 
 ## Useful entry points
 - Desktop launcher (Qt GUI): `albion_dps/cli.py`
+- Profile commands:
+  - `albion-command-desk core`
+  - `albion-command-desk live`
+  - `albion-command-desk replay <pcap>`
 - Pipeline: `albion_dps/pipeline.py`
 - Session + history: `albion_dps/meter/session_meter.py`
 - Aggregation window: `albion_dps/meter/aggregate.py`

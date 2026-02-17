@@ -7,7 +7,95 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
-- No unreleased changes.
+### Added
+- Phase 0 execution tickets for UX/minimal-release work in `docs/UX_MINIMAL_RELEASE_PLAN.md`.
+- Active Phase 0 milestone queue in `docs/DELIVERY_BACKLOG.md`.
+- `core` GUI runtime command in `albion_dps/cli.py` for non-capture startup.
+- Install profile contract in `pyproject.toml` (`core` default, `capture` optional).
+- QML design token source in `albion_dps/qt/ui/Theme.qml`.
+- Shared tab styling component in `albion_dps/qt/ui/ShellTabButton.qml`.
+- Shared card container component in `albion_dps/qt/ui/CardPanel.qml`.
+- Shared inset/table container component in `albion_dps/qt/ui/TableSurface.qml`.
+- Grouped regression runner for Phase 3 QA in `tools/qa/run_regression_suite.py`.
+- QA regression runbook in `docs/qa/QA_REGRESSION_PASS.md`.
+- Clean-machine CI matrix verifier in `tools/qa/verify_clean_machine_matrix.py`.
+- QA clean-machine runbook in `docs/qa/QA_CLEAN_MACHINE.md`.
+- Release/update flow verifier in `tools/qa/verify_release_update_flow.py`.
+- Release/update QA runbook in `docs/qa/QA_RELEASE_UPDATE.md`.
+- Manifest contract regression test in `tests/test_release_manifest_contract.py`.
+- Qt update-banner state tests in `tests/test_qt_update_banner.py`.
+- PH2 semantic visual token families in `albion_dps/qt/ui/Theme.qml` (brand/surface/border/text/state/control/button/table/layout/elevation).
+- Reusable button primitive in `albion_dps/qt/ui/AppButton.qml` with semantic variants and state handling.
+- Reusable form control primitives: `AppTextField.qml`, `AppComboBox.qml`, `AppSpinBox.qml`, and `AppCheckBox.qml`.
+- Level-driven panel primitives in `CardPanel.qml` and `TableSurface.qml` for cleaner card hierarchy.
+- Expanded table typography/separator tokens in `Theme.qml` for Meter/Market/History readability.
+- Shell header action tokens in `Theme.qml` for unified action-bar dimensions and banner styling.
+- Semantic data-color helpers in `Main.qml` for signed values, validation, and price-source freshness.
+- Empty/loading placeholder states across Meter/History/Scanner/Market views.
+- Tokenized motion timings in `Theme.qml` for consistent micro-interactions.
+- Accessibility focus token (`focusRingWidth`) and higher-contrast secondary text tokens in `Theme.qml`.
+- PH2 visual baseline asset set in `assets/ux-baseline/` (`ph2-meter.png`, `ph2-scanner.png`, `ph2-market.png`).
+
+### Changed
+- Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` marks `UXR-001` as completed and documents delivery notes.
+- `docs/ARCHITECTURE.md` now defines the frozen Phase 0 Qt shell layout contract.
+- `albion_dps/qt/ui/Main.qml` now uses explicit shell zone IDs and fixed ordering for header actions.
+- `albion_dps/qt/runner.py` now supports `core` mode startup without capture backend.
+- Windows/Linux/macOS bootstrap installers now share `core|capture` profile selection.
+- Installer docs and root README now document profile-based install flow.
+- `docs/TROUBLESHOOTING.md` now includes profile-based recovery commands.
+- `docs/release/RELEASE_CHECKLIST.md` now locks Phase 0 packaging targets and blocker/warning release gates.
+- `.github/workflows/bootstrap-smoke.yml` now maps mandatory core checks and advisory capture checks per OS.
+- `.github/workflows/release-manifest.yml` now validates manifest assets against Phase 0 release strategy.
+- `docs/release/RELEASE_MANIFEST_SPEC.md` now documents manifest blocker/warning policy.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `REL-002` as completed.
+- `albion_dps/qt/ui/Main.qml` now consumes shared theme tokens for app shell and baseline styles.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now start Phase 1 with `UXR-010` completed.
+- `docs/ARCHITECTURE.md` now documents centralized QML theme tokens.
+- `albion_dps/qt/ui/Main.qml` now centers top navigation in a width-clamped shell nav zone.
+- `albion_dps/qt/ui/Main.qml` now reuses `ShellTabButton` for shell and market tab bars.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `UXR-011` as completed.
+- `albion_dps/qt/ui/Main.qml` now applies shared card/table primitives with unified table row/header token usage across Meter/Scanner/Market.
+- `albion_dps/qt/ui/Theme.qml` now includes explicit table/header/control surface tokens for the unified Phase 1 visual system.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `UXR-012` as completed.
+- `docs/ARCHITECTURE.md` now documents `CardPanel`/`TableSurface` shared UI primitives.
+- `albion_dps/qt/ui/Main.qml` now applies compact/narrow breakpoints for shell/header/nav and market panel widths to reduce overflow on small windows.
+- `albion_dps/qt/ui/Theme.qml` now exposes shared breakpoint tokens for responsive layout behavior.
+- `docs/TROUBLESHOOTING.md` now includes compact-layout guidance for small-window table workflows.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `UXR-013` as completed.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `QA-001` as completed.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `QA-002` as completed.
+- `docs/release/RELEASE_CHECKLIST.md` now includes the clean-machine matrix verification command.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `QA-003` as completed.
+- `docs/release/RELEASE_CHECKLIST.md` now includes release-manifest/update-banner validation commands.
+- `docs/ARCHITECTURE.md` now documents the PH2 visual direction and token taxonomy used by UI modernization tickets.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-020` as completed.
+- `albion_dps/qt/ui/Main.qml` now routes button controls through shared `AppButton` variants for consistent visual behavior.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-021` as completed.
+- `albion_dps/qt/ui/Main.qml` now routes form controls through shared App* input components for consistent field styling.
+- `albion_dps/qt/ui/Theme.qml` now includes dedicated input tokens for background and focus border handling.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-022` as completed.
+- `albion_dps/qt/ui/Main.qml` now removes repeated panel fill/stroke literals and relies on shared card/table level styling.
+- `docs/ARCHITECTURE.md` now documents level-based panel/table primitives in the Qt UI layer.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-023` as completed.
+- `albion_dps/qt/ui/Main.qml` now applies refreshed table header/text hierarchy and row hover polish in Meter/Market/History.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-024` as completed.
+- `albion_dps/qt/ui/Main.qml` now uses a polished action-bar rhythm for update/support controls with stable banner slot behavior.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-025` as completed.
+- `albion_dps/qt/ui/Main.qml` now maps market status/profit/margin colors through semantic theme states instead of hardcoded hex colors.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-026` as completed.
+- `albion_dps/qt/ui/Main.qml` now renders explicit empty/loading/error placeholders for key list/table areas.
+- `docs/TROUBLESHOOTING.md` now documents placeholder behavior and recovery checks.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-027` as completed.
+- `albion_dps/qt/ui/Main.qml` now applies subtle row/banner transitions, and shared controls now animate press/hover state changes.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-028` as completed.
+- Shared controls now enforce keyboard focus visibility with consistent focus-ring sizing.
+- `docs/TROUBLESHOOTING.md` now includes keyboard focus and contrast verification guidance.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-029` as completed.
+- `README.md` now references PH2 baseline screenshots and includes a dedicated visual regression section.
+- `docs/release/RELEASE_CHECKLIST.md` now includes mandatory PH2 screenshot baseline verification before release.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-030` as completed.
 
 ## [0.1.14] - 2026-02-13
 

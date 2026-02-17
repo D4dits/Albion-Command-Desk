@@ -17,6 +17,13 @@ test = ["pytest>=7.0"]
 capture = ["pcapy-ng>=1.0.0"]
 all = ["pytest>=7.0", "pcapy-ng>=1.0.0"]
 
+[tool.albion_command_desk.install_profiles]
+default = "core"
+core = "."
+capture = ".[capture]"
+core_runtime_command = "core"
+capture_runtime_command = "live"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["albion_dps*"]

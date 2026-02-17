@@ -1,22 +1,36 @@
 ﻿# Troubleshooting
 
+## Quick recover: rerun bootstrap installer
+From repository root, rerun one command:
+
+Windows:
+```
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -ForceRecreateVenv -SkipRun
+```
+
+Linux:
+```
+bash ./tools/install/linux/install.sh --force-recreate-venv --skip-run
+```
+
+macOS:
+```
+bash ./tools/install/macos/install.sh --force-recreate-venv --skip-run
+```
+
 ## `albion-command-desk` is not recognized
-You need both:
-1) an activated virtualenv
-2) the project installed (so the console script exists)
+Most common cause: command run outside project `venv`.
 
-Windows / PowerShell:
+Use full path from repo root:
+
+Windows:
 ```
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-python -m pip install -e .
-albion-command-desk --help
+.\venv\Scripts\albion-command-desk.exe core
 ```
 
-Alternative (no install): run from the repo checkout
+Linux/macOS:
 ```
-python -m albion_dps --help
-python -m albion_dps live
+./venv/bin/albion-command-desk core
 ```
 
 ## Installer / update errors (quick map)
@@ -25,6 +39,10 @@ python -m albion_dps live
 - `Package install failed` during `.[capture]`:
   - Use Python 3.11 or 3.12 (3.13 can fail for some capture wheels).
   - Install system build tools where required (Linux/macOS).
+  - Or install core profile only:
+    - Windows: `powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile core`
+    - Linux: `bash ./tools/install/linux/install.sh --profile core`
+    - macOS: `bash ./tools/install/macos/install.sh --profile core`
 - `Shared smoke checks failed`:
   - Ensure PySide6 installed and Qt runtime works.
   - Recreate venv (`--force-recreate-venv`) and rerun installer.
@@ -34,11 +52,33 @@ python -m albion_dps live
 - `No update state persistence`:
   - Verify write access to config dir or set `ALBION_COMMAND_DESK_CONFIG_DIR`.
 
+## UI is cramped or controls overlap on small window sizes
+The shell now switches to compact/narrow breakpoints automatically:
+- narrow: support/update labels shrink, update banner is hidden, nav width clamps lower
+- compact: meter meta zone collapses to free header space
+
+If the UI still feels tight:
+- maximize the window before using Market tables
+- keep OS display scaling at 100-125% for dense table workflows
+- use horizontal scrolling in Inputs/Outputs/Results tables (enabled by design for small widths)
+
+## Keyboard focus / contrast checks
+Recent UI pass enforces visible focus rings and higher-contrast secondary text.
+
+If keyboard focus is still hard to track:
+- confirm you are using the latest build from this branch/release
+- test with `Tab`/`Shift+Tab` in Market controls; focused fields should show a clear blue ring
+- avoid OS-level forced low-contrast themes while testing
+
+If text still appears faint:
+- set display scaling to 100-125%
+- disable custom monitor "low blue light / game" picture presets temporarily
+
 ## Live mode shows "no data"
 Common causes:
 - You are on the wrong interface: run `albion-command-desk live --list-interfaces` and pick the one that carries game traffic.
 - No packets yet: start the game and generate traffic (zone change / combat).
-- Capture dependencies missing: install `pcapy-ng` via `python -m pip install -e ".[capture]"`.
+- Capture dependencies missing: reinstall capture profile (`python -m pip install -e ".[capture]"`).
 - Windows: Npcap not installed (or installed without WinPcap API compatibility).
 
 ## I see empty results while fighting
@@ -51,6 +91,18 @@ or
 ```
 albion-command-desk live --self-id 123456
 ```
+
+## Empty/loading placeholders in UI
+The UI now shows explicit placeholders instead of blank panels:
+- Meter players table: no live data / no selected-history players.
+- History: no archived battles.
+- Scanner log: no scanner output yet.
+- Market Inputs/Outputs/Results: loading state during price refresh and empty state when no rows exist.
+
+If placeholders do not clear:
+- use `Refresh prices` in Market,
+- confirm setup is valid (no validation error in header),
+- for Meter live mode, generate combat traffic and verify capture interface selection.
 
 ## A mob appears as the top "player" (e.g., `@MOB_*`)
 This happens when self-name inference guesses from nearby targets.

@@ -30,130 +30,115 @@ Donors can be featured on a public supporters list. If you want to be listed, op
 
 ## Screenshots
 <p align="center">
-  <img src="assets/meter.png" alt="Meter tab" width="920">
+  <img src="assets/ux-baseline/ph2-meter.png" alt="Meter tab" width="920">
 </p>
 
 <p align="center">
-  <img src="assets/market.png" alt="Market tab" width="920">
+  <img src="assets/ux-baseline/ph2-market.png" alt="Market tab" width="920">
 </p>
 
 <p align="center">
-  <img src="assets/scanner.png" alt="Scanner tab" width="920">
+  <img src="assets/ux-baseline/ph2-scanner.png" alt="Scanner tab" width="920">
 </p>
+
+## Visual Regression Baseline (PH2)
+- Baseline set lives in `assets/ux-baseline/`.
+- Before release, compare current UI against:
+  - `assets/ux-baseline/ph2-meter.png`
+  - `assets/ux-baseline/ph2-scanner.png`
+  - `assets/ux-baseline/ph2-market.png`
+- If changes are intentional, update baseline files and note it in `CHANGELOG.md`.
 
 ## Before Install (Recommended)
 Best setup before installing ACD:
 - Python `3.11` or `3.12` (64-bit) with `pip` available in terminal.
 - `git` installed (if you install from source checkout).
-- Windows live capture: Npcap Runtime (`https://npcap.com/#download`).
-- Linux/macOS live capture: system packet-capture libs (`libpcap`).
+- Optional for live capture only:
+  - Windows: Npcap Runtime (`https://npcap.com/#download`).
+  - Linux/macOS: system packet-capture libs (`libpcap`).
 - Permissions to create a local virtual environment (`venv` folder in repo).
 
-## Install (Step by Step)
+## Install (One-Click Bootstrap)
 
-### Windows (clean machine, detailed)
-Use this exact sequence in **PowerShell as Administrator**.
-
-Video tutorial:
-- https://youtu.be/26Ul7UEx194
-
-1) Allow scripts for this session only:
+### Windows
 ```powershell
-Set-ExecutionPolicy -Scope Process Bypass -Force
-```
-
-2) Install required tools:
-```powershell
-winget source update
-winget install -e --id Python.Python.3.12 --accept-package-agreements --accept-source-agreements
-winget install -e --id Git.Git --accept-package-agreements --accept-source-agreements
-winget install -e --id Microsoft.DotNet.SDK.10 --accept-package-agreements --accept-source-agreements
-winget install -e --id Microsoft.VisualStudio.2022.BuildTools --accept-package-agreements --accept-source-agreements --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --includeRecommended"
-```
-
-3) Install packet-capture prerequisites:
-- Install **Npcap Runtime** from `https://npcap.com/#download`.
-- During setup, enable **WinPcap API-compatible mode**.
-- Download and extract **Npcap SDK** to `C:\npcap-sdk` (or another known folder).
-
-4) Verify toolchain:
-```powershell
-python --version
-git --version
-dotnet --list-sdks
-Get-ChildItem C:\npcap-sdk -Recurse -Filter pcap.h
-```
-
-5) Clone repository and enter project directory:
-```powershell
-cd "$HOME\Downloads"
 git clone https://github.com/D4dits/Albion-Command-Desk.git
-cd ".\Albion-Command-Desk"
+cd Albion-Command-Desk
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1
 ```
 
-6) Export Npcap SDK paths for current terminal session:
-```powershell
-$env:WPCAPDIR="C:\npcap-sdk"
-$env:INCLUDE="$env:WPCAPDIR\Include\pcap;$env:WPCAPDIR\Include;$env:INCLUDE"
-$env:LIB="$env:WPCAPDIR\Lib\x64;$env:LIB"
-```
-
-7) Run bootstrap installer:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -ForceRecreateVenv -SkipRun
-```
-
-8) Generate item/map databases (required for full market + map labels):
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files\Albion Online"
-```
-For Steam install:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files (x86)\Steam\steamapps\common\Albion Online"
-```
-
-9) Start app:
-```powershell
-.\venv\Scripts\albion-command-desk.exe live
-```
-
-10) Fallback if capture build still fails:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -SkipCaptureExtras -ForceRecreateVenv -SkipRun
-```
-This installs UI/core without packet-capture extension.
-
-Notes:
-- Run commands from the repo root (`Albion-Command-Desk`), not from `C:\Windows\System32`.
-- If `Activate.ps1` opens as text or fails with policy error, use installer commands above and avoid manual activation.
-- If Python points to Windows Store alias unexpectedly, disable App Execution Alias for `python.exe` in Windows settings.
-
-### Linux/macOS quick setup
+### Linux
 ```bash
 git clone https://github.com/D4dits/Albion-Command-Desk.git
 cd Albion-Command-Desk
 bash ./tools/install/linux/install.sh
-# macOS: bash ./tools/install/macos/install.sh
+```
+
+### macOS
+```bash
+git clone https://github.com/D4dits/Albion-Command-Desk.git
+cd Albion-Command-Desk
+bash ./tools/install/macos/install.sh
+```
+
+### Optional: enable live capture profile
+Capture profile is optional and not required for base app usage.
+
+Windows:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile capture
+```
+
+Linux:
+```bash
+bash ./tools/install/linux/install.sh --profile capture
+```
+
+macOS:
+```bash
+bash ./tools/install/macos/install.sh --profile capture
+```
+
+If capture prerequisites are missing, installer falls back to `core` profile by default.  
+To force hard-fail instead of fallback, use strict mode:
+- Windows: `-StrictCapture`
+- Linux/macOS: `--strict-capture`
+
+### Optional: generate item/map databases
+For full item names, map labels, and market coverage:
+
+Windows:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files\Albion Online"
+```
+
+Linux/macOS:
+```bash
+./tools/extract_items/run_extract_items.sh --game-root "/path/to/Albion Online"
 ```
 
 ### What bootstrap installer does
 - checks Python and required tools
 - creates/reuses local `venv`
-- installs ACD (`.[capture]` by default)
+- installs ACD profile (`core` default, `capture` optional)
 - runs smoke checks (CLI import + Qt startup probe)
-- starts app in `live` mode (unless skip-run option is used)
+- starts app in mode matching profile (`core` or `live`)
 
 ## Run
 If you used bootstrap installer with `-SkipRun`, start from the repo venv:
 
 Windows:
 ```powershell
-.\venv\Scripts\albion-command-desk live
+.\venv\Scripts\albion-command-desk core
+# live capture (capture profile required):
+# .\venv\Scripts\albion-command-desk live
 ```
 
 Linux/macOS:
 ```bash
-./venv/bin/albion-command-desk live
+./venv/bin/albion-command-desk core
+# live capture (capture profile required):
+# ./venv/bin/albion-command-desk live
 ```
 
 PCAP replay:
@@ -220,6 +205,8 @@ Update notifications and installer discovery use a release manifest contract:
 - Builder: `tools/release/manifest/build_manifest.py`
 - Publisher helper (Windows): `tools/release/manifest/publish_manifest.ps1`
 - CI publisher: `.github/workflows/release-manifest.yml`
+- Release asset smoke workflow: `.github/workflows/release-asset-smoke.yml`
+- Release asset verifier: `tools/qa/verify_release_artifact_matrix.py`
 - Default runtime endpoint: `https://github.com/D4dits/Albion-Command-Desk/releases/latest/download/manifest.json`
 - Clean-machine bootstrap smoke CI: `.github/workflows/bootstrap-smoke.yml`
 - Runtime override endpoint: set `ALBION_COMMAND_DESK_MANIFEST_URL`
