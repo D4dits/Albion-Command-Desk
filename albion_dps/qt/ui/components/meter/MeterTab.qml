@@ -2,6 +2,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import "../../." // for Theme, AppButton, CardPanel, TableSurface access
+import "." // for MeterControls, MeterScoreboard, MeterHistoryPanel, MeterLegend access
 
 /**
  * MeterTab - Main meter tab container
