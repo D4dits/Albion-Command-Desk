@@ -276,7 +276,7 @@ Acceptance:
   - updated release checklist with mandatory QA-003 validation commands
 
 ### Phase 4 - Visual modernization pass (ticket namespace: PH2-UXR)
-- [ ] PH2-UXR-020: visual direction + token expansion
+- [x] PH2-UXR-020: visual direction + token expansion
 - [ ] PH2-UXR-021: button system (primary/secondary/ghost/danger + states)
 - [ ] PH2-UXR-022: input/select/spinbox refresh
 - [ ] PH2-UXR-023: card layout hierarchy cleanup
@@ -291,12 +291,16 @@ Acceptance:
 #### Phase 4 concrete tickets
 
 ##### PH2-UXR-020 - Visual direction + token expansion
-- Status: TODO
+- Status: DONE
 - Goal: define a modern/minimal visual system with complete semantic tokens.
-- Files to modify:
+- Files modified:
   1. `albion_dps/qt/ui/Theme.qml`
   2. `docs/ARCHITECTURE.md`
   3. `docs/UX_MINIMAL_RELEASE_PLAN.md`
+- Delivery notes:
+  - expanded `Theme.qml` to include semantic token families for brand/surface/border/text/state/control/button/table/layout/elevation
+  - preserved compatibility path for existing token consumers (`accentPrimary`, `surface*`, `control*`, shell/market tokens)
+  - documented PH2 visual direction and token taxonomy in architecture doc for follow-up tickets (`PH2-UXR-021+`)
 
 ##### PH2-UXR-021 - Button system
 - Status: TODO

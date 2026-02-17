@@ -1,30 +1,104 @@
 import QtQuick 2.15
 
 QtObject {
-    // Color tokens
+    // Visual direction (PH2-UXR-020):
+    // - dark neutral surfaces
+    // - cool blue primary actions
+    // - warm amber highlights for premium/support accents
+
+    // Brand tokens
+    readonly property color brandPrimary: "#4aa3ff"
+    readonly property color brandPrimaryHover: "#66b4ff"
+    readonly property color brandPrimaryPressed: "#2e8df0"
+    readonly property color brandSecondary: "#2ea8a1"
+    readonly property color brandWarmAccent: "#f2c14e"
+
+    // Surface tokens
     readonly property color surfaceApp: "#0b0f14"
     readonly property color surfacePanel: "#131a22"
+    readonly property color surfaceRaised: "#182231"
+    readonly property color surfaceOverlay: "#0d1826"
+    readonly property color surfaceInteractive: "#111e2d"
+    readonly property color surfaceInset: "#0f1620"
+
+    // Border tokens
     readonly property color borderSubtle: "#1f2a37"
+    readonly property color borderStrong: "#2a3a4f"
+    readonly property color borderFocus: "#4aa3ff"
+    readonly property color borderDanger: "#ff7b72"
+
+    // Text tokens
     readonly property color textPrimary: "#e6edf3"
+    readonly property color textSecondary: "#c2cfdd"
     readonly property color textMuted: "#9aa4af"
-    readonly property color accentPrimary: "#4aa3ff"
+    readonly property color textDisabled: "#6e7d8f"
+    readonly property color textOnAccent: "#081018"
+
+    // Semantic state tokens
+    readonly property color accentPrimary: brandPrimary
     readonly property color stateSuccess: "#2ea043"
     readonly property color stateWarning: "#e3b341"
     readonly property color stateDanger: "#ff7b72"
     readonly property color stateInfo: "#79c0ff"
-    readonly property color surfaceInset: "#0f1620"
+
+    readonly property color stateSuccessBg: "#11261b"
+    readonly property color stateWarningBg: "#2a220f"
+    readonly property color stateDangerBg: "#2f1416"
+    readonly property color stateInfoBg: "#112433"
+
+    // Control tokens
     readonly property color controlIdleBackground: "#101923"
+    readonly property color controlHoverBackground: "#142437"
+    readonly property color controlPressedBackground: "#1a2c40"
+    readonly property color controlDisabledBackground: "#0e141d"
+    readonly property color controlDisabledBorder: "#223040"
+
+    // Button tokens
+    readonly property color buttonPrimaryBackground: brandPrimary
+    readonly property color buttonPrimaryHover: brandPrimaryHover
+    readonly property color buttonPrimaryPressed: brandPrimaryPressed
+    readonly property color buttonPrimaryText: textOnAccent
+    readonly property color buttonSecondaryBackground: "#1b2a3c"
+    readonly property color buttonSecondaryHover: "#24354a"
+    readonly property color buttonSecondaryPressed: "#1a293a"
+    readonly property color buttonSecondaryText: textPrimary
+    readonly property color buttonGhostBackground: "transparent"
+    readonly property color buttonGhostHover: "#182636"
+    readonly property color buttonGhostPressed: "#1f3145"
+    readonly property color buttonGhostText: textSecondary
+    readonly property color buttonDangerBackground: "#b93c47"
+    readonly property color buttonDangerHover: "#d14957"
+    readonly property color buttonDangerPressed: "#a5323d"
+    readonly property color buttonDangerText: "#ffffff"
+
+    // Table tokens
     readonly property color tableHeaderBackground: "#111b28"
     readonly property color tableRowEven: "#0f1620"
     readonly property color tableRowOdd: "#101924"
+    readonly property color tableRowHover: "#142437"
     readonly property color tableSelectedBackground: "#162231"
+    readonly property color tableSelectedBorder: "#4aa3ff"
 
     // Layout tokens
+    readonly property int spacingXs: 4
+    readonly property int spacingSm: 8
+    readonly property int spacingMd: 12
+    readonly property int spacingLg: 16
+    readonly property int spacingXl: 24
     readonly property int spacingPage: 16
     readonly property int spacingSection: 12
     readonly property int spacingCompact: 8
+    readonly property int radiusSm: 4
+    readonly property int radiusMd: 6
+    readonly property int radiusLg: 8
     readonly property int cornerRadiusPanel: 8
     readonly property int controlHeightCompact: 24
+    readonly property int controlHeightRegular: 30
+
+    // Elevation tokens (for shadow/overlay usage when needed)
+    readonly property real elevationLowOpacity: 0.12
+    readonly property real elevationMediumOpacity: 0.20
+    readonly property real elevationHighOpacity: 0.28
     readonly property int breakpointCompact: 1320
     readonly property int breakpointNarrow: 1160
 

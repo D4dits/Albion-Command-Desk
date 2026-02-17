@@ -24,6 +24,7 @@ and this project uses semantic versioning.
 - Release/update QA runbook in `docs/qa/QA_RELEASE_UPDATE.md`.
 - Manifest contract regression test in `tests/test_release_manifest_contract.py`.
 - Qt update-banner state tests in `tests/test_qt_update_banner.py`.
+- PH2 semantic visual token families in `albion_dps/qt/ui/Theme.qml` (brand/surface/border/text/state/control/button/table/layout/elevation).
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -58,6 +59,8 @@ and this project uses semantic versioning.
 - `docs/release/RELEASE_CHECKLIST.md` now includes the clean-machine matrix verification command.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `QA-003` as completed.
 - `docs/release/RELEASE_CHECKLIST.md` now includes release-manifest/update-banner validation commands.
+- `docs/ARCHITECTURE.md` now documents the PH2 visual direction and token taxonomy used by UI modernization tickets.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-020` as completed.
 
 ## [0.1.14] - 2026-02-13
 

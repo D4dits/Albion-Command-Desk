@@ -118,7 +118,7 @@ Update status checkboxes and notes after each implemented ticket.
 ## Active Milestone - Phase PH2-UXR (Visual modernization)
 
 ### PH2-UXR-020 - Visual direction + token expansion
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: define full semantic token set for modern/minimal UI styling.
 - Files:
   1. `albion_dps/qt/ui/Theme.qml`
@@ -332,6 +332,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-17: PH2-UXR-020 completed (semantic token expansion in `Theme.qml` + architecture-level visual direction/taxonomy notes).
 - 2026-02-17: Added PH2-UXR visual modernization phase (020-030) and locked execution order for commit-per-ticket flow.
 - 2026-02-16: QA-003 completed (manifest contract test + update banner test + release/update validation runbook).
 - 2026-02-16: QA-002 completed (clean-machine matrix verifier + QA runbook + release checklist gate command).

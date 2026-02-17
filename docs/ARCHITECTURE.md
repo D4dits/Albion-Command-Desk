@@ -28,6 +28,12 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
 - Shared tab styling primitive is centralized in `albion_dps/qt/ui/ShellTabButton.qml`.
 - Shared panel/table primitives are centralized in `albion_dps/qt/ui/CardPanel.qml` and `albion_dps/qt/ui/TableSurface.qml`.
 - Shell/layout breakpoints are centralized in `Theme.qml` and consumed by `Main.qml` for compact/narrow responsive behavior.
+- Phase PH2-UXR visual direction (active):
+  - dark neutral base surfaces (`surface*`) with cool blue action accents (`brandPrimary*`)
+  - warm support/highlight accent (`brandWarmAccent`) reserved for premium/support cues
+  - semantic state layers include both foreground and background tokens (`state*` + `state*Bg`)
+  - control/button/table families have dedicated state tokens to prevent ad-hoc color literals
+  - spacing/radius/elevation scales are tokenized to keep component rhythm consistent during visual modernization
 - Phase 0 shell contract (frozen):
   - `shellHeader` in `Main.qml` has two fixed zones:
     - `shellLeftZone`: app title + contextual status summary.
