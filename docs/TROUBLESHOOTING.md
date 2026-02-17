@@ -1,22 +1,36 @@
 ﻿# Troubleshooting
 
+## Quick recover: rerun bootstrap installer
+From repository root, rerun one command:
+
+Windows:
+```
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -ForceRecreateVenv -SkipRun
+```
+
+Linux:
+```
+bash ./tools/install/linux/install.sh --force-recreate-venv --skip-run
+```
+
+macOS:
+```
+bash ./tools/install/macos/install.sh --force-recreate-venv --skip-run
+```
+
 ## `albion-command-desk` is not recognized
-You need both:
-1) an activated virtualenv
-2) the project installed (so the console script exists)
+Most common cause: command run outside project `venv`.
 
-Windows / PowerShell:
+Use full path from repo root:
+
+Windows:
 ```
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-python -m pip install -e .
-albion-command-desk --help
+.\venv\Scripts\albion-command-desk.exe core
 ```
 
-Alternative (no install): run from the repo checkout
+Linux/macOS:
 ```
-python -m albion_dps --help
-python -m albion_dps core
+./venv/bin/albion-command-desk core
 ```
 
 ## Installer / update errors (quick map)

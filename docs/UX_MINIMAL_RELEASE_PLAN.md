@@ -228,7 +228,7 @@ Acceptance:
 - [x] REL-010: bootstrap scripts profile support + clearer diagnostics
 - [x] REL-011: ensure no SDK requirement in end-user path
 - [x] REL-012: release artifact smoke checks per OS
-- [ ] REL-013: docs rewrite for one-click install paths
+- [x] REL-013: docs rewrite for one-click install paths
 
 #### Phase 2 concrete tickets
 
@@ -272,6 +272,17 @@ Acceptance:
   - added dedicated workflow for release asset smoke checks (Windows blocker, Linux/macOS advisory)
   - added script-level validator for manifest asset kind + URL reachability
   - documented local and CI execution paths in QA/release docs
+
+##### REL-013 - docs rewrite for one-click install paths
+- Status: DONE
+- Goal: make install/run path unambiguous and short for first-time users.
+- Files modified:
+  1. `README.md`
+  2. `docs/TROUBLESHOOTING.md`
+- Delivery notes:
+  - replaced long install sequence with one-click bootstrap commands per OS
+  - documented optional capture path with explicit strict/fallback behavior
+  - moved troubleshooting top section to bootstrap-first recovery flow
 
 ### Phase 3 - Stabilization and ship (2-3 days)
 - [x] QA-001: regression pass (meter/scanner/market/live/replay)

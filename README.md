@@ -58,79 +58,63 @@ Best setup before installing ACD:
   - Linux/macOS: system packet-capture libs (`libpcap`).
 - Permissions to create a local virtual environment (`venv` folder in repo).
 
-## Install (Step by Step)
+## Install (One-Click Bootstrap)
 
-### Windows (clean machine, detailed)
-Use this exact sequence in **PowerShell as Administrator**.
-
-Video tutorial:
-- https://youtu.be/26Ul7UEx194
-
-1) Allow scripts for this session only:
+### Windows
 ```powershell
-Set-ExecutionPolicy -Scope Process Bypass -Force
-```
-
-2) Install required tools:
-```powershell
-winget source update
-winget install -e --id Python.Python.3.12 --accept-package-agreements --accept-source-agreements
-winget install -e --id Git.Git --accept-package-agreements --accept-source-agreements
-```
-
-3) Clone repository and enter project directory:
-```powershell
-cd "$HOME\Downloads"
 git clone https://github.com/D4dits/Albion-Command-Desk.git
-cd ".\Albion-Command-Desk"
+cd Albion-Command-Desk
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1
 ```
 
-4) Run bootstrap installer (core profile, default):
-```powershell
-python --version
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -ForceRecreateVenv -SkipRun
-```
-
-5) Optional: enable live capture profile (requires capture prerequisites):
-- Install **Npcap Runtime** from `https://npcap.com/#download` and enable WinPcap API-compatible mode.
-- Ensure packet-capture build prerequisites are installed (C/C++ toolchain and Npcap SDK headers).
-- Then run:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile capture -ForceRecreateVenv -SkipRun
-```
-
-6) Generate item/map databases (required for full market + map labels):
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files\Albion Online"
-```
-For Steam install:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files (x86)\Steam\steamapps\common\Albion Online"
-```
-
-7) Start app:
-```powershell
-.\venv\Scripts\albion-command-desk.exe core
-```
-
-8) If capture profile fails, keep core profile:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile core -ForceRecreateVenv -SkipRun
-```
-This keeps UI/market/scanner/replay available without live capture.
-
-Notes:
-- Run commands from the repo root (`Albion-Command-Desk`), not from `C:\Windows\System32`.
-- If `Activate.ps1` opens as text or fails with policy error, use installer commands above and avoid manual activation.
-- If Python points to Windows Store alias unexpectedly, disable App Execution Alias for `python.exe` in Windows settings.
-
-### Linux/macOS quick setup
+### Linux
 ```bash
 git clone https://github.com/D4dits/Albion-Command-Desk.git
 cd Albion-Command-Desk
 bash ./tools/install/linux/install.sh
-# macOS: bash ./tools/install/macos/install.sh
-# live capture profile: --profile capture
+```
+
+### macOS
+```bash
+git clone https://github.com/D4dits/Albion-Command-Desk.git
+cd Albion-Command-Desk
+bash ./tools/install/macos/install.sh
+```
+
+### Optional: enable live capture profile
+Capture profile is optional and not required for base app usage.
+
+Windows:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile capture
+```
+
+Linux:
+```bash
+bash ./tools/install/linux/install.sh --profile capture
+```
+
+macOS:
+```bash
+bash ./tools/install/macos/install.sh --profile capture
+```
+
+If capture prerequisites are missing, installer falls back to `core` profile by default.  
+To force hard-fail instead of fallback, use strict mode:
+- Windows: `-StrictCapture`
+- Linux/macOS: `--strict-capture`
+
+### Optional: generate item/map databases
+For full item names, map labels, and market coverage:
+
+Windows:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files\Albion Online"
+```
+
+Linux/macOS:
+```bash
+./tools/extract_items/run_extract_items.sh --game-root "/path/to/Albion Online"
 ```
 
 ### What bootstrap installer does
