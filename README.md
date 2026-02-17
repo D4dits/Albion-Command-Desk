@@ -221,6 +221,8 @@ Update notifications and installer discovery use a release manifest contract:
 - Builder: `tools/release/manifest/build_manifest.py`
 - Publisher helper (Windows): `tools/release/manifest/publish_manifest.ps1`
 - CI publisher: `.github/workflows/release-manifest.yml`
+- Release asset smoke workflow: `.github/workflows/release-asset-smoke.yml`
+- Release asset verifier: `tools/qa/verify_release_artifact_matrix.py`
 - Default runtime endpoint: `https://github.com/D4dits/Albion-Command-Desk/releases/latest/download/manifest.json`
 - Clean-machine bootstrap smoke CI: `.github/workflows/bootstrap-smoke.yml`
 - Runtime override endpoint: set `ALBION_COMMAND_DESK_MANIFEST_URL`

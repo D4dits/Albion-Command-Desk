@@ -227,7 +227,7 @@ Acceptance:
 ### Phase 2 - Install/release simplification (3-5 days)
 - [x] REL-010: bootstrap scripts profile support + clearer diagnostics
 - [x] REL-011: ensure no SDK requirement in end-user path
-- [ ] REL-012: release artifact smoke checks per OS
+- [x] REL-012: release artifact smoke checks per OS
 - [ ] REL-013: docs rewrite for one-click install paths
 
 #### Phase 2 concrete tickets
@@ -258,6 +258,20 @@ Acceptance:
   - added strict/non-strict capture behavior (`StrictCapture` / `--strict-capture`)
   - capture profile now auto-falls back to `core` by default when prerequisites are missing
   - documented fallback behavior so end-user install remains SDK-free unless explicitly forced
+
+##### REL-012 - release asset smoke checks per OS
+- Status: DONE
+- Goal: verify latest release assets are reachable and correctly mapped for each OS target.
+- Files modified:
+  1. `.github/workflows/release-asset-smoke.yml`
+  2. `tools/qa/verify_release_artifact_matrix.py`
+  3. `docs/qa/QA_RELEASE_ASSET_SMOKE.md`
+  4. `docs/release/RELEASE_CHECKLIST.md`
+  5. `README.md`
+- Delivery notes:
+  - added dedicated workflow for release asset smoke checks (Windows blocker, Linux/macOS advisory)
+  - added script-level validator for manifest asset kind + URL reachability
+  - documented local and CI execution paths in QA/release docs
 
 ### Phase 3 - Stabilization and ship (2-3 days)
 - [x] QA-001: regression pass (meter/scanner/market/live/replay)

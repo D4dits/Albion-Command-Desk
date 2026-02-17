@@ -1,0 +1,59 @@
+name: release-asset-smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      manifest_url:
+        description: "Manifest URL to validate"
+        required: false
+        default: "https://github.com/D4dits/Albion-Command-Desk/releases/latest/download/manifest.json"
+  release:
+    types: [published]
+
+jobs:
+  windows-asset-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify Windows release asset reachability
+        run: |
+          MANIFEST_URL="${{ github.event.inputs.manifest_url || 'https://github.com/D4dits/Albion-Command-Desk/releases/latest/download/manifest.json' }}"
+          python tools/qa/verify_release_artifact_matrix.py \
+            --manifest-url "$MANIFEST_URL" \
+            --target-os windows
+
+  linux-asset-smoke:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify Linux release asset reachability (advisory)
+        run: |
+          MANIFEST_URL="${{ github.event.inputs.manifest_url || 'https://github.com/D4dits/Albion-Command-Desk/releases/latest/download/manifest.json' }}"
+          python tools/qa/verify_release_artifact_matrix.py \
+            --manifest-url "$MANIFEST_URL" \
+            --target-os linux
+
+  macos-asset-smoke:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify macOS release asset reachability (advisory)
+        run: |
+          MANIFEST_URL="${{ github.event.inputs.manifest_url || 'https://github.com/D4dits/Albion-Command-Desk/releases/latest/download/manifest.json' }}"
+          python tools/qa/verify_release_artifact_matrix.py \
+            --manifest-url "$MANIFEST_URL" \
+            --target-os macos

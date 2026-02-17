@@ -46,6 +46,13 @@ Use this checklist before publishing a new release.
   - Run local contract checks:
     - `python -m pytest -q tests/test_update_checker.py tests/test_release_manifest_contract.py tests/test_qt_update_banner.py`
     - `python .\tools\qa\verify_release_update_flow.py`
+- [ ] `release-asset-smoke.yml`:
+  - `windows-asset-smoke` must pass (**BLOCKER**).
+  - `linux-asset-smoke` and `macos-asset-smoke` are advisory until native release packaging is fully locked.
+  - Optional local validation:
+    - `python .\tools\qa\verify_release_artifact_matrix.py --target-os windows`
+    - `python .\tools\qa\verify_release_artifact_matrix.py --target-os linux`
+    - `python .\tools\qa\verify_release_artifact_matrix.py --target-os macos`
 
 ## 5) Release publication
 
