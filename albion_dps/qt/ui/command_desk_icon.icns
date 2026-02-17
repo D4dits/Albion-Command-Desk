@@ -1,0 +1,5 @@
+# This is a placeholder for the macOS .icns file
+# To generate the actual .icns file, follow the instructions in CROSS_PLATFORM.md
+
+# Quick generation command (requires macOS):
+# iconutil -c icns command_desk_icon.iconset
