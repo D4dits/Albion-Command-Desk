@@ -277,7 +277,7 @@ Acceptance:
 
 ### Phase 4 - Visual modernization pass (ticket namespace: PH2-UXR)
 - [x] PH2-UXR-020: visual direction + token expansion
-- [ ] PH2-UXR-021: button system (primary/secondary/ghost/danger + states)
+- [x] PH2-UXR-021: button system (primary/secondary/ghost/danger + states)
 - [ ] PH2-UXR-022: input/select/spinbox refresh
 - [ ] PH2-UXR-023: card layout hierarchy cleanup
 - [ ] PH2-UXR-024: table redesign (meter/market/history)
@@ -303,12 +303,16 @@ Acceptance:
   - documented PH2 visual direction and token taxonomy in architecture doc for follow-up tickets (`PH2-UXR-021+`)
 
 ##### PH2-UXR-021 - Button system
-- Status: TODO
+- Status: DONE
 - Goal: replace ad-hoc gray buttons with a consistent variant/state system.
-- Files to modify:
+- Files modified:
   1. `albion_dps/qt/ui/Main.qml`
-  2. `albion_dps/qt/ui/*.qml` (new reusable button primitives)
+  2. `albion_dps/qt/ui/AppButton.qml`
   3. `albion_dps/qt/ui/Theme.qml`
+- Delivery notes:
+  - added reusable `AppButton.qml` with variants (`primary`, `secondary`, `ghost`, `danger`, `warm`) and hover/pressed/focus states
+  - migrated `Main.qml` `Button` usages to `AppButton` and applied variant usage to global update/support actions
+  - preserved local overrides where context-specific button visuals are still intentionally custom
 
 ##### PH2-UXR-022 - Input/select/spinbox refresh
 - Status: TODO

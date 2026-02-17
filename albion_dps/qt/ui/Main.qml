@@ -361,9 +361,11 @@ ApplicationWindow {
                                 wrapMode: Text.NoWrap
                             }
 
-                            Button {
+                            AppButton {
                                 id: updateOpenButton
                                 text: "Open"
+                                variant: "primary"
+                                compact: true
                                 implicitHeight: 24
                                 implicitWidth: 54
                                 onClicked: {
@@ -373,9 +375,11 @@ ApplicationWindow {
                                 }
                             }
 
-                            Button {
+                            AppButton {
                                 id: updateDismissButton
                                 text: "x"
+                                variant: "ghost"
+                                compact: true
                                 implicitHeight: 24
                                 implicitWidth: 28
                                 onClicked: uiState.dismissUpdateBanner()
@@ -405,9 +409,10 @@ ApplicationWindow {
                                     leftPadding: autoUpdateCheckBox.indicator.width + autoUpdateCheckBox.spacing
                                 }
                             }
-                            Button {
+                            AppButton {
                                 id: checkUpdatesButton
                                 text: "Check now"
+                                variant: "primary"
                                 implicitHeight: 28
                                 implicitWidth: narrowLayout ? 78 : 88
                                 onClicked: uiState.requestManualUpdateCheck()
@@ -428,51 +433,21 @@ ApplicationWindow {
                     RowLayout {
                         id: shellSupportZone
                         spacing: narrowLayout ? 6 : 8
-                        Button {
+                        AppButton {
                             id: headerPayPalButton
                             text: payPalButtonLabel
+                            variant: "primary"
                             implicitHeight: narrowLayout ? 28 : 32
                             implicitWidth: narrowLayout ? 92 : 120
                             onClicked: Qt.openUrlExternally("https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00")
-                            background: Rectangle {
-                                radius: 16
-                                gradient: Gradient {
-                                    GradientStop { position: 0.0; color: "#0d6efd" }
-                                    GradientStop { position: 1.0; color: "#00457C" }
-                                }
-                                border.color: "#66b3ff"
-                            }
-                            contentItem: Text {
-                                text: headerPayPalButton.text
-                                color: "#ffffff"
-                                font.bold: true
-                                font.pixelSize: 12
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
                         }
-                        Button {
+                        AppButton {
                             id: headerCoffeeButton
                             text: coffeeButtonLabel
+                            variant: "warm"
                             implicitHeight: narrowLayout ? 28 : 32
                             implicitWidth: narrowLayout ? 96 : 148
                             onClicked: Qt.openUrlExternally("https://buycoffee.to/ao-dps/")
-                            background: Rectangle {
-                                radius: 16
-                                gradient: Gradient {
-                                    GradientStop { position: 0.0; color: "#ffd34d" }
-                                    GradientStop { position: 1.0; color: "#ff9f1a" }
-                                }
-                                border.color: "#ffd34d"
-                            }
-                            contentItem: Text {
-                                text: headerCoffeeButton.text
-                                color: "#1c1300"
-                                font.bold: true
-                                font.pixelSize: 12
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
                         }
                     }
                 }
@@ -620,7 +595,7 @@ ApplicationWindow {
                                             color: mutedColor
                                             font.pixelSize: 11
                                         }
-                                        Button {
+                                        AppButton {
                                             id: battleButton
                                             text: "Battle"
                                             checkable: true
@@ -637,7 +612,7 @@ ApplicationWindow {
                                                 font.pixelSize: 11
                                             }
                                         }
-                                        Button {
+                                        AppButton {
                                             id: zoneButton
                                             text: "Zone"
                                             checkable: true
@@ -654,7 +629,7 @@ ApplicationWindow {
                                                 font.pixelSize: 11
                                             }
                                         }
-                                        Button {
+                                        AppButton {
                                             id: manualButton
                                             text: "Manual"
                                             checkable: true
@@ -677,7 +652,7 @@ ApplicationWindow {
                                             color: mutedColor
                                             font.pixelSize: 11
                                         }
-                                        Button {
+                                        AppButton {
                                             id: sortDpsButton
                                             text: "DPS"
                                             checkable: true
@@ -694,7 +669,7 @@ ApplicationWindow {
                                                 font.pixelSize: 11
                                             }
                                         }
-                                        Button {
+                                        AppButton {
                                             id: sortDmgButton
                                             text: "DMG"
                                             checkable: true
@@ -711,7 +686,7 @@ ApplicationWindow {
                                                 font.pixelSize: 11
                                             }
                                         }
-                                        Button {
+                                        AppButton {
                                             id: sortHpsButton
                                             text: "HPS"
                                             checkable: true
@@ -728,7 +703,7 @@ ApplicationWindow {
                                                 font.pixelSize: 11
                                             }
                                         }
-                                        Button {
+                                        AppButton {
                                             id: sortHealButton
                                             text: "HEAL"
                                             checkable: true
@@ -867,7 +842,7 @@ ApplicationWindow {
                                 font.bold: true
                             }
 
-                            Button {
+                            AppButton {
                                 visible: uiState.selectedHistoryIndex >= 0
                                 text: "Back to live"
                                 implicitHeight: 30
@@ -902,7 +877,7 @@ ApplicationWindow {
                                             Layout.fillWidth: true
                                             Text { text: label; color: textColor; font.pixelSize: 12; font.bold: true }
                                             Item { Layout.fillWidth: true }
-                                            Button {
+                                            AppButton {
                                                 text: "Copy"
                                                 implicitWidth: 64
                                                 implicitHeight: 26
@@ -1006,30 +981,30 @@ ApplicationWindow {
 
                         RowLayout {
                             spacing: 8
-                            Button {
+                            AppButton {
                                 text: "Check updates"
                                 onClicked: scannerState.checkForUpdates()
                             }
-                            Button {
+                            AppButton {
                                 text: "Sync repo"
                                 onClicked: scannerState.syncClientRepo()
                             }
-                            Button {
+                            AppButton {
                                 text: "Start scanner"
                                 enabled: !scannerState.running
                                 onClicked: scannerState.startScanner()
                             }
-                            Button {
+                            AppButton {
                                 text: "Start scanner (sudo)"
                                 enabled: !scannerState.running
                                 onClicked: scannerState.startScannerSudo()
                             }
-                            Button {
+                            AppButton {
                                 text: "Stop scanner"
                                 enabled: scannerState.running
                                 onClicked: scannerState.stopScanner()
                             }
-                            Button {
+                            AppButton {
                                 text: "Clear log"
                                 onClicked: scannerState.clearLog()
                             }
@@ -1166,23 +1141,23 @@ ApplicationWindow {
                                 onToggled: marketSetupState.setPremium(checked)
                             }
 
-                            Button {
+                            AppButton {
                                 text: marketSetupState.refreshPricesButtonText
                                 implicitHeight: 24
                                 enabled: marketSetupState.canRefreshPrices
                                 onClicked: marketSetupState.refreshPrices()
                             }
-                            Button {
+                            AppButton {
                                 text: "Show raw AOData"
                                 implicitHeight: 24
                                 onClicked: marketSetupState.showAoDataRaw()
                             }
-                            Button {
+                            AppButton {
                                 text: marketStatusExpanded ? "Hide details" : "Show details"
                                 implicitHeight: 24
                                 onClicked: marketStatusExpanded = !marketStatusExpanded
                             }
-                            Button {
+                            AppButton {
                                 text: marketDiagnosticsVisible ? "Hide diagnostics" : "Show diagnostics"
                                 implicitHeight: 24
                                 onClicked: marketDiagnosticsVisible = !marketDiagnosticsVisible
@@ -1297,7 +1272,7 @@ ApplicationWindow {
                                         font.bold: true
                                     }
                                     Item { Layout.fillWidth: true }
-                                    Button {
+                                    AppButton {
                                         text: "Clear"
                                         implicitHeight: 20
                                         font.pixelSize: 10
@@ -1389,7 +1364,7 @@ ApplicationWindow {
                                                 RowLayout {
                                                     Layout.fillWidth: true
                                                     spacing: 6
-                                                    Button {
+                                                    AppButton {
                                                         text: "Add filtered"
                                                         Layout.fillWidth: true
                                                         implicitHeight: 22
@@ -1397,7 +1372,7 @@ ApplicationWindow {
                                                         enabled: recipeSuggestions.count > 0
                                                         onClicked: marketSetupState.addFilteredRecipeOptions()
                                                     }
-                                                    Button {
+                                                    AppButton {
                                                         text: "Add family"
                                                         Layout.fillWidth: true
                                                         implicitHeight: 22
@@ -1669,7 +1644,7 @@ ApplicationWindow {
                                                 RowLayout {
                                                     Layout.fillWidth: true
                                                     spacing: 6
-                                                    Button {
+                                                    AppButton {
                                                         text: "Save"
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
@@ -1683,7 +1658,7 @@ ApplicationWindow {
                                                             presetNameField.text = name
                                                         }
                                                     }
-                                                    Button {
+                                                    AppButton {
                                                         text: "Load"
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
@@ -1698,7 +1673,7 @@ ApplicationWindow {
                                                             presetNameField.text = name
                                                         }
                                                     }
-                                                    Button {
+                                                    AppButton {
                                                         text: "Del"
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
@@ -1772,14 +1747,14 @@ ApplicationWindow {
                                                 }
                                             }
                                         }
-                                        Button {
+                                        AppButton {
                                             text: marketSetupState.craftPlanSortDescending ? "Desc" : "Asc"
                                             implicitHeight: 20
                                             implicitWidth: 48
                                             font.pixelSize: 10
                                             onClicked: marketSetupState.toggleCraftPlanSortDescending()
                                         }
-                                        Button {
+                                        AppButton {
                                             text: "Clear"
                                             implicitHeight: 20
                                             implicitWidth: 52
@@ -1955,7 +1930,7 @@ ApplicationWindow {
                                                     horizontalAlignment: Text.AlignLeft
                                                 }
 
-                                                Button {
+                                                AppButton {
                                                     Layout.preferredWidth: 40
                                                     implicitHeight: 22
                                                     font.pixelSize: 10
@@ -2662,7 +2637,7 @@ ApplicationWindow {
                                         font.bold: true
                                     }
                                     Item { Layout.fillWidth: true }
-                                    Button {
+                                    AppButton {
                                         text: marketBreakdownExpanded ? "Hide" : "Show"
                                         implicitHeight: 22
                                         onClicked: marketBreakdownExpanded = !marketBreakdownExpanded

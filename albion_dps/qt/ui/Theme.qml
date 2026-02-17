@@ -70,6 +70,10 @@ QtObject {
     readonly property color buttonDangerHover: "#d14957"
     readonly property color buttonDangerPressed: "#a5323d"
     readonly property color buttonDangerText: "#ffffff"
+    readonly property int buttonHeightCompact: 24
+    readonly property int buttonHeightRegular: 30
+    readonly property int buttonRadiusCompact: 4
+    readonly property int buttonRadiusRegular: 6
 
     // Table tokens
     readonly property color tableHeaderBackground: "#111b28"

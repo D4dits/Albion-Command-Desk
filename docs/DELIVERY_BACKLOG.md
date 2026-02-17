@@ -126,11 +126,11 @@ Update status checkboxes and notes after each implemented ticket.
   3. `docs/UX_MINIMAL_RELEASE_PLAN.md`
 
 ### PH2-UXR-021 - Button system
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: standardize button variants/states and remove legacy gray controls.
 - Files:
   1. `albion_dps/qt/ui/Main.qml`
-  2. `albion_dps/qt/ui/*.qml` (new button primitives)
+  2. `albion_dps/qt/ui/AppButton.qml`
   3. `albion_dps/qt/ui/Theme.qml`
 
 ### PH2-UXR-022 - Input/select/spinbox refresh
@@ -332,6 +332,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-17: PH2-UXR-021 completed (new `AppButton` variant system + migration of `Main.qml` button usage to shared control).
 - 2026-02-17: PH2-UXR-020 completed (semantic token expansion in `Theme.qml` + architecture-level visual direction/taxonomy notes).
 - 2026-02-17: Added PH2-UXR visual modernization phase (020-030) and locked execution order for commit-per-ticket flow.
 - 2026-02-16: QA-003 completed (manifest contract test + update banner test + release/update validation runbook).
