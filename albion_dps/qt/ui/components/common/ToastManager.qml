@@ -4,25 +4,6 @@ import "../../." // for Theme access
 
 /**
  * ToastManager - Notification manager for displaying toast messages
- *
- * Features:
- * - Display multiple toasts simultaneously
- * - Auto-dismiss with configurable duration
- * - Stack toasts vertically
- * - Maximum toast limit (removes oldest when exceeded)
- * - Multiple toast types (success, warning, error, info)
- *
- * Usage:
- *   ToastManager {
- *       id: toastManager
- *       anchors.fill: parent
- *
- *       Component.onCompleted: {
- *           toastManager.show("success", "Action completed", "Data saved successfully")
- *           toastManager.show("info", "Processing", "Please wait...")
- *           toastManager.show("error", "Error occurred", "Failed to load data")
- *       }
- *   }
  */
 Item {
     id: root
@@ -60,11 +41,11 @@ Item {
             title: title || "",
             message: message || "",
             duration: duration || root.defaultDuration,
-            showProgress: root.showProgress,
-            anchors.right: parent.right
-            anchors.margins: root.toastMargin
+            showProgress: root.showProgress
         })
 
+        toast.anchors.right = parent.right
+        toast.anchors.margins = root.toastMargin
         toast.y = root.height + toast.height
         toast.visible = true
 
@@ -117,7 +98,7 @@ Item {
         id: removeTimer
         Timer {
             id: timer
-            interval: 200  // Wait for hide animation
+            interval: 200
             property var toast: null
             property int index: -1
             onTriggered: {
