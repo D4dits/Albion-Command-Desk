@@ -17,6 +17,11 @@ Use this checklist before publishing a new release.
 - [ ] Validate install scripts syntax:
   - Windows parser check (`install.ps1`)
   - Linux/macOS shell syntax on native shell
+- [ ] Run visual baseline check (PH2):
+  - compare current UI against `assets/ux-baseline/ph2-meter.png`
+  - compare current UI against `assets/ux-baseline/ph2-scanner.png`
+  - compare current UI against `assets/ux-baseline/ph2-market.png`
+  - if intentional UI changes exist, refresh baseline images and update `CHANGELOG.md`
 
 ## 3) Build and packaging
 

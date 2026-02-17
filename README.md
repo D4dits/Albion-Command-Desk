@@ -30,16 +30,24 @@ Donors can be featured on a public supporters list. If you want to be listed, op
 
 ## Screenshots
 <p align="center">
-  <img src="assets/meter.png" alt="Meter tab" width="920">
+  <img src="assets/ux-baseline/ph2-meter.png" alt="Meter tab" width="920">
 </p>
 
 <p align="center">
-  <img src="assets/market.png" alt="Market tab" width="920">
+  <img src="assets/ux-baseline/ph2-market.png" alt="Market tab" width="920">
 </p>
 
 <p align="center">
-  <img src="assets/scanner.png" alt="Scanner tab" width="920">
+  <img src="assets/ux-baseline/ph2-scanner.png" alt="Scanner tab" width="920">
 </p>
+
+## Visual Regression Baseline (PH2)
+- Baseline set lives in `assets/ux-baseline/`.
+- Before release, compare current UI against:
+  - `assets/ux-baseline/ph2-meter.png`
+  - `assets/ux-baseline/ph2-scanner.png`
+  - `assets/ux-baseline/ph2-market.png`
+- If changes are intentional, update baseline files and note it in `CHANGELOG.md`.
 
 ## Before Install (Recommended)
 Best setup before installing ACD:

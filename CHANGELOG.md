@@ -34,6 +34,7 @@ and this project uses semantic versioning.
 - Empty/loading placeholder states across Meter/History/Scanner/Market views.
 - Tokenized motion timings in `Theme.qml` for consistent micro-interactions.
 - Accessibility focus token (`focusRingWidth`) and higher-contrast secondary text tokens in `Theme.qml`.
+- PH2 visual baseline asset set in `assets/ux-baseline/` (`ph2-meter.png`, `ph2-scanner.png`, `ph2-market.png`).
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -92,6 +93,9 @@ and this project uses semantic versioning.
 - Shared controls now enforce keyboard focus visibility with consistent focus-ring sizing.
 - `docs/TROUBLESHOOTING.md` now includes keyboard focus and contrast verification guidance.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-029` as completed.
+- `README.md` now references PH2 baseline screenshots and includes a dedicated visual regression section.
+- `docs/release/RELEASE_CHECKLIST.md` now includes mandatory PH2 screenshot baseline verification before release.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-030` as completed.
 
 ## [0.1.14] - 2026-02-13
 

@@ -286,7 +286,7 @@ Acceptance:
 - [x] PH2-UXR-027: empty/loading/error states
 - [x] PH2-UXR-028: subtle micro-interactions
 - [x] PH2-UXR-029: accessibility + contrast pass
-- [ ] PH2-UXR-030: visual regression baseline (screenshots/checklist)
+- [x] PH2-UXR-030: visual regression baseline (screenshots/checklist)
 
 #### Phase 4 concrete tickets
 
@@ -405,12 +405,16 @@ Acceptance:
   - documented practical keyboard-focus and contrast verification steps in troubleshooting docs
 
 ##### PH2-UXR-030 - Visual regression baseline
-- Status: TODO
+- Status: DONE
 - Goal: establish screenshot-based baseline to avoid style regressions.
-- Files to modify:
+- Files modified:
   1. `assets/`
   2. `README.md`
   3. `docs/release/RELEASE_CHECKLIST.md`
+- Delivery notes:
+  - created PH2 baseline screenshot set under `assets/ux-baseline/`
+  - updated root README screenshot references to PH2 baseline assets
+  - added explicit visual-baseline validation step to release checklist
 
 ## 5) Non-goals (for this cycle)
 

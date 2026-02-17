@@ -192,7 +192,7 @@ Update status checkboxes and notes after each implemented ticket.
   3. `docs/TROUBLESHOOTING.md`
 
 ### PH2-UXR-030 - Visual regression baseline
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: capture reference screenshots/checklist to prevent UI regressions.
 - Files:
   1. `assets/`
@@ -332,6 +332,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-17: PH2-UXR-030 completed (PH2 baseline screenshot set + README screenshot refresh + release checklist baseline gate).
 - 2026-02-17: PH2-UXR-029 completed (stronger text contrast + tokenized focus ring + keyboard focus guidance in docs).
 - 2026-02-17: PH2-UXR-028 completed (tokenized motion timings + subtle hover/press/fade transitions for controls and rows).
 - 2026-02-17: PH2-UXR-027 completed (empty/loading/error placeholders added for Meter/History/Scanner/Market views).
