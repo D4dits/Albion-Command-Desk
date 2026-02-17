@@ -33,7 +33,7 @@ Rectangle {
     property real progress: -1  // -1 = indeterminate, 0-1 = determinate
 
     // Access to theme
-    property var theme: Theme {}
+    property var theme: null
 
     // Signals
     signal cancelled()

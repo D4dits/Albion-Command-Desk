@@ -33,7 +33,7 @@ RowLayout {
     property bool showPercentage: true
 
     // Access to theme
-    property var theme: Theme {}
+    property var theme: null
     property color color: theme.brandPrimary
     property color bgColor: theme.surfaceInset
     property color textColor: theme.textPrimary

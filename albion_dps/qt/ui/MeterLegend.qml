@@ -21,7 +21,7 @@ TableSurface {
     implicitHeight: 120
 
     // Access to theme (injected by parent)
-    property var theme: Theme {}
+    property var theme: null
     property color textColor: theme.textPrimary
     property color mutedColor: theme.textMuted
 

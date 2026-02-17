@@ -24,7 +24,7 @@ TableSurface {
     signal sortKeyChanged(string sortKey)
 
     // Access to theme (injected by parent)
-    property var theme: Theme {}
+    property var theme: null
 
     ColumnLayout {
         anchors.fill: parent

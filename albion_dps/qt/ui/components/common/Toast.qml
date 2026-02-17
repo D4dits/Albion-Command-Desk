@@ -76,7 +76,7 @@ Rectangle {
     signal dismissed()
 
     // Access to theme
-    property var theme: Theme {}
+    property var theme: null
     property color textColor: theme.textPrimary
 
     // Spacing

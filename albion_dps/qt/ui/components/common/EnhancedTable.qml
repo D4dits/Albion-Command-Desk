@@ -60,7 +60,7 @@ TableSurface {
     readonly property int availableWidth: width - (anchors.margins || 0) * 2
 
     // Access to theme
-    property var theme: Theme {}
+    property var theme: null
 
     // Private properties
     QtObject {

@@ -19,7 +19,7 @@ TableSurface {
     property string logText: ""
 
     // Access to theme (injected by parent)
-    property var theme: Theme {}
+    property var theme: null
     property color textColor: theme.textPrimary
 
     ScrollView {

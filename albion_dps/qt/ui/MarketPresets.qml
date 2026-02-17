@@ -30,7 +30,7 @@ Rectangle {
     signal deletePreset(string name)
 
     // Access to theme
-    property var theme: Theme {}
+    property var theme: null
     property color textColor: theme.textPrimary
     property color mutedColor: theme.textMuted
 

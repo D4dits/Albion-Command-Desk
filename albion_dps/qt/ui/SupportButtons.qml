@@ -23,7 +23,7 @@ RowLayout {
     property int buttonHeight: 28
 
     // Access to theme
-    property var theme: Theme {}
+    property var theme: null
 
     spacing: root.spacingOverride
 

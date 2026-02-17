@@ -30,7 +30,7 @@ Rectangle {
     signal dismissBanner()
 
     // Access to theme
-    property var theme: Theme {}
+    property var theme: null
 
     // Computed width
     Layout.preferredWidth: Math.max(minWidth, Math.min(maxWidth, availableWidth * 0.24))

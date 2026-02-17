@@ -32,7 +32,7 @@ ScrollBar {
     id: root
 
     // Access to theme
-    property var theme: Theme {}
+    property var theme: null
 
     // Scrollbar appearance
     contentItem: Rectangle {
