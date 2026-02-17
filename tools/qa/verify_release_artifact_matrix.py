@@ -78,7 +78,9 @@ def _probe_asset_url(url: str, timeout_seconds: float) -> tuple[bool, str]:
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
-            code = getattr(response, "status", 200)
+            code = getattr(response, "status", None)
+            if code is None:
+                return True, "OK (non-HTTP URL scheme)"
             if int(code) not in (200, 206):
                 return False, f"HTTP {code}"
             return True, f"HTTP {code}"
