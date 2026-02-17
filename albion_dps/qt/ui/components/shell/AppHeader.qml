@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
-import "../../." // for all component access
+import "." // for local components (SupportButtons, UpdateBanner)
+import "../../." // for Theme, AppButton, AppComboBox access
 
 /**
  * AppHeader - Top application header bar

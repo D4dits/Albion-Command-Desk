@@ -1,11 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import "components/meter" as MeterComponents
-import "components/scanner" as ScannerComponents
-import "components/market" as MarketComponents
-import "components/shell" as ShellComponents
-import "components/common" as CommonComponents
+import "components"  // All components available directly
 import "utils" 1.0 as Utils
 
 ApplicationWindow {
@@ -307,7 +303,7 @@ ApplicationWindow {
         }
 
         // Shell Header - Extracted component
-        ShellComponents.AppHeader {
+        AppHeader {
             id: shellHeader
             Layout.fillWidth: true
             headerHeight: shellHeaderHeight
@@ -438,7 +434,7 @@ ApplicationWindow {
                     }
                 }
 
-                MeterComponents.MeterTab {
+                MeterTab {
                     id: meterTab
                     anchors.fill: parent
 
@@ -487,7 +483,7 @@ ApplicationWindow {
                     }
                 }
 
-                ScannerComponents.ScannerTab {
+                ScannerTab {
                     id: scannerTab
                     anchors.fill: parent
 
@@ -541,7 +537,7 @@ ApplicationWindow {
                     }
                 }
 
-                MarketComponents.MarketTab {
+                MarketTab {
                 id: marketTab
                 anchors.fill: parent
 
@@ -661,7 +657,7 @@ ApplicationWindow {
         }
 
         // Toast notifications overlay
-        CommonComponents.ToastManager {
+        ToastManager {
             id: toastManager
             Layout.fillWidth: true
             Layout.fillHeight: true
