@@ -1411,7 +1411,8 @@ ApplicationWindow {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 columns: marketSetupStackedLayout ? 1 : 2
-                                spacing: 12
+                                columnSpacing: 12
+                                rowSpacing: 12
 
                             TableSurface {
                                 level: 1
