@@ -48,6 +48,18 @@ If the UI still feels tight:
 - keep OS display scaling at 100-125% for dense table workflows
 - use horizontal scrolling in Inputs/Outputs/Results tables (enabled by design for small widths)
 
+## Keyboard focus / contrast checks
+Recent UI pass enforces visible focus rings and higher-contrast secondary text.
+
+If keyboard focus is still hard to track:
+- confirm you are using the latest build from this branch/release
+- test with `Tab`/`Shift+Tab` in Market controls; focused fields should show a clear blue ring
+- avoid OS-level forced low-contrast themes while testing
+
+If text still appears faint:
+- set display scaling to 100-125%
+- disable custom monitor "low blue light / game" picture presets temporarily
+
 ## Live mode shows "no data"
 Common causes:
 - You are on the wrong interface: run `albion-command-desk live --list-interfaces` and pick the one that carries game traffic.

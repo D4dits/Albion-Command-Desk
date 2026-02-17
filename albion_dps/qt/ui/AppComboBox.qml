@@ -9,6 +9,7 @@ ComboBox {
     }
 
     implicitHeight: theme.controlHeightRegular
+    focusPolicy: Qt.StrongFocus
     leftPadding: theme.spacingSm
     rightPadding: 24
     font.pixelSize: 12
@@ -43,7 +44,7 @@ ComboBox {
     background: Rectangle {
         radius: theme.radiusMd
         color: root.enabled ? theme.inputBackground : theme.inputBackgroundDisabled
-        border.width: root.visualFocus ? 2 : 1
+        border.width: root.visualFocus ? theme.focusRingWidth : 1
         border.color: root.visualFocus ? theme.inputBorderFocus : (root.enabled ? theme.inputBorder : theme.controlDisabledBorder)
     }
 

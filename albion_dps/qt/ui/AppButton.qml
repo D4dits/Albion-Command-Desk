@@ -20,6 +20,7 @@ Button {
     implicitWidth: Math.max(64, contentItem.implicitWidth + 20)
     padding: compact ? theme.spacingSm : theme.spacingMd
     hoverEnabled: enabled
+    focusPolicy: Qt.StrongFocus
     font.pixelSize: 12
     font.bold: variant === "primary" || variant === "danger" || variant === "warm"
     scale: down ? 0.985 : 1.0
@@ -171,7 +172,7 @@ Button {
         id: backgroundRect
         radius: compact ? theme.buttonRadiusCompact : theme.buttonRadiusRegular
         color: root.colorForState(root.baseBackground(), root.hoverBackground(), root.pressedBackground())
-        border.width: root.visualFocus ? 2 : 1
+        border.width: root.visualFocus ? theme.focusRingWidth : 1
         border.color: root.visualFocus ? theme.borderFocus : root.resolvedBorderColor()
 
         Behavior on color {

@@ -9,6 +9,7 @@ TextField {
     }
 
     implicitHeight: theme.controlHeightRegular
+    focusPolicy: Qt.StrongFocus
     padding: theme.spacingSm
     color: enabled ? theme.textPrimary : theme.textDisabled
     placeholderTextColor: theme.textMuted
@@ -19,7 +20,7 @@ TextField {
     background: Rectangle {
         radius: theme.radiusMd
         color: root.enabled ? theme.inputBackground : theme.inputBackgroundDisabled
-        border.width: root.activeFocus ? 2 : 1
+        border.width: root.activeFocus ? theme.focusRingWidth : 1
         border.color: root.activeFocus ? theme.inputBorderFocus : (root.enabled ? theme.inputBorder : theme.controlDisabledBorder)
 
         Behavior on color {

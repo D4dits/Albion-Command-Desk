@@ -33,8 +33,8 @@ QtObject {
 
     // Text tokens
     readonly property color textPrimary: "#e6edf3"
-    readonly property color textSecondary: "#c2cfdd"
-    readonly property color textMuted: "#9aa4af"
+    readonly property color textSecondary: "#cbd8e6"
+    readonly property color textMuted: "#b1bfce"
     readonly property color textDisabled: "#6e7d8f"
     readonly property color textOnAccent: "#081018"
 
@@ -94,6 +94,7 @@ QtObject {
     readonly property color tableTextPrimary: "#e6edf3"
     readonly property color tableTextSecondary: "#aebbc9"
     readonly property color tableDivider: "#1e2a39"
+    readonly property int focusRingWidth: 2
 
     // Layout tokens
     readonly property int spacingXs: 4

@@ -184,7 +184,7 @@ Update status checkboxes and notes after each implemented ticket.
   2. `albion_dps/qt/ui/Theme.qml`
 
 ### PH2-UXR-029 - Accessibility + contrast pass
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: ensure focus visibility and readable contrast in all themes/states.
 - Files:
   1. `albion_dps/qt/ui/Main.qml`
@@ -332,6 +332,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-17: PH2-UXR-029 completed (stronger text contrast + tokenized focus ring + keyboard focus guidance in docs).
 - 2026-02-17: PH2-UXR-028 completed (tokenized motion timings + subtle hover/press/fade transitions for controls and rows).
 - 2026-02-17: PH2-UXR-027 completed (empty/loading/error placeholders added for Meter/History/Scanner/Market views).
 - 2026-02-17: PH2-UXR-026 completed (semantic data-color helpers + replacement of hardcoded profit/status colors).

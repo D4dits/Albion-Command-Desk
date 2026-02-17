@@ -11,6 +11,7 @@ SpinBox {
     implicitHeight: theme.controlHeightRegular
     editable: true
     stepSize: 1
+    focusPolicy: Qt.StrongFocus
 
     contentItem: TextInput {
         text: root.textFromValue(root.value, root.locale)
@@ -67,7 +68,7 @@ SpinBox {
     background: Rectangle {
         radius: theme.radiusMd
         color: root.enabled ? theme.inputBackground : theme.inputBackgroundDisabled
-        border.width: root.activeFocus ? 2 : 1
+        border.width: root.activeFocus ? theme.focusRingWidth : 1
         border.color: root.activeFocus ? theme.inputBorderFocus : (root.enabled ? theme.inputBorder : theme.controlDisabledBorder)
     }
 }

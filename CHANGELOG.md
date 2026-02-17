@@ -33,6 +33,7 @@ and this project uses semantic versioning.
 - Semantic data-color helpers in `Main.qml` for signed values, validation, and price-source freshness.
 - Empty/loading placeholder states across Meter/History/Scanner/Market views.
 - Tokenized motion timings in `Theme.qml` for consistent micro-interactions.
+- Accessibility focus token (`focusRingWidth`) and higher-contrast secondary text tokens in `Theme.qml`.
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -88,6 +89,9 @@ and this project uses semantic versioning.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-027` as completed.
 - `albion_dps/qt/ui/Main.qml` now applies subtle row/banner transitions, and shared controls now animate press/hover state changes.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-028` as completed.
+- Shared controls now enforce keyboard focus visibility with consistent focus-ring sizing.
+- `docs/TROUBLESHOOTING.md` now includes keyboard focus and contrast verification guidance.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-029` as completed.
 
 ## [0.1.14] - 2026-02-13
 

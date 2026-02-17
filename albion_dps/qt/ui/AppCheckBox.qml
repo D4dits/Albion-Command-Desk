@@ -9,6 +9,7 @@ CheckBox {
     }
 
     spacing: theme.spacingSm
+    focusPolicy: Qt.StrongFocus
 
     indicator: Rectangle {
         implicitWidth: 18
@@ -19,7 +20,7 @@ CheckBox {
         color: !root.enabled
             ? theme.controlDisabledBackground
             : (root.checked ? theme.buttonPrimaryBackground : theme.surfaceInteractive)
-        border.width: root.activeFocus ? 2 : 1
+        border.width: root.activeFocus ? theme.focusRingWidth : 1
         border.color: root.activeFocus
             ? theme.borderFocus
             : (!root.enabled ? theme.controlDisabledBorder : (root.checked ? theme.buttonPrimaryPressed : theme.borderSubtle))

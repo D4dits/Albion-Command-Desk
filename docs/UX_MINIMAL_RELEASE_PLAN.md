@@ -285,7 +285,7 @@ Acceptance:
 - [x] PH2-UXR-026: color semantics for data states (profit/age/status)
 - [x] PH2-UXR-027: empty/loading/error states
 - [x] PH2-UXR-028: subtle micro-interactions
-- [ ] PH2-UXR-029: accessibility + contrast pass
+- [x] PH2-UXR-029: accessibility + contrast pass
 - [ ] PH2-UXR-030: visual regression baseline (screenshots/checklist)
 
 #### Phase 4 concrete tickets
@@ -393,12 +393,16 @@ Acceptance:
   - added table-row hover color transitions to reduce abrupt visual jumps
 
 ##### PH2-UXR-029 - Accessibility + contrast pass
-- Status: TODO
+- Status: DONE
 - Goal: ensure minimal look still passes readability and focus visibility.
-- Files to modify:
+- Files modified:
   1. `albion_dps/qt/ui/Theme.qml`
   2. `albion_dps/qt/ui/Main.qml`
   3. `docs/TROUBLESHOOTING.md`
+- Delivery notes:
+  - raised secondary/muted text contrast and introduced `focusRingWidth` token in `Theme.qml`
+  - enforced keyboard focus policy and visible focus ring width on shared controls (`AppButton`, `AppTextField`, `AppComboBox`, `AppSpinBox`, `AppCheckBox`)
+  - documented practical keyboard-focus and contrast verification steps in troubleshooting docs
 
 ##### PH2-UXR-030 - Visual regression baseline
 - Status: TODO
