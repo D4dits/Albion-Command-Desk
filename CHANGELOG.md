@@ -26,6 +26,7 @@ and this project uses semantic versioning.
 - Qt update-banner state tests in `tests/test_qt_update_banner.py`.
 - PH2 semantic visual token families in `albion_dps/qt/ui/Theme.qml` (brand/surface/border/text/state/control/button/table/layout/elevation).
 - Reusable button primitive in `albion_dps/qt/ui/AppButton.qml` with semantic variants and state handling.
+- Reusable form control primitives: `AppTextField.qml`, `AppComboBox.qml`, `AppSpinBox.qml`, and `AppCheckBox.qml`.
 
 ### Changed
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
@@ -64,6 +65,9 @@ and this project uses semantic versioning.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-020` as completed.
 - `albion_dps/qt/ui/Main.qml` now routes button controls through shared `AppButton` variants for consistent visual behavior.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-021` as completed.
+- `albion_dps/qt/ui/Main.qml` now routes form controls through shared App* input components for consistent field styling.
+- `albion_dps/qt/ui/Theme.qml` now includes dedicated input tokens for background and focus border handling.
+- `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-022` as completed.
 
 ## [0.1.14] - 2026-02-13
 

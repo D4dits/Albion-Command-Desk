@@ -278,7 +278,7 @@ Acceptance:
 ### Phase 4 - Visual modernization pass (ticket namespace: PH2-UXR)
 - [x] PH2-UXR-020: visual direction + token expansion
 - [x] PH2-UXR-021: button system (primary/secondary/ghost/danger + states)
-- [ ] PH2-UXR-022: input/select/spinbox refresh
+- [x] PH2-UXR-022: input/select/spinbox refresh
 - [ ] PH2-UXR-023: card layout hierarchy cleanup
 - [ ] PH2-UXR-024: table redesign (meter/market/history)
 - [ ] PH2-UXR-025: header + action bar polish
@@ -315,11 +315,15 @@ Acceptance:
   - preserved local overrides where context-specific button visuals are still intentionally custom
 
 ##### PH2-UXR-022 - Input/select/spinbox refresh
-- Status: TODO
+- Status: DONE
 - Goal: unify text fields, combos, spinboxes, and checkbox readability/states.
-- Files to modify:
+- Files modified:
   1. `albion_dps/qt/ui/Main.qml`
   2. `albion_dps/qt/ui/Theme.qml`
+- Delivery notes:
+  - added shared control primitives: `AppTextField.qml`, `AppComboBox.qml`, `AppSpinBox.qml`, `AppCheckBox.qml`
+  - migrated `Main.qml` form controls from base Qt widgets to shared components
+  - introduced dedicated input tokens in `Theme.qml` to keep field backgrounds/borders consistent
 
 ##### PH2-UXR-023 - Card layout hierarchy cleanup
 - Status: TODO

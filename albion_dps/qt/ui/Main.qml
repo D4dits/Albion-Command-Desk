@@ -396,7 +396,7 @@ ApplicationWindow {
                         RowLayout {
                             Layout.alignment: Qt.AlignRight
                             spacing: 6
-                            CheckBox {
+                            AppCheckBox {
                                 id: autoUpdateCheckBox
                                 checked: uiState.updateAutoCheck
                                 text: autoUpdateLabel
@@ -1122,7 +1122,7 @@ ApplicationWindow {
                                 color: mutedColor
                                 font.pixelSize: 11
                             }
-                            ComboBox {
+                            AppComboBox {
                                 implicitWidth: 110
                                 implicitHeight: 24
                                 font.pixelSize: 11
@@ -1131,7 +1131,7 @@ ApplicationWindow {
                                 onActivated: marketSetupState.setRegion(currentText)
                             }
 
-                            CheckBox {
+                            AppCheckBox {
                                 id: premiumCheck
                                 implicitHeight: 24
                                 checked: marketSetupState.premium
@@ -1347,7 +1347,7 @@ ApplicationWindow {
                                                     Layout.fillWidth: true
                                                     spacing: 6
 
-                                                    TextField {
+                                                    AppTextField {
                                                         id: recipeSearchInput
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
@@ -1391,7 +1391,7 @@ ApplicationWindow {
                                                         font.pixelSize: 10
                                                         Layout.preferredWidth: 52
                                                     }
-                                                    ComboBox {
+                                                    AppComboBox {
                                                         implicitWidth: 72
                                                         implicitHeight: 22
                                                         font.pixelSize: 10
@@ -1482,7 +1482,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Craft City"; color: mutedColor; font.pixelSize: 11 }
-                                            ComboBox {
+                                            AppComboBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1495,7 +1495,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Buy City"; color: mutedColor; font.pixelSize: 11 }
-                                            ComboBox {
+                                            AppComboBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1505,7 +1505,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Sell City"; color: mutedColor; font.pixelSize: 11 }
-                                            ComboBox {
+                                            AppComboBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1515,7 +1515,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Default Runs"; color: mutedColor; font.pixelSize: 11 }
-                                            SpinBox {
+                                            AppSpinBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1528,7 +1528,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Usage Fee (1-999)"; color: mutedColor; font.pixelSize: 11 }
-                                            SpinBox {
+                                            AppSpinBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1557,7 +1557,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Default Daily Bonus"; color: mutedColor; font.pixelSize: 11 }
-                                            ComboBox {
+                                            AppComboBox {
                                                 Layout.fillWidth: true
                                                 implicitHeight: compactControlHeight
                                                 font.pixelSize: 11
@@ -1567,7 +1567,7 @@ ApplicationWindow {
                                             }
 
                                             Text { text: "Use Focus (RRR)"; color: mutedColor; font.pixelSize: 11 }
-                                            CheckBox {
+                                            AppCheckBox {
                                                 id: focusRrrCheck
                                                 Layout.fillWidth: true
                                                 checked: marketSetupState.focusEnabled
@@ -1618,7 +1618,7 @@ ApplicationWindow {
                                                         font.pixelSize: 11
                                                         Layout.preferredWidth: 42
                                                     }
-                                                    ComboBox {
+                                                    AppComboBox {
                                                         id: presetCombo
                                                         Layout.fillWidth: true
                                                         implicitHeight: compactControlHeight
@@ -1632,7 +1632,7 @@ ApplicationWindow {
                                                     }
                                                 }
 
-                                                TextField {
+                                                AppTextField {
                                                     id: presetNameField
                                                     Layout.fillWidth: true
                                                     implicitHeight: compactControlHeight
@@ -1727,7 +1727,7 @@ ApplicationWindow {
                                             color: mutedColor
                                             font.pixelSize: 10
                                         }
-                                        ComboBox {
+                                        AppComboBox {
                                             implicitWidth: 84
                                             implicitHeight: 20
                                             font.pixelSize: 10
@@ -1818,7 +1818,7 @@ ApplicationWindow {
                                                 anchors.rightMargin: 4
                                                 spacing: 6
 
-                                                CheckBox {
+                                                AppCheckBox {
                                                     id: enabledCheck
                                                     Layout.preferredWidth: 24
                                                     checked: isEnabled
@@ -1859,7 +1859,7 @@ ApplicationWindow {
                                                     }
                                                 }
 
-                                                ComboBox {
+                                                AppComboBox {
                                                     Layout.preferredWidth: 118
                                                     implicitHeight: 24
                                                     font.pixelSize: 10
@@ -1871,7 +1871,7 @@ ApplicationWindow {
                                                     onActivated: marketSetupState.setPlanRowCraftCity(rowId, currentText)
                                                 }
 
-                                                ComboBox {
+                                                AppComboBox {
                                                     Layout.preferredWidth: 70
                                                     implicitHeight: 24
                                                     font.pixelSize: 10
@@ -1890,7 +1890,7 @@ ApplicationWindow {
                                                     horizontalAlignment: Text.AlignLeft
                                                 }
 
-                                                TextField {
+                                                AppTextField {
                                                     Layout.preferredWidth: 68
                                                     implicitHeight: 24
                                                     font.pixelSize: 10
@@ -2049,7 +2049,7 @@ ApplicationWindow {
                                                             onDoubleClicked: copyCellText(parent.text)
                                                         }
                                                     }
-                                                    TextField {
+                                                    AppTextField {
                                                         Layout.preferredWidth: marketInputsStockWidth
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
@@ -2081,7 +2081,7 @@ ApplicationWindow {
                                                             onDoubleClicked: copyCellText(parent.text)
                                                         }
                                                     }
-                                                    ComboBox {
+                                                    AppComboBox {
                                                         Layout.preferredWidth: marketInputsModeWidth
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
@@ -2089,7 +2089,7 @@ ApplicationWindow {
                                                         currentIndex: Math.max(0, model.indexOf(priceType))
                                                         onActivated: marketSetupState.setInputPriceType(itemId, currentText)
                                                     }
-                                                    TextField {
+                                                    AppTextField {
                                                         Layout.preferredWidth: marketInputsManualWidth
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
@@ -2281,7 +2281,7 @@ ApplicationWindow {
                                                             onDoubleClicked: copyCellText(parent.text)
                                                         }
                                                     }
-                                                    ComboBox {
+                                                    AppComboBox {
                                                         Layout.preferredWidth: marketOutputsModeWidth
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
@@ -2289,7 +2289,7 @@ ApplicationWindow {
                                                         currentIndex: Math.max(0, model.indexOf(priceType))
                                                         onActivated: marketSetupState.setOutputPriceType(itemId, currentText)
                                                     }
-                                                    TextField {
+                                                    AppTextField {
                                                         Layout.preferredWidth: marketOutputsManualWidth
                                                         implicitHeight: compactControlHeight
                                                         font.pixelSize: 11
@@ -2431,7 +2431,7 @@ ApplicationWindow {
                                         color: mutedColor
                                         font.pixelSize: 11
                                     }
-                                    ComboBox {
+                                    AppComboBox {
                                         Layout.preferredWidth: 120
                                         implicitHeight: compactControlHeight
                                         font.pixelSize: 11

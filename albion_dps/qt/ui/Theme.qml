@@ -52,6 +52,10 @@ QtObject {
     readonly property color controlPressedBackground: "#1a2c40"
     readonly property color controlDisabledBackground: "#0e141d"
     readonly property color controlDisabledBorder: "#223040"
+    readonly property color inputBackground: "#111d2b"
+    readonly property color inputBackgroundDisabled: "#0d141e"
+    readonly property color inputBorder: "#253449"
+    readonly property color inputBorderFocus: "#4aa3ff"
 
     // Button tokens
     readonly property color buttonPrimaryBackground: brandPrimary
