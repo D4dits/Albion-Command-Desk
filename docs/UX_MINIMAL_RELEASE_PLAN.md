@@ -225,10 +225,24 @@ Acceptance:
   - documented responsive behavior and recovery steps in troubleshooting docs
 
 ### Phase 2 - Install/release simplification (3-5 days)
-- [ ] REL-010: bootstrap scripts profile support + clearer diagnostics
+- [x] REL-010: bootstrap scripts profile support + clearer diagnostics
 - [ ] REL-011: ensure no SDK requirement in end-user path
 - [ ] REL-012: release artifact smoke checks per OS
 - [ ] REL-013: docs rewrite for one-click install paths
+
+#### Phase 2 concrete tickets
+
+##### REL-010 - bootstrap diagnostics and profile preflight
+- Status: DONE
+- Goal: make installer behavior transparent before package install starts.
+- Files modified:
+  1. `tools/install/windows/install.ps1`
+  2. `tools/install/linux/install.sh`
+  3. `tools/install/macos/install.sh`
+- Delivery notes:
+  - added explicit diagnostics block (project root, venv path, profile, python version)
+  - added capture preflight hints (Npcap/libpcap/compiler visibility)
+  - kept `core` as no-friction default while surfacing capture requirements clearly
 
 ### Phase 3 - Stabilization and ship (2-3 days)
 - [x] QA-001: regression pass (meter/scanner/market/live/replay)

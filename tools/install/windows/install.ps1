@@ -22,9 +22,67 @@ function Write-InstallWarn {
     Write-Host "[ACD install] $Message" -ForegroundColor Yellow
 }
 
+function Write-InstallHint {
+    param([string]$Message)
+    Write-Host "[ACD install] hint: $Message" -ForegroundColor DarkGray
+}
+
 function Throw-InstallError {
     param([string]$Message)
     throw "[ACD install] $Message"
+}
+
+function Test-NpcapRuntime {
+    $dllCandidates = @(
+        "$env:WINDIR\\System32\\Npcap\\wpcap.dll",
+        "$env:WINDIR\\System32\\Npcap\\Packet.dll",
+        "$env:WINDIR\\SysWOW64\\Npcap\\wpcap.dll",
+        "$env:WINDIR\\SysWOW64\\Npcap\\Packet.dll"
+    )
+    foreach ($candidate in $dllCandidates) {
+        if (Test-Path $candidate) {
+            return @{
+                Available = $true
+                Detail = "Detected runtime DLL: $candidate"
+            }
+        }
+    }
+    return @{
+        Available = $false
+        Detail = "Npcap Runtime not detected in standard locations."
+    }
+}
+
+function Show-InstallDiagnostics {
+    param(
+        [string]$ProjectRootPath,
+        [string]$VirtualEnvPath,
+        [string]$InstallProfile,
+        [hashtable]$LauncherInfo
+    )
+    Write-InstallInfo "Diagnostic summary:"
+    Write-InstallInfo "  project_root: $ProjectRootPath"
+    Write-InstallInfo "  venv_path: $VirtualEnvPath"
+    Write-InstallInfo "  profile: $InstallProfile"
+    Write-InstallInfo "  python: $($LauncherInfo.Command -join ' ') (version $($LauncherInfo.Version))"
+    $vcTools = Get-Command "cl.exe" -ErrorAction SilentlyContinue
+    if ($vcTools) {
+        Write-InstallInfo "  c_compiler: available ($($vcTools.Source))"
+    } else {
+        Write-InstallWarn "  c_compiler: not detected (capture profile may fail to build pcap backend)"
+        Write-InstallHint "For core mode this is expected and safe."
+    }
+    if ($InstallProfile -eq "capture") {
+        $npcap = Test-NpcapRuntime
+        if ($npcap.Available) {
+            Write-InstallInfo "  npcap_runtime: available ($($npcap.Detail))"
+        } else {
+            Write-InstallWarn "  npcap_runtime: missing ($($npcap.Detail))"
+            Write-InstallHint "Install Npcap Runtime from https://npcap.com/#download before running live mode."
+        }
+    } else {
+        Write-InstallInfo "  npcap_runtime: optional (core mode selected)"
+    }
 }
 
 function Resolve-PythonLauncher {
@@ -245,6 +303,7 @@ if ($Profile -eq "core") {
 } else {
     Write-InstallInfo "Install profile: capture (includes live capture backend)"
 }
+Show-InstallDiagnostics -ProjectRootPath $ProjectRoot -VirtualEnvPath $VenvPath -InstallProfile $Profile -LauncherInfo $launcher
 $installTarget = if ($Profile -eq "capture") { ".[capture]" } else { "." }
 Write-InstallInfo "Installing Albion Command Desk ($installTarget)"
 Push-Location $ProjectRoot

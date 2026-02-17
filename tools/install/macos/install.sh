@@ -17,6 +17,10 @@ log_warn() {
   printf '[ACD install] %s\n' "$1" >&2
 }
 
+log_hint() {
+  printf '[ACD install] hint: %s\n' "$1" >&2
+}
+
 fail() {
   printf '[ACD install] %s\n' "$1" >&2
   exit 1
@@ -140,6 +144,51 @@ resolve_python() {
   return 1
 }
 
+detect_libpcap() {
+  if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists libpcap; then
+    printf '%s\n' "available (pkg-config libpcap)"
+    return 0
+  fi
+  if [[ -f "/usr/lib/libpcap.dylib" ]]; then
+    printf '%s\n' "available (/usr/lib/libpcap.dylib)"
+    return 0
+  fi
+  printf '%s\n' "missing"
+  return 1
+}
+
+show_diagnostics() {
+  local compiler_state="missing"
+  if command -v clang >/dev/null 2>&1; then
+    compiler_state="available (clang)"
+  fi
+  local libpcap_state
+  libpcap_state="$(detect_libpcap || true)"
+  [[ -n "$libpcap_state" ]] || libpcap_state="missing"
+
+  log_info "Diagnostic summary:"
+  log_info "  project_root: ${PROJECT_ROOT}"
+  log_info "  venv_path: ${VENV_PATH}"
+  log_info "  profile: ${INSTALL_PROFILE}"
+  log_info "  python: ${PYTHON_CMD} (version ${PYTHON_VERSION})"
+  if [[ "$compiler_state" == missing ]]; then
+    log_warn "  c_compiler: missing (capture profile may fail to build backend)"
+    log_hint "Install Xcode Command Line Tools: xcode-select --install"
+  else
+    log_info "  c_compiler: ${compiler_state}"
+  fi
+  if [[ "$INSTALL_PROFILE" == "capture" ]]; then
+    if [[ "$libpcap_state" == "missing" ]]; then
+      log_warn "  libpcap: missing"
+      log_hint "Install libpcap (e.g. brew install libpcap) before capture profile."
+    else
+      log_info "  libpcap: ${libpcap_state}"
+    fi
+  else
+    log_info "  libpcap: optional (core mode selected)"
+  fi
+}
+
 resolved="$(resolve_python || true)"
 [[ -n "$resolved" ]] || fail "Python 3.10+ not found. Install Python and rerun."
 PYTHON_CMD="${resolved%%|*}"
@@ -177,6 +226,7 @@ else
   INSTALL_TARGET="."
   log_info "Install profile: core (UI + market/scanner/replay, no live capture backend)"
 fi
+show_diagnostics
 
 log_info "Installing Albion Command Desk (${INSTALL_TARGET})"
 (

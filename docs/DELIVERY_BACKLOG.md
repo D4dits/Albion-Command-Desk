@@ -332,6 +332,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-17: REL-010 completed (installer diagnostics/preflight summary for Windows/Linux/macOS with capture-specific hints).
 - 2026-02-17: PH2-UXR-030 completed (PH2 baseline screenshot set + README screenshot refresh + release checklist baseline gate).
 - 2026-02-17: PH2-UXR-029 completed (stronger text contrast + tokenized focus ring + keyboard focus guidance in docs).
 - 2026-02-17: PH2-UXR-028 completed (tokenized motion timings + subtle hover/press/fade transitions for controls and rows).
