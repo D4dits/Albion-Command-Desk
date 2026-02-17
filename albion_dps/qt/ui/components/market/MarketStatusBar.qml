@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
 import "../../." // for Theme, AppButton, AppComboBox, AppCheckBox access
+import "../common" as CommonComponents
 
 /**
  * MarketStatusBar - Status and control bar for market operations
@@ -94,8 +95,15 @@ ColumnLayout {
             text: root.refreshPricesButtonText
             compact: true
             implicitHeight: 24
-            enabled: root.canRefreshPrices
+            enabled: root.canRefreshPrices && !root.priceFetchInProgress
             onClicked: root.refreshPrices()
+        }
+
+        // Loading spinner for price fetch
+        CommonComponents.Spinner {
+            size: "xs"
+            active: root.priceFetchInProgress
+            Layout.alignment: Qt.AlignVCenter
         }
         AppButton {
             text: root.statusExpanded ? "Hide details" : "Show details"
