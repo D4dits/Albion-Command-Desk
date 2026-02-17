@@ -58,6 +58,7 @@ class AODataClient:
         retry_backoff_initial_seconds: float = 0.20,
         retry_backoff_factor: float = 2.0,
         retry_backoff_max_seconds: float = 2.0,
+        max_prices_url_length: int = 1800,
         sleeper: Callable[[float], None] | None = None,
         logger: logging.Logger | None = None,
     ) -> None:
@@ -68,6 +69,7 @@ class AODataClient:
         self._retry_backoff_initial_seconds = max(0.0, float(retry_backoff_initial_seconds))
         self._retry_backoff_factor = max(1.0, float(retry_backoff_factor))
         self._retry_backoff_max_seconds = max(0.0, float(retry_backoff_max_seconds))
+        self._max_prices_url_length = max(256, int(max_prices_url_length))
         self._sleep = sleeper or time.sleep
         self._log = logger or logging.getLogger(__name__)
         self._last_request_stats = AODataRequestStats(
@@ -96,14 +98,14 @@ class AODataClient:
         if not locations:
             return []
         base = self._base_url(region)
-        ids = ",".join(item_ids)
         params = {
             "locations": ",".join(locations),
             "qualities": ",".join(str(x) for x in (qualities or [1])),
         }
-        url = f"{base}/api/v2/stats/prices/{ids}.json?{urlencode(params)}"
-        data = self._fetch_with_retry(url=url, endpoint="prices")
-        return _normalize_prices(data)
+        out: list[MarketPriceRecord] = []
+        for item_batch in self._split_price_batches(base=base, item_ids=item_ids, params=params):
+            out.extend(self._fetch_prices_batch(base=base, item_ids=item_batch, params=params))
+        return out
 
     def fetch_charts(
         self,
@@ -184,6 +186,50 @@ class AODataClient:
         )
         raise RuntimeError(f"AO Data {endpoint} request failed after {max_attempts} attempts: {error_message}")
 
+    def _split_price_batches(
+        self,
+        *,
+        base: str,
+        item_ids: list[str],
+        params: dict[str, str],
+    ) -> list[list[str]]:
+        batches: list[list[str]] = []
+        current: list[str] = []
+        for item_id in item_ids:
+            candidate = current + [item_id]
+            if len(current) > 0 and len(self._build_prices_url(base=base, item_ids=candidate, params=params)) > self._max_prices_url_length:
+                batches.append(current)
+                current = [item_id]
+            else:
+                current = candidate
+        if current:
+            batches.append(current)
+        return batches
+
+    def _fetch_prices_batch(
+        self,
+        *,
+        base: str,
+        item_ids: list[str],
+        params: dict[str, str],
+    ) -> list[MarketPriceRecord]:
+        url = self._build_prices_url(base=base, item_ids=item_ids, params=params)
+        try:
+            data = self._fetch_with_retry(url=url, endpoint="prices")
+            return _normalize_prices(data)
+        except RuntimeError as exc:
+            if len(item_ids) <= 1 or not _is_uri_too_large_error(exc):
+                raise
+            midpoint = max(1, len(item_ids) // 2)
+            left = self._fetch_prices_batch(base=base, item_ids=item_ids[:midpoint], params=params)
+            right = self._fetch_prices_batch(base=base, item_ids=item_ids[midpoint:], params=params)
+            return left + right
+
+    @staticmethod
+    def _build_prices_url(*, base: str, item_ids: list[str], params: dict[str, str]) -> str:
+        ids = ",".join(item_ids)
+        return f"{base}/api/v2/stats/prices/{ids}.json?{urlencode(params)}"
+
 
 def _normalize_prices(payload: object) -> list[MarketPriceRecord]:
     if not isinstance(payload, list):
@@ -243,5 +289,10 @@ def _default_fetch_json(url: str, timeout_seconds: float, user_agent: str) -> ob
     with urlopen(request, timeout=timeout_seconds) as response:
         payload = response.read().decode("utf-8")
     return json.loads(payload)
+
+
+def _is_uri_too_large_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return "414" in message or "request-uri too large" in message or "uri too large" in message
 
 

@@ -125,3 +125,67 @@ def test_fetch_prices_raises_after_retry_exhaustion() -> None:
         )
     assert not client.last_request_stats.success
     assert client.last_request_stats.attempts == 3
+
+
+def test_fetch_prices_splits_large_requests_by_url_length() -> None:
+    called: list[str] = []
+
+    def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):
+        _ = (timeout_seconds, user_agent)
+        called.append(url)
+        item_part = url.split("/stats/prices/", 1)[1].split(".json", 1)[0]
+        first_item = item_part.split(",", 1)[0]
+        return [
+            {
+                "item_id": first_item,
+                "city": "Bridgewatch",
+                "quality": 1,
+                "sell_price_min": 100,
+                "buy_price_max": 90,
+                "sell_price_min_date": "",
+                "buy_price_max_date": "",
+            }
+        ]
+
+    item_ids = [f"T4_MAIN_SWORD_{idx:02d}" for idx in range(20)]
+    client = AODataClient(fetch_json=fake_fetch_json, max_prices_url_length=256)
+    _ = client.fetch_prices(
+        region=MarketRegion.EUROPE,
+        item_ids=item_ids,
+        locations=["Bridgewatch"],
+    )
+    assert len(called) >= 2
+    assert all("locations=Bridgewatch" in url for url in called)
+
+
+def test_fetch_prices_retries_with_smaller_batches_on_414() -> None:
+    called: list[str] = []
+
+    def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):
+        _ = (timeout_seconds, user_agent)
+        called.append(url)
+        item_part = url.split("/stats/prices/", 1)[1].split(".json", 1)[0]
+        item_count = 0 if not item_part else len(item_part.split(","))
+        if item_count > 1:
+            raise RuntimeError("HTTP Error 414: Request-URI Too Large")
+        return [
+            {
+                "item_id": item_part,
+                "city": "Bridgewatch",
+                "quality": 1,
+                "sell_price_min": 100,
+                "buy_price_max": 90,
+                "sell_price_min_date": "",
+                "buy_price_max_date": "",
+            }
+        ]
+
+    client = AODataClient(fetch_json=fake_fetch_json, max_prices_url_length=10000, max_retries=0)
+    rows = client.fetch_prices(
+        region=MarketRegion.EUROPE,
+        item_ids=["T4_MAIN_SWORD", "T4_MAIN_AXE", "T4_MAIN_MACE"],
+        locations=["Bridgewatch"],
+    )
+    assert len(rows) == 3
+    assert any("/stats/prices/T4_MAIN_SWORD,T4_MAIN_AXE,T4_MAIN_MACE.json" in url for url in called)
+    assert any("/stats/prices/T4_MAIN_SWORD.json" in url for url in called)
