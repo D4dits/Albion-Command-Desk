@@ -275,6 +275,103 @@ Acceptance:
   - added end-to-end local smoke verifier from manifest payload to Qt update banner state
   - updated release checklist with mandatory QA-003 validation commands
 
+### Phase 4 - Visual modernization pass (ticket namespace: PH2-UXR)
+- [ ] PH2-UXR-020: visual direction + token expansion
+- [ ] PH2-UXR-021: button system (primary/secondary/ghost/danger + states)
+- [ ] PH2-UXR-022: input/select/spinbox refresh
+- [ ] PH2-UXR-023: card layout hierarchy cleanup
+- [ ] PH2-UXR-024: table redesign (meter/market/history)
+- [ ] PH2-UXR-025: header + action bar polish
+- [ ] PH2-UXR-026: color semantics for data states (profit/age/status)
+- [ ] PH2-UXR-027: empty/loading/error states
+- [ ] PH2-UXR-028: subtle micro-interactions
+- [ ] PH2-UXR-029: accessibility + contrast pass
+- [ ] PH2-UXR-030: visual regression baseline (screenshots/checklist)
+
+#### Phase 4 concrete tickets
+
+##### PH2-UXR-020 - Visual direction + token expansion
+- Status: TODO
+- Goal: define a modern/minimal visual system with complete semantic tokens.
+- Files to modify:
+  1. `albion_dps/qt/ui/Theme.qml`
+  2. `docs/ARCHITECTURE.md`
+  3. `docs/UX_MINIMAL_RELEASE_PLAN.md`
+
+##### PH2-UXR-021 - Button system
+- Status: TODO
+- Goal: replace ad-hoc gray buttons with a consistent variant/state system.
+- Files to modify:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/*.qml` (new reusable button primitives)
+  3. `albion_dps/qt/ui/Theme.qml`
+
+##### PH2-UXR-022 - Input/select/spinbox refresh
+- Status: TODO
+- Goal: unify text fields, combos, spinboxes, and checkbox readability/states.
+- Files to modify:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+
+##### PH2-UXR-023 - Card layout hierarchy cleanup
+- Status: TODO
+- Goal: simplify panel depth and improve section hierarchy with less border noise.
+- Files to modify:
+  1. `albion_dps/qt/ui/CardPanel.qml`
+  2. `albion_dps/qt/ui/TableSurface.qml`
+  3. `albion_dps/qt/ui/Main.qml`
+
+##### PH2-UXR-024 - Table redesign
+- Status: TODO
+- Goal: improve readability and consistency of meter/market/history tables.
+- Files to modify:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+
+##### PH2-UXR-025 - Header + action bar polish
+- Status: TODO
+- Goal: keep global actions stable and visually intentional across all widths.
+- Files to modify:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+
+##### PH2-UXR-026 - Color semantics for data
+- Status: TODO
+- Goal: enforce semantic color meaning for profit, freshness, warnings, and errors.
+- Files to modify:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+
+##### PH2-UXR-027 - Empty/loading/error states
+- Status: TODO
+- Goal: provide intentional placeholders and recovery actions instead of blank areas.
+- Files to modify:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `docs/TROUBLESHOOTING.md`
+
+##### PH2-UXR-028 - Subtle micro-interactions
+- Status: TODO
+- Goal: add lightweight motion for state transitions without UI clutter.
+- Files to modify:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/Theme.qml`
+
+##### PH2-UXR-029 - Accessibility + contrast pass
+- Status: TODO
+- Goal: ensure minimal look still passes readability and focus visibility.
+- Files to modify:
+  1. `albion_dps/qt/ui/Theme.qml`
+  2. `albion_dps/qt/ui/Main.qml`
+  3. `docs/TROUBLESHOOTING.md`
+
+##### PH2-UXR-030 - Visual regression baseline
+- Status: TODO
+- Goal: establish screenshot-based baseline to avoid style regressions.
+- Files to modify:
+  1. `assets/`
+  2. `README.md`
+  3. `docs/release/RELEASE_CHECKLIST.md`
+
 ## 5) Non-goals (for this cycle)
 
 - No full feature redesign of combat/market logic.
