@@ -37,6 +37,8 @@ and this project uses semantic versioning.
 - PH2 visual baseline asset set in `assets/ux-baseline/` (`ph2-meter.png`, `ph2-scanner.png`, `ph2-market.png`).
 - Bootstrap installers now support explicit non-interactive CI mode flags (`-NonInteractive`, `--non-interactive`) and release-version artifact diagnostics.
 - Shared install smoke check now accepts install profile + expected artifact context.
+- Hardened Npcap runtime detector states (`available`, `missing`, `blocked`, `unknown`) with action URL metadata.
+- Scanner tab now shows capture-runtime diagnostics and provides runtime action buttons (`Install runtime` / `Open runtime page`) plus manual runtime refresh.
 
 ### Changed
 - `albion_dps/qt/ui/AppButton.qml` no longer mutates `checked` internally for checkable buttons, preserving single-active mode/sort bindings in Meter controls.
@@ -59,6 +61,7 @@ and this project uses semantic versioning.
 - `docs/release/RELEASE_MANIFEST_SPEC.md` now defines preferred per-OS asset ordering and first-match client selection behavior.
 - `tools/install/windows/install.ps1`, `tools/install/linux/install.sh`, and `tools/install/macos/install.sh` now pass profile/artifact contract metadata into shared smoke checks.
 - Platform install READMEs now document non-interactive mode and release-version diagnostic usage.
+- `albion_dps/qt/runner.py` now handles blocked/unknown runtime states in `live` mode without hard crashes and logs explicit recovery actions.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `REL-002` as completed.
 - `albion_dps/qt/ui/Main.qml` now consumes shared theme tokens for app shell and baseline styles.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now start Phase 1 with `UXR-010` completed.

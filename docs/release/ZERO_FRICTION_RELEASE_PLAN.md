@@ -76,7 +76,7 @@ Goal: make ACD install/run/update with one command or one installer click on Win
 
 ### PH4-REL-042 - Capture runtime detector hardening
 - Owner: `@maintainer`
-- Status: `todo`
+- Status: `done`
 - Target release: `v0.2.0`
 - Add explicit detector status states: `available`, `missing`, `blocked`, `unknown`.
 - Provide "Install runtime" or "Open official download page" actions in UI.

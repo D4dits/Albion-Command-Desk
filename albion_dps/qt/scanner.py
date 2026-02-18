@@ -7,11 +7,22 @@ import shutil
 import subprocess
 import sys
 import threading
+import webbrowser
 from collections import deque
 from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
+
+from albion_dps.capture import capture_backend_available
+from albion_dps.capture.npcap_runtime import (
+    NPCAP_DOWNLOAD_URL,
+    RUNTIME_STATE_AVAILABLE,
+    RUNTIME_STATE_BLOCKED,
+    RUNTIME_STATE_MISSING,
+    RUNTIME_STATE_UNKNOWN,
+    detect_npcap_runtime,
+)
 
 
 DEFAULT_REPO_URL = "https://github.com/ao-data/albiondata-client.git"
@@ -29,12 +40,14 @@ class ScannerState(QObject):
     updateChanged = Signal()
     logChanged = Signal()
     runningChanged = Signal()
+    runtimeChanged = Signal()
 
     _statusSignal = Signal(str)
     _updateSignal = Signal(str)
     _logSignal = Signal(str)
     _runningSignal = Signal(bool)
     _processExitSignal = Signal(int)
+    _runtimeSignal = Signal(str, str, str, str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -45,6 +58,10 @@ class ScannerState(QObject):
         self._update_text = "not checked"
         self._log_lines: deque[str] = deque(maxlen=800)
         self._running = False
+        self._runtime_state = RUNTIME_STATE_UNKNOWN
+        self._runtime_detail = "Runtime status not checked yet."
+        self._runtime_action_label = ""
+        self._runtime_action_url = ""
         self._process: subprocess.Popen[str] | None = None
         self._process_lock = threading.Lock()
         self._op_lock = threading.Lock()
@@ -56,8 +73,10 @@ class ScannerState(QObject):
         self._logSignal.connect(self._append_log_line)
         self._runningSignal.connect(self._set_running)
         self._processExitSignal.connect(self._handle_process_exit)
+        self._runtimeSignal.connect(self._set_runtime)
 
         self._append_log("Scanner ready.")
+        self.refreshCaptureRuntimeStatus()
 
     @Property(str, notify=statusChanged)
     def statusText(self) -> str:
@@ -74,6 +93,22 @@ class ScannerState(QObject):
     @Property(bool, notify=runningChanged)
     def running(self) -> bool:
         return self._running
+
+    @Property(str, notify=runtimeChanged)
+    def captureRuntimeState(self) -> str:
+        return self._runtime_state
+
+    @Property(str, notify=runtimeChanged)
+    def captureRuntimeDetail(self) -> str:
+        return self._runtime_detail
+
+    @Property(str, notify=runtimeChanged)
+    def captureRuntimeActionLabel(self) -> str:
+        return self._runtime_action_label
+
+    @Property(str, notify=runtimeChanged)
+    def captureRuntimeActionUrl(self) -> str:
+        return self._runtime_action_url
 
     @Property(str, constant=True)
     def clientDir(self) -> str:
@@ -110,6 +145,23 @@ class ScannerState(QObject):
             return
         self._append_log("Stopping scanner...")
         self._stop_process(process)
+
+    @Slot()
+    def refreshCaptureRuntimeStatus(self) -> None:
+        state, detail, action_label, action_url = self._detect_capture_runtime_status()
+        self._runtimeSignal.emit(state, detail, action_label, action_url)
+
+    @Slot()
+    def openCaptureRuntimeAction(self) -> None:
+        url = (self._runtime_action_url or "").strip()
+        if not url:
+            self._append_warn("No runtime action URL available.")
+            return
+        opened = webbrowser.open(url)
+        if opened:
+            self._append_log(f"Opened runtime help page: {url}")
+        else:
+            self._append_warn(f"Failed to open browser automatically: {url}")
 
     def shutdown(self) -> None:
         process: subprocess.Popen[str] | None
@@ -314,6 +366,7 @@ class ScannerState(QObject):
         return None
 
     def _start_scanner(self, *, use_sudo: bool) -> None:
+        self.refreshCaptureRuntimeStatus()
         with self._process_lock:
             if self._process is not None:
                 self._append_warn("Scanner already running.")
@@ -549,6 +602,56 @@ class ScannerState(QObject):
             return
         self._running = running
         self.runningChanged.emit()
+
+    def _set_runtime(self, state: str, detail: str, action_label: str, action_url: str) -> None:
+        changed = (
+            state != self._runtime_state
+            or detail != self._runtime_detail
+            or action_label != self._runtime_action_label
+            or action_url != self._runtime_action_url
+        )
+        if not changed:
+            return
+        self._runtime_state = state
+        self._runtime_detail = detail
+        self._runtime_action_label = action_label
+        self._runtime_action_url = action_url
+        self.runtimeChanged.emit()
+
+    def _detect_capture_runtime_status(self) -> tuple[str, str, str, str]:
+        if _is_windows():
+            runtime = detect_npcap_runtime()
+            state = runtime.state
+            detail = runtime.detail or "Npcap runtime check finished."
+            action_url = (runtime.action_url or "").strip()
+
+            if state == RUNTIME_STATE_AVAILABLE and not capture_backend_available():
+                state = RUNTIME_STATE_BLOCKED
+                detail = (
+                    "Npcap Runtime detected, but Python capture backend is missing. "
+                    "Reinstall with capture profile (`.[capture]`)."
+                )
+                action_url = NPCAP_DOWNLOAD_URL
+
+            if state == RUNTIME_STATE_MISSING:
+                return state, detail, "Install runtime", action_url or NPCAP_DOWNLOAD_URL
+            if state in (RUNTIME_STATE_BLOCKED, RUNTIME_STATE_UNKNOWN):
+                return state, detail, "Open runtime page", action_url or NPCAP_DOWNLOAD_URL
+            return state, detail, "", ""
+
+        if capture_backend_available():
+            return (
+                RUNTIME_STATE_AVAILABLE,
+                "Capture backend is available.",
+                "",
+                "",
+            )
+        return (
+            RUNTIME_STATE_MISSING,
+            "Capture backend module is missing. Reinstall with capture profile.",
+            "",
+            "",
+        )
 
 
 def _is_windows() -> bool:

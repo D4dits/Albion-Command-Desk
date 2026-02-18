@@ -497,6 +497,10 @@ ApplicationWindow {
                     clientDir: scannerState.clientDir
                     scannerRunning: scannerState.running
                     logText: scannerState.logText
+                    captureRuntimeState: scannerState.captureRuntimeState
+                    captureRuntimeDetail: scannerState.captureRuntimeDetail
+                    captureRuntimeActionLabel: scannerState.captureRuntimeActionLabel
+                    captureRuntimeActionUrl: scannerState.captureRuntimeActionUrl
 
                     // Theme access
                     theme: root.theme
@@ -525,6 +529,14 @@ ApplicationWindow {
                     onClearLog: function() {
                         scannerState.clearLog()
                         toastManager.showInfo("Log cleared", "Scanner log has been cleared")
+                    }
+                    onRefreshCaptureRuntimeStatus: function() {
+                        scannerState.refreshCaptureRuntimeStatus()
+                        toastManager.showInfo("Runtime check", "Capture runtime status refreshed")
+                    }
+                    onOpenCaptureRuntimeAction: function() {
+                        scannerState.openCaptureRuntimeAction()
+                        toastManager.showInfo("Runtime action", scannerState.captureRuntimeActionLabel || "Opening runtime page")
                     }
                 }
             }

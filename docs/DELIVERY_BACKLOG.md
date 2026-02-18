@@ -219,7 +219,7 @@ Update status checkboxes and notes after each implemented ticket.
   4. `tools/install/common/smoke_check.py`
 
 ### PH4-REL-042 - Capture runtime detector hardening
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: explicit runtime states (`available`, `missing`, `blocked`, `unknown`) and guided UI actions.
 - Files:
   1. `albion_dps/capture/npcap_runtime.py`
@@ -383,6 +383,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-18: PH4-REL-042 completed (runtime detector states hardened to available/missing/blocked/unknown, scanner UI now exposes runtime action CTA, live startup handles missing runtime without crash).
 - 2026-02-18: PH4-REL-041 completed (bootstrap scripts now support non-interactive CI mode and emit canonical per-OS artifact diagnostics; shared smoke check consumes profile/artifact context).
 - 2026-02-18: PH4-REL-040 completed (deterministic artifact matrix/naming contract documented in release checklist and manifest spec).
 - 2026-02-17: REL-010 completed (installer diagnostics/preflight summary for Windows/Linux/macOS with capture-specific hints).

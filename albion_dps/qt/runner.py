@@ -10,7 +10,13 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from albion_dps.capture import auto_detect_interface, capture_backend_available, list_interfaces
-from albion_dps.capture.npcap_runtime import NPCAP_DOWNLOAD_URL, detect_npcap_runtime
+from albion_dps.capture.npcap_runtime import (
+    NPCAP_DOWNLOAD_URL,
+    RUNTIME_STATE_AVAILABLE,
+    RUNTIME_STATE_BLOCKED,
+    RUNTIME_STATE_MISSING,
+    detect_npcap_runtime,
+)
 from albion_dps.domain import FameTracker, NameRegistry, PartyRegistry, load_item_resolver
 from albion_dps.domain.item_db import ensure_game_databases
 from albion_dps.domain.map_resolver import load_map_resolver
@@ -225,7 +231,7 @@ def _build_snapshot_stream(
             return None
         if os.name == "nt":
             npcap_status = detect_npcap_runtime()
-            if npcap_status.available:
+            if npcap_status.state == RUNTIME_STATE_AVAILABLE:
                 if npcap_status.install_path:
                     logging.getLogger(__name__).info(
                         "Npcap Runtime detected at: %s (%s)",
@@ -234,13 +240,33 @@ def _build_snapshot_stream(
                     )
                 else:
                     logging.getLogger(__name__).info("Npcap Runtime detected.")
-            else:
+            elif npcap_status.state == RUNTIME_STATE_MISSING:
                 logging.getLogger(__name__).error(
                     "Npcap Runtime is missing. Download: %s",
                     NPCAP_DOWNLOAD_URL,
                 )
                 logging.getLogger(__name__).error(
                     "Live capture requires Npcap Runtime. Install it, then restart Albion Command Desk."
+                )
+                return None
+            elif npcap_status.state == RUNTIME_STATE_BLOCKED:
+                logging.getLogger(__name__).error(
+                    "Npcap Runtime check is blocked: %s",
+                    npcap_status.detail,
+                )
+                logging.getLogger(__name__).error(
+                    "Open runtime installer page: %s",
+                    npcap_status.action_url or NPCAP_DOWNLOAD_URL,
+                )
+                return None
+            else:
+                logging.getLogger(__name__).error(
+                    "Npcap Runtime status is unknown: %s",
+                    npcap_status.detail,
+                )
+                logging.getLogger(__name__).error(
+                    "Open runtime installer page: %s",
+                    npcap_status.action_url or NPCAP_DOWNLOAD_URL,
                 )
                 return None
 
