@@ -412,8 +412,10 @@ ApplicationWindow {
         }
 
         StackLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
             currentIndex: viewTabs.currentIndex
 
             // Add fade-in animation for tab transitions
