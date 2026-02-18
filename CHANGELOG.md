@@ -37,6 +37,10 @@ and this project uses semantic versioning.
 - PH2 visual baseline asset set in `assets/ux-baseline/` (`ph2-meter.png`, `ph2-scanner.png`, `ph2-market.png`).
 
 ### Changed
+- `albion_dps/qt/ui/AppButton.qml` no longer mutates `checked` internally for checkable buttons, preserving single-active mode/sort bindings in Meter controls.
+- Market setup panel width was tightened (`Theme.qml`, `MarketTab.qml`, `MarketSetupPanel.qml`) and setup content now reserves right-side space for the vertical scrollbar.
+- `Market Fees` label/value in `MarketSetupPanel.qml` was shortened and constrained to avoid overflow in narrow setup widths.
+- Header action labels were polished (`Check updates`, `PayPal`, `Buy me a Coffee`) with updated button sizing for stable alignment.
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` marks `UXR-001` as completed and documents delivery notes.
 - `docs/ARCHITECTURE.md` now defines the frozen Phase 0 Qt shell layout contract.
