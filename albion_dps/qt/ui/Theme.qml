@@ -63,22 +63,22 @@ QtObject {
     readonly property color inputBorderFocus: "#4aa3ff"
 
     // Button tokens
-    property color buttonPrimaryBackground: brandPrimary
-    property color buttonPrimaryHover: brandPrimaryHover
-    property color buttonPrimaryPressed: brandPrimaryPressed
-    property color buttonPrimaryText: textOnAccent
-    property color buttonSecondaryBackground: "#1b2a3c"
-    property color buttonSecondaryHover: "#24354a"
-    property color buttonSecondaryPressed: "#1a293a"
-    property color buttonSecondaryText: textPrimary
-    property color buttonGhostBackground: "transparent"
-    property color buttonGhostHover: "#182636"
-    property color buttonGhostPressed: "#1f3145"
-    property color buttonGhostText: textSecondary
-    property color buttonDangerBackground: "#b93c47"
-    property color buttonDangerHover: "#d14957"
-    property color buttonDangerPressed: "#a5323d"
-    property color buttonDangerText: "#ffffff"
+    readonly property color buttonPrimaryBackground: brandPrimary
+    readonly property color buttonPrimaryHover: brandPrimaryHover
+    readonly property color buttonPrimaryPressed: brandPrimaryPressed
+    readonly property color buttonPrimaryText: textOnAccent
+    readonly property color buttonSecondaryBackground: "#1b2a3c"
+    readonly property color buttonSecondaryHover: "#24354a"
+    readonly property color buttonSecondaryPressed: "#1a293a"
+    readonly property color buttonSecondaryText: textPrimary
+    readonly property color buttonGhostBackground: "transparent"
+    readonly property color buttonGhostHover: "#182636"
+    readonly property color buttonGhostPressed: "#1f3145"
+    readonly property color buttonGhostText: textSecondary
+    readonly property color buttonDangerBackground: "#b93c47"
+    readonly property color buttonDangerHover: "#d14957"
+    readonly property color buttonDangerPressed: "#a5323d"
+    readonly property color buttonDangerText: "#ffffff"
     readonly property int buttonHeightCompact: 24
     readonly property int buttonHeightRegular: 30
     readonly property int buttonRadiusCompact: 4
