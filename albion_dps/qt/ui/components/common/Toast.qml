@@ -211,7 +211,7 @@ Rectangle {
                 compact: true
                 implicitWidth: 24
                 implicitHeight: 20
-                font.pixelSize: 14
+                fontPixelSize: 14
                 onClicked: root.dismissed()
             }
         }
