@@ -426,7 +426,7 @@ ApplicationWindow {
             Item {
                 id: meterTabContainer
                 opacity: viewTabs.currentIndex === 0 ? 1.0 : 0.0
-                visible: opacity > 0
+                visible: true
                 Behavior on opacity {
                     NumberAnimation {
                         duration: Utils.AnimationUtils.durationNormal
@@ -475,7 +475,7 @@ ApplicationWindow {
             Item {
                 id: scannerTabContainer
                 opacity: viewTabs.currentIndex === 1 ? 1.0 : 0.0
-                visible: opacity > 0
+                visible: true
                 Behavior on opacity {
                     NumberAnimation {
                         duration: Utils.AnimationUtils.durationNormal
@@ -529,7 +529,7 @@ ApplicationWindow {
             Item {
                 id: marketTabContainer
                 opacity: viewTabs.currentIndex === 2 ? 1.0 : 0.0
-                visible: opacity > 0
+                visible: true
                 Behavior on opacity {
                     NumberAnimation {
                         duration: Utils.AnimationUtils.durationNormal
