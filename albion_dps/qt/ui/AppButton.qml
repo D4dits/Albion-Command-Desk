@@ -46,6 +46,8 @@ Rectangle {
     readonly property color activeBorder: root.colorForState(root.baseBorderColor(), root.hoverBorderColor(), root.pressedBorderColor())
     readonly property color activeText: root.resolvedTextColor()
 
+    width: implicitWidth
+    height: implicitHeight
     // Appearance
     color: activeBg
     radius: compact ? Theme.buttonRadiusCompact : Theme.buttonRadiusRegular
