@@ -661,14 +661,14 @@ ApplicationWindow {
             }
         }
 
-        // Toast notifications overlay
-        ToastManager {
-            id: toastManager
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            theme: root.theme
-        }
     }
+    // Toast notifications overlay
+    ToastManager {
+        id: toastManager
+        anchors.fill: parent
+        theme: root.theme
+    }
+
     Shortcut { sequence: "B"; onActivated: uiState.setMode("battle") }
     Shortcut { sequence: "Z"; onActivated: uiState.setMode("zone") }
     Shortcut { sequence: "M"; onActivated: uiState.setMode("manual") }
