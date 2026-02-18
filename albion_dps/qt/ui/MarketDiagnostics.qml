@@ -47,7 +47,7 @@ TableSurface {
             AppButton {
                 text: "Clear"
                 implicitHeight: 20
-                font.pixelSize: 10
+                fontPixelSize: 10
                 onClicked: root.clearDiagnostics()
             }
         }
