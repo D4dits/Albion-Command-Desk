@@ -69,8 +69,10 @@ ColumnLayout {
     property color shellTabIdleBackground: theme.shellTabIdleBackground
     property color shellTabActiveText: theme.shellTabActiveText
     property int shellTabRadius: theme.shellTabRadius
-    property string payPalLabel: narrowLayout ? "Pay" : "PayPal"
-    property string coffeeLabel: narrowLayout ? "Coffee" : "Buy me a coffee"
+    property string payPalLabel: "PayPal"
+    property string coffeeLabel: "Buy me a Coffee"
+    property int supportPayPalWidth: narrowLayout ? 108 : 118
+    property int supportCoffeeWidth: narrowLayout ? 156 : 166
     property string autoUpdateLabel: narrowLayout ? "Auto" : "Auto update"
 
     // Helper function
@@ -117,6 +119,8 @@ ColumnLayout {
         autoUpdateLabel: root.autoUpdateLabel
         payPalLabel: root.payPalLabel
         coffeeLabel: root.coffeeLabel
+        supportPayPalWidth: root.supportPayPalWidth
+        supportCoffeeWidth: root.supportCoffeeWidth
         theme: root.theme
         textColor: root.textColor
         mutedColor: root.mutedColor

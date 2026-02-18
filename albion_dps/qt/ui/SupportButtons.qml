@@ -17,7 +17,7 @@ RowLayout {
 
     // Button labels (responsive to narrow layout)
     property string payPalLabel: "PayPal"
-    property string coffeeLabel: "Buy me a coffee"
+    property string coffeeLabel: "Buy me a Coffee"
     property int payPalWidth: 118
     property int coffeeWidth: 146
     property int buttonHeight: 28

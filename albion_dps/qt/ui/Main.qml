@@ -102,10 +102,10 @@ ApplicationWindow {
     property int shellHeaderMargin: narrowLayout ? 8 : 12
     property int shellHeaderZoneSpacing: narrowLayout ? 10 : 20
     property string autoUpdateLabel: narrowLayout ? "Auto" : "Auto update"
-    property string payPalButtonLabel: narrowLayout ? "Pay" : "PayPal"
-    property string coffeeButtonLabel: narrowLayout ? "Coffee" : "Buy me a coffee"
-    property int shellSupportPrimaryWidth: narrowLayout ? 90 : 118
-    property int shellSupportSecondaryWidth: narrowLayout ? 98 : 146
+    property string payPalButtonLabel: "PayPal"
+    property string coffeeButtonLabel: "Buy me a Coffee"
+    property int shellSupportPrimaryWidth: narrowLayout ? 108 : 118
+    property int shellSupportSecondaryWidth: narrowLayout ? 156 : 166
 
     // Phase 0 shell contract:
     // - left zone: title + contextual status
@@ -336,6 +336,8 @@ ApplicationWindow {
             autoUpdateLabel: root.autoUpdateLabel
             payPalLabel: root.payPalButtonLabel
             coffeeLabel: root.coffeeButtonLabel
+            supportPayPalWidth: root.shellSupportPrimaryWidth
+            supportCoffeeWidth: root.shellSupportSecondaryWidth
             theme: root.theme
             textColor: root.textColor
             mutedColor: root.mutedColor

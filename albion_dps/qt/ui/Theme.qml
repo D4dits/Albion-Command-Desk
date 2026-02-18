@@ -161,5 +161,5 @@ QtObject {
 
     // Market tokens
     readonly property int marketColumnSpacing: 6
-    readonly property int marketSetupPanelWidth: 330
+    readonly property int marketSetupPanelWidth: 320
 }

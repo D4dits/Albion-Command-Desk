@@ -60,6 +60,8 @@ Rectangle {
     // Support buttons state
     property string payPalLabel: "PayPal"
     property string coffeeLabel: "Buy me a coffee"
+    property int supportPayPalWidth: 118
+    property int supportCoffeeWidth: 166
 
     // Signals
     signal setUpdateAutoCheck(bool checked)
@@ -185,11 +187,12 @@ Rectangle {
                     }
                     AppButton {
                         id: checkUpdatesButton
-                        text: "Check now"
-                        variant: "primary"
+                        text: "Check updates"
+                        variant: "secondary"
+                        fontBold: true
                         compact: true
                         implicitHeight: theme.shellActionHeight
-                        implicitWidth: root.narrowLayout ? 78 : 88
+                        implicitWidth: root.narrowLayout ? 116 : 126
                         onClicked: root.requestManualUpdateCheck()
                     }
                 }
@@ -211,8 +214,8 @@ Rectangle {
                 spacingOverride: root.narrowLayout ? 6 : 8
                 payPalLabel: root.payPalLabel
                 coffeeLabel: root.coffeeLabel
-                payPalWidth: root.narrowLayout ? 90 : 118
-                coffeeWidth: root.narrowLayout ? 98 : 146
+                payPalWidth: root.supportPayPalWidth
+                coffeeWidth: root.supportCoffeeWidth
                 buttonHeight: theme.shellActionHeight
                 theme: root.theme
             }
