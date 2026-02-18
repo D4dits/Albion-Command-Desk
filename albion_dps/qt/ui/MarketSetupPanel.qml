@@ -24,7 +24,7 @@ TableSurface {
 
     // Layout flags
     property bool marketSetupStackedLayout: false
-    property int marketSetupPanelActiveWidth: 308
+    property int marketSetupPanelActiveWidth: 296
     property int compactControlHeight: 24
 
     // Market state properties (bound to parent's marketSetupState)
@@ -109,10 +109,11 @@ TableSurface {
         anchors.fill: parent
         anchors.margins: 10
         clip: true
+        rightPadding: 10
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
-            width: Math.max(0, parent.width - 14)
+            width: Math.max(0, marketSetupScroll.availableWidth - 10)
             spacing: 8
 
             Text {
@@ -126,7 +127,7 @@ TableSurface {
                 columns: 2
                 columnSpacing: 8
                 rowSpacing: 8
-                width: parent.width
+                Layout.fillWidth: true
 
                 Text { text: "Craft Search"; color: mutedColor; font.pixelSize: 11 }
                 MarketCraftSearch {
@@ -217,10 +218,12 @@ TableSurface {
                 Text {
                     Layout.fillWidth: true
                     text: root.premium
-                        ? "4.0% (tax) + 2.5% (setup) = " + Number(root.marketTaxPercent).toFixed(1) + "%"
-                        : "8.0% (tax) + 2.5% (setup) = " + Number(root.marketTaxPercent).toFixed(1) + "%"
+                        ? "4.0% tax + 2.5% setup = " + Number(root.marketTaxPercent).toFixed(1) + "%"
+                        : "8.0% tax + 2.5% setup = " + Number(root.marketTaxPercent).toFixed(1) + "%"
                     color: textColor
-                    font.pixelSize: 11
+                    font.pixelSize: 10
+                    wrapMode: Text.NoWrap
+                    elide: Text.ElideRight
                 }
 
                 Text { text: "Default Daily Bonus"; color: mutedColor; font.pixelSize: 11 }

@@ -246,7 +246,6 @@ Rectangle {
         onReleased: mouse => {
             root.down = false
             if (root.checkable) {
-                root.checked = !root.checked
                 root.toggled(root.checked)
             }
             root.clicked()
