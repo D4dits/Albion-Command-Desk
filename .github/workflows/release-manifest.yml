@@ -73,33 +73,19 @@ jobs:
         run: |
           python - <<'PY'
           import json
+          import importlib.util
+          import sys
           from pathlib import Path
 
           manifest = json.loads(Path("tools/release/manifest/manifest.json").read_text(encoding="utf-8"))
-          assets = manifest.get("assets", [])
-
-          def has_asset(os_name, kind, arch=None):
-              for asset in assets:
-                  if asset.get("os") != os_name:
-                      continue
-                  if asset.get("kind") != kind:
-                      continue
-                  if arch is not None and asset.get("arch") != arch:
-                      continue
-                  return True
-              return False
-
-          blockers = []
-          warnings = []
-
-          if not has_asset("windows", "installer", "x86_64"):
-              blockers.append("Missing required Windows x86_64 installer asset.")
-
-          if not has_asset("linux", "archive") and not has_asset("linux", "bootstrap-script"):
-              warnings.append("No Linux archive/bootstrap asset attached (core install still possible via repository bootstrap script).")
-
-          if not has_asset("macos", "archive") and not has_asset("macos", "bootstrap-script"):
-              warnings.append("No macOS archive/bootstrap asset attached (core install still possible via repository bootstrap script).")
+          builder_path = Path("tools/release/manifest/build_manifest.py").resolve()
+          spec = importlib.util.spec_from_file_location("acd_manifest_builder", builder_path)
+          if spec is None or spec.loader is None:
+              raise SystemExit(f"ERROR: unable to load manifest builder: {builder_path}")
+          module = importlib.util.module_from_spec(spec)
+          sys.modules[spec.name] = module
+          spec.loader.exec_module(module)
+          blockers, warnings = module.validate_manifest_strategy(manifest)
 
           if blockers:
               for blocker in blockers:

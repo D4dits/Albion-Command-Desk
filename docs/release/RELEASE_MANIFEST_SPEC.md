@@ -58,7 +58,7 @@ Top-level:
 
 `assets[]`:
 - `os` (string): `windows`, `linux`, or `macos`.
-- `arch` (string): `x86_64` or `arm64`.
+- `arch` (string): `x86_64`, `arm64`, or `universal`.
 - `kind` (string): `installer`, `archive`, or `bootstrap-script`.
 - `name` (string): artifact filename.
 - `url` (string, absolute HTTPS URL).

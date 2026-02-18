@@ -235,7 +235,7 @@ Update status checkboxes and notes after each implemented ticket.
   3. `tests/test_capture_startup_policy.py`
 
 ### PH4-REL-044 - Installer-first manifest policy
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: enforce preferred asset ordering + checksum validation in release metadata.
 - Files:
   1. `.github/workflows/release-manifest.yml`
@@ -383,6 +383,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-18: PH4-REL-044 completed (manifest builder now enforces deterministic preferred-asset ordering, validates HTTPS URLs and SHA256 checksums, and workflow strategy checks use the shared policy validator).
 - 2026-02-18: PH4-REL-043 completed (live startup policy now degrades to core on missing/blocked capture prerequisites and no-interface scenarios; regression tests added for fallback transitions/messages).
 - 2026-02-18: PH4-REL-042 completed (runtime detector states hardened to available/missing/blocked/unknown, scanner UI now exposes runtime action CTA, live startup handles missing runtime without crash).
 - 2026-02-18: PH4-REL-041 completed (bootstrap scripts now support non-interactive CI mode and emit canonical per-OS artifact diagnostics; shared smoke check consumes profile/artifact context).

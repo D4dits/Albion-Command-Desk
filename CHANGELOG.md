@@ -41,6 +41,7 @@ and this project uses semantic versioning.
 - Scanner tab now shows capture-runtime diagnostics and provides runtime action buttons (`Install runtime` / `Open runtime page`) plus manual runtime refresh.
 - Live startup policy module (`albion_dps/capture/startup_policy.py`) with deterministic live->core fallback decisions and recovery messaging.
 - Regression tests for capture fallback transitions and messaging in `tests/test_capture_startup_policy.py`.
+- Manifest strategy validator in `tools/release/manifest/build_manifest.py` to enforce preferred per-OS asset ordering and metadata contract checks.
 
 ### Changed
 - `albion_dps/qt/ui/AppButton.qml` no longer mutates `checked` internally for checkable buttons, preserving single-active mode/sort bindings in Meter controls.
@@ -65,6 +66,11 @@ and this project uses semantic versioning.
 - Platform install READMEs now document non-interactive mode and release-version diagnostic usage.
 - `albion_dps/qt/runner.py` now handles blocked/unknown runtime states in `live` mode without hard crashes and logs explicit recovery actions.
 - `albion_dps/qt/runner.py` now falls back to `core` mode when capture prerequisites are missing/blocked or no interfaces are available, instead of aborting app startup.
+- `tools/release/manifest/build_manifest.py` now classifies AppImage/DMG archives, validates HTTPS URL + SHA256 digest + positive size, and sorts assets with preferred installer/archive first per OS.
+- `.github/workflows/release-manifest.yml` now uses shared manifest strategy validation logic (no duplicated policy in workflow script).
+- `tools/release/manifest/manifest.example.json` now follows canonical artifact naming matrix (installer/AppImage/DMG + bootstrap scripts).
+- `tests/test_release_manifest_contract.py` now validates URL/checksum/size fields and enforces preferred first-asset ordering per OS.
+- `docs/release/RELEASE_MANIFEST_SPEC.md` now allows `arch=universal` for macOS universal artifacts.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `REL-002` as completed.
 - `albion_dps/qt/ui/Main.qml` now consumes shared theme tokens for app shell and baseline styles.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now start Phase 1 with `UXR-010` completed.

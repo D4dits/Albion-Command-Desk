@@ -94,7 +94,7 @@ Goal: make ACD install/run/update with one command or one installer click on Win
 
 ### PH4-REL-044 - Installer-first manifest policy
 - Owner: `@maintainer`
-- Status: `todo`
+- Status: `done`
 - Target release: `v0.2.0`
 - Manifest must include platform-preferred asset first and checksum metadata.
 - Validate URLs and checksums during release pipeline.
