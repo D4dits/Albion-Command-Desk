@@ -11,12 +11,10 @@ from pathlib import Path
 
 from albion_dps.capture import auto_detect_interface, capture_backend_available, list_interfaces
 from albion_dps.capture.npcap_runtime import (
-    NPCAP_DOWNLOAD_URL,
     RUNTIME_STATE_AVAILABLE,
-    RUNTIME_STATE_BLOCKED,
-    RUNTIME_STATE_MISSING,
     detect_npcap_runtime,
 )
+from albion_dps.capture.startup_policy import decide_live_startup
 from albion_dps.domain import FameTracker, NameRegistry, PartyRegistry, load_item_resolver
 from albion_dps.domain.item_db import ensure_game_databases
 from albion_dps.domain.map_resolver import load_map_resolver
@@ -229,57 +227,28 @@ def _build_snapshot_stream(
             for interface in list_interfaces():
                 print(interface)
             return None
-        if os.name == "nt":
-            npcap_status = detect_npcap_runtime()
-            if npcap_status.state == RUNTIME_STATE_AVAILABLE:
-                if npcap_status.install_path:
-                    logging.getLogger(__name__).info(
-                        "Npcap Runtime detected at: %s (%s)",
-                        npcap_status.install_path,
-                        npcap_status.detail,
-                    )
-                else:
-                    logging.getLogger(__name__).info("Npcap Runtime detected.")
-            elif npcap_status.state == RUNTIME_STATE_MISSING:
-                logging.getLogger(__name__).error(
-                    "Npcap Runtime is missing. Download: %s",
-                    NPCAP_DOWNLOAD_URL,
-                )
-                logging.getLogger(__name__).error(
-                    "Live capture requires Npcap Runtime. Install it, then restart Albion Command Desk."
-                )
-                return None
-            elif npcap_status.state == RUNTIME_STATE_BLOCKED:
-                logging.getLogger(__name__).error(
-                    "Npcap Runtime check is blocked: %s",
+        npcap_status = detect_npcap_runtime() if os.name == "nt" else None
+        startup_decision = decide_live_startup(
+            os_name=os.name,
+            backend_available=capture_backend_available(),
+            runtime_status=npcap_status,
+        )
+        if os.name == "nt" and npcap_status is not None and npcap_status.state == RUNTIME_STATE_AVAILABLE:
+            if npcap_status.install_path:
+                logging.getLogger(__name__).info(
+                    "Npcap Runtime detected at: %s (%s)",
+                    npcap_status.install_path,
                     npcap_status.detail,
                 )
-                logging.getLogger(__name__).error(
-                    "Open runtime installer page: %s",
-                    npcap_status.action_url or NPCAP_DOWNLOAD_URL,
-                )
-                return None
             else:
-                logging.getLogger(__name__).error(
-                    "Npcap Runtime status is unknown: %s",
-                    npcap_status.detail,
-                )
-                logging.getLogger(__name__).error(
-                    "Open runtime installer page: %s",
-                    npcap_status.action_url or NPCAP_DOWNLOAD_URL,
-                )
-                return None
-
-        if not capture_backend_available():
-            logging.getLogger(__name__).error(
-                "Live capture backend is missing. Reinstall with capture profile: pip install -e \".[capture]\""
-            )
-            if os.name == "nt":
-                logging.getLogger(__name__).error(
-                    "If needed, install Npcap Runtime: %s",
-                    NPCAP_DOWNLOAD_URL,
-                )
-            return None
+                logging.getLogger(__name__).info("Npcap Runtime detected.")
+        if startup_decision.mode != "live":
+            logging.getLogger(__name__).warning("%s", startup_decision.message)
+            if startup_decision.action_url:
+                logging.getLogger(__name__).warning("Recovery page: %s", startup_decision.action_url)
+            logging.getLogger(__name__).info("Starting in core mode instead of live capture.")
+            args.qt_command = "core"
+            return ()
 
         interface = args.interface
         if not interface:
@@ -292,8 +261,11 @@ def _build_snapshot_stream(
             if interface is None:
                 interface = _fallback_interface()
                 if interface is None:
-                    logging.getLogger(__name__).error("No capture interfaces available")
-                    return None
+                    logging.getLogger(__name__).warning(
+                        "No capture interfaces available. Falling back to core mode."
+                    )
+                    args.qt_command = "core"
+                    return ()
                 logging.getLogger(__name__).warning(
                     "Auto-detect found no traffic; using fallback interface: %s",
                     interface,

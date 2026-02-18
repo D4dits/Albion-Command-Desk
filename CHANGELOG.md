@@ -39,6 +39,8 @@ and this project uses semantic versioning.
 - Shared install smoke check now accepts install profile + expected artifact context.
 - Hardened Npcap runtime detector states (`available`, `missing`, `blocked`, `unknown`) with action URL metadata.
 - Scanner tab now shows capture-runtime diagnostics and provides runtime action buttons (`Install runtime` / `Open runtime page`) plus manual runtime refresh.
+- Live startup policy module (`albion_dps/capture/startup_policy.py`) with deterministic live->core fallback decisions and recovery messaging.
+- Regression tests for capture fallback transitions and messaging in `tests/test_capture_startup_policy.py`.
 
 ### Changed
 - `albion_dps/qt/ui/AppButton.qml` no longer mutates `checked` internally for checkable buttons, preserving single-active mode/sort bindings in Meter controls.
@@ -62,6 +64,7 @@ and this project uses semantic versioning.
 - `tools/install/windows/install.ps1`, `tools/install/linux/install.sh`, and `tools/install/macos/install.sh` now pass profile/artifact contract metadata into shared smoke checks.
 - Platform install READMEs now document non-interactive mode and release-version diagnostic usage.
 - `albion_dps/qt/runner.py` now handles blocked/unknown runtime states in `live` mode without hard crashes and logs explicit recovery actions.
+- `albion_dps/qt/runner.py` now falls back to `core` mode when capture prerequisites are missing/blocked or no interfaces are available, instead of aborting app startup.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `REL-002` as completed.
 - `albion_dps/qt/ui/Main.qml` now consumes shared theme tokens for app shell and baseline styles.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now start Phase 1 with `UXR-010` completed.

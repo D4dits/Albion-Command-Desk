@@ -84,7 +84,7 @@ Goal: make ACD install/run/update with one command or one installer click on Win
 
 ### PH4-REL-043 - Core fallback guarantee
 - Owner: `@maintainer`
-- Status: `todo`
+- Status: `done`
 - Target release: `v0.2.0`
 - Enforce fallback to `core` in bootstrap and runtime startup paths.
 - Add regression tests for fallback transitions and messaging.

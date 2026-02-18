@@ -227,12 +227,12 @@ Update status checkboxes and notes after each implemented ticket.
   3. `albion_dps/qt/ui/Main.qml`
 
 ### PH4-REL-043 - Core fallback guarantee
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: ensure startup degrades to `core` without crashes when capture prerequisites are absent.
 - Files:
   1. `albion_dps/qt/runner.py`
-  2. `albion_dps/cli.py`
-  3. `tests/`
+  2. `albion_dps/capture/startup_policy.py`
+  3. `tests/test_capture_startup_policy.py`
 
 ### PH4-REL-044 - Installer-first manifest policy
 - [ ] Status: TODO
@@ -383,6 +383,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-18: PH4-REL-043 completed (live startup policy now degrades to core on missing/blocked capture prerequisites and no-interface scenarios; regression tests added for fallback transitions/messages).
 - 2026-02-18: PH4-REL-042 completed (runtime detector states hardened to available/missing/blocked/unknown, scanner UI now exposes runtime action CTA, live startup handles missing runtime without crash).
 - 2026-02-18: PH4-REL-041 completed (bootstrap scripts now support non-interactive CI mode and emit canonical per-OS artifact diagnostics; shared smoke check consumes profile/artifact context).
 - 2026-02-18: PH4-REL-040 completed (deterministic artifact matrix/naming contract documented in release checklist and manifest spec).
