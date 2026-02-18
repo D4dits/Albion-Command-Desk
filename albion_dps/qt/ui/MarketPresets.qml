@@ -99,7 +99,7 @@ Rectangle {
                 text: "Load"
                 Layout.fillWidth: true
                 implicitHeight: root.compactControlHeight
-                font.pixelSize: 11
+                fontPixelSize: 11
                 enabled: presetNameField.text.trim().length > 0 || String(presetCombo.currentText || "").trim().length > 0
                 onClicked: {
                     var name = presetNameField.text.trim()
