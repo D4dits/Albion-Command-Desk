@@ -112,7 +112,7 @@ Goal: make ACD install/run/update with one command or one installer click on Win
 
 ### PH4-QA-040 - Clean-machine end-to-end install verification
 - Owner: `@maintainer`
-- Status: `todo`
+- Status: `done`
 - Target release: `v0.2.0`
 - Add matrix tests for first install + first launch + update check on all OS.
 - Capture screenshots/log artifacts from CI for every release candidate.

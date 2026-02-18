@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -41,6 +42,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--project-root", required=True, help="Repository root path")
     parser.add_argument("--profile", choices=("core", "capture"), default="core", help="Install profile context")
     parser.add_argument("--artifact-name", default="", help="Expected primary release artifact name (diagnostic)")
+    parser.add_argument(
+        "--report-path",
+        default="",
+        help="Optional JSON report output path for CI evidence",
+    )
     args = parser.parse_args(argv)
 
     project_root = Path(args.project_root).resolve()
@@ -57,13 +63,28 @@ def main(argv: list[str] | None = None) -> int:
         lambda: _check_qt_probe(project_root),
     ]
 
+    report: dict[str, object] = {
+        "profile": args.profile,
+        "artifact_name": args.artifact_name,
+        "project_root": str(project_root),
+        "checks": [],
+    }
     failed = False
     for check in checks:
         ok, message = check()
         prefix = "OK" if ok else "FAIL"
         print(f"[smoke] {prefix}: {message}")
+        report["checks"].append({"ok": bool(ok), "message": message})
         if not ok:
             failed = True
+
+    report["passed"] = not failed
+    report["exit_code"] = 1 if failed else 0
+    if args.report_path.strip():
+        report_path = Path(args.report_path).expanduser().resolve()
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        print(f"[smoke] REPORT: {report_path}")
 
     return 1 if failed else 0
 

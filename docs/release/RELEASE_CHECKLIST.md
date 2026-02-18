@@ -46,6 +46,10 @@ Use this checklist before publishing a new release.
   - `windows-core`, `linux-core`, `macos-core` jobs must pass (**BLOCKER**).
   - `linux-capture-advisory`, `macos-capture-advisory` are warning-only.
   - Verify matrix from CLI: `python .\tools\qa\verify_clean_machine_matrix.py`.
+  - Confirm required CI evidence artifacts are present and non-expired:
+    - `bootstrap-smoke-windows-core`
+    - `bootstrap-smoke-linux-core`
+    - `bootstrap-smoke-macos-core`
 - [ ] `release-manifest.yml`:
   - Manifest build must pass (**BLOCKER**).
   - Manifest strategy validation requires Windows installer asset (**BLOCKER**).

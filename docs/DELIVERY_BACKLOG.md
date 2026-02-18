@@ -256,6 +256,17 @@ Update status checkboxes and notes after each implemented ticket.
   8. `tests/test_qt_update_banner.py`
   9. `tools/qa/verify_release_update_flow.py`
 
+### PH4-QA-040 - Clean-machine end-to-end install verification
+- [x] Status: DONE
+- Goal: enforce clean-machine matrix checks with CI evidence payloads for each required OS job.
+- Files:
+  1. `.github/workflows/bootstrap-smoke.yml`
+  2. `tools/install/common/smoke_check.py`
+  3. `tools/qa/verify_clean_machine_matrix.py`
+  4. `tests/test_verify_clean_machine_matrix.py`
+  5. `docs/qa/QA_CLEAN_MACHINE.md`
+  6. `docs/release/RELEASE_CHECKLIST.md`
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract
@@ -389,6 +400,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-18: PH4-QA-040 completed (bootstrap-smoke now uploads per-job evidence bundles with logs/smoke JSON/update-flow traces + UX baselines; clean-machine verifier now blocks on missing/expired required evidence artifacts).
 - 2026-02-18: PH4-REL-045 completed (update checker now resolves per-OS installer/bootstrap URL + notes URL, update banner exposes Install/Notes actions, and repeated alerts are suppressed once a version is dismissed).
 - 2026-02-18: PH4-REL-044 completed (manifest builder now enforces deterministic preferred-asset ordering, validates HTTPS URLs and SHA256 checksums, and workflow strategy checks use the shared policy validator).
 - 2026-02-18: PH4-REL-043 completed (live startup policy now degrades to core on missing/blocked capture prerequisites and no-interface scenarios; regression tests added for fallback transitions/messages).

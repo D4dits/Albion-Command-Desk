@@ -9,12 +9,23 @@ from dataclasses import dataclass
 
 REQUIRED_JOBS = ("windows-core", "linux-core", "macos-core")
 ADVISORY_JOBS = ("linux-capture-advisory", "macos-capture-advisory")
+REQUIRED_EVIDENCE_ARTIFACTS = (
+    "bootstrap-smoke-windows-core",
+    "bootstrap-smoke-linux-core",
+    "bootstrap-smoke-macos-core",
+)
 
 
 @dataclass
 class JobState:
     name: str
     conclusion: str
+
+
+@dataclass
+class ArtifactState:
+    name: str
+    expired: bool
 
 
 def _run_gh(command: list[str]) -> str:
@@ -50,6 +61,15 @@ def _latest_bootstrap_run_id() -> int:
     raise RuntimeError("no completed bootstrap-smoke run found on main")
 
 
+def _repo_name_with_owner() -> str:
+    raw = _run_gh(["gh", "repo", "view", "--json", "nameWithOwner"])
+    payload = json.loads(raw)
+    value = str(payload.get("nameWithOwner", "")).strip()
+    if not value:
+        raise RuntimeError("unable to resolve repository from gh")
+    return value
+
+
 def _load_job_states(run_id: int) -> dict[str, JobState]:
     raw = _run_gh(["gh", "run", "view", str(run_id), "--json", "jobs"])
     payload = json.loads(raw)
@@ -60,6 +80,21 @@ def _load_job_states(run_id: int) -> dict[str, JobState]:
         conclusion = str(job.get("conclusion", "")).strip().lower()
         if name:
             result[name] = JobState(name=name, conclusion=conclusion)
+    return result
+
+
+def _load_artifacts(run_id: int) -> dict[str, ArtifactState]:
+    repo = _repo_name_with_owner()
+    raw = _run_gh(["gh", "api", f"repos/{repo}/actions/runs/{run_id}/artifacts"])
+    payload = json.loads(raw)
+    artifacts = payload.get("artifacts", [])
+    result: dict[str, ArtifactState] = {}
+    for artifact in artifacts:
+        name = str(artifact.get("name", "")).strip()
+        if not name:
+            continue
+        expired = bool(artifact.get("expired", False))
+        result[name] = ArtifactState(name=name, expired=expired)
     return result
 
 
@@ -81,6 +116,7 @@ def main() -> int:
     try:
         run_id = int(args.run_id) if int(args.run_id) > 0 else _latest_bootstrap_run_id()
         jobs = _load_job_states(run_id)
+        artifacts = _load_artifacts(run_id)
     except Exception as exc:
         print(f"[qa] unable to verify bootstrap matrix: {exc}", file=sys.stderr)
         return 2
@@ -100,6 +136,19 @@ def main() -> int:
         state = jobs.get(name)
         conclusion = state.conclusion if state else "missing"
         print(f"- {name}: {conclusion}")
+
+    print("[qa] required evidence artifacts:")
+    for name in REQUIRED_EVIDENCE_ARTIFACTS:
+        state = artifacts.get(name)
+        if state is None:
+            print(f"- {name}: missing")
+            failures.append(f"artifact:{name}")
+            continue
+        if state.expired:
+            print(f"- {name}: expired")
+            failures.append(f"artifact:{name}")
+            continue
+        print(f"- {name}: ok")
 
     if failures:
         print(f"[qa] clean-machine matrix FAILED: {', '.join(failures)}")
