@@ -120,14 +120,14 @@ TableSurface {
                 text: root.craftPlanSortDescending ? "Desc" : "Asc"
                 implicitHeight: 20
                 implicitWidth: 48
-                font.pixelSize: 10
+                fontPixelSize: 10
                 onClicked: root.toggleCraftPlanSortDescending()
             }
             AppButton {
                 text: "Clear"
                 implicitHeight: 20
                 implicitWidth: 52
-                font.pixelSize: 10
+                fontPixelSize: 10
                 onClicked: root.clearCraftPlan()
             }
         }
@@ -304,7 +304,7 @@ TableSurface {
                     AppButton {
                         Layout.preferredWidth: 40
                         implicitHeight: 22
-                        font.pixelSize: 10
+                        fontPixelSize: 10
                         text: "Del"
                         onClicked: {
                             root.craftPlanPendingContentY = craftPlanList.contentY
