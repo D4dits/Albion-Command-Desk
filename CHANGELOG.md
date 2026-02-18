@@ -42,6 +42,7 @@ and this project uses semantic versioning.
 - Live startup policy module (`albion_dps/capture/startup_policy.py`) with deterministic live->core fallback decisions and recovery messaging.
 - Regression tests for capture fallback transitions and messaging in `tests/test_capture_startup_policy.py`.
 - Manifest strategy validator in `tools/release/manifest/build_manifest.py` to enforce preferred per-OS asset ordering and metadata contract checks.
+- Update-banner repeat suppression tests in `tests/test_qt_update_banner.py` and installer-link verification in `tools/qa/verify_release_update_flow.py`.
 
 ### Changed
 - `albion_dps/qt/ui/AppButton.qml` no longer mutates `checked` internally for checkable buttons, preserving single-active mode/sort bindings in Meter controls.
@@ -67,6 +68,8 @@ and this project uses semantic versioning.
 - `albion_dps/qt/runner.py` now handles blocked/unknown runtime states in `live` mode without hard crashes and logs explicit recovery actions.
 - `albion_dps/qt/runner.py` now falls back to `core` mode when capture prerequisites are missing/blocked or no interfaces are available, instead of aborting app startup.
 - `tools/release/manifest/build_manifest.py` now classifies AppImage/DMG archives, validates HTTPS URL + SHA256 digest + positive size, and sorts assets with preferred installer/archive first per OS.
+- `albion_dps/update/checker.py` now resolves the preferred per-OS download asset and exposes separate `download_url` and `notes_url` values.
+- Qt update banner now uses installer-first `Install` CTA + `Notes` action, and dismissed versions stay hidden until a newer version is available.
 - `.github/workflows/release-manifest.yml` now uses shared manifest strategy validation logic (no duplicated policy in workflow script).
 - `tools/release/manifest/manifest.example.json` now follows canonical artifact naming matrix (installer/AppImage/DMG + bootstrap scripts).
 - `tests/test_release_manifest_contract.py` now validates URL/checksum/size fields and enforces preferred first-asset ordering per OS.

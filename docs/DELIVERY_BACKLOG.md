@@ -243,12 +243,18 @@ Update status checkboxes and notes after each implemented ticket.
   3. `tests/test_release_manifest_contract.py`
 
 ### PH4-REL-045 - In-app update CTA polish
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: one-click update CTA resolves OS-correct primary installer/archive and suppresses noisy repeats.
 - Files:
   1. `albion_dps/update/checker.py`
-  2. `albion_dps/qt/ui/Main.qml`
-  3. `tests/test_qt_update_banner.py`
+  2. `albion_dps/qt/models.py`
+  3. `albion_dps/qt/runner.py`
+  4. `albion_dps/qt/ui/Main.qml`
+  5. `albion_dps/qt/ui/AppHeader.qml`
+  6. `albion_dps/qt/ui/UpdateBanner.qml`
+  7. `tests/test_update_checker.py`
+  8. `tests/test_qt_update_banner.py`
+  9. `tools/qa/verify_release_update_flow.py`
 
 ## Ticket Queue (Execution Order)
 
@@ -383,6 +389,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-18: PH4-REL-045 completed (update checker now resolves per-OS installer/bootstrap URL + notes URL, update banner exposes Install/Notes actions, and repeated alerts are suppressed once a version is dismissed).
 - 2026-02-18: PH4-REL-044 completed (manifest builder now enforces deterministic preferred-asset ordering, validates HTTPS URLs and SHA256 checksums, and workflow strategy checks use the shared policy validator).
 - 2026-02-18: PH4-REL-043 completed (live startup policy now degrades to core on missing/blocked capture prerequisites and no-interface scenarios; regression tests added for fallback transitions/messages).
 - 2026-02-18: PH4-REL-042 completed (runtime detector states hardened to available/missing/blocked/unknown, scanner UI now exposes runtime action CTA, live startup handles missing runtime without crash).

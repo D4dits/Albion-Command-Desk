@@ -240,8 +240,11 @@ class UiState(QObject):
         self._update_banner_visible = False
         self._update_banner_text = ""
         self._update_banner_url = ""
+        self._update_banner_notes_url = ""
         self._update_auto_check = bool(update_auto_check)
         self._update_check_status = ""
+        self._latest_update_version = ""
+        self._dismissed_update_version = ""
 
     @Property(str, notify=modeChanged)
     def mode(self) -> str:
@@ -294,6 +297,10 @@ class UiState(QObject):
     @Property(str, notify=updateBannerChanged)
     def updateBannerUrl(self) -> str:
         return self._update_banner_url
+
+    @Property(str, notify=updateBannerChanged)
+    def updateBannerNotesUrl(self) -> str:
+        return self._update_banner_notes_url
 
     @Property(bool, notify=updateControlChanged)
     def updateAutoCheck(self) -> bool:
@@ -354,25 +361,29 @@ class UiState(QObject):
         self._refresh_player_table()
         self._refresh_history_table()
 
-    @Slot(bool, str, str, str)
+    @Slot(bool, str, str, str, str)
     def setUpdateStatus(
         self,
         available: bool,
         current_version: str,
         latest_version: str,
         release_url: str,
+        notes_url: str = "",
     ) -> None:
         if not available:
             return
+        self._latest_update_version = str(latest_version or "")
         banner_text = f"Update available: {current_version} -> {latest_version}"
+        effective_notes_url = str(notes_url or release_url or "")
         changed = (
             banner_text != self._update_banner_text
             or release_url != self._update_banner_url
-            or not self._update_banner_visible
+            or effective_notes_url != self._update_banner_notes_url
         )
         self._update_banner_text = banner_text
         self._update_banner_url = release_url
-        self._update_banner_visible = True
+        self._update_banner_notes_url = effective_notes_url
+        self._update_banner_visible = latest_version != self._dismissed_update_version
         self._update_check_status = banner_text
         if changed:
             self.updateBannerChanged.emit()
@@ -383,6 +394,7 @@ class UiState(QObject):
         if not self._update_banner_visible:
             return
         self._update_banner_visible = False
+        self._dismissed_update_version = self._latest_update_version
         self.updateBannerChanged.emit()
 
     @Slot(bool)

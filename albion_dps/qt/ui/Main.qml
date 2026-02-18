@@ -331,6 +331,7 @@ ApplicationWindow {
             updateBannerVisible: uiState.updateBannerVisible
             updateBannerText: uiState.updateBannerText
             updateBannerUrl: uiState.updateBannerUrl
+            updateBannerNotesUrl: uiState.updateBannerNotesUrl
             updateAutoCheck: uiState.updateAutoCheck
             updateCheckStatus: uiState.updateCheckStatus
             autoUpdateLabel: root.autoUpdateLabel

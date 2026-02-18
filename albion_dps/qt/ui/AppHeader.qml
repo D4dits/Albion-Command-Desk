@@ -51,6 +51,7 @@ Rectangle {
     property bool updateBannerVisible: false
     property string updateBannerText: ""
     property string updateBannerUrl: ""
+    property string updateBannerNotesUrl: ""
 
     // Update controls state
     property bool updateAutoCheck: false
@@ -160,6 +161,7 @@ Rectangle {
                 bannerVisible: root.updateBannerVisible
                 bannerText: root.updateBannerText
                 bannerUrl: root.updateBannerUrl
+                bannerNotesUrl: root.updateBannerNotesUrl
                 minWidth: root.narrowLayout ? 180 : 270
                 maxWidth: root.narrowLayout ? 280 : 420
                 bannerHeight: theme.shellActionHeight + 4

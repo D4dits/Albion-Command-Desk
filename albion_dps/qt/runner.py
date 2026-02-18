@@ -129,7 +129,7 @@ def run_qt(args: argparse.Namespace) -> int:
         update_auto_check=load_app_settings().update_auto_check,
     )
     class _UpdateNotifier(QObject):
-        updateReady = Signal(bool, str, str, str)
+        updateReady = Signal(bool, str, str, str, str)
         updateStatus = Signal(str)
 
     update_notifier = _UpdateNotifier()
@@ -450,7 +450,8 @@ def _start_update_check(notifier) -> None:
                     True,
                     info.current_version,
                     info.latest_version,
-                    info.release_url,
+                    info.download_url or info.release_url,
+                    info.notes_url or info.release_url,
                 )
                 return
             if info.error:

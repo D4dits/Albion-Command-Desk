@@ -102,7 +102,7 @@ Goal: make ACD install/run/update with one command or one installer click on Win
 
 ### PH4-REL-045 - In-app update CTA polish
 - Owner: `@maintainer`
-- Status: `todo`
+- Status: `done`
 - Target release: `v0.2.0`
 - Update banner should open the correct installer/bootstrap asset by OS.
 - Show release notes + version delta; suppress noisy repeats.
