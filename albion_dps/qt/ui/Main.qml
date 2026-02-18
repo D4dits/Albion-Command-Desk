@@ -26,7 +26,7 @@ ApplicationWindow {
     property int compactControlHeight: theme.controlHeightCompact
     property int marketColumnSpacing: theme.marketColumnSpacing
     property int marketSetupPanelWidth: theme.marketSetupPanelWidth
-    property int marketSetupTwoColumnMinWidth: 980
+    property int marketSetupTwoColumnMinWidth: 820
     property bool marketSetupStackedLayout: width < marketSetupTwoColumnMinWidth
     property int marketSetupPanelActiveWidth: marketSetupStackedLayout ? -1 : marketSetupPanelWidth
     property int marketInputsItemWidth: Math.max(narrowLayout ? 130 : 150, Math.min(240, Math.round(width * (narrowLayout ? 0.15 : 0.17))))

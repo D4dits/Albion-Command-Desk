@@ -70,8 +70,8 @@ CardPanel {
 
     // Layout flags
     property int marketColumnSpacing: 6
-    property int marketSetupPanelWidth: 320
-    property int marketSetupTwoColumnMinWidth: 980
+    property int marketSetupPanelWidth: 308
+    property int marketSetupTwoColumnMinWidth: 820
     property bool marketSetupStackedLayout: width < marketSetupTwoColumnMinWidth
     property int marketSetupPanelActiveWidth: marketSetupStackedLayout ? -1 : marketSetupPanelWidth
     property int compactControlHeight: 24

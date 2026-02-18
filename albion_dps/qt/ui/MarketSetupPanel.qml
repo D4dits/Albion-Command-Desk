@@ -24,7 +24,7 @@ TableSurface {
 
     // Layout flags
     property bool marketSetupStackedLayout: false
-    property int marketSetupPanelActiveWidth: 330
+    property int marketSetupPanelActiveWidth: 308
     property int compactControlHeight: 24
 
     // Market state properties (bound to parent's marketSetupState)
@@ -213,7 +213,7 @@ TableSurface {
                     onValueModified: root.setStationFeePercent(value)
                 }
 
-                Text { text: "Market Fees % (auto)"; color: mutedColor; font.pixelSize: 11 }
+                Text { text: "Market Fees"; color: mutedColor; font.pixelSize: 11 }
                 Text {
                     Layout.fillWidth: true
                     text: root.premium
