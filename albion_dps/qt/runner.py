@@ -325,7 +325,7 @@ def _ensure_pyside6_paths() -> None:
     os.environ.setdefault("QML2_IMPORT_PATH", str(qml_path))
     os.environ.setdefault("QT_PLUGIN_PATH", str(plugins_path))
     # Force a non-native style so custom backgrounds in Main.qml are applied
-    os.environ["QT_QUICK_CONTROLS_STYLE"] = "Basic"
+    # os.environ["QT_QUICK_CONTROLS_STYLE"] = "Basic"  # Testing without Basic style
     _append_qt_logging_rule("qt.qpa.mime=false")
 
 
