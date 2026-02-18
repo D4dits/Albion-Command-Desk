@@ -39,12 +39,18 @@ def _check_qt_probe(project_root: Path) -> tuple[bool, str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Albion Command Desk install smoke check")
     parser.add_argument("--project-root", required=True, help="Repository root path")
+    parser.add_argument("--profile", choices=("core", "capture"), default="core", help="Install profile context")
+    parser.add_argument("--artifact-name", default="", help="Expected primary release artifact name (diagnostic)")
     args = parser.parse_args(argv)
 
     project_root = Path(args.project_root).resolve()
     if not (project_root / "pyproject.toml").exists():
         print(f"[smoke] Project root invalid: {project_root}", file=sys.stderr)
         return 2
+
+    print(f"[smoke] CONTEXT: profile={args.profile}")
+    if args.artifact_name:
+        print(f"[smoke] CONTEXT: expected_primary_artifact={args.artifact_name}")
 
     checks = [
         _check_cli_import,

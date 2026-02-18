@@ -65,6 +65,25 @@ Top-level:
 - `sha256` (string, lowercase hex digest).
 - `size` (integer, bytes, > 0).
 
+## Artifact matrix and naming contract (Phase 4 lock)
+
+Canonical asset names (recommended):
+
+- Windows installer: `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`
+- Linux AppImage: `AlbionCommandDesk-vX.Y.Z-x86_64.AppImage`
+- Linux bootstrap: `acd-install-linux-vX.Y.Z.sh`
+- macOS DMG: `AlbionCommandDesk-vX.Y.Z-universal.dmg`
+- macOS bootstrap: `acd-install-macos-vX.Y.Z.sh`
+
+Manifest ordering rule:
+
+- Preferred asset must appear first for each OS/arch tuple.
+- Preferred assets:
+  - Windows x86_64 -> `kind=installer`
+  - Linux x86_64 -> `kind=archive` (AppImage)
+  - macOS universal -> `kind=archive` (DMG)
+- Secondary bootstrap script may follow as fallback.
+
 ## Compatibility and behavior rules
 
 - Unknown fields must be ignored by clients (forward compatibility).
@@ -72,6 +91,7 @@ Top-level:
 - Clients must ignore assets with unknown `os`, `arch`, or `kind`.
 - `latest.version` newer than local version means update available.
 - If local version `< min_supported_version`, client should show hard upgrade warning.
+- If multiple assets match current OS/arch, client must pick the first matching one.
 
 ## Versioning policy
 
@@ -84,6 +104,7 @@ Top-level:
 - Manifest and assets must be served over HTTPS.
 - Clients should verify `sha256` before using downloaded artifact.
 - Do not embed secrets/tokens in the manifest.
+- Rollback safety: keep a `last-known-good` manifest snapshot and never overwrite it without validation.
 
 ## Publishing
 

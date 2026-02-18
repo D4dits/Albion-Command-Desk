@@ -52,6 +52,18 @@ Use a specific Python interpreter (CI/controlled runtime):
 powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Python "C:\Python312\python.exe"
 ```
 
+CI/non-interactive mode (disables pip prompts and forces no auto-run):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -NonInteractive
+```
+
+Set release-version label for artifact contract diagnostics:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -ReleaseVersion 0.2.0 -SkipRun
+```
+
 Legacy alias (same as `-Profile core`):
 
 ```powershell
@@ -67,3 +79,5 @@ powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Sk
 - For local firewalls/AV restrictions, run PowerShell as Administrator.
 - `live` mode checks Npcap Runtime on startup and logs detected install path.
 - If Npcap Runtime is missing, install from: `https://npcap.com/#download`.
+- Diagnostic output includes expected primary Windows artifact name:
+  `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`.

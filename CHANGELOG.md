@@ -35,6 +35,8 @@ and this project uses semantic versioning.
 - Tokenized motion timings in `Theme.qml` for consistent micro-interactions.
 - Accessibility focus token (`focusRingWidth`) and higher-contrast secondary text tokens in `Theme.qml`.
 - PH2 visual baseline asset set in `assets/ux-baseline/` (`ph2-meter.png`, `ph2-scanner.png`, `ph2-market.png`).
+- Bootstrap installers now support explicit non-interactive CI mode flags (`-NonInteractive`, `--non-interactive`) and release-version artifact diagnostics.
+- Shared install smoke check now accepts install profile + expected artifact context.
 
 ### Changed
 - `albion_dps/qt/ui/AppButton.qml` no longer mutates `checked` internally for checkable buttons, preserving single-active mode/sort bindings in Meter controls.
@@ -53,6 +55,10 @@ and this project uses semantic versioning.
 - `.github/workflows/bootstrap-smoke.yml` now maps mandatory core checks and advisory capture checks per OS.
 - `.github/workflows/release-manifest.yml` now validates manifest assets against Phase 0 release strategy.
 - `docs/release/RELEASE_MANIFEST_SPEC.md` now documents manifest blocker/warning policy.
+- `docs/release/RELEASE_CHECKLIST.md` now defines deterministic cross-platform artifact naming and primary/secondary release matrix entries.
+- `docs/release/RELEASE_MANIFEST_SPEC.md` now defines preferred per-OS asset ordering and first-match client selection behavior.
+- `tools/install/windows/install.ps1`, `tools/install/linux/install.sh`, and `tools/install/macos/install.sh` now pass profile/artifact contract metadata into shared smoke checks.
+- Platform install READMEs now document non-interactive mode and release-version diagnostic usage.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `REL-002` as completed.
 - `albion_dps/qt/ui/Main.qml` now consumes shared theme tokens for app shell and baseline styles.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now start Phase 1 with `UXR-010` completed.

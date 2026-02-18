@@ -5,7 +5,9 @@ param(
     [string]$Python = "",
     [ValidateSet("core", "capture")]
     [string]$Profile = "core",
+    [string]$ReleaseVersion = "local-dev",
     [switch]$SkipRun,
+    [switch]$NonInteractive,
     [switch]$ForceRecreateVenv,
     [switch]$SkipCaptureExtras,
     [switch]$StrictCapture
@@ -79,12 +81,14 @@ function Show-InstallDiagnostics {
         [string]$ProjectRootPath,
         [string]$VirtualEnvPath,
         [string]$InstallProfile,
-        [hashtable]$LauncherInfo
+        [hashtable]$LauncherInfo,
+        [string]$PrimaryArtifactName
     )
     Write-InstallInfo "Diagnostic summary:"
     Write-InstallInfo "  project_root: $ProjectRootPath"
     Write-InstallInfo "  venv_path: $VirtualEnvPath"
     Write-InstallInfo "  profile: $InstallProfile"
+    Write-InstallInfo "  expected_primary_artifact: $PrimaryArtifactName"
     Write-InstallInfo "  python: $($LauncherInfo.Command -join ' ') (version $($LauncherInfo.Version))"
     $vcTools = Get-Command "cl.exe" -ErrorAction SilentlyContinue
     if ($vcTools) {
@@ -111,6 +115,11 @@ function Show-InstallDiagnostics {
     } else {
         Write-InstallInfo "  npcap_runtime: optional (core mode selected)"
     }
+}
+
+function Get-WindowsPrimaryArtifactName {
+    param([string]$Version = "local-dev")
+    return "AlbionCommandDesk-Setup-v$Version-x86_64.exe"
 }
 
 function Resolve-PythonLauncher {
@@ -326,12 +335,19 @@ if ($SkipCaptureExtras) {
     Write-InstallWarn "SkipCaptureExtras is deprecated. Use -Profile core."
     $Profile = "core"
 }
+if ($NonInteractive) {
+    $env:PIP_NO_INPUT = "1"
+    $env:PIP_DISABLE_PIP_VERSION_CHECK = "1"
+    $SkipRun = $true
+    Write-InstallInfo "NonInteractive mode enabled (pip prompts disabled, SkipRun forced)."
+}
 if ($Profile -eq "core") {
     Write-InstallInfo "Install profile: core (UI + market/scanner/replay, no live capture backend)"
 } else {
     Write-InstallInfo "Install profile: capture (includes live capture backend)"
 }
-Show-InstallDiagnostics -ProjectRootPath $ProjectRoot -VirtualEnvPath $VenvPath -InstallProfile $Profile -LauncherInfo $launcher
+$primaryArtifact = Get-WindowsPrimaryArtifactName -Version $ReleaseVersion
+Show-InstallDiagnostics -ProjectRootPath $ProjectRoot -VirtualEnvPath $VenvPath -InstallProfile $Profile -LauncherInfo $launcher -PrimaryArtifactName $primaryArtifact
 $captureSdkStatus = $null
 if ($Profile -eq "capture") {
     $captureSdkStatus = Test-NpcapSdk
@@ -387,7 +403,7 @@ if (-not (Test-Path $smokeScript)) {
 }
 
 Write-InstallInfo "Running shared install smoke checks"
-& $venvPython $smokeScript --project-root $ProjectRoot
+& $venvPython $smokeScript --project-root $ProjectRoot --profile $Profile --artifact-name $primaryArtifact
 if ($LASTEXITCODE -ne 0) {
     Throw-InstallError "Shared smoke checks failed."
 }

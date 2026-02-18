@@ -25,10 +25,17 @@ Use this checklist before publishing a new release.
 
 ## 3) Build and packaging
 
-- [ ] Build target artifacts for intended platforms (frozen strategy):
-  - Windows x86_64: installer asset (`kind=installer`) - **BLOCKER**
-  - Linux x86_64: archive/bootstrap asset (`kind=archive` or `kind=bootstrap-script`) - warning only in Phase 0
-  - macOS (x86_64/arm64): archive/bootstrap asset (`kind=archive` or `kind=bootstrap-script`) - warning only in Phase 0
+- [ ] Build artifacts using the frozen matrix and naming contract:
+
+| OS | Priority | Kind | Canonical name pattern | Gate |
+|---|---|---|---|---|
+| Windows x86_64 | Primary | installer | `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe` | **BLOCKER** |
+| Linux x86_64 | Primary | archive | `AlbionCommandDesk-vX.Y.Z-x86_64.AppImage` | warning (until Linux packaging lock) |
+| Linux x86_64 | Secondary | bootstrap-script | `acd-install-linux-vX.Y.Z.sh` | warning |
+| macOS universal | Primary | archive | `AlbionCommandDesk-vX.Y.Z-universal.dmg` | warning (until macOS packaging lock) |
+| macOS universal | Secondary | bootstrap-script | `acd-install-macos-vX.Y.Z.sh` | warning |
+
+- [ ] Confirm uploaded filenames match canonical patterns for this tag.
 - [ ] Verify each produced artifact launches and opens Qt UI.
 - [ ] Verify replay mode works on each OS target.
 - [ ] Verify live capture mode on at least one environment per OS family (advisory for CI; blocker for manual release sign-off).
@@ -64,6 +71,8 @@ Use this checklist before publishing a new release.
   - release URL,
   - changelog URL,
   - checksums (`sha256`) for assets.
+- [ ] Verify manifest asset order lists preferred installer/archive first per OS.
+- [ ] Verify every listed asset has non-empty checksum and byte size > 0.
 
 ## 6) Post-release verification
 
@@ -75,4 +84,6 @@ Use this checklist before publishing a new release.
 
 - [ ] Keep previous stable release asset links available.
 - [ ] If critical issue found, publish hotfix tag and update manifest quickly.
+- [ ] Maintain a `last-known-good` manifest snapshot and restore command path.
+- [ ] Ensure manifest rollback can be executed in under 10 minutes.
 - [ ] Record incident notes in `CHANGELOG.md` and issue tracker.

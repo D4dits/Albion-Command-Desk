@@ -9,6 +9,8 @@ SKIP_RUN=0
 FORCE_RECREATE_VENV=0
 INSTALL_PROFILE="core"
 STRICT_CAPTURE=0
+NON_INTERACTIVE=0
+RELEASE_VERSION="${ACD_RELEASE_VERSION:-local-dev}"
 
 log_info() {
   printf '[ACD install] %s\n' "$1"
@@ -36,7 +38,9 @@ Options:
   --venv-path <path>         Override virtual environment path.
   --python <path-or-command> Force Python interpreter command/path.
   --profile <core|capture>   Install profile (`core` default, `capture` for live mode).
+  --release-version <ver>    Release version label used for artifact contract diagnostics.
   --skip-run                 Install only (do not start app).
+  --non-interactive          Disable pip prompts and force --skip-run (CI mode).
   --force-recreate-venv      Remove and recreate virtual environment.
   --strict-capture           Fail if capture profile cannot be installed.
   -h, --help                 Show this help.
@@ -65,8 +69,17 @@ while [[ $# -gt 0 ]]; do
       INSTALL_PROFILE="$2"
       shift 2
       ;;
+    --release-version)
+      [[ $# -ge 2 ]] || fail "--release-version requires a value."
+      RELEASE_VERSION="$2"
+      shift 2
+      ;;
     --skip-run)
       SKIP_RUN=1
+      shift
+      ;;
+    --non-interactive)
+      NON_INTERACTIVE=1
       shift
       ;;
     --force-recreate-venv)
@@ -163,6 +176,10 @@ detect_libpcap() {
   return 1
 }
 
+get_primary_artifact_name() {
+  printf 'AlbionCommandDesk-v%s-universal.dmg' "$RELEASE_VERSION"
+}
+
 show_diagnostics() {
   local compiler_state="missing"
   if command -v clang >/dev/null 2>&1; then
@@ -176,6 +193,7 @@ show_diagnostics() {
   log_info "  project_root: ${PROJECT_ROOT}"
   log_info "  venv_path: ${VENV_PATH}"
   log_info "  profile: ${INSTALL_PROFILE}"
+  log_info "  expected_primary_artifact: $(get_primary_artifact_name)"
   log_info "  python: ${PYTHON_CMD} (version ${PYTHON_VERSION})"
   if [[ "$compiler_state" == missing ]]; then
     log_warn "  c_compiler: missing (capture profile may fail to build backend)"
@@ -203,6 +221,13 @@ log_info "Using Python launcher: ${PYTHON_CMD} (version ${PYTHON_VERSION})"
 
 if [[ "$INSTALL_PROFILE" == "capture" && "$PYTHON_VERSION" == 3.13* ]]; then
   log_warn "Python 3.13 may fail to install capture extras on some systems. Prefer Python 3.11 or 3.12."
+fi
+
+if (( NON_INTERACTIVE )); then
+  export PIP_NO_INPUT=1
+  export PIP_DISABLE_PIP_VERSION_CHECK=1
+  SKIP_RUN=1
+  log_info "Non-interactive mode enabled (pip prompts disabled, --skip-run forced)."
 fi
 
 if (( FORCE_RECREATE_VENV )) && [[ -d "$VENV_PATH" ]]; then
@@ -273,7 +298,7 @@ fi
 
 [[ -f "$SMOKE_SCRIPT" ]] || fail "Shared smoke check script not found: ${SMOKE_SCRIPT}"
 log_info "Running shared install smoke checks"
-"$VENV_PYTHON" "$SMOKE_SCRIPT" --project-root "$PROJECT_ROOT"
+"$VENV_PYTHON" "$SMOKE_SCRIPT" --project-root "$PROJECT_ROOT" --profile "$INSTALL_PROFILE" --artifact-name "$(get_primary_artifact_name)"
 
 if (( SKIP_RUN )); then
   log_info "Installation complete. Launch manually with:"
