@@ -75,7 +75,7 @@ ColumnLayout {
             compact: true
             Layout.fillWidth: true
             implicitHeight: 22
-            font.pixelSize: 10
+            fontPixelSize: 10
             enabled: root.suggestionsCount > 0
             onClicked: root.addFilteredRecipeOptions()
         }
@@ -85,7 +85,7 @@ ColumnLayout {
             compact: true
             Layout.fillWidth: true
             implicitHeight: 22
-            font.pixelSize: 10
+            fontPixelSize: 10
             enabled: root.suggestionsCount > 0 || root.searchQuery.trim().length === 0
             onClicked: root.addRecipeFamily()
         }

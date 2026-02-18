@@ -85,7 +85,7 @@ Rectangle {
                 text: "Save"
                 Layout.fillWidth: true
                 implicitHeight: root.compactControlHeight
-                font.pixelSize: 11
+                fontPixelSize: 11
                 onClicked: {
                     var name = presetNameField.text.trim()
                     if (!name.length && presetCombo.currentText) {
