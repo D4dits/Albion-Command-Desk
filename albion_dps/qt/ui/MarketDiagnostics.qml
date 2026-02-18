@@ -47,7 +47,7 @@ TableSurface {
             AppButton {
                 text: "Clear"
                 implicitHeight: 20
-                font.pixelSize: 10
+                fontPixelSize: 10
                 onClicked: root.clearDiagnostics()
             }
         }
@@ -64,7 +64,7 @@ TableSurface {
                 wrapMode: Text.NoWrap
                 color: mutedColor
                 font.family: "Consolas"
-                font.pixelSize: 10
+                fontPixelSize: 10
                 selectByMouse: true
                 background: Rectangle { color: "transparent" }
             }

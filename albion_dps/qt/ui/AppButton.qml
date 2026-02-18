@@ -28,7 +28,8 @@ Rectangle {
     property int implicitHeight: compact ? Theme.buttonHeightCompact : Theme.buttonHeightRegular
     property int implicitWidth: Math.max(64, buttonText.implicitWidth + 20)
     property int padding: compact ? Theme.spacingSm : Theme.spacingMd
-    property var font: Qt.font({ pixelSize: 12, bold: variant === "primary" || variant === "danger" || variant === "warm" })
+    property int fontPixelSize: 12
+    property bool fontBold: variant === "primary" || variant === "danger" || variant === "warm"
 
     // Click handling
     signal clicked()
@@ -270,7 +271,8 @@ Rectangle {
         anchors.rightMargin: root.padding
         text: root.text
         color: activeText
-        font: root.font
+        font.pixelSize: root.fontPixelSize
+        font.bold: root.fontBold
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
