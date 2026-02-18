@@ -44,6 +44,9 @@ and this project uses semantic versioning.
 - Manifest strategy validator in `tools/release/manifest/build_manifest.py` to enforce preferred per-OS asset ordering and metadata contract checks.
 - Update-banner repeat suppression tests in `tests/test_qt_update_banner.py` and installer-link verification in `tools/qa/verify_release_update_flow.py`.
 - Clean-machine matrix evidence test coverage in `tests/test_verify_clean_machine_matrix.py`.
+- Release rollback runbook in `docs/release/RELEASE_RUNBOOK.md`.
+- Last-known-good manifest pointer file `tools/release/manifest/last_known_good.json`.
+- Pointer maintenance and rollback helpers: `tools/release/manifest/set_last_known_good.ps1`, `tools/release/manifest/rollback_manifest.ps1`.
 
 ### Changed
 - `albion_dps/qt/ui/AppButton.qml` no longer mutates `checked` internally for checkable buttons, preserving single-active mode/sort bindings in Meter controls.
@@ -74,6 +77,7 @@ and this project uses semantic versioning.
 - `.github/workflows/bootstrap-smoke.yml` now emits per-job clean-machine evidence bundles (bootstrap logs, smoke report JSON, update-flow log, UX baseline screenshots) and runs on release publication events.
 - `tools/install/common/smoke_check.py` now supports structured JSON report output for CI artifact capture.
 - `tools/qa/verify_clean_machine_matrix.py` now validates required evidence artifacts in addition to required job conclusions.
+- `docs/release/RELEASE_CHECKLIST.md`, `docs/release/RELEASE_MANIFEST_SPEC.md`, and `README.md` now include the LKG pointer + one-command rollback flow.
 - `.github/workflows/release-manifest.yml` now uses shared manifest strategy validation logic (no duplicated policy in workflow script).
 - `tools/release/manifest/manifest.example.json` now follows canonical artifact naming matrix (installer/AppImage/DMG + bootstrap scripts).
 - `tests/test_release_manifest_contract.py` now validates URL/checksum/size fields and enforces preferred first-asset ordering per OS.

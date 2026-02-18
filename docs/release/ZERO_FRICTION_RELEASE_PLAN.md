@@ -120,7 +120,7 @@ Goal: make ACD install/run/update with one command or one installer click on Win
 
 ### PH4-OPS-040 - Release runbook and rollback
 - Owner: `@maintainer`
-- Status: `todo`
+- Status: `done`
 - Target release: `v0.2.0`
 - Document exact release steps, hotfix flow, and manifest rollback procedure.
 - Define `last-known-good` manifest pointer and one-command rollback that restores it in under 10 minutes.

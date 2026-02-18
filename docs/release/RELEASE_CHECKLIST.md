@@ -2,6 +2,8 @@
 
 Use this checklist before publishing a new release.
 
+Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
+
 ## 1) Version and changelog
 
 - [ ] Update version in `pyproject.toml`.
@@ -88,6 +90,9 @@ Use this checklist before publishing a new release.
 
 - [ ] Keep previous stable release asset links available.
 - [ ] If critical issue found, publish hotfix tag and update manifest quickly.
-- [ ] Maintain a `last-known-good` manifest snapshot and restore command path.
-- [ ] Ensure manifest rollback can be executed in under 10 minutes.
+- [ ] Update `tools/release/manifest/last_known_good.json` after release validation:
+  - `powershell -ExecutionPolicy Bypass -File .\tools\release\manifest\set_last_known_good.ps1 -Tag vX.Y.Z`
+- [ ] Validate one-command rollback path:
+  - `powershell -ExecutionPolicy Bypass -File .\tools\release\manifest\rollback_manifest.ps1`
+- [ ] Ensure manifest rollback can be executed in under 10 minutes (target from runbook).
 - [ ] Record incident notes in `CHANGELOG.md` and issue tracker.

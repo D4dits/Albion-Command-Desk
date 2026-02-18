@@ -204,6 +204,8 @@ Update notifications and installer discovery use a release manifest contract:
 - Example payload: `tools/release/manifest/manifest.example.json`
 - Builder: `tools/release/manifest/build_manifest.py`
 - Publisher helper (Windows): `tools/release/manifest/publish_manifest.ps1`
+- Last-known-good pointer updater: `tools/release/manifest/set_last_known_good.ps1`
+- One-command rollback: `tools/release/manifest/rollback_manifest.ps1`
 - CI publisher: `.github/workflows/release-manifest.yml`
 - Release asset smoke workflow: `.github/workflows/release-asset-smoke.yml`
 - Release asset verifier: `tools/qa/verify_release_artifact_matrix.py`
@@ -221,6 +223,7 @@ Update notifications and installer discovery use a release manifest contract:
 - `docs/MARKET_TROUBLESHOOTING.md`
 - `docs/MARKET_DATASET_UPDATE.md`
 - `docs/release/RELEASE_CHECKLIST.md`
+- `docs/release/RELEASE_RUNBOOK.md`
 
 ## Tests
 ```powershell

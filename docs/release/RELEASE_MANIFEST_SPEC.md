@@ -104,7 +104,10 @@ Manifest ordering rule:
 - Manifest and assets must be served over HTTPS.
 - Clients should verify `sha256` before using downloaded artifact.
 - Do not embed secrets/tokens in the manifest.
-- Rollback safety: keep a `last-known-good` manifest snapshot and never overwrite it without validation.
+- Rollback safety:
+  - maintain `tools/release/manifest/last_known_good.json` pointer to validated release tag,
+  - never update that pointer before release validation is complete,
+  - keep rollback command path documented and tested.
 
 ## Publishing
 
@@ -112,6 +115,10 @@ Manifest ordering rule:
   - `python tools/release/manifest/build_manifest.py --repo <owner/repo> --tag <tag> --output tools/release/manifest/manifest.json`
 - Publish helper (Windows):
   - `powershell -ExecutionPolicy Bypass -File .\tools\release\manifest\publish_manifest.ps1 -Tag <tag>`
+- Last-known-good pointer update:
+  - `powershell -ExecutionPolicy Bypass -File .\tools\release\manifest\set_last_known_good.ps1 -Tag <tag>`
+- Manifest rollback:
+  - `powershell -ExecutionPolicy Bypass -File .\tools\release\manifest\rollback_manifest.ps1`
 - CI workflow:
   - `.github/workflows/release-manifest.yml`
   - Triggers on `release.published` or `workflow_dispatch`.

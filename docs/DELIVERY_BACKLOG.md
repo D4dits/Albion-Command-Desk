@@ -267,6 +267,17 @@ Update status checkboxes and notes after each implemented ticket.
   5. `docs/qa/QA_CLEAN_MACHINE.md`
   6. `docs/release/RELEASE_CHECKLIST.md`
 
+### PH4-OPS-040 - Release runbook and rollback
+- [x] Status: DONE
+- Goal: define a deterministic release/hotfix/rollback path with one-command manifest restore.
+- Files:
+  1. `docs/release/RELEASE_RUNBOOK.md`
+  2. `docs/release/RELEASE_CHECKLIST.md`
+  3. `docs/release/RELEASE_MANIFEST_SPEC.md`
+  4. `tools/release/manifest/last_known_good.json`
+  5. `tools/release/manifest/set_last_known_good.ps1`
+  6. `tools/release/manifest/rollback_manifest.ps1`
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract
@@ -400,6 +411,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-18: PH4-OPS-040 completed (added release runbook with hotfix path, introduced `last_known_good.json` pointer maintenance command, and shipped one-command manifest rollback script).
 - 2026-02-18: PH4-QA-040 completed (bootstrap-smoke now uploads per-job evidence bundles with logs/smoke JSON/update-flow traces + UX baselines; clean-machine verifier now blocks on missing/expired required evidence artifacts).
 - 2026-02-18: PH4-REL-045 completed (update checker now resolves per-OS installer/bootstrap URL + notes URL, update banner exposes Install/Notes actions, and repeated alerts are suppressed once a version is dismissed).
 - 2026-02-18: PH4-REL-044 completed (manifest builder now enforces deterministic preferred-asset ordering, validates HTTPS URLs and SHA256 checksums, and workflow strategy checks use the shared policy validator).
