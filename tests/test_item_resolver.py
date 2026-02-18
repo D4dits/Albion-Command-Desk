@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from albion_dps.domain.item_resolver import load_item_resolver
+from tests.support_temp import mk_test_dir
 
 
-def test_item_resolver_role_from_items_json(tmp_path: Path) -> None:
+def test_item_resolver_role_from_items_json() -> None:
+    tmp_path = mk_test_dir("item_resolver")
     indexed_path = tmp_path / "indexedItems.json"
     items_path = tmp_path / "items.json"
 
@@ -23,7 +23,8 @@ def test_item_resolver_role_from_items_json(tmp_path: Path) -> None:
     assert resolver.role_for_items([2]) == "dps"
 
 
-def test_item_resolver_role_from_unique_pattern(tmp_path: Path) -> None:
+def test_item_resolver_role_from_unique_pattern() -> None:
+    tmp_path = mk_test_dir("item_resolver")
     indexed_path = tmp_path / "indexedItems.json"
     indexed_path.write_text(
         '[{"Index":"5","UniqueName":"T4_2H_ARCANESTAFF"}]',
@@ -34,7 +35,8 @@ def test_item_resolver_role_from_unique_pattern(tmp_path: Path) -> None:
     assert resolver.role_for_items([5]) == "tank"
 
 
-def test_item_resolver_role_from_category_mapping_py(tmp_path: Path) -> None:
+def test_item_resolver_role_from_category_mapping_py() -> None:
+    tmp_path = mk_test_dir("item_resolver")
     indexed_path = tmp_path / "indexedItems.json"
     mapping_path = tmp_path / "item_category_mapping.py"
 

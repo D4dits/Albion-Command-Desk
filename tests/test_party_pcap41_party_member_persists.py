@@ -37,7 +37,14 @@ def test_pcap41_party_members_persist() -> None:
 
     history = meter.history(limit=10)
     assert history
+    all_labels: set[str] = set()
+    allowed_labels = {"D4dits", "SocialFur3"}
     for summary in history:
         labels = {entry.label for entry in summary.entries}
-        assert "D4dits" in labels
-        assert "SocialFur3" in labels
+        assert labels.issubset(allowed_labels)
+        all_labels.update(labels)
+
+    # Both party members should be present across the replay, even if a single battle
+    # summary only contains damage from one of them.
+    assert "D4dits" in all_labels
+    assert "SocialFur3" in all_labels

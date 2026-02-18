@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import "." // for Theme access
 
 TabButton {
     id: root
@@ -13,9 +14,6 @@ TabButton {
     property int labelPixelSize: 12
     property bool labelBold: true
 
-    Theme {
-        id: theme
-    }
 
     height: parent ? parent.height : implicitHeight
     scale: root.pressed ? 0.99 : 1.0
@@ -23,7 +21,7 @@ TabButton {
 
     Behavior on scale {
         NumberAnimation {
-            duration: theme.motionFastMs
+            duration: Theme.motionFastMs
             easing.type: Easing.OutCubic
         }
     }
@@ -52,13 +50,13 @@ TabButton {
 
         Behavior on color {
             ColorAnimation {
-                duration: theme.motionNormalMs
+                duration: Theme.motionNormalMs
             }
         }
 
         Behavior on border.color {
             ColorAnimation {
-                duration: theme.motionNormalMs
+                duration: Theme.motionNormalMs
             }
         }
     }
@@ -75,7 +73,7 @@ TabButton {
 
         Behavior on color {
             ColorAnimation {
-                duration: theme.motionNormalMs
+                duration: Theme.motionNormalMs
             }
         }
     }

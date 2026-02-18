@@ -1,14 +1,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import "." // for Theme access
 
 SpinBox {
     id: root
 
-    Theme {
-        id: theme
-    }
 
-    implicitHeight: theme.controlHeightRegular
+    implicitHeight: Theme.controlHeightRegular
     editable: true
     stepSize: 1
     focusPolicy: Qt.StrongFocus
@@ -16,9 +14,9 @@ SpinBox {
     contentItem: TextInput {
         text: root.textFromValue(root.value, root.locale)
         font: root.font
-        color: root.enabled ? theme.textPrimary : theme.textDisabled
-        selectionColor: theme.brandPrimary
-        selectedTextColor: theme.textOnAccent
+        color: root.enabled ? Theme.textPrimary : Theme.textDisabled
+        selectionColor: Theme.brandPrimary
+        selectedTextColor: Theme.textOnAccent
         horizontalAlignment: Qt.AlignHCenter
         verticalAlignment: Qt.AlignVCenter
         readOnly: !root.editable
@@ -38,13 +36,13 @@ SpinBox {
     up.indicator: Rectangle {
         implicitWidth: 20
         implicitHeight: parent ? parent.height / 2 : 12
-        radius: theme.radiusSm
-        color: root.up.pressed ? theme.controlPressedBackground : (root.up.hovered ? theme.controlHoverBackground : theme.surfaceInteractive)
-        border.color: theme.borderSubtle
+        radius: Theme.radiusSm
+        color: root.up.pressed ? Theme.controlPressedBackground : (root.up.hovered ? Theme.controlHoverBackground : Theme.surfaceInteractive)
+        border.color: Theme.borderSubtle
         Text {
             anchors.centerIn: parent
             text: "+"
-            color: theme.textPrimary
+            color: Theme.textPrimary
             font.pixelSize: 12
             font.bold: true
         }
@@ -53,22 +51,22 @@ SpinBox {
     down.indicator: Rectangle {
         implicitWidth: 20
         implicitHeight: parent ? parent.height / 2 : 12
-        radius: theme.radiusSm
-        color: root.down.pressed ? theme.controlPressedBackground : (root.down.hovered ? theme.controlHoverBackground : theme.surfaceInteractive)
-        border.color: theme.borderSubtle
+        radius: Theme.radiusSm
+        color: root.down.pressed ? Theme.controlPressedBackground : (root.down.hovered ? Theme.controlHoverBackground : Theme.surfaceInteractive)
+        border.color: Theme.borderSubtle
         Text {
             anchors.centerIn: parent
             text: "-"
-            color: theme.textPrimary
+            color: Theme.textPrimary
             font.pixelSize: 12
             font.bold: true
         }
     }
 
     background: Rectangle {
-        radius: theme.radiusMd
-        color: root.enabled ? theme.inputBackground : theme.inputBackgroundDisabled
-        border.width: root.activeFocus ? theme.focusRingWidth : 1
-        border.color: root.activeFocus ? theme.inputBorderFocus : (root.enabled ? theme.inputBorder : theme.controlDisabledBorder)
+        radius: Theme.radiusMd
+        color: root.enabled ? Theme.inputBackground : Theme.inputBackgroundDisabled
+        border.width: root.activeFocus ? Theme.focusRingWidth : 1
+        border.color: root.activeFocus ? Theme.inputBorderFocus : (root.enabled ? Theme.inputBorder : Theme.controlDisabledBorder)
     }
 }

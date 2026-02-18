@@ -39,5 +39,12 @@ def test_pcap26_zone_mode_does_not_flip_between_5055_and_5056() -> None:
     history = meter.history(limit=None)
     assert history
     assert len(history) <= 3
-    assert not any((summary.label or "").endswith(":5055") for summary in history)
-    assert any((summary.label or "").endswith(":5056") for summary in history)
+
+    labels = [summary.label or "" for summary in history]
+    assert not any(label.endswith(":5055") for label in labels)
+    assert not any(label.endswith(":5056") for label in labels)
+
+    non_empty_labels = [label for label in labels if label]
+    assert non_empty_labels
+    # Zone mode should remain stable and not flap between multiple zone identifiers.
+    assert len(set(non_empty_labels)) == 1

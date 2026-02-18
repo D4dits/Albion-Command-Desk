@@ -1,59 +1,75 @@
 import QtQuick 2.15
-import QtQuick.Controls 2.15
+import "." // for Theme access
+import "utils" 1.0 as Utils
 
-Button {
+/**
+ * AppButton - Custom button component with full style control
+ *
+ * Variants:
+ * - primary: Blue (#4aa3ff)
+ * - secondary: Gray (#1b2a3c)
+ * - ghost: Transparent with border
+ * - danger: Red (#b93c47)
+ * - warm: Amber (#f2c14e)
+ */
+Rectangle {
     id: root
 
-    property string variant: "secondary" // primary | secondary | ghost | danger | warm
+    // Public properties
+    property string variant: "secondary"
     property bool compact: false
+    property bool checked: false
+    property bool checkable: false
+    property bool down: false
+    property bool hovered: false
+    property bool enabled: true
+    property bool visualFocus: false
+    property string text: ""
+    property int implicitHeight: compact ? Theme.buttonHeightCompact : Theme.buttonHeightRegular
+    property int implicitWidth: Math.max(64, buttonText.implicitWidth + 20)
+    property int padding: compact ? Theme.spacingSm : Theme.spacingMd
+    property int fontPixelSize: 12
+    property bool fontBold: variant === "primary" || variant === "danger" || variant === "warm"
+
+    // Click handling
+    signal clicked()
+    signal toggled(bool checked)
+
+    // Custom colors
     property color customBackground: "transparent"
     property color customHover: "transparent"
     property color customPressed: "transparent"
     property color customTextColor: "transparent"
     property color customBorderColor: "transparent"
 
-    Theme {
-        id: theme
-    }
+    readonly property color activeBg: root.colorForState(root.baseBackground(), root.hoverBackground(), root.pressedBackground())
+    readonly property color activeBorder: root.colorForState(root.baseBorderColor(), root.hoverBorderColor(), root.pressedBorderColor())
+    readonly property color activeText: root.resolvedTextColor()
 
-    implicitHeight: compact ? theme.buttonHeightCompact : theme.buttonHeightRegular
-    implicitWidth: Math.max(64, contentItem.implicitWidth + 20)
-    padding: compact ? theme.spacingSm : theme.spacingMd
-    hoverEnabled: enabled
-    focusPolicy: Qt.StrongFocus
-    font.pixelSize: 12
-    font.bold: variant === "primary" || variant === "danger" || variant === "warm"
-    scale: down ? 0.985 : 1.0
-    opacity: enabled ? 1.0 : 0.62
+    width: implicitWidth
+    height: implicitHeight
+    // Appearance
+    color: activeBg
+    radius: compact ? Theme.buttonRadiusCompact : Theme.buttonRadiusRegular
+    border.width: root.visualFocus ? Theme.focusRingWidth : 1
+    border.color: root.visualFocus ? Theme.borderFocus : activeBorder
 
-    Behavior on scale {
-        NumberAnimation {
-            duration: theme.motionFastMs
-            easing.type: Easing.OutCubic
-        }
-    }
-
-    Behavior on opacity {
-        NumberAnimation {
-            duration: theme.motionNormalMs
-        }
-    }
-
+    // Helper functions
     function isCustomColor(colorValue) {
         return colorValue.a > 0 || colorValue.r > 0 || colorValue.g > 0 || colorValue.b > 0
     }
 
     function colorForState(baseColor, hoverColor, pressedColor) {
-        if (!enabled) {
-            return theme.controlDisabledBackground
+        if (!root.enabled) {
+            return Theme.controlDisabledBackground
         }
-        if (checkable && checked) {
+        if (root.checkable && root.checked) {
             return pressedColor
         }
-        if (down) {
+        if (root.down) {
             return pressedColor
         }
-        if (hovered) {
+        if (root.hovered) {
             return hoverColor
         }
         return baseColor
@@ -64,18 +80,18 @@ Button {
             return customBackground
         }
         if (variant === "primary") {
-            return theme.buttonPrimaryBackground
+            return Theme.buttonPrimaryBackground
         }
         if (variant === "danger") {
-            return theme.buttonDangerBackground
+            return Theme.buttonDangerBackground
         }
         if (variant === "ghost") {
-            return theme.buttonGhostBackground
+            return Theme.buttonGhostBackground
         }
         if (variant === "warm") {
-            return theme.brandWarmAccent
+            return Theme.brandWarmAccent
         }
-        return theme.buttonSecondaryBackground
+        return Theme.buttonSecondaryBackground
     }
 
     function hoverBackground() {
@@ -83,18 +99,18 @@ Button {
             return customHover
         }
         if (variant === "primary") {
-            return theme.buttonPrimaryHover
+            return Theme.buttonPrimaryHover
         }
         if (variant === "danger") {
-            return theme.buttonDangerHover
+            return Theme.buttonDangerHover
         }
         if (variant === "ghost") {
-            return theme.buttonGhostHover
+            return Theme.buttonGhostHover
         }
         if (variant === "warm") {
             return "#ffd980"
         }
-        return theme.buttonSecondaryHover
+        return Theme.buttonSecondaryHover
     }
 
     function pressedBackground() {
@@ -102,117 +118,165 @@ Button {
             return customPressed
         }
         if (variant === "primary") {
-            return theme.buttonPrimaryPressed
+            return Theme.buttonPrimaryPressed
         }
         if (variant === "danger") {
-            return theme.buttonDangerPressed
+            return Theme.buttonDangerPressed
         }
         if (variant === "ghost") {
-            return theme.buttonGhostPressed
+            return Theme.buttonGhostPressed
         }
         if (variant === "warm") {
             return "#e0a93c"
         }
-        return theme.buttonSecondaryPressed
+        return Theme.buttonSecondaryPressed
     }
 
-    function resolvedBorderColor() {
+    function baseBorderColor() {
         if (isCustomColor(customBorderColor)) {
             return customBorderColor
         }
-        if (!enabled) {
-            return theme.controlDisabledBorder
-        }
-        if (checkable && checked) {
-            if (variant === "primary") {
-                return theme.buttonPrimaryPressed
-            }
-            if (variant === "danger") {
-                return theme.buttonDangerPressed
-            }
-            if (variant === "warm") {
-                return "#d89f35"
-            }
-            return theme.borderFocus
+        if (!root.enabled) {
+            return Theme.controlDisabledBorder
         }
         if (variant === "ghost") {
-            return hovered ? theme.borderStrong : theme.borderSubtle
+            return root.hovered ? Theme.borderStrong : Theme.borderSubtle
         }
         if (variant === "primary") {
-            return theme.buttonPrimaryBackground
+            return Theme.buttonPrimaryBackground
         }
         if (variant === "danger") {
-            return theme.buttonDangerBackground
+            return Theme.buttonDangerBackground
         }
         if (variant === "warm") {
             return "#f0bf57"
         }
-        return theme.borderStrong
+        return Theme.borderStrong
+    }
+
+    function hoverBorderColor() {
+        return baseBorderColor()
+    }
+
+    function pressedBorderColor() {
+        if (root.checkable && root.checked) {
+            if (variant === "primary") {
+                return Theme.buttonPrimaryPressed
+            }
+            if (variant === "danger") {
+                return Theme.buttonDangerPressed
+            }
+            if (variant === "warm") {
+                return "#d89f35"
+            }
+            return Theme.borderFocus
+        }
+        return baseBorderColor()
     }
 
     function resolvedTextColor() {
         if (isCustomColor(customTextColor)) {
             return customTextColor
         }
-        if (!enabled) {
-            return theme.textDisabled
+        if (!root.enabled) {
+            return Theme.textDisabled
         }
         if (variant === "primary") {
-            return theme.buttonPrimaryText
+            return Theme.buttonPrimaryText
         }
         if (variant === "danger") {
-            return theme.buttonDangerText
+            return Theme.buttonDangerText
         }
         if (variant === "warm") {
             return "#1f1400"
         }
         if (variant === "ghost") {
-            return theme.buttonGhostText
+            return Theme.buttonGhostText
         }
-        return theme.buttonSecondaryText
+        return Theme.buttonSecondaryText
     }
 
-    background: Rectangle {
-        id: backgroundRect
-        readonly property color activeBg: root.colorForState(root.baseBackground(), root.hoverBackground(), root.pressedBackground())
-        radius: compact ? theme.buttonRadiusCompact : theme.buttonRadiusRegular
-        color: "transparent"
-        border.width: root.visualFocus ? theme.focusRingWidth : 1
-        border.color: root.visualFocus ? theme.borderFocus : root.resolvedBorderColor()
+    // Scale animation
+    scale: {
+        if (root.down) return 0.97
+        if (root.hovered && root.enabled && variant !== "ghost") return 1.02
+        return 1.0
+    }
+    opacity: root.enabled ? 1.0 : 0.5
 
-        gradient: Gradient {
-            GradientStop {
-                position: 0.0
-                color: Qt.lighter(backgroundRect.activeBg, root.variant === "ghost" ? 1.0 : 1.08)
-            }
-            GradientStop {
-                position: 1.0
-                color: Qt.darker(backgroundRect.activeBg, root.variant === "ghost" ? 1.0 : 1.08)
-            }
-        }
-
-        Behavior on color {
-            ColorAnimation {
-                duration: theme.motionNormalMs
-            }
-        }
-        Behavior on border.color {
-            ColorAnimation {
-                duration: theme.motionFastMs
-            }
+    Behavior on color {
+        ColorAnimation {
+            duration: Utils.AnimationUtils.durationNormal
+            easing.type: Utils.AnimationUtils.easingOut
         }
     }
 
-    contentItem: Text {
-        text: root.text
+    Behavior on border.color {
+        ColorAnimation {
+            duration: Utils.AnimationUtils.durationFast
+            easing.type: Utils.AnimationUtils.easingOut
+        }
+    }
+
+    Behavior on scale {
+        NumberAnimation {
+            duration: Utils.AnimationUtils.durationNormal
+            easing.type: Utils.AnimationUtils.easingOut
+        }
+    }
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Utils.AnimationUtils.durationNormal
+            easing.type: Utils.AnimationUtils.easingOut
+        }
+    }
+
+    // Mouse area for click handling
+    MouseArea {
+        id: mouseArea
         anchors.fill: parent
+        hoverEnabled: root.enabled
+        cursorShape: Qt.PointingHandCursor
+
+        onPressed: mouse => {
+            root.down = true
+        }
+
+        onReleased: mouse => {
+            root.down = false
+            if (root.checkable) {
+                root.toggled(root.checked)
+            }
+            root.clicked()
+        }
+
+        onCanceled: {
+            root.down = false
+        }
+
+        onEntered: {
+            root.hovered = true
+        }
+
+        onExited: {
+            root.hovered = false
+        }
+    }
+
+    // Button text
+    Text {
+        id: buttonText
+        anchors.centerIn: parent
         anchors.leftMargin: root.padding
         anchors.rightMargin: root.padding
-        color: root.resolvedTextColor()
+        text: root.text
+        color: activeText
+        font.pixelSize: root.fontPixelSize
+        font.bold: root.fontBold
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
         wrapMode: Text.NoWrap
-        font: root.font
     }
 }

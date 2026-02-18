@@ -1,0 +1,30 @@
+# Root-level QML components
+AppButton 1.0 AppButton.qml
+AppCheckBox 1.0 AppCheckBox.qml
+AppComboBox 1.0 AppComboBox.qml
+AppHeader 1.0 AppHeader.qml
+AppShell 1.0 AppShell.qml
+AppSpinBox 1.0 AppSpinBox.qml
+AppTextField 1.0 AppTextField.qml
+CardPanel 1.0 CardPanel.qml
+ShellTabButton 1.0 ShellTabButton.qml
+SupportButtons 1.0 SupportButtons.qml
+TableSurface 1.0 TableSurface.qml
+singleton Theme 1.0 Theme.qml
+UpdateBanner 1.0 UpdateBanner.qml
+# Tab components
+ScannerTab 1.0 ScannerTab.qml
+ScannerControls 1.0 ScannerControls.qml
+ScannerLogView 1.0 ScannerLogView.qml
+MeterTab 1.0 MeterTab.qml
+MeterControls 1.0 MeterControls.qml
+MeterScoreboard 1.0 MeterScoreboard.qml
+MeterHistoryPanel 1.0 MeterHistoryPanel.qml
+MeterLegend 1.0 MeterLegend.qml
+MarketTab 1.0 MarketTab.qml
+MarketStatusBar 1.0 MarketStatusBar.qml
+MarketSetupPanel 1.0 MarketSetupPanel.qml
+MarketCraftSearch 1.0 MarketCraftSearch.qml
+MarketPresets 1.0 MarketPresets.qml
+MarketCraftsTable 1.0 MarketCraftsTable.qml
+MarketDiagnostics 1.0 MarketDiagnostics.qml
