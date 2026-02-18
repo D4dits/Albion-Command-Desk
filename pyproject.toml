@@ -34,3 +34,4 @@ exclude = ["wzor*", "tests*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "--basetemp=artifacts/tmp/pytest_tmp -p no:cacheprovider"

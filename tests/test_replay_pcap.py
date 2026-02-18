@@ -3,6 +3,7 @@ from __future__ import annotations
 import struct
 
 from albion_dps.capture.replay_pcap import replay_pcap
+from tests.support_temp import mk_test_dir
 
 
 def _ip_bytes(ip: str) -> bytes:
@@ -50,7 +51,8 @@ def _pcap_bytes(frames: list[bytes]) -> bytes:
     return b"".join(chunks)
 
 
-def test_replay_pcap_deterministic(tmp_path) -> None:
+def test_replay_pcap_deterministic() -> None:
+    tmp_path = mk_test_dir("replay_pcap")
     frame1 = _udp_frame("192.168.1.10", "10.0.0.5", 1111, 5055, b"\x01\x02\x03")
     frame2 = _udp_frame("192.168.1.10", "10.0.0.5", 1111, 5055, b"\x04\x05")
     pcap = _pcap_bytes([frame1, frame2])

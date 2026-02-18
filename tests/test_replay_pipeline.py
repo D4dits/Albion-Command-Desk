@@ -6,6 +6,7 @@ from albion_dps.meter.aggregate import RollingMeter
 from albion_dps.models import CombatEvent
 from albion_dps.pipeline import replay_snapshots
 from albion_dps.protocol.photon_decode import PhotonDecoder
+from tests.support_temp import mk_test_dir
 
 
 def _ip_bytes(ip: str) -> bytes:
@@ -53,7 +54,8 @@ def _pcap_bytes(frames: list[bytes]) -> bytes:
     return b"".join(chunks)
 
 
-def test_replay_snapshots_from_pcap(tmp_path) -> None:
+def test_replay_snapshots_from_pcap() -> None:
+    tmp_path = mk_test_dir("replay_pipeline")
     payload_hex = "000100010000002A00000000060000000000001100000001000410AABB"
     frame = _udp_frame(
         "192.168.1.10",

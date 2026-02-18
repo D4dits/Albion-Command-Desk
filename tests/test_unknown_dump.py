@@ -4,9 +4,11 @@ import logging
 
 from albion_dps.models import RawPacket
 from albion_dps.protocol.unknown_dump import dump_unknown
+from tests.support_temp import mk_test_dir
 
 
-def test_unknown_dump_writes_payload_and_logs(tmp_path, caplog) -> None:
+def test_unknown_dump_writes_payload_and_logs(caplog) -> None:
+    tmp_path = mk_test_dir("unknown_dump")
     packet = RawPacket(1234.567, "1.2.3.4", 1111, "5.6.7.8", 2222, b"\x10\x20")
     output_dir = tmp_path / "artifacts" / "unknown"
 
