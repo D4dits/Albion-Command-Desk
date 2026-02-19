@@ -66,10 +66,8 @@ namespace AlbionCommandDeskBootstrap
 
                 string zipUrl = BuildZipUrl(owner, repo, releaseTag);
                 Console.WriteLine("[ACD bootstrap] Downloading source: " + zipUrl);
-                using (var client = new WebClient())
-                {
-                    client.DownloadFile(zipUrl, zipPath);
-                }
+                ConfigureSecurityProtocols();
+                DownloadSource(zipUrl, zipPath);
 
                 Console.WriteLine("[ACD bootstrap] Extracting source...");
                 ZipFile.ExtractToDirectory(zipPath, extractRoot);
@@ -119,6 +117,49 @@ namespace AlbionCommandDeskBootstrap
                 return "https://github.com/" + owner + "/" + repo + "/archive/refs/tags/" + releaseTag + ".zip";
             }
             return "https://github.com/" + owner + "/" + repo + "/archive/refs/heads/" + releaseTag + ".zip";
+        }
+
+        private static void ConfigureSecurityProtocols()
+        {
+            const SecurityProtocolType Tls11 = (SecurityProtocolType)768;
+            const SecurityProtocolType Tls12 = (SecurityProtocolType)3072;
+            SecurityProtocolType enabled = Tls11 | Tls12;
+            try
+            {
+                enabled |= (SecurityProtocolType)12288;
+            }
+            catch
+            {
+            }
+            ServicePointManager.SecurityProtocol = enabled;
+            ServicePointManager.Expect100Continue = false;
+        }
+
+        private static void DownloadSource(string sourceUrl, string destinationPath)
+        {
+            try
+            {
+                using (var client = new WebClient())
+                {
+                    client.Headers.Add("User-Agent", "AlbionCommandDeskBootstrap/1.0");
+                    client.DownloadFile(sourceUrl, destinationPath);
+                    return;
+                }
+            }
+            catch (Exception firstError)
+            {
+                Console.WriteLine("[ACD bootstrap] WebClient download failed: " + firstError.Message);
+            }
+
+            Console.WriteLine("[ACD bootstrap] Retrying download via PowerShell Invoke-WebRequest...");
+            string psArgs = "-NoProfile -ExecutionPolicy Bypass -Command "
+                + Quote("[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; "
+                    + "Invoke-WebRequest -UseBasicParsing -Uri " + Quote(sourceUrl) + " -OutFile " + Quote(destinationPath));
+            int fallbackCode = RunProcess("powershell.exe", psArgs);
+            if (fallbackCode != 0 || !File.Exists(destinationPath))
+            {
+                throw new InvalidOperationException("Source download failed via WebClient and PowerShell fallback.");
+            }
         }
 
         private static int RunProcess(string fileName, string arguments)

@@ -56,6 +56,7 @@ and this project uses semantic versioning.
 - `Market Fees` label/value in `MarketSetupPanel.qml` was shortened and constrained to avoid overflow in narrow setup widths.
 - Header action labels were polished (`Check updates`, `PayPal`, `Buy me a Coffee`) with updated button sizing for stable alignment.
 - `tools/install/windows/install.ps1` now probes common Python install paths and attempts `winget` auto-install (`--source winget`) before failing.
+- Windows bootstrap EXE downloader now forces TLS 1.2+ and falls back to PowerShell download when WebClient fails SSL/TLS negotiation.
 - Release runbook/checklist now include the canonical Windows bootstrap EXE build step.
 - README + troubleshooting now document no-git Windows install via release EXE and Python fallback path.
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
