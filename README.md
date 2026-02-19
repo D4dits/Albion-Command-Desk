@@ -60,7 +60,18 @@ Best setup before installing ACD:
 
 ## Install (One-Click Bootstrap)
 
-### Windows
+### Windows (no Git required)
+1. Open Releases: `https://github.com/D4dits/Albion-Command-Desk/releases/latest`
+2. Download `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`.
+3. Run it (installer downloads source, installs Python automatically via `winget` when available, creates persistent runtime under `%LOCALAPPDATA%\AlbionCommandDesk`, then prints launch commands).
+4. If installation fails, the window stays open with the exact error.
+
+Installed paths (release EXE):
+- Runtime source snapshot: `%LOCALAPPDATA%\AlbionCommandDesk\runtime\vX.Y.Z`
+- Virtual environment + CLI: `%LOCALAPPDATA%\AlbionCommandDesk\venv`
+- CLI binary: `%LOCALAPPDATA%\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe`
+
+### Windows (source checkout)
 ```powershell
 git clone https://github.com/D4dits/Albion-Command-Desk.git
 cd Albion-Command-Desk
@@ -152,6 +163,13 @@ albion-command-desk live --list-interfaces
 albion-command-desk live --interface "Ethernet"
 ```
 
+Run after Windows release-EXE install (no repo required):
+```powershell
+& "$env:LOCALAPPDATA\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe" core
+# live capture (Npcap Runtime required):
+# & "$env:LOCALAPPDATA\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe" live
+```
+
 ## Key Runtime Flags
 - `--sort dmg|dps|heal|hps`
 - `--top <N>`
@@ -204,6 +222,8 @@ Update notifications and installer discovery use a release manifest contract:
 - Example payload: `tools/release/manifest/manifest.example.json`
 - Builder: `tools/release/manifest/build_manifest.py`
 - Publisher helper (Windows): `tools/release/manifest/publish_manifest.ps1`
+- Last-known-good pointer updater: `tools/release/manifest/set_last_known_good.ps1`
+- One-command rollback: `tools/release/manifest/rollback_manifest.ps1`
 - CI publisher: `.github/workflows/release-manifest.yml`
 - Release asset smoke workflow: `.github/workflows/release-asset-smoke.yml`
 - Release asset verifier: `tools/qa/verify_release_artifact_matrix.py`
@@ -221,6 +241,8 @@ Update notifications and installer discovery use a release manifest contract:
 - `docs/MARKET_TROUBLESHOOTING.md`
 - `docs/MARKET_DATASET_UPDATE.md`
 - `docs/release/RELEASE_CHECKLIST.md`
+- `docs/release/RELEASE_RUNBOOK.md`
+- `tools/release/windows/README.md`
 
 ## Tests
 ```powershell

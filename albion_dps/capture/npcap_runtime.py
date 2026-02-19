@@ -6,49 +6,83 @@ import ctypes.util
 import os
 
 NPCAP_DOWNLOAD_URL = "https://npcap.com/#download"
+RUNTIME_STATE_AVAILABLE = "available"
+RUNTIME_STATE_MISSING = "missing"
+RUNTIME_STATE_BLOCKED = "blocked"
+RUNTIME_STATE_UNKNOWN = "unknown"
 
 
 @dataclass(frozen=True)
 class NpcapRuntimeStatus:
+    state: str
     available: bool
     install_path: str | None = None
     detail: str = ""
+    action_url: str | None = None
 
 
 def detect_npcap_runtime() -> NpcapRuntimeStatus:
     if os.name != "nt":
-        return NpcapRuntimeStatus(available=True, detail="Npcap check is only required on Windows.")
-
-    for candidate in _candidate_npcap_dlls():
-        if candidate.exists():
-            return NpcapRuntimeStatus(
-                available=True,
-                install_path=str(candidate.parent),
-                detail=f"Found {candidate.name}",
-            )
-
-    service_path = _npcap_service_image_path()
-    if service_path:
         return NpcapRuntimeStatus(
+            state=RUNTIME_STATE_AVAILABLE,
             available=True,
-            install_path=service_path,
-            detail="Found Npcap service registration.",
+            detail="Npcap check is only required on Windows.",
         )
 
-    library_hint = ctypes.util.find_library("wpcap")
-    if library_hint:
+    try:
+        for candidate in _candidate_npcap_dlls():
+            if candidate.exists():
+                return NpcapRuntimeStatus(
+                    state=RUNTIME_STATE_AVAILABLE,
+                    available=True,
+                    install_path=str(candidate.parent),
+                    detail=f"Found {candidate.name}",
+                )
+
+        service_path = _npcap_service_image_path()
+        if service_path:
+            return NpcapRuntimeStatus(
+                state=RUNTIME_STATE_BLOCKED,
+                available=False,
+                install_path=service_path,
+                detail=(
+                    "Npcap service registration exists, but runtime DLLs were not found "
+                    "in standard locations."
+                ),
+                action_url=NPCAP_DOWNLOAD_URL,
+            )
+
+        library_hint = ctypes.util.find_library("wpcap")
+        if library_hint:
+            return NpcapRuntimeStatus(
+                state=RUNTIME_STATE_AVAILABLE,
+                available=True,
+                install_path=library_hint,
+                detail="Found wpcap via system library lookup.",
+            )
+    except PermissionError as exc:
         return NpcapRuntimeStatus(
-            available=True,
-            install_path=library_hint,
-            detail="Found wpcap via system library lookup.",
+            state=RUNTIME_STATE_BLOCKED,
+            available=False,
+            detail=f"Permission denied while checking Npcap runtime: {exc}",
+            action_url=NPCAP_DOWNLOAD_URL,
+        )
+    except Exception as exc:  # pragma: no cover - defensive branch
+        return NpcapRuntimeStatus(
+            state=RUNTIME_STATE_UNKNOWN,
+            available=False,
+            detail=f"Unexpected runtime detection failure: {exc}",
+            action_url=NPCAP_DOWNLOAD_URL,
         )
 
     return NpcapRuntimeStatus(
+        state=RUNTIME_STATE_MISSING,
         available=False,
         detail=(
             "Npcap Runtime was not detected. "
             f"Install it from {NPCAP_DOWNLOAD_URL}"
         ),
+        action_url=NPCAP_DOWNLOAD_URL,
     )
 
 

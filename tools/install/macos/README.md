@@ -53,6 +53,18 @@ Use a specific Python interpreter (CI/controlled runtime):
 bash ./tools/install/macos/install.sh --python "$(command -v python3.12)"
 ```
 
+CI/non-interactive mode (disables pip prompts and forces `--skip-run`):
+
+```bash
+bash ./tools/install/macos/install.sh --non-interactive
+```
+
+Set release-version label for artifact contract diagnostics:
+
+```bash
+bash ./tools/install/macos/install.sh --release-version 0.2.0 --skip-run
+```
+
 ## Notes
 
 - If command line tools are missing, run `xcode-select --install`.
@@ -60,3 +72,5 @@ bash ./tools/install/macos/install.sh --python "$(command -v python3.12)"
 - Capture profile auto-falls back to `core` if `libpcap`/toolchain prerequisites are missing.
 - Use `--strict-capture` only when you want capture install to fail instead of fallback.
 - If `--profile capture` fails on Python 3.13, retry with Python 3.11 or 3.12.
+- Diagnostic output includes expected primary macOS artifact name:
+  `AlbionCommandDesk-vX.Y.Z-universal.dmg`.

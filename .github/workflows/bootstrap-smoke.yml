@@ -2,10 +2,13 @@ name: bootstrap-smoke
 
 on:
   workflow_dispatch:
+  release:
+    types: [published, prereleased]
   pull_request:
     paths:
       - "tools/install/**"
       - "tools/release/manifest/**"
+      - "tools/qa/**"
       - "albion_dps/update/**"
       - ".github/workflows/bootstrap-smoke.yml"
   push:
@@ -13,6 +16,7 @@ on:
     paths:
       - "tools/install/**"
       - "tools/release/manifest/**"
+      - "tools/qa/**"
       - "albion_dps/update/**"
       - ".github/workflows/bootstrap-smoke.yml"
 
@@ -28,13 +32,39 @@ jobs:
       - name: Run Windows bootstrap smoke
         shell: powershell
         run: |
+          $ErrorActionPreference = "Stop"
+          $logDir = Join-Path $PWD "artifacts\ci\windows-core"
+          New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+          $bootstrapLog = Join-Path $logDir "bootstrap.log"
+
           .\tools\install\windows\install.ps1 `
             -ProjectRoot "$PWD" `
             -VenvPath "$PWD\.venv-smoke" `
             -Python "$env:pythonLocation\python.exe" `
             -Profile core `
             -ForceRecreateVenv `
-            -SkipRun
+            -SkipRun *>&1 | Tee-Object -FilePath $bootstrapLog
+
+          & "$PWD\.venv-smoke\Scripts\python.exe" `
+            tools\install\common\smoke_check.py `
+            --project-root "$PWD" `
+            --profile core `
+            --artifact-name "AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe" `
+            --report-path "$logDir\smoke-report.json" *>&1 | Tee-Object -FilePath $bootstrapLog -Append
+
+          & "$PWD\.venv-smoke\Scripts\python.exe" `
+            tools\qa\verify_release_update_flow.py *>&1 | Tee-Object -FilePath (Join-Path $logDir "update-flow.log")
+
+          if (Test-Path "$PWD\assets\ux-baseline") {
+            Copy-Item "$PWD\assets\ux-baseline\*.png" $logDir -ErrorAction SilentlyContinue
+          }
+      - name: Upload clean-machine evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-smoke-windows-core
+          path: artifacts/ci/windows-core
+          if-no-files-found: warn
 
   linux-core:
     runs-on: ubuntu-latest
@@ -68,13 +98,36 @@ jobs:
           python-version: "3.12"
       - name: Run Linux bootstrap smoke
         run: |
+          set -euo pipefail
+          EVIDENCE_DIR="$PWD/artifacts/ci/linux-core"
+          mkdir -p "$EVIDENCE_DIR"
+
           bash ./tools/install/linux/install.sh \
             --project-root "$PWD" \
             --venv-path "$RUNNER_TEMP/acd-smoke-venv" \
             --python "$pythonLocation/bin/python" \
             --profile core \
             --force-recreate-venv \
-            --skip-run
+            --skip-run 2>&1 | tee "$EVIDENCE_DIR/bootstrap.log"
+
+          "$RUNNER_TEMP/acd-smoke-venv/bin/python" \
+            tools/install/common/smoke_check.py \
+            --project-root "$PWD" \
+            --profile core \
+            --artifact-name "AlbionCommandDesk-vX.Y.Z-x86_64.AppImage" \
+            --report-path "$EVIDENCE_DIR/smoke-report.json" 2>&1 | tee -a "$EVIDENCE_DIR/bootstrap.log"
+
+          "$RUNNER_TEMP/acd-smoke-venv/bin/python" \
+            tools/qa/verify_release_update_flow.py 2>&1 | tee "$EVIDENCE_DIR/update-flow.log"
+
+          cp assets/ux-baseline/*.png "$EVIDENCE_DIR/" 2>/dev/null || true
+      - name: Upload clean-machine evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-smoke-linux-core
+          path: artifacts/ci/linux-core
+          if-no-files-found: warn
 
   linux-capture-advisory:
     runs-on: ubuntu-latest
@@ -91,13 +144,31 @@ jobs:
           python-version: "3.12"
       - name: Run Linux capture profile smoke (advisory)
         run: |
+          set -euo pipefail
+          EVIDENCE_DIR="$PWD/artifacts/ci/linux-capture-advisory"
+          mkdir -p "$EVIDENCE_DIR"
+
           bash ./tools/install/linux/install.sh \
             --project-root "$PWD" \
             --venv-path "$RUNNER_TEMP/acd-smoke-capture-venv" \
             --python "$pythonLocation/bin/python" \
             --profile capture \
             --force-recreate-venv \
-            --skip-run
+            --skip-run 2>&1 | tee "$EVIDENCE_DIR/bootstrap.log"
+
+          "$RUNNER_TEMP/acd-smoke-capture-venv/bin/python" \
+            tools/install/common/smoke_check.py \
+            --project-root "$PWD" \
+            --profile capture \
+            --artifact-name "AlbionCommandDesk-vX.Y.Z-x86_64.AppImage" \
+            --report-path "$EVIDENCE_DIR/smoke-report.json" 2>&1 | tee -a "$EVIDENCE_DIR/bootstrap.log"
+      - name: Upload advisory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-smoke-linux-capture-advisory
+          path: artifacts/ci/linux-capture-advisory
+          if-no-files-found: warn
 
   macos-core:
     runs-on: macos-latest
@@ -113,13 +184,36 @@ jobs:
           python-version: "3.12"
       - name: Run macOS bootstrap smoke
         run: |
+          set -euo pipefail
+          EVIDENCE_DIR="$PWD/artifacts/ci/macos-core"
+          mkdir -p "$EVIDENCE_DIR"
+
           bash ./tools/install/macos/install.sh \
             --project-root "$PWD" \
             --venv-path "$RUNNER_TEMP/acd-smoke-venv" \
             --python "$pythonLocation/bin/python" \
             --profile core \
             --force-recreate-venv \
-            --skip-run
+            --skip-run 2>&1 | tee "$EVIDENCE_DIR/bootstrap.log"
+
+          "$RUNNER_TEMP/acd-smoke-venv/bin/python" \
+            tools/install/common/smoke_check.py \
+            --project-root "$PWD" \
+            --profile core \
+            --artifact-name "AlbionCommandDesk-vX.Y.Z-universal.dmg" \
+            --report-path "$EVIDENCE_DIR/smoke-report.json" 2>&1 | tee -a "$EVIDENCE_DIR/bootstrap.log"
+
+          "$RUNNER_TEMP/acd-smoke-venv/bin/python" \
+            tools/qa/verify_release_update_flow.py 2>&1 | tee "$EVIDENCE_DIR/update-flow.log"
+
+          cp assets/ux-baseline/*.png "$EVIDENCE_DIR/" 2>/dev/null || true
+      - name: Upload clean-machine evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-smoke-macos-core
+          path: artifacts/ci/macos-core
+          if-no-files-found: warn
 
   macos-capture-advisory:
     runs-on: macos-latest
@@ -136,10 +230,28 @@ jobs:
           python-version: "3.12"
       - name: Run macOS capture profile smoke (advisory)
         run: |
+          set -euo pipefail
+          EVIDENCE_DIR="$PWD/artifacts/ci/macos-capture-advisory"
+          mkdir -p "$EVIDENCE_DIR"
+
           bash ./tools/install/macos/install.sh \
             --project-root "$PWD" \
             --venv-path "$RUNNER_TEMP/acd-smoke-capture-venv" \
             --python "$pythonLocation/bin/python" \
             --profile capture \
             --force-recreate-venv \
-            --skip-run
+            --skip-run 2>&1 | tee "$EVIDENCE_DIR/bootstrap.log"
+
+          "$RUNNER_TEMP/acd-smoke-capture-venv/bin/python" \
+            tools/install/common/smoke_check.py \
+            --project-root "$PWD" \
+            --profile capture \
+            --artifact-name "AlbionCommandDesk-vX.Y.Z-universal.dmg" \
+            --report-path "$EVIDENCE_DIR/smoke-report.json" 2>&1 | tee -a "$EVIDENCE_DIR/bootstrap.log"
+      - name: Upload advisory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-smoke-macos-capture-advisory
+          path: artifacts/ci/macos-capture-advisory
+          if-no-files-found: warn

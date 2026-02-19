@@ -18,6 +18,9 @@ macOS:
 bash ./tools/install/macos/install.sh --force-recreate-venv --skip-run
 ```
 
+If you installed via Windows release EXE (no repo checkout), rerun the EXE from GitHub Releases.  
+Default install location is `%LOCALAPPDATA%\AlbionCommandDesk`.
+
 ## `albion-command-desk` is not recognized
 Most common cause: command run outside project `venv`.
 
@@ -33,9 +36,17 @@ Linux/macOS:
 ./venv/bin/albion-command-desk core
 ```
 
+For Windows release-EXE install (outside repo), use:
+```
+& "$env:LOCALAPPDATA\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe" core
+```
+
 ## Installer / update errors (quick map)
 - `Python 3.10+ not found`:
-  - Install Python and rerun bootstrap installer.
+  - Windows bootstrap tries `winget` automatically.
+  - If still failing, install manually:
+    - `winget install --id Python.Python.3.12 -e --source winget --scope machine --accept-package-agreements --accept-source-agreements`
+  - Then rerun bootstrap installer.
 - `Package install failed` during `.[capture]`:
   - Use Python 3.11 or 3.12 (3.13 can fail for some capture wheels).
   - Install system build tools where required (Linux/macOS).
@@ -51,6 +62,13 @@ Linux/macOS:
   - If using custom endpoint, confirm `ALBION_COMMAND_DESK_MANIFEST_URL`.
 - `No update state persistence`:
   - Verify write access to config dir or set `ALBION_COMMAND_DESK_CONFIG_DIR`.
+
+## Folder picker appeared for Albion Online path
+This can happen on first app launch when local item/map databases are missing.
+
+- If Albion Online is not installed on that machine, `Cancel` is fine.
+- App still works (fallback mode), only some labels/details may be less complete.
+- If you install the game later, rerun extractor scripts to generate local databases.
 
 ## UI is cramped or controls overlap on small window sizes
 The shell now switches to compact/narrow breakpoints automatically:
@@ -187,6 +205,7 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install -e ".[test]"
 ```
+If `winget` reports source/certificate issues, force `--source winget` or install from python.org directly.
 
 ## Qt GUI fails to load (qtquick2plugin.dll missing)
 This usually means Qt's DLLs are not found:

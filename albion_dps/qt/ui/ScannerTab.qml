@@ -19,6 +19,8 @@ import "." // for CardPanel access
  * - startScannerSudo(): Fired when user clicks Start scanner (sudo)
  * - stopScanner(): Fired when user clicks Stop scanner
  * - clearLog(): Fired when user clicks Clear log
+ * - refreshCaptureRuntimeStatus(): Fired when user refreshes runtime diagnostics
+ * - openCaptureRuntimeAction(): Fired when user clicks runtime action button
  */
 CardPanel {
     id: root
@@ -31,6 +33,10 @@ CardPanel {
     property string clientDir: ""
     property bool scannerRunning: false
     property string logText: ""
+    property string captureRuntimeState: "unknown"
+    property string captureRuntimeDetail: ""
+    property string captureRuntimeActionLabel: ""
+    property string captureRuntimeActionUrl: ""
 
     // Signals to notify parent of actions
     signal checkForUpdates()
@@ -39,6 +45,8 @@ CardPanel {
     signal startScannerSudo()
     signal stopScanner()
     signal clearLog()
+    signal refreshCaptureRuntimeStatus()
+    signal openCaptureRuntimeAction()
 
     // Access to theme (injected by parent)
     property var theme: null
@@ -104,6 +112,36 @@ CardPanel {
             text: "Scanner uses fixed runtime defaults (upload enabled, official public ingest endpoint)."
             color: mutedColor
             font.pixelSize: 11
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            Text {
+                Layout.fillWidth: true
+                text: "Capture runtime: " + root.captureRuntimeState + " | " + root.captureRuntimeDetail
+                color: root.captureRuntimeState === "available"
+                    ? (theme ? theme.stateSuccess : "#2ecc71")
+                    : (root.captureRuntimeState === "missing"
+                        ? (theme ? theme.stateWarning : "#f39c12")
+                        : (theme ? theme.stateDanger : "#e74c3c"))
+                font.pixelSize: 11
+                wrapMode: Text.Wrap
+            }
+
+            AppButton {
+                visible: root.captureRuntimeActionLabel.length > 0
+                text: root.captureRuntimeActionLabel
+                compact: true
+                onClicked: root.openCaptureRuntimeAction()
+            }
+
+            AppButton {
+                text: "Refresh runtime"
+                compact: true
+                onClicked: root.refreshCaptureRuntimeStatus()
+            }
         }
 
         // Control buttons

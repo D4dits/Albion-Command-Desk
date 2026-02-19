@@ -52,9 +52,23 @@ Use a specific Python interpreter (CI/controlled runtime):
 bash ./tools/install/linux/install.sh --python "$(command -v python3.12)"
 ```
 
+CI/non-interactive mode (disables pip prompts and forces `--skip-run`):
+
+```bash
+bash ./tools/install/linux/install.sh --non-interactive
+```
+
+Set release-version label for artifact contract diagnostics:
+
+```bash
+bash ./tools/install/linux/install.sh --release-version 0.2.0 --skip-run
+```
+
 ## Notes
 
 - Default path (`core`) does not require packet-capture development headers.
 - Capture profile auto-falls back to `core` if `libpcap`/toolchain prerequisites are missing.
 - Use `--strict-capture` only when you want capture install to fail instead of fallback.
 - If `--profile capture` fails on Python 3.13, retry with Python 3.11 or 3.12.
+- Diagnostic output includes expected primary Linux artifact name:
+  `AlbionCommandDesk-vX.Y.Z-x86_64.AppImage`.

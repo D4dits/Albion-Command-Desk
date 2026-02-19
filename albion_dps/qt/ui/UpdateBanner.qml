@@ -21,6 +21,7 @@ Rectangle {
     property bool bannerVisible: false
     property string bannerText: ""
     property string bannerUrl: ""
+    property string bannerNotesUrl: ""
     property int minWidth: 270
     property int maxWidth: 420
     property int bannerHeight: 32
@@ -63,14 +64,29 @@ Rectangle {
 
         AppButton {
             id: updateOpenButton
-            text: "Open"
+            text: "Install"
             variant: "primary"
             compact: true
             implicitHeight: theme.shellActionHeight
-            implicitWidth: 54
+            implicitWidth: 62
             onClicked: {
                 if (root.bannerUrl.length > 0) {
                     Qt.openUrlExternally(root.bannerUrl)
+                }
+            }
+        }
+
+        AppButton {
+            id: updateNotesButton
+            visible: root.bannerNotesUrl.length > 0
+            text: "Notes"
+            variant: "secondary"
+            compact: true
+            implicitHeight: theme.shellActionHeight
+            implicitWidth: 56
+            onClicked: {
+                if (root.bannerNotesUrl.length > 0) {
+                    Qt.openUrlExternally(root.bannerNotesUrl)
                 }
             }
         }

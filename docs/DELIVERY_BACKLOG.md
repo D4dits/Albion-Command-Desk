@@ -199,6 +199,85 @@ Update status checkboxes and notes after each implemented ticket.
   2. `README.md`
   3. `docs/release/RELEASE_CHECKLIST.md`
 
+## Active Milestone - Phase 4 (Zero-friction release execution)
+
+### PH4-REL-040 - Freeze final artifact matrix
+- [x] Status: DONE
+- Goal: lock deterministic artifact naming + priority per OS for release + manifest consumers.
+- Files:
+  1. `docs/release/RELEASE_CHECKLIST.md`
+  2. `docs/release/RELEASE_MANIFEST_SPEC.md`
+  3. `docs/release/ZERO_FRICTION_RELEASE_PLAN.md`
+
+### PH4-REL-041 - Bootstrap parity with packaged installers
+- [x] Status: DONE
+- Goal: align `tools/install/*` scripts with canonical artifact names and profile flags.
+- Files:
+  1. `tools/install/windows/install.ps1`
+  2. `tools/install/linux/install.sh`
+  3. `tools/install/macos/install.sh`
+  4. `tools/install/common/smoke_check.py`
+
+### PH4-REL-042 - Capture runtime detector hardening
+- [x] Status: DONE
+- Goal: explicit runtime states (`available`, `missing`, `blocked`, `unknown`) and guided UI actions.
+- Files:
+  1. `albion_dps/capture/npcap_runtime.py`
+  2. `albion_dps/qt/runner.py`
+  3. `albion_dps/qt/ui/Main.qml`
+
+### PH4-REL-043 - Core fallback guarantee
+- [x] Status: DONE
+- Goal: ensure startup degrades to `core` without crashes when capture prerequisites are absent.
+- Files:
+  1. `albion_dps/qt/runner.py`
+  2. `albion_dps/capture/startup_policy.py`
+  3. `tests/test_capture_startup_policy.py`
+
+### PH4-REL-044 - Installer-first manifest policy
+- [x] Status: DONE
+- Goal: enforce preferred asset ordering + checksum validation in release metadata.
+- Files:
+  1. `.github/workflows/release-manifest.yml`
+  2. `tools/release/manifest/build_manifest.py`
+  3. `tests/test_release_manifest_contract.py`
+
+### PH4-REL-045 - In-app update CTA polish
+- [x] Status: DONE
+- Goal: one-click update CTA resolves OS-correct primary installer/archive and suppresses noisy repeats.
+- Files:
+  1. `albion_dps/update/checker.py`
+  2. `albion_dps/qt/models.py`
+  3. `albion_dps/qt/runner.py`
+  4. `albion_dps/qt/ui/Main.qml`
+  5. `albion_dps/qt/ui/AppHeader.qml`
+  6. `albion_dps/qt/ui/UpdateBanner.qml`
+  7. `tests/test_update_checker.py`
+  8. `tests/test_qt_update_banner.py`
+  9. `tools/qa/verify_release_update_flow.py`
+
+### PH4-QA-040 - Clean-machine end-to-end install verification
+- [x] Status: DONE
+- Goal: enforce clean-machine matrix checks with CI evidence payloads for each required OS job.
+- Files:
+  1. `.github/workflows/bootstrap-smoke.yml`
+  2. `tools/install/common/smoke_check.py`
+  3. `tools/qa/verify_clean_machine_matrix.py`
+  4. `tests/test_verify_clean_machine_matrix.py`
+  5. `docs/qa/QA_CLEAN_MACHINE.md`
+  6. `docs/release/RELEASE_CHECKLIST.md`
+
+### PH4-OPS-040 - Release runbook and rollback
+- [x] Status: DONE
+- Goal: define a deterministic release/hotfix/rollback path with one-command manifest restore.
+- Files:
+  1. `docs/release/RELEASE_RUNBOOK.md`
+  2. `docs/release/RELEASE_CHECKLIST.md`
+  3. `docs/release/RELEASE_MANIFEST_SPEC.md`
+  4. `tools/release/manifest/last_known_good.json`
+  5. `tools/release/manifest/set_last_known_good.ps1`
+  6. `tools/release/manifest/rollback_manifest.ps1`
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract
@@ -332,6 +411,14 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-02-18: PH4-OPS-040 completed (added release runbook with hotfix path, introduced `last_known_good.json` pointer maintenance command, and shipped one-command manifest rollback script).
+- 2026-02-18: PH4-QA-040 completed (bootstrap-smoke now uploads per-job evidence bundles with logs/smoke JSON/update-flow traces + UX baselines; clean-machine verifier now blocks on missing/expired required evidence artifacts).
+- 2026-02-18: PH4-REL-045 completed (update checker now resolves per-OS installer/bootstrap URL + notes URL, update banner exposes Install/Notes actions, and repeated alerts are suppressed once a version is dismissed).
+- 2026-02-18: PH4-REL-044 completed (manifest builder now enforces deterministic preferred-asset ordering, validates HTTPS URLs and SHA256 checksums, and workflow strategy checks use the shared policy validator).
+- 2026-02-18: PH4-REL-043 completed (live startup policy now degrades to core on missing/blocked capture prerequisites and no-interface scenarios; regression tests added for fallback transitions/messages).
+- 2026-02-18: PH4-REL-042 completed (runtime detector states hardened to available/missing/blocked/unknown, scanner UI now exposes runtime action CTA, live startup handles missing runtime without crash).
+- 2026-02-18: PH4-REL-041 completed (bootstrap scripts now support non-interactive CI mode and emit canonical per-OS artifact diagnostics; shared smoke check consumes profile/artifact context).
+- 2026-02-18: PH4-REL-040 completed (deterministic artifact matrix/naming contract documented in release checklist and manifest spec).
 - 2026-02-17: REL-010 completed (installer diagnostics/preflight summary for Windows/Linux/macOS with capture-specific hints).
 - 2026-02-17: REL-011 completed (capture profile fallback to core by default; strict capture mode added for advanced users).
 - 2026-02-17: REL-012 completed (release asset smoke workflow + manifest asset verifier script + QA runbook).

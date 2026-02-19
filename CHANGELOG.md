@@ -35,12 +35,34 @@ and this project uses semantic versioning.
 - Tokenized motion timings in `Theme.qml` for consistent micro-interactions.
 - Accessibility focus token (`focusRingWidth`) and higher-contrast secondary text tokens in `Theme.qml`.
 - PH2 visual baseline asset set in `assets/ux-baseline/` (`ph2-meter.png`, `ph2-scanner.png`, `ph2-market.png`).
+- Bootstrap installers now support explicit non-interactive CI mode flags (`-NonInteractive`, `--non-interactive`) and release-version artifact diagnostics.
+- Shared install smoke check now accepts install profile + expected artifact context.
+- Hardened Npcap runtime detector states (`available`, `missing`, `blocked`, `unknown`) with action URL metadata.
+- Scanner tab now shows capture-runtime diagnostics and provides runtime action buttons (`Install runtime` / `Open runtime page`) plus manual runtime refresh.
+- Live startup policy module (`albion_dps/capture/startup_policy.py`) with deterministic live->core fallback decisions and recovery messaging.
+- Regression tests for capture fallback transitions and messaging in `tests/test_capture_startup_policy.py`.
+- Manifest strategy validator in `tools/release/manifest/build_manifest.py` to enforce preferred per-OS asset ordering and metadata contract checks.
+- Update-banner repeat suppression tests in `tests/test_qt_update_banner.py` and installer-link verification in `tools/qa/verify_release_update_flow.py`.
+- Clean-machine matrix evidence test coverage in `tests/test_verify_clean_machine_matrix.py`.
+- Release rollback runbook in `docs/release/RELEASE_RUNBOOK.md`.
+- Last-known-good manifest pointer file `tools/release/manifest/last_known_good.json`.
+- Pointer maintenance and rollback helpers: `tools/release/manifest/set_last_known_good.ps1`, `tools/release/manifest/rollback_manifest.ps1`.
+- Windows release bootstrap EXE builder: `tools/release/windows/build_bootstrap_setup.ps1`.
+- Windows release bootstrap builder docs: `tools/release/windows/README.md`.
 
 ### Changed
 - `albion_dps/qt/ui/AppButton.qml` no longer mutates `checked` internally for checkable buttons, preserving single-active mode/sort bindings in Meter controls.
 - Market setup panel width was tightened (`Theme.qml`, `MarketTab.qml`, `MarketSetupPanel.qml`) and setup content now reserves right-side space for the vertical scrollbar.
 - `Market Fees` label/value in `MarketSetupPanel.qml` was shortened and constrained to avoid overflow in narrow setup widths.
 - Header action labels were polished (`Check updates`, `PayPal`, `Buy me a Coffee`) with updated button sizing for stable alignment.
+- `tools/install/windows/install.ps1` now probes common Python install paths and attempts `winget` auto-install (`--source winget`) before failing.
+- Windows bootstrap EXE downloader now forces TLS 1.2+ and falls back to PowerShell download when WebClient fails SSL/TLS negotiation.
+- Windows bootstrap EXE now invokes tagged `install.ps1` with only `-ProjectRoot` (backward-compatible with older tags that do not support `-Profile`/`-ReleaseVersion`).
+- Windows bootstrap EXE now also passes `-SkipCaptureExtras` so clean-machine installs do not require Visual C++ build tools / pcap build chain.
+- Windows bootstrap EXE now installs into `%LOCALAPPDATA%\\AlbionCommandDesk` (persistent runtime) and uses `-SkipRun` to avoid false-fail startup on machines without Npcap.
+- Release runbook/checklist now include the canonical Windows bootstrap EXE build step.
+- README + troubleshooting now document no-git Windows install via release EXE and Python fallback path.
+- Windows docs were aligned to the real bootstrap flow (install paths, launch commands, clean-machine QA steps, and legacy installer notes replaced).
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` marks `UXR-001` as completed and documents delivery notes.
 - `docs/ARCHITECTURE.md` now defines the frozen Phase 0 Qt shell layout contract.
@@ -53,6 +75,23 @@ and this project uses semantic versioning.
 - `.github/workflows/bootstrap-smoke.yml` now maps mandatory core checks and advisory capture checks per OS.
 - `.github/workflows/release-manifest.yml` now validates manifest assets against Phase 0 release strategy.
 - `docs/release/RELEASE_MANIFEST_SPEC.md` now documents manifest blocker/warning policy.
+- `docs/release/RELEASE_CHECKLIST.md` now defines deterministic cross-platform artifact naming and primary/secondary release matrix entries.
+- `docs/release/RELEASE_MANIFEST_SPEC.md` now defines preferred per-OS asset ordering and first-match client selection behavior.
+- `tools/install/windows/install.ps1`, `tools/install/linux/install.sh`, and `tools/install/macos/install.sh` now pass profile/artifact contract metadata into shared smoke checks.
+- Platform install READMEs now document non-interactive mode and release-version diagnostic usage.
+- `albion_dps/qt/runner.py` now handles blocked/unknown runtime states in `live` mode without hard crashes and logs explicit recovery actions.
+- `albion_dps/qt/runner.py` now falls back to `core` mode when capture prerequisites are missing/blocked or no interfaces are available, instead of aborting app startup.
+- `tools/release/manifest/build_manifest.py` now classifies AppImage/DMG archives, validates HTTPS URL + SHA256 digest + positive size, and sorts assets with preferred installer/archive first per OS.
+- `albion_dps/update/checker.py` now resolves the preferred per-OS download asset and exposes separate `download_url` and `notes_url` values.
+- Qt update banner now uses installer-first `Install` CTA + `Notes` action, and dismissed versions stay hidden until a newer version is available.
+- `.github/workflows/bootstrap-smoke.yml` now emits per-job clean-machine evidence bundles (bootstrap logs, smoke report JSON, update-flow log, UX baseline screenshots) and runs on release publication events.
+- `tools/install/common/smoke_check.py` now supports structured JSON report output for CI artifact capture.
+- `tools/qa/verify_clean_machine_matrix.py` now validates required evidence artifacts in addition to required job conclusions.
+- `docs/release/RELEASE_CHECKLIST.md`, `docs/release/RELEASE_MANIFEST_SPEC.md`, and `README.md` now include the LKG pointer + one-command rollback flow.
+- `.github/workflows/release-manifest.yml` now uses shared manifest strategy validation logic (no duplicated policy in workflow script).
+- `tools/release/manifest/manifest.example.json` now follows canonical artifact naming matrix (installer/AppImage/DMG + bootstrap scripts).
+- `tests/test_release_manifest_contract.py` now validates URL/checksum/size fields and enforces preferred first-asset ordering per OS.
+- `docs/release/RELEASE_MANIFEST_SPEC.md` now allows `arch=universal` for macOS universal artifacts.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `REL-002` as completed.
 - `albion_dps/qt/ui/Main.qml` now consumes shared theme tokens for app shell and baseline styles.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now start Phase 1 with `UXR-010` completed.
