@@ -140,6 +140,22 @@ and this project uses semantic versioning.
 - `docs/release/RELEASE_CHECKLIST.md` now includes mandatory PH2 screenshot baseline verification before release.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` and `docs/DELIVERY_BACKLOG.md` now mark `PH2-UXR-030` as completed.
 
+## [0.1.15] - 2026-02-19
+
+### Added
+- Windows bootstrap setup builder workflow and docs (`tools/release/windows/build_bootstrap_setup.ps1`, `tools/release/windows/README.md`).
+- Release runbook/checklist steps for bootstrap EXE build and clean-machine verification.
+
+### Changed
+- Windows bootstrap EXE now:
+  - forces TLS 1.2+ with fallback download path,
+  - uses backward-compatible installer invocation for older tags,
+  - forces core install path (`-SkipCaptureExtras`),
+  - installs to persistent `%LOCALAPPDATA%\AlbionCommandDesk`,
+  - skips auto-run and prints explicit `core/live` launch commands.
+- Windows install script now auto-detects more Python locations and attempts `winget` install (`--source winget`) when Python is missing.
+- README/troubleshooting/QA/install docs aligned with the persistent bootstrap install flow and current release model.
+
 ## [0.1.14] - 2026-02-13
 
 ### Added
