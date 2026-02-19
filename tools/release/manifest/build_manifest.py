@@ -205,6 +205,11 @@ def validate_manifest_strategy(manifest: dict) -> tuple[list[str], list[str]]:
         os_assets = [asset for asset in assets if asset.get("os") == os_name]
         if not os_assets:
             continue
+        if not any(str(asset.get("kind", "")).lower() == preferred_kind for asset in os_assets):
+            warnings.append(
+                f"{os_name} release has no {preferred_kind} asset; using fallback kind {os_assets[0].get('kind', 'asset')}."
+            )
+            continue
         first_kind = str(os_assets[0].get("kind", "")).lower()
         if first_kind != preferred_kind:
             blockers.append(
