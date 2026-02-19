@@ -78,7 +78,8 @@ namespace AlbionCommandDeskBootstrap
                 }
 
                 string psArgs = "-NoProfile -ExecutionPolicy Bypass -File " + Quote(installScript)
-                    + " -ProjectRoot " + Quote(repoRoot);
+                    + " -ProjectRoot " + Quote(repoRoot)
+                    + " -SkipCaptureExtras";
 
                 Console.WriteLine("[ACD bootstrap] Starting installer...");
                 int exitCode = RunProcess("powershell.exe", psArgs);
