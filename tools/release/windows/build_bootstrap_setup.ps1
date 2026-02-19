@@ -3,8 +3,6 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$ReleaseTag,
     [string]$OutputPath = "",
-    [ValidateSet("core", "capture")]
-    [string]$Profile = "core",
     [string]$RepositoryOwner = "D4dits",
     [string]$RepositoryName = "Albion-Command-Desk"
 )
@@ -29,10 +27,7 @@ if (-not (Test-Path $outputDir)) {
     New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 }
 
-$releaseVersion = $ReleaseTag.TrimStart("v", "V")
 $escapedTag = $ReleaseTag.Replace("\", "\\").Replace('"', '\"')
-$escapedVersion = $releaseVersion.Replace("\", "\\").Replace('"', '\"')
-$escapedProfile = $Profile.Replace("\", "\\").Replace('"', '\"')
 $escapedOwner = $RepositoryOwner.Replace("\", "\\").Replace('"', '\"')
 $escapedRepo = $RepositoryName.Replace("\", "\\").Replace('"', '\"')
 
@@ -53,8 +48,6 @@ namespace AlbionCommandDeskBootstrap
             try
             {
                 string releaseTag = "$escapedTag";
-                string releaseVersion = "$escapedVersion";
-                string profile = "$escapedProfile";
                 string owner = "$escapedOwner";
                 string repo = "$escapedRepo";
 
@@ -85,9 +78,7 @@ namespace AlbionCommandDeskBootstrap
                 }
 
                 string psArgs = "-NoProfile -ExecutionPolicy Bypass -File " + Quote(installScript)
-                    + " -ProjectRoot " + Quote(repoRoot)
-                    + " -Profile " + Quote(profile)
-                    + " -ReleaseVersion " + Quote(releaseVersion);
+                    + " -ProjectRoot " + Quote(repoRoot);
 
                 Console.WriteLine("[ACD bootstrap] Starting installer...");
                 int exitCode = RunProcess("powershell.exe", psArgs);

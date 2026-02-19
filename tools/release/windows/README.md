@@ -24,5 +24,5 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap
 ## Notes
 
 - `ReleaseTag` accepts tag (`vX.Y.Z`) or branch name.
-- Installer profile embedded in EXE defaults to `core`.
+- Bootstrap EXE only passes `-ProjectRoot` to `install.ps1` for backward compatibility across tags.
 - EXE requires outbound access to GitHub release/source URLs.
