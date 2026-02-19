@@ -47,12 +47,17 @@ and this project uses semantic versioning.
 - Release rollback runbook in `docs/release/RELEASE_RUNBOOK.md`.
 - Last-known-good manifest pointer file `tools/release/manifest/last_known_good.json`.
 - Pointer maintenance and rollback helpers: `tools/release/manifest/set_last_known_good.ps1`, `tools/release/manifest/rollback_manifest.ps1`.
+- Windows release bootstrap EXE builder: `tools/release/windows/build_bootstrap_setup.ps1`.
+- Windows release bootstrap builder docs: `tools/release/windows/README.md`.
 
 ### Changed
 - `albion_dps/qt/ui/AppButton.qml` no longer mutates `checked` internally for checkable buttons, preserving single-active mode/sort bindings in Meter controls.
 - Market setup panel width was tightened (`Theme.qml`, `MarketTab.qml`, `MarketSetupPanel.qml`) and setup content now reserves right-side space for the vertical scrollbar.
 - `Market Fees` label/value in `MarketSetupPanel.qml` was shortened and constrained to avoid overflow in narrow setup widths.
 - Header action labels were polished (`Check updates`, `PayPal`, `Buy me a Coffee`) with updated button sizing for stable alignment.
+- `tools/install/windows/install.ps1` now probes common Python install paths and attempts `winget` auto-install (`--source winget`) before failing.
+- Release runbook/checklist now include the canonical Windows bootstrap EXE build step.
+- README + troubleshooting now document no-git Windows install via release EXE and Python fallback path.
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` marks `UXR-001` as completed and documents delivery notes.
 - `docs/ARCHITECTURE.md` now defines the frozen Phase 0 Qt shell layout contract.

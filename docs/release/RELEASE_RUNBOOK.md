@@ -12,7 +12,10 @@ This runbook defines the release, hotfix, and rollback path for Albion Command D
 3. Create and push tag:
    - `git tag vX.Y.Z`
    - `git push origin vX.Y.Z`
-4. Publish GitHub release assets using canonical names from `docs/release/RELEASE_CHECKLIST.md`.
+4. Build and publish GitHub release assets using canonical names from `docs/release/RELEASE_CHECKLIST.md`.
+   - Windows bootstrap installer:
+     - `powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap_setup.ps1 -ReleaseTag vX.Y.Z`
+   - Upload generated EXE from `dist\installer\`.
 5. Run `release-manifest.yml` and confirm `manifest.json` is attached.
 6. Run `bootstrap-smoke.yml` and confirm:
    - required jobs pass: `windows-core`, `linux-core`, `macos-core`

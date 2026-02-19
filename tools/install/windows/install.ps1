@@ -126,29 +126,54 @@ function Resolve-PythonLauncher {
     param(
         [string]$RequestedPython = ""
     )
+    function Test-PythonCandidate {
+        param(
+            [string[]]$CandidateCommand
+        )
+        if (-not $CandidateCommand -or $CandidateCommand.Count -eq 0) {
+            return $null
+        }
+        $exe = $CandidateCommand[0]
+        if (-not (Test-Path $exe) -and -not (Get-Command $exe -ErrorAction SilentlyContinue)) {
+            return $null
+        }
+        try {
+            $args = @()
+            if ($CandidateCommand.Count -gt 1) {
+                $args += $CandidateCommand[1..($CandidateCommand.Count - 1)]
+            }
+            $args += @("-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+            $versionString = (& $exe @args).Trim()
+            if ($LASTEXITCODE -ne 0) {
+                return $null
+            }
+            $parts = $versionString.Split(".")
+            if ($parts.Count -lt 2) {
+                return $null
+            }
+            $major = [int]$parts[0]
+            $minor = [int]$parts[1]
+            if ($major -eq 3 -and $minor -ge 10) {
+                return @{
+                    Command = $CandidateCommand
+                    Version = $versionString
+                }
+            }
+        } catch {
+            return $null
+        }
+        return $null
+    }
+
     if ($RequestedPython) {
         if (-not (Test-Path $RequestedPython)) {
             Throw-InstallError "Requested Python path does not exist: $RequestedPython"
         }
-        $versionString = ""
-        try {
-            $versionString = (& $RequestedPython -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')").Trim()
-        } catch {
-            Throw-InstallError "Failed to execute requested Python: $RequestedPython"
+        $requested = Test-PythonCandidate -CandidateCommand @($RequestedPython)
+        if (-not $requested) {
+            Throw-InstallError "Failed to execute requested Python or unsupported version: $RequestedPython"
         }
-        $parts = $versionString.Split(".")
-        if ($parts.Count -lt 2) {
-            Throw-InstallError "Could not parse requested Python version from: $RequestedPython"
-        }
-        $major = [int]$parts[0]
-        $minor = [int]$parts[1]
-        if (-not ($major -eq 3 -and $minor -ge 10)) {
-            Throw-InstallError "Requested Python must be 3.10+ (detected: $versionString)"
-        }
-        return @{
-            Command = @($RequestedPython)
-            Version = $versionString
-        }
+        return $requested
     }
 
     $candidates = @(
@@ -159,38 +184,108 @@ function Resolve-PythonLauncher {
     )
 
     foreach ($candidate in $candidates) {
-        $exe = $candidate[0]
-        if (-not (Get-Command $exe -ErrorAction SilentlyContinue)) {
+        $resolved = Test-PythonCandidate -CandidateCommand $candidate
+        if ($resolved) {
+            return $resolved
+        }
+    }
+
+    $pathCandidates = @(
+        "$env:LOCALAPPDATA\\Programs\\Python\\Python312\\python.exe",
+        "$env:LOCALAPPDATA\\Programs\\Python\\Python311\\python.exe",
+        "$env:LOCALAPPDATA\\Programs\\Python\\Python310\\python.exe",
+        "$env:ProgramFiles\\Python312\\python.exe",
+        "$env:ProgramFiles\\Python311\\python.exe",
+        "$env:ProgramFiles\\Python310\\python.exe",
+        "${env:ProgramFiles(x86)}\\Python312\\python.exe",
+        "${env:ProgramFiles(x86)}\\Python311\\python.exe",
+        "${env:ProgramFiles(x86)}\\Python310\\python.exe"
+    )
+    foreach ($candidatePath in $pathCandidates) {
+        if (-not (Test-Path $candidatePath)) {
             continue
         }
-        try {
-            $args = @()
-            if ($candidate.Count -gt 1) {
-                $args += $candidate[1..($candidate.Count - 1)]
-            }
-            $args += @("-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-            $versionString = (& $exe @args).Trim()
-            if ($LASTEXITCODE -ne 0) {
-                continue
-            }
-            $parts = $versionString.Split(".")
-            if ($parts.Count -lt 2) {
-                continue
-            }
-            $major = [int]$parts[0]
-            $minor = [int]$parts[1]
-            if ($major -eq 3 -and $minor -ge 10) {
-                return @{
-                    Command = $candidate
-                    Version = $versionString
-                }
-            }
-        } catch {
-            continue
+        $resolved = Test-PythonCandidate -CandidateCommand @($candidatePath)
+        if ($resolved) {
+            return $resolved
         }
     }
 
     return $null
+}
+
+function Test-IsAdministrator {
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+    return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Try-InstallPythonWithWinget {
+    param(
+        [switch]$PreferMachineScope
+    )
+    if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
+        Write-InstallWarn "winget not detected; cannot auto-install Python."
+        return $false
+    }
+
+    $baseArgs = @(
+        "install",
+        "--id", "Python.Python.3.12",
+        "-e",
+        "--source", "winget",
+        "--accept-package-agreements",
+        "--accept-source-agreements"
+    )
+    if ($PreferMachineScope) {
+        $baseArgs += @("--scope", "machine")
+    }
+
+    Write-InstallInfo ("Attempting Python install via winget: winget " + ($baseArgs -join " "))
+    & winget @baseArgs
+    if ($LASTEXITCODE -ne 0) {
+        Write-InstallWarn "winget Python install failed with code $LASTEXITCODE."
+        return $false
+    }
+    Write-InstallInfo "Python installation via winget completed."
+    return $true
+}
+
+function Resolve-OrInstallPythonLauncher {
+    param(
+        [string]$RequestedPython = ""
+    )
+    $launcher = Resolve-PythonLauncher -RequestedPython $RequestedPython
+    if ($launcher) {
+        return $launcher
+    }
+    if ($RequestedPython) {
+        return $null
+    }
+
+    Write-InstallWarn "Python 3.10+ not found; attempting automatic installation."
+    $installed = $false
+    $isAdmin = $false
+    try {
+        $isAdmin = Test-IsAdministrator
+    } catch {
+        $isAdmin = $false
+    }
+
+    if ($isAdmin) {
+        $installed = Try-InstallPythonWithWinget -PreferMachineScope
+    } else {
+        Write-InstallHint "For machine-wide install rerun this script as Administrator."
+    }
+    if (-not $installed) {
+        $installed = Try-InstallPythonWithWinget
+    }
+    if (-not $installed) {
+        Write-InstallHint "Download Python manually: https://www.python.org/downloads/windows/"
+        return $null
+    }
+
+    return Resolve-PythonLauncher
 }
 
 function Invoke-WithLauncher {
@@ -269,9 +364,9 @@ if (-not (Test-Path $pyprojectPath)) {
     Throw-InstallError "pyproject.toml not found under '$ProjectRoot'. Run this from the repository."
 }
 
-$launcher = Resolve-PythonLauncher -RequestedPython $Python
+$launcher = Resolve-OrInstallPythonLauncher -RequestedPython $Python
 if (-not $launcher) {
-    Throw-InstallError "Python 3.10+ not found. Install Python, then rerun this script."
+    Throw-InstallError "Python 3.10+ not found and auto-install failed. Install Python manually or provide -Python <path>."
 }
 
 $launcherCmd = ($launcher.Command -join " ")

@@ -35,7 +35,10 @@ Linux/macOS:
 
 ## Installer / update errors (quick map)
 - `Python 3.10+ not found`:
-  - Install Python and rerun bootstrap installer.
+  - Windows bootstrap tries `winget` automatically.
+  - If still failing, install manually:
+    - `winget install --id Python.Python.3.12 -e --source winget --scope machine --accept-package-agreements --accept-source-agreements`
+  - Then rerun bootstrap installer.
 - `Package install failed` during `.[capture]`:
   - Use Python 3.11 or 3.12 (3.13 can fail for some capture wheels).
   - Install system build tools where required (Linux/macOS).
@@ -187,6 +190,7 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install -e ".[test]"
 ```
+If `winget` reports source/certificate issues, force `--source winget` or install from python.org directly.
 
 ## Qt GUI fails to load (qtquick2plugin.dll missing)
 This usually means Qt's DLLs are not found:

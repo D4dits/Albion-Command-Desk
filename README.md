@@ -60,7 +60,13 @@ Best setup before installing ACD:
 
 ## Install (One-Click Bootstrap)
 
-### Windows
+### Windows (no Git required)
+1. Open Releases: `https://github.com/D4dits/Albion-Command-Desk/releases/latest`
+2. Download `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`.
+3. Run it (installer downloads source, installs Python automatically via `winget` when available, creates `venv`, then starts ACD).
+4. If installation fails, the window stays open with the exact error.
+
+### Windows (source checkout)
 ```powershell
 git clone https://github.com/D4dits/Albion-Command-Desk.git
 cd Albion-Command-Desk
@@ -224,6 +230,7 @@ Update notifications and installer discovery use a release manifest contract:
 - `docs/MARKET_DATASET_UPDATE.md`
 - `docs/release/RELEASE_CHECKLIST.md`
 - `docs/release/RELEASE_RUNBOOK.md`
+- `tools/release/windows/README.md`
 
 ## Tests
 ```powershell

@@ -28,6 +28,8 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
 ## 3) Build and packaging
 
 - [ ] Build artifacts using the frozen matrix and naming contract:
+- [ ] Build Windows bootstrap installer EXE:
+  - `powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap_setup.ps1 -ReleaseTag vX.Y.Z`
 
 | OS | Priority | Kind | Canonical name pattern | Gate |
 |---|---|---|---|---|
@@ -38,6 +40,7 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
 | macOS universal | Secondary | bootstrap-script | `acd-install-macos-vX.Y.Z.sh` | warning |
 
 - [ ] Confirm uploaded filenames match canonical patterns for this tag.
+- [ ] Confirm Windows installer EXE starts bootstrap flow and keeps console open on error.
 - [ ] Verify each produced artifact launches and opens Qt UI.
 - [ ] Verify replay mode works on each OS target.
 - [ ] Verify live capture mode on at least one environment per OS family (advisory for CI; blocker for manual release sign-off).
