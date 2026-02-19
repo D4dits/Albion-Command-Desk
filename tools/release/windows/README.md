@@ -24,5 +24,6 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap
 ## Notes
 
 - `ReleaseTag` accepts tag (`vX.Y.Z`) or branch name.
-- Bootstrap EXE passes `-ProjectRoot -SkipCaptureExtras` to `install.ps1` for backward compatibility and to force core install on fresh Windows machines.
+- Bootstrap EXE installs into `%LOCALAPPDATA%\AlbionCommandDesk` (persistent path) instead of temp folders.
+- Bootstrap EXE passes `-SkipCaptureExtras -SkipRun` to `install.ps1` for backward compatibility and to avoid failing startup on systems without Npcap.
 - EXE requires outbound access to GitHub release/source URLs.

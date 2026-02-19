@@ -59,6 +59,7 @@ and this project uses semantic versioning.
 - Windows bootstrap EXE downloader now forces TLS 1.2+ and falls back to PowerShell download when WebClient fails SSL/TLS negotiation.
 - Windows bootstrap EXE now invokes tagged `install.ps1` with only `-ProjectRoot` (backward-compatible with older tags that do not support `-Profile`/`-ReleaseVersion`).
 - Windows bootstrap EXE now also passes `-SkipCaptureExtras` so clean-machine installs do not require Visual C++ build tools / pcap build chain.
+- Windows bootstrap EXE now installs into `%LOCALAPPDATA%\\AlbionCommandDesk` (persistent runtime) and uses `-SkipRun` to avoid false-fail startup on machines without Npcap.
 - Release runbook/checklist now include the canonical Windows bootstrap EXE build step.
 - README + troubleshooting now document no-git Windows install via release EXE and Python fallback path.
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.

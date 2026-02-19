@@ -56,6 +56,11 @@ namespace AlbionCommandDeskBootstrap
                 string zipPath = Path.Combine(tempRoot, "acd-source.zip");
                 string extractRoot = Path.Combine(tempRoot, "repo");
                 Directory.CreateDirectory(extractRoot);
+                string appRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AlbionCommandDesk");
+                Directory.CreateDirectory(appRoot);
+                string safeTag = SanitizePathSegment(releaseTag);
+                string installRoot = Path.Combine(appRoot, "runtime", safeTag);
+                string venvPath = Path.Combine(appRoot, "venv");
 
                 string zipUrl = BuildZipUrl(owner, repo, releaseTag);
                 Console.WriteLine("[ACD bootstrap] Downloading source: " + zipUrl);
@@ -70,16 +75,24 @@ namespace AlbionCommandDeskBootstrap
                 {
                     throw new InvalidOperationException("Repository archive extraction failed.");
                 }
+                if (Directory.Exists(installRoot))
+                {
+                    Directory.Delete(installRoot, true);
+                }
+                Directory.CreateDirectory(Path.GetDirectoryName(installRoot));
+                CopyDirectory(repoRoot, installRoot);
 
-                string installScript = Path.Combine(repoRoot, "tools", "install", "windows", "install.ps1");
+                string installScript = Path.Combine(installRoot, "tools", "install", "windows", "install.ps1");
                 if (!File.Exists(installScript))
                 {
                     throw new FileNotFoundException("install.ps1 not found in extracted repository.", installScript);
                 }
 
                 string psArgs = "-NoProfile -ExecutionPolicy Bypass -File " + Quote(installScript)
-                    + " -ProjectRoot " + Quote(repoRoot)
-                    + " -SkipCaptureExtras";
+                    + " -ProjectRoot " + Quote(installRoot)
+                    + " -VenvPath " + Quote(venvPath)
+                    + " -SkipCaptureExtras"
+                    + " -SkipRun";
 
                 Console.WriteLine("[ACD bootstrap] Starting installer...");
                 int exitCode = RunProcess("powershell.exe", psArgs);
@@ -89,6 +102,17 @@ namespace AlbionCommandDeskBootstrap
                     Console.Error.WriteLine("[ACD bootstrap] Press Enter to close this window.");
                     Console.ReadLine();
                     return exitCode;
+                }
+
+                string cliPath = Path.Combine(venvPath, "Scripts", "albion-command-desk.exe");
+                Console.WriteLine("[ACD bootstrap] Install complete.");
+                Console.WriteLine("[ACD bootstrap] Runtime root: " + installRoot);
+                Console.WriteLine("[ACD bootstrap] Virtual environment: " + venvPath);
+                if (File.Exists(cliPath))
+                {
+                    Console.WriteLine("[ACD bootstrap] Start app with:");
+                    Console.WriteLine("  " + cliPath + " core");
+                    Console.WriteLine("  " + cliPath + " live   # requires Npcap Runtime");
                 }
 
                 return 0;
@@ -176,6 +200,35 @@ namespace AlbionCommandDeskBootstrap
                 return "\"\"";
             }
             return "\"" + value.Replace("\"", "\\\"") + "\"";
+        }
+
+        private static string SanitizePathSegment(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "latest";
+            }
+            foreach (char c in Path.GetInvalidFileNameChars())
+            {
+                value = value.Replace(c, '_');
+            }
+            value = value.Replace("/", "_").Replace("\\", "_");
+            return value.Trim();
+        }
+
+        private static void CopyDirectory(string source, string destination)
+        {
+            Directory.CreateDirectory(destination);
+            foreach (string file in Directory.GetFiles(source))
+            {
+                string targetFile = Path.Combine(destination, Path.GetFileName(file));
+                File.Copy(file, targetFile, true);
+            }
+            foreach (string dir in Directory.GetDirectories(source))
+            {
+                string targetDir = Path.Combine(destination, Path.GetFileName(dir));
+                CopyDirectory(dir, targetDir);
+            }
         }
     }
 }
