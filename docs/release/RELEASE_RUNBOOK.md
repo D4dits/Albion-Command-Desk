@@ -21,6 +21,11 @@ This runbook defines the release, hotfix, and rollback path for Albion Command D
    - required jobs pass: `windows-core`, `linux-core`, `macos-core`
    - required evidence artifacts exist: `bootstrap-smoke-windows-core`, `bootstrap-smoke-linux-core`, `bootstrap-smoke-macos-core`
    - `python .\tools\qa\verify_clean_machine_matrix.py` exits `0`.
+7. Manual Windows release-EXE sanity check on clean machine:
+   - run `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe` from release page,
+   - verify install ends cleanly and runtime is persisted in `%LOCALAPPDATA%\AlbionCommandDesk`,
+   - verify launch command works:
+     - `& "$env:LOCALAPPDATA\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe" core`
 
 ## 2) Mark last-known-good pointer
 

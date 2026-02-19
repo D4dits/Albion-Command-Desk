@@ -63,8 +63,13 @@ Best setup before installing ACD:
 ### Windows (no Git required)
 1. Open Releases: `https://github.com/D4dits/Albion-Command-Desk/releases/latest`
 2. Download `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`.
-3. Run it (installer downloads source, installs Python automatically via `winget` when available, creates persistent runtime under `%LOCALAPPDATA%\AlbionCommandDesk`, then prints launch command).
+3. Run it (installer downloads source, installs Python automatically via `winget` when available, creates persistent runtime under `%LOCALAPPDATA%\AlbionCommandDesk`, then prints launch commands).
 4. If installation fails, the window stays open with the exact error.
+
+Installed paths (release EXE):
+- Runtime source snapshot: `%LOCALAPPDATA%\AlbionCommandDesk\runtime\vX.Y.Z`
+- Virtual environment + CLI: `%LOCALAPPDATA%\AlbionCommandDesk\venv`
+- CLI binary: `%LOCALAPPDATA%\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe`
 
 ### Windows (source checkout)
 ```powershell
@@ -156,6 +161,13 @@ Interface selection:
 ```powershell
 albion-command-desk live --list-interfaces
 albion-command-desk live --interface "Ethernet"
+```
+
+Run after Windows release-EXE install (no repo required):
+```powershell
+& "$env:LOCALAPPDATA\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe" core
+# live capture (Npcap Runtime required):
+# & "$env:LOCALAPPDATA\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe" live
 ```
 
 ## Key Runtime Flags

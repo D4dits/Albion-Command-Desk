@@ -57,3 +57,16 @@ powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 `
   -ForceRecreateVenv `
   -SkipRun
 ```
+
+## Manual local sanity (Windows release EXE)
+
+Use on a clean VM to validate real user path (no repo required):
+1. Download `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe` from release page.
+2. Run from PowerShell with log capture:
+```
+.\AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe *>&1 | Tee-Object "$HOME\Desktop\acd-install.log"
+```
+3. Expected result:
+   - install completes without auto-start failure,
+   - runtime path exists: `%LOCALAPPDATA%\AlbionCommandDesk\runtime\vX.Y.Z`,
+   - CLI path exists: `%LOCALAPPDATA%\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe`.

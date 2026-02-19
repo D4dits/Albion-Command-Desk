@@ -18,6 +18,9 @@ macOS:
 bash ./tools/install/macos/install.sh --force-recreate-venv --skip-run
 ```
 
+If you installed via Windows release EXE (no repo checkout), rerun the EXE from GitHub Releases.  
+Default install location is `%LOCALAPPDATA%\AlbionCommandDesk`.
+
 ## `albion-command-desk` is not recognized
 Most common cause: command run outside project `venv`.
 
@@ -31,6 +34,11 @@ Windows:
 Linux/macOS:
 ```
 ./venv/bin/albion-command-desk core
+```
+
+For Windows release-EXE install (outside repo), use:
+```
+& "$env:LOCALAPPDATA\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe" core
 ```
 
 ## Installer / update errors (quick map)
@@ -54,6 +62,13 @@ Linux/macOS:
   - If using custom endpoint, confirm `ALBION_COMMAND_DESK_MANIFEST_URL`.
 - `No update state persistence`:
   - Verify write access to config dir or set `ALBION_COMMAND_DESK_CONFIG_DIR`.
+
+## Folder picker appeared for Albion Online path
+This can happen on first app launch when local item/map databases are missing.
+
+- If Albion Online is not installed on that machine, `Cancel` is fine.
+- App still works (fallback mode), only some labels/details may be less complete.
+- If you install the game later, rerun extractor scripts to generate local databases.
 
 ## UI is cramped or controls overlap on small window sizes
 The shell now switches to compact/narrow breakpoints automatically:

@@ -27,3 +27,10 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap
 - Bootstrap EXE installs into `%LOCALAPPDATA%\AlbionCommandDesk` (persistent path) instead of temp folders.
 - Bootstrap EXE passes `-SkipCaptureExtras -SkipRun` to `install.ps1` for backward compatibility and to avoid failing startup on systems without Npcap.
 - EXE requires outbound access to GitHub release/source URLs.
+- Expected post-install paths:
+  - runtime snapshot: `%LOCALAPPDATA%\AlbionCommandDesk\runtime\vX.Y.Z`
+  - venv: `%LOCALAPPDATA%\AlbionCommandDesk\venv`
+  - CLI: `%LOCALAPPDATA%\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe`
+- Expected launch commands:
+  - `...\\albion-command-desk.exe core`
+  - `...\\albion-command-desk.exe live` (requires Npcap Runtime)
