@@ -64,6 +64,7 @@ and this project uses semantic versioning.
 - README + troubleshooting now document no-git Windows install via release EXE and Python fallback path.
 - Windows docs were aligned to the real bootstrap flow (install paths, launch commands, clean-machine QA steps, and legacy installer notes replaced).
 - Windows bootstrap EXE now creates Desktop and Start Menu shortcuts to launch `core` mode.
+- Fixed Windows bootstrap shortcut creation command escaping (PowerShell variable tokens are now preserved correctly, no `.Save()` parser error).
 - Progress log in `docs/DELIVERY_BACKLOG.md` now tracks Phase 0 kickoff state.
 - `docs/UX_MINIMAL_RELEASE_PLAN.md` marks `UXR-001` as completed and documents delivery notes.
 - `docs/ARCHITECTURE.md` now defines the frozen Phase 0 Qt shell layout contract.

@@ -236,15 +236,15 @@ namespace AlbionCommandDeskBootstrap
 
         private static void CreateShortcut(string shortcutPath, string targetPath, string args, string workDir, string iconPath)
         {
-            string command = "$ws=New-Object -ComObject WScript.Shell; "
-                + "$lnk=$ws.CreateShortcut('" + EscapeForSingleQuotedPowershell(shortcutPath) + "'); "
-                + "$lnk.TargetPath='" + EscapeForSingleQuotedPowershell(targetPath) + "'; "
-                + "$lnk.Arguments='" + EscapeForSingleQuotedPowershell(args) + "'; "
-                + "$lnk.WorkingDirectory='" + EscapeForSingleQuotedPowershell(workDir) + "'; "
+            string command = "`$ws=New-Object -ComObject WScript.Shell; "
+                + "`$lnk=`$ws.CreateShortcut('" + EscapeForSingleQuotedPowershell(shortcutPath) + "'); "
+                + "`$lnk.TargetPath='" + EscapeForSingleQuotedPowershell(targetPath) + "'; "
+                + "`$lnk.Arguments='" + EscapeForSingleQuotedPowershell(args) + "'; "
+                + "`$lnk.WorkingDirectory='" + EscapeForSingleQuotedPowershell(workDir) + "'; "
                 + "if (Test-Path '" + EscapeForSingleQuotedPowershell(iconPath) + "') { "
-                + "  $lnk.IconLocation='" + EscapeForSingleQuotedPowershell(iconPath) + "' "
+                + "  `$lnk.IconLocation='" + EscapeForSingleQuotedPowershell(iconPath) + "' "
                 + "}; "
-                + "$lnk.Save()";
+                + "`$lnk.Save()";
 
             int exitCode = RunProcess(
                 "powershell.exe",
