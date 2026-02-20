@@ -243,6 +243,7 @@ Update notifications and installer discovery use a release manifest contract:
 ## Troubleshooting and Docs
 - `docs/DELIVERY_BACKLOG.md` (active ticket queue and implementation order)
 - `CHANGELOG.md` (all delivered changes)
+- `docs/COMMUNITY_POSTS.md` (ready-to-copy Discord/release announcement texts)
 - `docs/TROUBLESHOOTING.md`
 - `docs/ARCHITECTURE.md`
 - `docs/MARKET_ARCHITECTURE.md`
