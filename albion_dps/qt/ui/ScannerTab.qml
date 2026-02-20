@@ -39,12 +39,14 @@ CardPanel {
     property string captureRuntimeActionUrl: ""
     property bool captureRuntimeNeedsAction: false
     property string captureRuntimeInstallHint: ""
+    property string captureRuntimeInstallCommand: ""
     property bool gitAvailable: false
     property string gitDetail: ""
     property string gitActionLabel: ""
     property string gitActionUrl: ""
     property bool gitNeedsInstall: false
     property string gitInstallHint: ""
+    property string gitInstallCommand: ""
 
     // Signals to notify parent of actions
     signal checkForUpdates()
@@ -57,6 +59,7 @@ CardPanel {
     signal openCaptureRuntimeAction()
     signal refreshGitStatus()
     signal openGitInstallAction()
+    signal copyCommand(string commandText)
 
     // Access to theme (injected by parent)
     property var theme: null
@@ -180,6 +183,12 @@ CardPanel {
                             onClicked: root.openCaptureRuntimeAction()
                         }
                         AppButton {
+                            visible: root.captureRuntimeInstallCommand.length > 0
+                            text: "Copy command"
+                            compact: true
+                            onClicked: root.copyCommand(root.captureRuntimeInstallCommand)
+                        }
+                        AppButton {
                             text: "Refresh runtime"
                             compact: true
                             onClicked: root.refreshCaptureRuntimeStatus()
@@ -244,6 +253,12 @@ CardPanel {
                             variant: root.gitNeedsInstall ? "primary" : "secondary"
                             compact: true
                             onClicked: root.openGitInstallAction()
+                        }
+                        AppButton {
+                            visible: root.gitInstallCommand.length > 0
+                            text: "Copy command"
+                            compact: true
+                            onClicked: root.copyCommand(root.gitInstallCommand)
                         }
                         AppButton {
                             text: "Refresh Git"

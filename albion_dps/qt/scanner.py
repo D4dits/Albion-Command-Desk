@@ -13,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
+from PySide6.QtGui import QGuiApplication
 
 from albion_dps.capture import capture_backend_available
 from albion_dps.capture.npcap_runtime import (
@@ -138,6 +139,12 @@ class ScannerState(QObject):
             return "Capture backend is missing. Reinstall with capture profile."
         return "Capture runtime is ready."
 
+    @Property(str, notify=runtimeChanged)
+    def captureRuntimeInstallCommand(self) -> str:
+        if _is_windows() and self._runtime_state in {RUNTIME_STATE_MISSING, RUNTIME_STATE_BLOCKED, RUNTIME_STATE_UNKNOWN}:
+            return "Start-Process 'https://npcap.com/#download'"
+        return ""
+
     @Property(str, constant=True)
     def clientDir(self) -> str:
         return str(self._client_dir)
@@ -172,6 +179,14 @@ class ScannerState(QObject):
                 "Recommended command: winget install --id Git.Git -e --source winget"
             )
         return "Install Git from git-scm.com/downloads, restart app, then run 'Sync repo'."
+
+    @Property(str, notify=gitChanged)
+    def gitInstallCommand(self) -> str:
+        if self._git_available:
+            return ""
+        if _is_windows():
+            return "winget install --id Git.Git -e --source winget"
+        return "xdg-open https://git-scm.com/downloads"
 
     @Slot()
     def clearLog(self) -> None:
@@ -238,6 +253,19 @@ class ScannerState(QObject):
             self._append_log(f"Opened Git install page: {url}")
         else:
             self._append_warn(f"Failed to open browser automatically: {url}")
+
+    @Slot(str)
+    def copyText(self, text: str) -> None:
+        value = str(text or "").strip()
+        if not value:
+            self._append_warn("Nothing to copy.")
+            return
+        try:
+            clipboard = QGuiApplication.clipboard()
+            clipboard.setText(value)
+            self._append_log("Copied command to clipboard.")
+        except Exception as exc:
+            self._append_error(f"Failed to copy to clipboard: {exc}")
 
     def shutdown(self) -> None:
         process: subprocess.Popen[str] | None

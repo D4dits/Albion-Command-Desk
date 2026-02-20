@@ -515,12 +515,14 @@ ApplicationWindow {
                     captureRuntimeActionUrl: scannerState.captureRuntimeActionUrl
                     captureRuntimeNeedsAction: scannerState.captureRuntimeNeedsAction
                     captureRuntimeInstallHint: scannerState.captureRuntimeInstallHint
+                    captureRuntimeInstallCommand: scannerState.captureRuntimeInstallCommand
                     gitAvailable: scannerState.gitAvailable
                     gitDetail: scannerState.gitDetail
                     gitActionLabel: scannerState.gitActionLabel
                     gitActionUrl: scannerState.gitActionUrl
                     gitNeedsInstall: scannerState.gitNeedsInstall
                     gitInstallHint: scannerState.gitInstallHint
+                    gitInstallCommand: scannerState.gitInstallCommand
 
                     // Theme access
                     theme: root.theme
@@ -565,6 +567,10 @@ ApplicationWindow {
                     onOpenGitInstallAction: function() {
                         scannerState.openGitInstallAction()
                         toastManager.showInfo("Git install", scannerState.gitActionLabel || "Opening Git download page")
+                    }
+                    onCopyCommand: function(commandText) {
+                        scannerState.copyText(commandText)
+                        toastManager.showSuccess("Copied to clipboard", commandText)
                     }
                 }
             }
