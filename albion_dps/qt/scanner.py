@@ -27,6 +27,7 @@ from albion_dps.capture.npcap_runtime import (
 
 DEFAULT_REPO_URL = "https://github.com/ao-data/albiondata-client.git"
 DEFAULT_PUBLIC_INGEST_URL = "https+pow://albion-online-data.com"
+GIT_WINDOWS_DOWNLOAD_URL = "https://git-scm.com/download/win"
 _ALBION_LOG_RE = re.compile(
     r"^[A-Z]{4,5}\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^\]]*\]\s"
 )
@@ -41,6 +42,7 @@ class ScannerState(QObject):
     logChanged = Signal()
     runningChanged = Signal()
     runtimeChanged = Signal()
+    gitChanged = Signal()
 
     _statusSignal = Signal(str)
     _updateSignal = Signal(str)
@@ -48,6 +50,7 @@ class ScannerState(QObject):
     _runningSignal = Signal(bool)
     _processExitSignal = Signal(int)
     _runtimeSignal = Signal(str, str, str, str)
+    _gitSignal = Signal(bool, str, str, str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -62,6 +65,10 @@ class ScannerState(QObject):
         self._runtime_detail = "Runtime status not checked yet."
         self._runtime_action_label = ""
         self._runtime_action_url = ""
+        self._git_available = False
+        self._git_detail = "Git status not checked yet."
+        self._git_action_label = ""
+        self._git_action_url = ""
         self._process: subprocess.Popen[str] | None = None
         self._process_lock = threading.Lock()
         self._op_lock = threading.Lock()
@@ -74,9 +81,11 @@ class ScannerState(QObject):
         self._runningSignal.connect(self._set_running)
         self._processExitSignal.connect(self._handle_process_exit)
         self._runtimeSignal.connect(self._set_runtime)
+        self._gitSignal.connect(self._set_git)
 
         self._append_log("Scanner ready.")
         self.refreshCaptureRuntimeStatus()
+        self.refreshGitStatus()
 
     @Property(str, notify=statusChanged)
     def statusText(self) -> str:
@@ -113,6 +122,22 @@ class ScannerState(QObject):
     @Property(str, constant=True)
     def clientDir(self) -> str:
         return str(self._client_dir)
+
+    @Property(bool, notify=gitChanged)
+    def gitAvailable(self) -> bool:
+        return self._git_available
+
+    @Property(str, notify=gitChanged)
+    def gitDetail(self) -> str:
+        return self._git_detail
+
+    @Property(str, notify=gitChanged)
+    def gitActionLabel(self) -> str:
+        return self._git_action_label
+
+    @Property(str, notify=gitChanged)
+    def gitActionUrl(self) -> str:
+        return self._git_action_url
 
     @Slot()
     def clearLog(self) -> None:
@@ -163,6 +188,23 @@ class ScannerState(QObject):
         else:
             self._append_warn(f"Failed to open browser automatically: {url}")
 
+    @Slot()
+    def refreshGitStatus(self) -> None:
+        available, detail, action_label, action_url = self._detect_git_status()
+        self._gitSignal.emit(available, detail, action_label, action_url)
+
+    @Slot()
+    def openGitInstallAction(self) -> None:
+        url = (self._git_action_url or "").strip()
+        if not url:
+            self._append_warn("No Git install URL available.")
+            return
+        opened = webbrowser.open(url)
+        if opened:
+            self._append_log(f"Opened Git install page: {url}")
+        else:
+            self._append_warn(f"Failed to open browser automatically: {url}")
+
     def shutdown(self) -> None:
         process: subprocess.Popen[str] | None
         with self._process_lock:
@@ -187,11 +229,14 @@ class ScannerState(QObject):
         threading.Thread(target=worker, daemon=True).start()
 
     def _check_for_updates_impl(self) -> None:
+        self.refreshGitStatus()
         git_path = shutil.which("git")
         if not git_path:
             self._statusSignal.emit("git not found")
             self._updateSignal.emit("unknown")
             self._append_error("Git is not available in PATH.")
+            if self._git_detail:
+                self._append_warn(self._git_detail)
             return
 
         remote_head = self._git_remote_head()
@@ -219,10 +264,13 @@ class ScannerState(QObject):
             self._append_log(f"Update available: local {short_local}, remote {short_remote}")
 
     def _sync_client_repo_impl(self) -> None:
+        self.refreshGitStatus()
         git_path = shutil.which("git")
         if not git_path:
             self._statusSignal.emit("git not found")
             self._append_error("Git is not available in PATH.")
+            if self._git_detail:
+                self._append_warn(self._git_detail)
             return
 
         self._client_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -618,6 +666,21 @@ class ScannerState(QObject):
         self._runtime_action_url = action_url
         self.runtimeChanged.emit()
 
+    def _set_git(self, available: bool, detail: str, action_label: str, action_url: str) -> None:
+        changed = (
+            available != self._git_available
+            or detail != self._git_detail
+            or action_label != self._git_action_label
+            or action_url != self._git_action_url
+        )
+        if not changed:
+            return
+        self._git_available = available
+        self._git_detail = detail
+        self._git_action_label = action_label
+        self._git_action_url = action_url
+        self.gitChanged.emit()
+
     def _detect_capture_runtime_status(self) -> tuple[str, str, str, str]:
         if _is_windows():
             runtime = detect_npcap_runtime()
@@ -655,6 +718,26 @@ class ScannerState(QObject):
             "Capture backend module is missing. Reinstall with capture profile.",
             "",
             "",
+        )
+
+    def _detect_git_status(self) -> tuple[bool, str, str, str]:
+        git_path = shutil.which("git")
+        if git_path:
+            return True, f"Git detected: {git_path}", "", ""
+
+        if _is_windows():
+            return (
+                False,
+                "Git is required for Sync repository and Check updates. Install with: winget install --id Git.Git -e --source winget",
+                "Git for Windows",
+                GIT_WINDOWS_DOWNLOAD_URL,
+            )
+
+        return (
+            False,
+            "Git is required for Sync repository and Check updates.",
+            "Git downloads",
+            "https://git-scm.com/downloads",
         )
 
 

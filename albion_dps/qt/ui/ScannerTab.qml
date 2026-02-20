@@ -37,6 +37,10 @@ CardPanel {
     property string captureRuntimeDetail: ""
     property string captureRuntimeActionLabel: ""
     property string captureRuntimeActionUrl: ""
+    property bool gitAvailable: false
+    property string gitDetail: ""
+    property string gitActionLabel: ""
+    property string gitActionUrl: ""
 
     // Signals to notify parent of actions
     signal checkForUpdates()
@@ -47,6 +51,8 @@ CardPanel {
     signal clearLog()
     signal refreshCaptureRuntimeStatus()
     signal openCaptureRuntimeAction()
+    signal refreshGitStatus()
+    signal openGitInstallAction()
 
     // Access to theme (injected by parent)
     property var theme: null
@@ -141,6 +147,34 @@ CardPanel {
                 text: "Refresh runtime"
                 compact: true
                 onClicked: root.refreshCaptureRuntimeStatus()
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            Text {
+                Layout.fillWidth: true
+                text: "Git: " + (root.gitAvailable ? "available" : "missing") + " | " + root.gitDetail
+                color: root.gitAvailable
+                    ? (theme ? theme.stateSuccess : "#2ecc71")
+                    : (theme ? theme.stateWarning : "#f39c12")
+                font.pixelSize: 11
+                wrapMode: Text.Wrap
+            }
+
+            AppButton {
+                visible: root.gitActionLabel.length > 0
+                text: root.gitActionLabel
+                compact: true
+                onClicked: root.openGitInstallAction()
+            }
+
+            AppButton {
+                text: "Refresh Git"
+                compact: true
+                onClicked: root.refreshGitStatus()
             }
         }
 

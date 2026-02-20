@@ -513,6 +513,10 @@ ApplicationWindow {
                     captureRuntimeDetail: scannerState.captureRuntimeDetail
                     captureRuntimeActionLabel: scannerState.captureRuntimeActionLabel
                     captureRuntimeActionUrl: scannerState.captureRuntimeActionUrl
+                    gitAvailable: scannerState.gitAvailable
+                    gitDetail: scannerState.gitDetail
+                    gitActionLabel: scannerState.gitActionLabel
+                    gitActionUrl: scannerState.gitActionUrl
 
                     // Theme access
                     theme: root.theme
@@ -549,6 +553,14 @@ ApplicationWindow {
                     onOpenCaptureRuntimeAction: function() {
                         scannerState.openCaptureRuntimeAction()
                         toastManager.showInfo("Runtime action", scannerState.captureRuntimeActionLabel || "Opening runtime page")
+                    }
+                    onRefreshGitStatus: function() {
+                        scannerState.refreshGitStatus()
+                        toastManager.showInfo("Git check", "Git status refreshed")
+                    }
+                    onOpenGitInstallAction: function() {
+                        scannerState.openGitInstallAction()
+                        toastManager.showInfo("Git install", scannerState.gitActionLabel || "Opening Git download page")
                     }
                 }
             }
