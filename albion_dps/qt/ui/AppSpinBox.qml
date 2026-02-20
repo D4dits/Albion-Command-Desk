@@ -5,6 +5,7 @@ import "." // for Theme access
 SpinBox {
     id: root
 
+    property int sideButtonWidth: 24
 
     implicitHeight: Theme.controlHeightRegular
     editable: true
@@ -34,31 +35,33 @@ SpinBox {
     }
 
     up.indicator: Rectangle {
-        implicitWidth: 20
-        implicitHeight: parent ? parent.height / 2 : 12
+        implicitWidth: root.sideButtonWidth
+        implicitHeight: Math.max(18, root.availableHeight)
         radius: Theme.radiusSm
         color: root.up.pressed ? Theme.controlPressedBackground : (root.up.hovered ? Theme.controlHoverBackground : Theme.surfaceInteractive)
-        border.color: Theme.borderSubtle
+        border.width: 1
+        border.color: Theme.borderStrong
         Text {
             anchors.centerIn: parent
             text: "+"
             color: Theme.textPrimary
-            font.pixelSize: 12
+            font.pixelSize: 13
             font.bold: true
         }
     }
 
     down.indicator: Rectangle {
-        implicitWidth: 20
-        implicitHeight: parent ? parent.height / 2 : 12
+        implicitWidth: root.sideButtonWidth
+        implicitHeight: Math.max(18, root.availableHeight)
         radius: Theme.radiusSm
         color: root.down.pressed ? Theme.controlPressedBackground : (root.down.hovered ? Theme.controlHoverBackground : Theme.surfaceInteractive)
-        border.color: Theme.borderSubtle
+        border.width: 1
+        border.color: Theme.borderStrong
         Text {
             anchors.centerIn: parent
-            text: "-"
+            text: "\u2212"
             color: Theme.textPrimary
-            font.pixelSize: 12
+            font.pixelSize: 13
             font.bold: true
         }
     }
