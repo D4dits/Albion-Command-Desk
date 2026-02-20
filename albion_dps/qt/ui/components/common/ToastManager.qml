@@ -43,11 +43,12 @@ Item {
             title: title || "",
             message: message || "",
             duration: duration || root.defaultDuration,
-            showProgress: root.showProgress
+            showProgress: root.showProgress,
+            theme: root.theme
         })
 
         toast.width = resolveToastWidth()
-        toast.anchors.right = parent.right
+        toast.anchors.right = root.right
         toast.anchors.margins = root.toastMargin
         toast.y = root.height + toast.height
         toast.visible = true
@@ -110,7 +111,9 @@ Item {
     // Component for creating toasts
     Component {
         id: toastComponent
-        Toast {}
+        Toast {
+            theme: root.theme
+        }
     }
 
     // Component for delayed removal
