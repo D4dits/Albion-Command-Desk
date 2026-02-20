@@ -7,6 +7,18 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.1.16] - 2026-02-20
+
+### Added
+- Scanner tab now shows Git prerequisite diagnostics with direct install guidance/action when `git` is missing.
+- Meter tab now surfaces capture-runtime readiness (missing/blocked) so live mode requirements are visible without switching tabs.
+
+### Changed
+- Clarified Windows runtime messaging: end users need Npcap Runtime for `live`; Npcap SDK is only for optional capture-profile builds.
+- Windows bootstrap EXE now calls installer with explicit `-Profile core` and passes release-version diagnostics.
+- CLI/app version resolution now comes from installed package metadata instead of hardcoded values.
+- Fixed toast rendering regression (theme binding + anchor target), removing black/empty notification artifacts.
+
 ### Added
 - Phase 0 execution tickets for UX/minimal-release work in `docs/UX_MINIMAL_RELEASE_PLAN.md`.
 - Active Phase 0 milestone queue in `docs/DELIVERY_BACKLOG.md`.
