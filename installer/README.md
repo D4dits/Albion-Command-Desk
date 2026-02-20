@@ -28,7 +28,8 @@ The Windows release EXE:
 4. Runs `tools/install/windows/install.ps1` with:
    - `-ProjectRoot <runtime-path>`
    - `-VenvPath <localappdata-venv>`
-   - `-SkipCaptureExtras`
+   - `-Profile core`
+   - `-ReleaseVersion <X.Y.Z>`
    - `-SkipRun`
 5. Creates Desktop + Start Menu shortcuts targeting `core` mode.
 6. Prints launch commands at the end.

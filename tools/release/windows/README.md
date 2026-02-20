@@ -10,22 +10,22 @@ Builds the canonical Windows release bootstrap executable:
 From repository root:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap_setup.ps1 -ReleaseTag v0.1.14
+powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap_setup.ps1 -ReleaseTag vX.Y.Z
 ```
 
 Custom output path:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap_setup.ps1 `
-  -ReleaseTag v0.1.14 `
-  -OutputPath .\dist\installer\AlbionCommandDesk-Setup-v0.1.14-x86_64.exe
+  -ReleaseTag vX.Y.Z `
+  -OutputPath .\dist\installer\AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe
 ```
 
 ## Notes
 
 - `ReleaseTag` accepts tag (`vX.Y.Z`) or branch name.
 - Bootstrap EXE installs into `%LOCALAPPDATA%\AlbionCommandDesk` (persistent path) instead of temp folders.
-- Bootstrap EXE passes `-SkipCaptureExtras -SkipRun` to `install.ps1` for backward compatibility and to avoid failing startup on systems without Npcap.
+- Bootstrap EXE passes `-Profile core -ReleaseVersion X.Y.Z -SkipRun` to `install.ps1` to keep install zero-friction and avoid hard failure on machines without capture prerequisites.
 - EXE requires outbound access to GitHub release/source URLs.
 - Expected post-install paths:
   - runtime snapshot: `%LOCALAPPDATA%\AlbionCommandDesk\runtime\vX.Y.Z`
