@@ -54,8 +54,9 @@ Best setup before installing ACD:
 - Python `3.11` or `3.12` (64-bit) with `pip` available in terminal.
 - `git` installed (if you install from source checkout).
 - Optional for live capture only:
-  - Windows: Npcap Runtime (`https://npcap.com/#download`).
+  - Windows: Npcap Runtime (`https://npcap.com/#download`) for `live` mode.
   - Linux/macOS: system packet-capture libs (`libpcap`).
+- Npcap SDK is **not** required for normal users. It is only needed when you explicitly build/install the optional Windows `capture` profile from source.
 - Permissions to create a local virtual environment (`venv` folder in repo).
 
 ## Install (One-Click Bootstrap)
@@ -94,6 +95,7 @@ bash ./tools/install/macos/install.sh
 
 ### Optional: enable live capture profile
 Capture profile is optional and not required for base app usage.
+On Windows, this profile may require extra build prerequisites (Npcap SDK + MSVC Build Tools) because it compiles Python capture bindings.
 
 Windows:
 ```powershell

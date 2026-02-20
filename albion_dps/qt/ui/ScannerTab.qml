@@ -144,6 +144,15 @@ CardPanel {
             }
         }
 
+        Text {
+            visible: Qt.platform.os === "windows"
+            text: "Live mode requires Npcap Runtime (Npcap installer). Npcap SDK is only needed for optional capture-profile builds."
+            color: mutedColor
+            font.pixelSize: 11
+            wrapMode: Text.Wrap
+            Layout.fillWidth: true
+        }
+
         // Control buttons
         ScannerControls {
             id: scannerControls

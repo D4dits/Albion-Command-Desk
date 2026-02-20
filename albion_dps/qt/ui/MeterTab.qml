@@ -28,6 +28,9 @@ Item {
     property string timeText: ""
     property string fameText: ""
     property string famePerHourText: ""
+    property string captureRuntimeState: "unknown"
+    property string captureRuntimeDetail: ""
+    property string captureRuntimeActionLabel: ""
 
     // Models
     property var playersModel: null
@@ -42,6 +45,8 @@ Item {
     signal clearHistorySelection()
     signal selectHistory(int index)
     signal copyHistory(int index)
+    signal refreshCaptureRuntimeStatus()
+    signal openCaptureRuntimeAction()
 
     // Access to theme (injected by parent)
     property var theme: null
@@ -56,6 +61,31 @@ Item {
 
     function tableRowStrongColor(index) {
         return index % 2 === 0 ? theme.surfaceInteractive : theme.tableRowEven
+    }
+
+    function runtimeHintText() {
+        if (root.captureRuntimeState === "available") {
+            return ""
+        }
+        if (Qt.platform.os === "windows") {
+            if (root.captureRuntimeState === "missing") {
+                return "Live mode is unavailable. Install Npcap Runtime (Npcap installer). Npcap SDK is not required for normal users."
+            }
+            if (root.captureRuntimeState === "blocked") {
+                return "Live mode is unavailable. Runtime is installed, but capture backend is missing. Reinstall with capture profile (SDK + C++ tools only for this build step)."
+            }
+        }
+        return root.captureRuntimeDetail
+    }
+
+    function runtimeHintColor() {
+        if (root.captureRuntimeState === "missing") {
+            return theme.stateWarning
+        }
+        if (root.captureRuntimeState === "blocked") {
+            return theme.stateDanger
+        }
+        return mutedColor
     }
 
     RowLayout {
@@ -122,6 +152,33 @@ Item {
                     color: textColor
                     font.pixelSize: 14
                     font.bold: true
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+                    visible: runtimeHintText().length > 0
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: runtimeHintText()
+                        color: runtimeHintColor()
+                        font.pixelSize: 11
+                        wrapMode: Text.Wrap
+                    }
+
+                    AppButton {
+                        text: "Refresh"
+                        compact: true
+                        onClicked: root.refreshCaptureRuntimeStatus()
+                    }
+
+                    AppButton {
+                        visible: root.captureRuntimeActionLabel.length > 0
+                        text: root.captureRuntimeActionLabel
+                        compact: true
+                        onClicked: root.openCaptureRuntimeAction()
+                    }
                 }
 
                 // Mode and Sort controls

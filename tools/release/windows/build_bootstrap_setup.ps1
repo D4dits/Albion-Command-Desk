@@ -59,6 +59,11 @@ namespace AlbionCommandDeskBootstrap
                 string appRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AlbionCommandDesk");
                 Directory.CreateDirectory(appRoot);
                 string safeTag = SanitizePathSegment(releaseTag);
+                string releaseVersion = releaseTag;
+                if (!string.IsNullOrWhiteSpace(releaseVersion) && releaseVersion.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+                {
+                    releaseVersion = releaseVersion.Substring(1);
+                }
                 string installRoot = Path.Combine(appRoot, "runtime", safeTag);
                 string venvPath = Path.Combine(appRoot, "venv");
 
@@ -91,7 +96,8 @@ namespace AlbionCommandDeskBootstrap
                 string psArgs = "-NoProfile -ExecutionPolicy Bypass -File " + Quote(installScript)
                     + " -ProjectRoot " + Quote(installRoot)
                     + " -VenvPath " + Quote(venvPath)
-                    + " -SkipCaptureExtras"
+                    + " -Profile core"
+                    + " -ReleaseVersion " + Quote(releaseVersion)
                     + " -SkipRun";
 
                 Console.WriteLine("[ACD bootstrap] Starting installer...");

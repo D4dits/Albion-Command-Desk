@@ -629,11 +629,15 @@ class ScannerState(QObject):
                 state = RUNTIME_STATE_BLOCKED
                 detail = (
                     "Npcap Runtime detected, but Python capture backend is missing. "
-                    "Reinstall with capture profile (`.[capture]`)."
+                    "Reinstall with capture profile. Npcap SDK + C++ build tools are only needed for this optional build step."
                 )
                 action_url = NPCAP_DOWNLOAD_URL
 
             if state == RUNTIME_STATE_MISSING:
+                detail = (
+                    "Npcap Runtime is missing. Install Npcap Runtime (Npcap installer) to enable live mode. "
+                    "Npcap SDK is not required for normal users."
+                )
                 return state, detail, "Install runtime", action_url or NPCAP_DOWNLOAD_URL
             if state in (RUNTIME_STATE_BLOCKED, RUNTIME_STATE_UNKNOWN):
                 return state, detail, "Open runtime page", action_url or NPCAP_DOWNLOAD_URL

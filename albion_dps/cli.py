@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from importlib.metadata import PackageNotFoundError, version as package_version
 
 from albion_dps.logging_config import configure_logging
 from albion_dps.qt.runner import run_qt
@@ -16,7 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--log-level", default="INFO")
     parser.add_argument("--debug", action="store_true")
-    parser.add_argument("--version", action="version", version="0.1.14")
+    parser.add_argument("--version", action="version", version=_resolve_cli_version())
 
     subparsers = parser.add_subparsers(dest="command")
     core = subparsers.add_parser("core", help="Run GUI without live capture backend")
@@ -101,3 +102,10 @@ def _find_command_insert_index(argv: list[str]) -> int:
             continue
         break
     return min(idx, len(argv))
+
+
+def _resolve_cli_version() -> str:
+    try:
+        return package_version("albion-command-desk")
+    except PackageNotFoundError:
+        return "local-dev"

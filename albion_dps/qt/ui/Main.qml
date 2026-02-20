@@ -450,6 +450,9 @@ ApplicationWindow {
                     timeText: uiState.timeText
                     fameText: uiState.fameText
                     famePerHourText: uiState.famePerHourText
+                    captureRuntimeState: scannerState.captureRuntimeState
+                    captureRuntimeDetail: scannerState.captureRuntimeDetail
+                    captureRuntimeActionLabel: scannerState.captureRuntimeActionLabel
 
                     // Models
                     playersModel: uiState.playersModel
@@ -472,6 +475,14 @@ ApplicationWindow {
                     onCopyHistory: function(index) {
                         uiState.copyHistory(index)
                         toastManager.showSuccess("Copied to clipboard", "Battle data copied")
+                    }
+                    onRefreshCaptureRuntimeStatus: function() {
+                        scannerState.refreshCaptureRuntimeStatus()
+                        toastManager.showInfo("Runtime check", "Capture runtime status refreshed")
+                    }
+                    onOpenCaptureRuntimeAction: function() {
+                        scannerState.openCaptureRuntimeAction()
+                        toastManager.showInfo("Runtime action", scannerState.captureRuntimeActionLabel || "Opening runtime page")
                     }
                 }
             }

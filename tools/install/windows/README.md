@@ -73,13 +73,17 @@ powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Sk
 
 ## Notes
 
-- Default path (`core`) does not require Npcap SDK.
+- Runtime requirement for end users:
+  - `core` profile: no Npcap required.
+  - `live` mode: requires **Npcap Runtime** (Npcap installer from `https://npcap.com/#download`).
+- Build requirement only for advanced capture install:
+  - `capture` profile from source may need **Npcap SDK** + **MSVC Build Tools** to compile `pcapy-ng`.
+- Default path (`core`) never requires Npcap SDK.
 - Capture profile automatically falls back to `core` when SDK/build prerequisites are missing.
 - Use `-StrictCapture` only when you explicitly want capture install to fail instead of fallback.
 - If using `-Profile capture`, prefer Python 3.11 or 3.12.
 - For local firewalls/AV restrictions, run PowerShell as Administrator.
 - If `winget` fails because of source issues, install Python manually from `https://www.python.org/downloads/windows/` and rerun.
 - `live` mode checks Npcap Runtime on startup and logs detected install path.
-- If Npcap Runtime is missing, install from: `https://npcap.com/#download`.
 - Diagnostic output includes expected primary Windows artifact name:
   `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`.
