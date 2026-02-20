@@ -110,6 +110,7 @@ namespace AlbionCommandDeskBootstrap
                 Console.WriteLine("[ACD bootstrap] Virtual environment: " + venvPath);
                 if (File.Exists(cliPath))
                 {
+                    TryCreateShortcuts(cliPath, installRoot);
                     Console.WriteLine("[ACD bootstrap] Start app with:");
                     Console.WriteLine("  " + cliPath + " core");
                     Console.WriteLine("  " + cliPath + " live   # requires Npcap Runtime");
@@ -200,6 +201,68 @@ namespace AlbionCommandDeskBootstrap
                 return "\"\"";
             }
             return "\"" + value.Replace("\"", "\\\"") + "\"";
+        }
+
+        private static void TryCreateShortcuts(string cliPath, string installRoot)
+        {
+            try
+            {
+                string workDir = Path.GetDirectoryName(cliPath) ?? "";
+                string iconPath = Path.Combine(installRoot, "albion_dps", "qt", "ui", "command_desk_icon.ico");
+                string desktopLink = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                    "Albion Command Desk.lnk");
+                string startMenuDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Microsoft",
+                    "Windows",
+                    "Start Menu",
+                    "Programs",
+                    "Albion Command Desk");
+                Directory.CreateDirectory(startMenuDir);
+                string startMenuLink = Path.Combine(startMenuDir, "Albion Command Desk.lnk");
+
+                CreateShortcut(desktopLink, cliPath, "core", workDir, iconPath);
+                CreateShortcut(startMenuLink, cliPath, "core", workDir, iconPath);
+                Console.WriteLine("[ACD bootstrap] Shortcuts created:");
+                Console.WriteLine("  Desktop: " + desktopLink);
+                Console.WriteLine("  Start Menu: " + startMenuLink);
+            }
+            catch (Exception shortcutError)
+            {
+                Console.WriteLine("[ACD bootstrap] WARNING: unable to create shortcuts: " + shortcutError.Message);
+            }
+        }
+
+        private static void CreateShortcut(string shortcutPath, string targetPath, string args, string workDir, string iconPath)
+        {
+            string command = "$ws=New-Object -ComObject WScript.Shell; "
+                + "$lnk=$ws.CreateShortcut('" + EscapeForSingleQuotedPowershell(shortcutPath) + "'); "
+                + "$lnk.TargetPath='" + EscapeForSingleQuotedPowershell(targetPath) + "'; "
+                + "$lnk.Arguments='" + EscapeForSingleQuotedPowershell(args) + "'; "
+                + "$lnk.WorkingDirectory='" + EscapeForSingleQuotedPowershell(workDir) + "'; "
+                + "if (Test-Path '" + EscapeForSingleQuotedPowershell(iconPath) + "') { "
+                + "  $lnk.IconLocation='" + EscapeForSingleQuotedPowershell(iconPath) + "' "
+                + "}; "
+                + "$lnk.Save()";
+
+            int exitCode = RunProcess(
+                "powershell.exe",
+                "-NoProfile -ExecutionPolicy Bypass -Command " + Quote(command)
+            );
+            if (exitCode != 0)
+            {
+                throw new InvalidOperationException("shortcut command failed with exit code " + exitCode + " for: " + shortcutPath);
+            }
+        }
+
+        private static string EscapeForSingleQuotedPowershell(string value)
+        {
+            if (value == null)
+            {
+                return "";
+            }
+            return value.Replace("'", "''");
         }
 
         private static string SanitizePathSegment(string value)

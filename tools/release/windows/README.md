@@ -34,3 +34,6 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap
 - Expected launch commands:
   - `...\\albion-command-desk.exe core`
   - `...\\albion-command-desk.exe live` (requires Npcap Runtime)
+- Bootstrap EXE also creates:
+  - Desktop shortcut: `Albion Command Desk`
+  - Start Menu shortcut folder: `Albion Command Desk`

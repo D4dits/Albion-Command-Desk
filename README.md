@@ -63,7 +63,7 @@ Best setup before installing ACD:
 ### Windows (no Git required)
 1. Open Releases: `https://github.com/D4dits/Albion-Command-Desk/releases/latest`
 2. Download `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`.
-3. Run it (installer downloads source, installs Python automatically via `winget` when available, creates persistent runtime under `%LOCALAPPDATA%\AlbionCommandDesk`, then prints launch commands).
+3. Run it (installer downloads source, installs Python automatically via `winget` when available, creates persistent runtime under `%LOCALAPPDATA%\AlbionCommandDesk`, and creates Start Menu + Desktop shortcuts).
 4. If installation fails, the window stays open with the exact error.
 
 Installed paths (release EXE):

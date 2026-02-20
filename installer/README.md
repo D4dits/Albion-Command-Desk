@@ -30,7 +30,8 @@ The Windows release EXE:
    - `-VenvPath <localappdata-venv>`
    - `-SkipCaptureExtras`
    - `-SkipRun`
-5. Prints launch commands at the end.
+5. Creates Desktop + Start Menu shortcuts targeting `core` mode.
+6. Prints launch commands at the end.
 
 ## Launch commands after Windows EXE install
 
