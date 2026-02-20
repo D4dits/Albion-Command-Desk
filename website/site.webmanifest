@@ -1,0 +1,17 @@
+﻿{
+  "name": "Albion Command Desk",
+  "short_name": "ACD",
+  "description": "Passive Albion Online companion app with meter, scanner, replay and market analytics.",
+  "start_url": "/Albion-Command-Desk/",
+  "scope": "/Albion-Command-Desk/",
+  "display": "standalone",
+  "background_color": "#050c18",
+  "theme_color": "#57abff",
+  "icons": [
+    {
+      "src": "assets/icon.png",
+      "sizes": "768x768",
+      "type": "image/png"
+    }
+  ]
+}

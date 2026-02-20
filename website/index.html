@@ -1,0 +1,218 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Albion Command Desk - Albion Online DPS Meter, Scanner and Crafting Profit Tool</title>
+    <meta name="description" content="Albion Command Desk is a passive Albion Online companion app with DPS/HPS meter, packet scanner controls, replay analysis, and crafting profit tools." />
+    <meta name="keywords" content="Albion Online DPS meter, Albion Online combat parser, Albion crafting calculator, Albion market tool, Albion Command Desk" />
+    <meta name="author" content="Albion Command Desk" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <link rel="canonical" href="https://d4dits.github.io/Albion-Command-Desk/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Albion Command Desk" />
+    <meta property="og:title" content="Albion Command Desk - Passive Albion Online Companion" />
+    <meta property="og:description" content="Track DPS/HPS, review fights, and optimize crafting profit in Albion Online with a fast, desktop-first companion app." />
+    <meta property="og:url" content="https://d4dits.github.io/Albion-Command-Desk/" />
+    <meta property="og:image" content="https://d4dits.github.io/Albion-Command-Desk/assets/logo.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Albion Command Desk" />
+    <meta name="twitter:description" content="Passive DPS meter, scanner tools, replay mode, and market crafting analytics for Albion Online." />
+    <meta name="twitter:image" content="https://d4dits.github.io/Albion-Command-Desk/assets/logo.png" />
+
+    <link rel="icon" type="image/png" href="assets/icon.png" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Albion Command Desk",
+        "applicationCategory": "GameApplication",
+        "operatingSystem": "Windows, Linux, macOS",
+        "description": "Passive Albion Online companion app with DPS/HPS meter, replay analysis, scanner controls, and market crafting profitability workspace.",
+        "url": "https://d4dits.github.io/Albion-Command-Desk/",
+        "downloadUrl": "https://github.com/D4dits/Albion-Command-Desk/releases/latest",
+        "softwareVersion": "0.1.16",
+        "author": {
+          "@type": "Person",
+          "name": "D4dits"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Does Albion Command Desk modify the game client?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. Albion Command Desk is designed as a passive external companion tool. It does not inject code, automate gameplay, or modify client memory/files."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What do I need for live capture on Windows?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "For end users, live mode requires Npcap Runtime. Npcap SDK is only needed when building optional capture-profile dependencies from source."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Where can I download the latest release?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Use the official GitHub Releases page: https://github.com/D4dits/Albion-Command-Desk/releases/latest"
+            }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <div class="bg-glow bg-glow-one"></div>
+    <div class="bg-glow bg-glow-two"></div>
+
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a class="brand" href="#top" aria-label="Albion Command Desk Home">
+          <img src="assets/icon.png" alt="Albion Command Desk icon" />
+          <span>Albion Command Desk</span>
+        </a>
+        <nav class="nav-links" aria-label="Main navigation">
+          <a href="#features">Features</a>
+          <a href="#install">Install</a>
+          <a href="#screenshots">Screenshots</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+        <a class="btn btn-primary" href="https://github.com/D4dits/Albion-Command-Desk/releases/latest" target="_blank" rel="noopener">Download</a>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero container">
+        <div class="hero-copy">
+          <p class="eyebrow">Albion Online Companion App</p>
+          <h1>Track DPS, analyze fights, and plan profitable crafting in one desktop workspace.</h1>
+          <p class="lead">
+            Albion Command Desk is a passive analyzer focused on combat clarity and market decisions.
+            Built for players who need fast post-fight stats and clean crafting economics without UI clutter.
+          </p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="https://github.com/D4dits/Albion-Command-Desk/releases/latest" target="_blank" rel="noopener">Get Latest Release</a>
+            <a class="btn btn-ghost" href="https://github.com/D4dits/Albion-Command-Desk" target="_blank" rel="noopener">View GitHub Repo</a>
+          </div>
+          <ul class="meta-list">
+            <li>Windows, Linux, macOS</li>
+            <li>Qt desktop UI</li>
+            <li>Live + replay workflow</li>
+          </ul>
+        </div>
+        <div class="hero-visual card">
+          <img src="assets/logo.png" alt="Albion Command Desk official logo" />
+        </div>
+      </section>
+
+      <section id="features" class="container section">
+        <h2>Why players use Albion Command Desk</h2>
+        <div class="grid three">
+          <article class="card feature">
+            <h3>DPS/HPS Meter</h3>
+            <p>Live scoreboard with battle, zone, and manual modes. Sort by DPS, DMG, HPS, or HEAL for fast review.</p>
+          </article>
+          <article class="card feature">
+            <h3>Scanner Control</h3>
+            <p>Repository sync, update checks, runtime diagnostics, and logs in one place. Clear visibility for Git and capture prerequisites.</p>
+          </article>
+          <article class="card feature">
+            <h3>Market Workspace</h3>
+            <p>Recipe setup, craft plan table, inputs/outputs/results, and profitability snapshots tuned for practical decisions.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="install" class="container section">
+        <h2>Install in minutes</h2>
+        <div class="grid two">
+          <article class="card install-card">
+            <h3>Windows (recommended)</h3>
+            <ol>
+              <li>Open the latest release page.</li>
+              <li>Download <code>AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe</code>.</li>
+              <li>Run installer and follow console prompts.</li>
+            </ol>
+            <p class="small">Live mode on Windows requires <strong>Npcap Runtime</strong>. Npcap SDK is optional and only needed for advanced capture-profile build scenarios.</p>
+          </article>
+          <article class="card install-card">
+            <h3>Linux / macOS</h3>
+            <ol>
+              <li>Download the release install script for your OS.</li>
+              <li>Run script from terminal.</li>
+              <li>Launch with <code>albion-command-desk core</code>.</li>
+            </ol>
+            <p class="small">For live capture, install system packet-capture dependencies (<code>libpcap</code> stack) as documented in the repository.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="screenshots" class="container section">
+        <h2>Interface preview</h2>
+        <div class="grid three shots">
+          <figure class="card shot">
+            <img src="assets/meter.png" alt="Albion Command Desk meter tab with scoreboard" loading="lazy" />
+            <figcaption>Meter tab</figcaption>
+          </figure>
+          <figure class="card shot">
+            <img src="assets/scanner.png" alt="Albion Command Desk scanner tab with runtime diagnostics" loading="lazy" />
+            <figcaption>Scanner tab</figcaption>
+          </figure>
+          <figure class="card shot">
+            <img src="assets/market.png" alt="Albion Command Desk market tab with crafting setup" loading="lazy" />
+            <figcaption>Market tab</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="faq" class="container section">
+        <h2>FAQ</h2>
+        <div class="faq-list">
+          <article class="card faq-item">
+            <h3>Is this an in-game overlay?</h3>
+            <p>No. Albion Command Desk is an external desktop application.</p>
+          </article>
+          <article class="card faq-item">
+            <h3>Does it automate gameplay?</h3>
+            <p>No. The tool is intended for passive analysis and planning.</p>
+          </article>
+          <article class="card faq-item">
+            <h3>Where are updates published?</h3>
+            <p>All updates are published on GitHub Releases and exposed via a stable manifest endpoint.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-wrap">
+        <p>Albion Command Desk · Open-source Albion Online companion.</p>
+        <p>
+          <a href="https://github.com/D4dits/Albion-Command-Desk" target="_blank" rel="noopener">GitHub</a>
+          ·
+          <a href="https://github.com/D4dits/Albion-Command-Desk/releases/latest" target="_blank" rel="noopener">Latest Release</a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

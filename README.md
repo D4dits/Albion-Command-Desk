@@ -18,6 +18,12 @@ No game client hooks, no overlays, no memory editing.
   <img src="https://img.shields.io/badge/Game-Albion%20Online-orange">
 </p>
 
+## Website (GitHub Pages)
+- Public landing page source lives in `website/` (SEO-focused static site).
+- Deployment workflow: `.github/workflows/pages.yml`.
+- Expected URL: `https://d4dits.github.io/Albion-Command-Desk/`
+- One-time repo setting required: GitHub **Settings -> Pages -> Source: GitHub Actions**.
+
 ## Support the Project
 If Albion Command Desk saves you time or silver, consider supporting future updates and maintenance.
 

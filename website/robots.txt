@@ -1,0 +1,4 @@
+﻿User-agent: *
+Allow: /
+
+Sitemap: https://d4dits.github.io/Albion-Command-Desk/sitemap.xml
