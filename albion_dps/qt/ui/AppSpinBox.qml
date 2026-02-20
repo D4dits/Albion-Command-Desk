@@ -11,6 +11,8 @@ SpinBox {
     editable: true
     stepSize: 1
     focusPolicy: Qt.StrongFocus
+    leftPadding: sideButtonWidth + 6
+    rightPadding: sideButtonWidth + 6
 
     contentItem: TextInput {
         text: root.textFromValue(root.value, root.locale)
@@ -39,7 +41,9 @@ SpinBox {
     up.indicator: Rectangle {
         z: 2
         width: root.sideButtonWidth
-        height: Math.max(18, root.availableHeight)
+        height: root.height
+        anchors.right: parent.right
+        anchors.top: parent.top
         radius: Theme.radiusSm
         color: root.up.pressed ? Theme.controlPressedBackground : (root.up.hovered ? Theme.controlHoverBackground : Theme.surfaceInteractive)
         border.width: 1
@@ -58,7 +62,9 @@ SpinBox {
     down.indicator: Rectangle {
         z: 2
         width: root.sideButtonWidth
-        height: Math.max(18, root.availableHeight)
+        height: root.height
+        anchors.left: parent.left
+        anchors.top: parent.top
         radius: Theme.radiusSm
         color: root.down.pressed ? Theme.controlPressedBackground : (root.down.hovered ? Theme.controlHoverBackground : Theme.surfaceInteractive)
         border.width: 1
@@ -79,5 +85,21 @@ SpinBox {
         color: root.enabled ? Theme.inputBackground : Theme.inputBackgroundDisabled
         border.width: root.activeFocus ? Theme.focusRingWidth : 1
         border.color: root.activeFocus ? Theme.inputBorderFocus : (root.enabled ? Theme.inputBorder : Theme.controlDisabledBorder)
+        Rectangle {
+            width: 1
+            anchors.left: parent.left
+            anchors.leftMargin: root.sideButtonWidth
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            color: Theme.borderSubtle
+        }
+        Rectangle {
+            width: 1
+            anchors.right: parent.right
+            anchors.rightMargin: root.sideButtonWidth
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            color: Theme.borderSubtle
+        }
     }
 }
