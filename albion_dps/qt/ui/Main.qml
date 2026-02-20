@@ -513,10 +513,14 @@ ApplicationWindow {
                     captureRuntimeDetail: scannerState.captureRuntimeDetail
                     captureRuntimeActionLabel: scannerState.captureRuntimeActionLabel
                     captureRuntimeActionUrl: scannerState.captureRuntimeActionUrl
+                    captureRuntimeNeedsAction: scannerState.captureRuntimeNeedsAction
+                    captureRuntimeInstallHint: scannerState.captureRuntimeInstallHint
                     gitAvailable: scannerState.gitAvailable
                     gitDetail: scannerState.gitDetail
                     gitActionLabel: scannerState.gitActionLabel
                     gitActionUrl: scannerState.gitActionUrl
+                    gitNeedsInstall: scannerState.gitNeedsInstall
+                    gitInstallHint: scannerState.gitInstallHint
 
                     // Theme access
                     theme: root.theme

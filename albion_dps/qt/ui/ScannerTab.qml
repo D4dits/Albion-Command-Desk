@@ -37,10 +37,14 @@ CardPanel {
     property string captureRuntimeDetail: ""
     property string captureRuntimeActionLabel: ""
     property string captureRuntimeActionUrl: ""
+    property bool captureRuntimeNeedsAction: false
+    property string captureRuntimeInstallHint: ""
     property bool gitAvailable: false
     property string gitDetail: ""
     property string gitActionLabel: ""
     property string gitActionUrl: ""
+    property bool gitNeedsInstall: false
+    property string gitInstallHint: ""
 
     // Signals to notify parent of actions
     signal checkForUpdates()
@@ -124,29 +128,65 @@ CardPanel {
             Layout.fillWidth: true
             spacing: 8
 
-            Text {
+            Rectangle {
                 Layout.fillWidth: true
-                text: "Capture runtime: " + root.captureRuntimeState + " | " + root.captureRuntimeDetail
+                Layout.preferredHeight: runtimeColumn.implicitHeight + 12
+                radius: 6
                 color: root.captureRuntimeState === "available"
+                    ? (theme ? theme.stateSuccessBg : "#11261b")
+                    : (theme ? theme.stateWarningBg : "#2a220f")
+                border.width: 1
+                border.color: root.captureRuntimeState === "available"
                     ? (theme ? theme.stateSuccess : "#2ecc71")
-                    : (root.captureRuntimeState === "missing"
-                        ? (theme ? theme.stateWarning : "#f39c12")
-                        : (theme ? theme.stateDanger : "#e74c3c"))
-                font.pixelSize: 11
-                wrapMode: Text.Wrap
-            }
+                    : (theme ? theme.stateWarning : "#f39c12")
 
-            AppButton {
-                visible: root.captureRuntimeActionLabel.length > 0
-                text: root.captureRuntimeActionLabel
-                compact: true
-                onClicked: root.openCaptureRuntimeAction()
-            }
+                ColumnLayout {
+                    id: runtimeColumn
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    spacing: 4
 
-            AppButton {
-                text: "Refresh runtime"
-                compact: true
-                onClicked: root.refreshCaptureRuntimeStatus()
+                    Text {
+                        text: root.captureRuntimeState === "available" ? "Capture runtime: ready" : "Capture runtime: action required"
+                        color: root.captureRuntimeState === "available"
+                            ? (theme ? theme.stateSuccess : "#2ecc71")
+                            : (theme ? theme.stateWarning : "#f39c12")
+                        font.pixelSize: 11
+                        font.bold: true
+                    }
+                    Text {
+                        text: root.captureRuntimeDetail
+                        color: mutedColor
+                        font.pixelSize: 11
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        visible: root.captureRuntimeInstallHint.length > 0
+                        text: root.captureRuntimeInstallHint
+                        color: textColor
+                        font.pixelSize: 11
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        AppButton {
+                            visible: root.captureRuntimeActionLabel.length > 0
+                            text: root.captureRuntimeActionLabel
+                            variant: root.captureRuntimeNeedsAction ? "primary" : "secondary"
+                            compact: true
+                            onClicked: root.openCaptureRuntimeAction()
+                        }
+                        AppButton {
+                            text: "Refresh runtime"
+                            compact: true
+                            onClicked: root.refreshCaptureRuntimeStatus()
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
+                }
             }
         }
 
@@ -154,27 +194,65 @@ CardPanel {
             Layout.fillWidth: true
             spacing: 8
 
-            Text {
+            Rectangle {
                 Layout.fillWidth: true
-                text: "Git: " + (root.gitAvailable ? "available" : "missing") + " | " + root.gitDetail
+                Layout.preferredHeight: gitColumn.implicitHeight + 12
+                radius: 6
                 color: root.gitAvailable
+                    ? (theme ? theme.stateSuccessBg : "#11261b")
+                    : (theme ? theme.stateWarningBg : "#2a220f")
+                border.width: 1
+                border.color: root.gitAvailable
                     ? (theme ? theme.stateSuccess : "#2ecc71")
                     : (theme ? theme.stateWarning : "#f39c12")
-                font.pixelSize: 11
-                wrapMode: Text.Wrap
-            }
 
-            AppButton {
-                visible: root.gitActionLabel.length > 0
-                text: root.gitActionLabel
-                compact: true
-                onClicked: root.openGitInstallAction()
-            }
+                ColumnLayout {
+                    id: gitColumn
+                    anchors.fill: parent
+                    anchors.margins: 6
+                    spacing: 4
 
-            AppButton {
-                text: "Refresh Git"
-                compact: true
-                onClicked: root.refreshGitStatus()
+                    Text {
+                        text: root.gitAvailable ? "Git: ready" : "Git: missing"
+                        color: root.gitAvailable
+                            ? (theme ? theme.stateSuccess : "#2ecc71")
+                            : (theme ? theme.stateWarning : "#f39c12")
+                        font.pixelSize: 11
+                        font.bold: true
+                    }
+                    Text {
+                        text: root.gitDetail
+                        color: mutedColor
+                        font.pixelSize: 11
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        visible: root.gitInstallHint.length > 0
+                        text: root.gitInstallHint
+                        color: textColor
+                        font.pixelSize: 11
+                        wrapMode: Text.Wrap
+                        Layout.fillWidth: true
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        AppButton {
+                            visible: root.gitActionLabel.length > 0
+                            text: root.gitActionLabel
+                            variant: root.gitNeedsInstall ? "primary" : "secondary"
+                            compact: true
+                            onClicked: root.openGitInstallAction()
+                        }
+                        AppButton {
+                            text: "Refresh Git"
+                            compact: true
+                            onClicked: root.refreshGitStatus()
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
+                }
             }
         }
 
@@ -192,6 +270,7 @@ CardPanel {
             id: scannerControls
             Layout.fillWidth: true
             scannerRunning: root.scannerRunning
+            gitAvailable: root.gitAvailable
 
             onCheckForUpdates: root.checkForUpdates()
             onSyncClientRepo: root.syncClientRepo()

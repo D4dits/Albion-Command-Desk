@@ -20,6 +20,7 @@ Flow {
 
     // Scanner state flags
     property bool scannerRunning: false
+    property bool gitAvailable: true
 
     // Signals to notify parent of actions
     signal checkForUpdates()
@@ -32,11 +33,13 @@ Flow {
     AppButton {
         text: "Check updates"
         compact: true
+        enabled: root.gitAvailable
         onClicked: root.checkForUpdates()
     }
     AppButton {
         text: "Sync repo"
         compact: true
+        enabled: root.gitAvailable
         onClicked: root.syncClientRepo()
     }
     AppButton {

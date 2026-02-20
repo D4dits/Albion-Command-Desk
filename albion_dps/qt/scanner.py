@@ -28,6 +28,7 @@ from albion_dps.capture.npcap_runtime import (
 DEFAULT_REPO_URL = "https://github.com/ao-data/albiondata-client.git"
 DEFAULT_PUBLIC_INGEST_URL = "https+pow://albion-online-data.com"
 GIT_WINDOWS_DOWNLOAD_URL = "https://git-scm.com/download/win"
+GIT_DOWNLOADS_URL = "https://git-scm.com/downloads"
 _ALBION_LOG_RE = re.compile(
     r"^[A-Z]{4,5}\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^\]]*\]\s"
 )
@@ -119,6 +120,24 @@ class ScannerState(QObject):
     def captureRuntimeActionUrl(self) -> str:
         return self._runtime_action_url
 
+    @Property(bool, notify=runtimeChanged)
+    def captureRuntimeNeedsAction(self) -> bool:
+        return self._runtime_state in {RUNTIME_STATE_MISSING, RUNTIME_STATE_BLOCKED, RUNTIME_STATE_UNKNOWN}
+
+    @Property(str, notify=runtimeChanged)
+    def captureRuntimeInstallHint(self) -> str:
+        if _is_windows():
+            if self._runtime_state == RUNTIME_STATE_MISSING:
+                return "Install Npcap Runtime (Npcap installer). Npcap SDK is not required for regular users."
+            if self._runtime_state == RUNTIME_STATE_BLOCKED:
+                return "Runtime found, but Python capture backend is missing. Reinstall with capture profile."
+            if self._runtime_state == RUNTIME_STATE_UNKNOWN:
+                return "Runtime status is unknown. Re-run runtime check or open help page."
+            return "Capture runtime is ready."
+        if self._runtime_state == RUNTIME_STATE_MISSING:
+            return "Capture backend is missing. Reinstall with capture profile."
+        return "Capture runtime is ready."
+
     @Property(str, constant=True)
     def clientDir(self) -> str:
         return str(self._client_dir)
@@ -138,6 +157,21 @@ class ScannerState(QObject):
     @Property(str, notify=gitChanged)
     def gitActionUrl(self) -> str:
         return self._git_action_url
+
+    @Property(bool, notify=gitChanged)
+    def gitNeedsInstall(self) -> bool:
+        return not self._git_available
+
+    @Property(str, notify=gitChanged)
+    def gitInstallHint(self) -> str:
+        if self._git_available:
+            return "Git is available."
+        if _is_windows():
+            return (
+                "Install Git, restart Albion Command Desk, then run 'Sync repo'. "
+                "Recommended command: winget install --id Git.Git -e --source winget"
+            )
+        return "Install Git from git-scm.com/downloads, restart app, then run 'Sync repo'."
 
     @Slot()
     def clearLog(self) -> None:
@@ -729,15 +763,15 @@ class ScannerState(QObject):
             return (
                 False,
                 "Git is required for Sync repository and Check updates. Install with: winget install --id Git.Git -e --source winget",
-                "Git for Windows",
+                "Install Git",
                 GIT_WINDOWS_DOWNLOAD_URL,
             )
 
         return (
             False,
             "Git is required for Sync repository and Check updates.",
-            "Git downloads",
-            "https://git-scm.com/downloads",
+            "Install Git",
+            GIT_DOWNLOADS_URL,
         )
 
 
