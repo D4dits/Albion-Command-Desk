@@ -38,35 +38,39 @@ SpinBox {
 
     up.indicator: Rectangle {
         z: 2
-        implicitWidth: root.sideButtonWidth
-        implicitHeight: Math.max(18, root.availableHeight)
+        width: root.sideButtonWidth
+        height: Math.max(18, root.availableHeight)
         radius: Theme.radiusSm
         color: root.up.pressed ? Theme.controlPressedBackground : (root.up.hovered ? Theme.controlHoverBackground : Theme.surfaceInteractive)
         border.width: 1
         border.color: Theme.borderStrong
         Text {
-            anchors.centerIn: parent
+            anchors.fill: parent
             text: "\u002B"
             color: Theme.textPrimary
             font.pixelSize: 13
             font.bold: true
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
         }
     }
 
     down.indicator: Rectangle {
         z: 2
-        implicitWidth: root.sideButtonWidth
-        implicitHeight: Math.max(18, root.availableHeight)
+        width: root.sideButtonWidth
+        height: Math.max(18, root.availableHeight)
         radius: Theme.radiusSm
         color: root.down.pressed ? Theme.controlPressedBackground : (root.down.hovered ? Theme.controlHoverBackground : Theme.surfaceInteractive)
         border.width: 1
         border.color: Theme.borderStrong
         Text {
-            anchors.centerIn: parent
+            anchors.fill: parent
             text: "\u2212"
             color: Theme.textPrimary
             font.pixelSize: 13
             font.bold: true
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
         }
     }
 
