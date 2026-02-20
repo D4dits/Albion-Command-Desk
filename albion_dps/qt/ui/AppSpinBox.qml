@@ -20,6 +20,8 @@ SpinBox {
         selectedTextColor: Theme.textOnAccent
         horizontalAlignment: Qt.AlignHCenter
         verticalAlignment: Qt.AlignVCenter
+        leftPadding: (root.down && root.down.indicator) ? (root.down.indicator.width + 6) : 8
+        rightPadding: (root.up && root.up.indicator) ? (root.up.indicator.width + 6) : 8
         readOnly: !root.editable
         validator: root.validator
         inputMethodHints: Qt.ImhFormattedNumbersOnly
@@ -35,6 +37,7 @@ SpinBox {
     }
 
     up.indicator: Rectangle {
+        z: 2
         implicitWidth: root.sideButtonWidth
         implicitHeight: Math.max(18, root.availableHeight)
         radius: Theme.radiusSm
@@ -43,7 +46,7 @@ SpinBox {
         border.color: Theme.borderStrong
         Text {
             anchors.centerIn: parent
-            text: "+"
+            text: "\u002B"
             color: Theme.textPrimary
             font.pixelSize: 13
             font.bold: true
@@ -51,6 +54,7 @@ SpinBox {
     }
 
     down.indicator: Rectangle {
+        z: 2
         implicitWidth: root.sideButtonWidth
         implicitHeight: Math.max(18, root.availableHeight)
         radius: Theme.radiusSm
