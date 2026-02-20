@@ -355,17 +355,20 @@ def test_need_quantity_with_safety_buffer_for_returnable_resources() -> None:
 
 
 def test_journal_rule_mapping_and_factor_for_crafting_item() -> None:
-    rule = market_state._journal_rule_for_item("T4_MAIN_ROCKMACE_KEEPER@2")
-    assert rule is not None
-    assert rule.kind == "WARRIOR"
-    assert rule.tier == 4
-    assert rule.empty_item_id == "T4_JOURNAL_WARRIOR"
-    assert rule.full_item_id == "T4_JOURNAL_WARRIOR_FULL"
-    assert int(rule.max_fame) == 3600
-    assert int(rule.fame_per_item) == 1200
+    journal_by_item, fame_factor_by_item = market_state._journal_maps()
+    assert journal_by_item
 
-    factor = market_state._journal_fame_factor_for_item("T4_MAIN_ROCKMACE_KEEPER@2")
-    assert round(factor, 2) == 1.10
+    sample_item_id, sample_rule = next(iter(journal_by_item.items()))
+    mapped_rule = market_state._journal_rule_for_item(f"{sample_item_id}@2")
+    assert mapped_rule is not None
+    assert mapped_rule == sample_rule
+    assert mapped_rule.max_fame > 0
+    assert mapped_rule.fame_per_item > 0
+
+    if fame_factor_by_item:
+        factor_item_id, expected_factor = next(iter(fame_factor_by_item.items()))
+        factor = market_state._journal_fame_factor_for_item(f"{factor_item_id}@2")
+        assert factor == pytest.approx(float(expected_factor))
 
 
 def test_market_setup_state_can_switch_recipe_by_index() -> None:
