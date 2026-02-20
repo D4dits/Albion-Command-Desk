@@ -1,6 +1,6 @@
 {
-  "tag": "v0.1.14",
-  "asset_name": "manifest.json",
-  "updated_at_utc": "2026-02-18T00:00:00Z",
-  "notes": "Update this pointer after each validated release."
+    "tag":  "v0.1.16",
+    "asset_name":  "manifest.json",
+    "updated_at_utc":  "2026-02-20T10:16:22Z",
+    "notes":  "Update this pointer after each validated release."
 }
