@@ -13,6 +13,9 @@ Item {
     property int defaultDuration: 3000
     property int toastSpacing: 8
     property int toastMargin: 16
+    property int toastMinWidth: 260
+    property int toastMaxWidth: 420
+    property real toastWidthRatio: 0.34
     property bool showProgress: true
 
     // Access to theme
@@ -43,6 +46,7 @@ Item {
             showProgress: root.showProgress
         })
 
+        toast.width = resolveToastWidth()
         toast.anchors.right = parent.right
         toast.anchors.margins = root.toastMargin
         toast.y = root.height + toast.height
@@ -85,6 +89,23 @@ Item {
             totalHeight += toast.height + root.toastSpacing
         }
     }
+
+    function resolveToastWidth() {
+        var maxAllowed = Math.max(160, root.width - (root.toastMargin * 2))
+        var preferred = Math.max(root.toastMinWidth, Math.round(root.width * root.toastWidthRatio))
+        return Math.max(160, Math.min(root.toastMaxWidth, Math.min(maxAllowed, preferred)))
+    }
+
+    function refreshToastGeometry() {
+        var w = resolveToastWidth()
+        for (var i = 0; i < toasts.length; i++) {
+            toasts[i].width = w
+        }
+        repositionToasts()
+    }
+
+    onWidthChanged: refreshToastGeometry()
+    onHeightChanged: repositionToasts()
 
     // Component for creating toasts
     Component {
