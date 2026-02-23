@@ -472,9 +472,6 @@ ApplicationWindow {
                     gitInstallHint: scannerState.gitInstallHint
                     gitInstallCommand: scannerState.gitInstallCommand
                     theme: root.theme
-                    onGoToMeter: viewTabs.currentIndex = 1
-                    onGoToScanner: viewTabs.currentIndex = 2
-                    onGoToMarket: viewTabs.currentIndex = 3
                     onRefreshCaptureRuntimeStatus: scannerState.refreshCaptureRuntimeStatus()
                     onOpenCaptureRuntimeAction: scannerState.openCaptureRuntimeAction()
                     onRefreshGitStatus: scannerState.refreshGitStatus()

@@ -540,6 +540,52 @@ _RECIPE_TIER_ENCHANT_RE = re.compile(r"\b(?:t)?(?P<tier>[1-8])(?:[.\-\/](?P<ench
 _TIER_PREFIX_RE = re.compile(r"^T(?P<tier>\d+)_(?P<rest>.+)$", re.IGNORECASE)
 _LEVEL_SUFFIX_RE = re.compile(r"_LEVEL\d+$", re.IGNORECASE)
 
+_ALLOWED_PLAN_STATIONS: set[str] = {
+    "axe",
+    "arcanestaff",
+    "armors",
+    "bag",
+    "battle mount",
+    "basemounts",
+    "bow",
+    "cape",
+    "capes",
+    "cloth armor",
+    "cloth helmet",
+    "cloth shoes",
+    "crossbow",
+    "cursestaff",
+    "dagger",
+    "firestaff",
+    "food",
+    "froststaff",
+    "gatherergear",
+    "hammer",
+    "head",
+    "holystaff",
+    "hunter",
+    "knuckles",
+    "leather armor",
+    "leather helmet",
+    "leather shoes",
+    "mace",
+    "mounts",
+    "naturestaff",
+    "offhand",
+    "offhands",
+    "plate armor",
+    "plate helmet",
+    "plate shoes",
+    "potion",
+    "quarterstaff",
+    "shapeshifterstaff",
+    "shieldtype",
+    "shoes",
+    "spear",
+    "sword",
+    "tools",
+}
+
 _ITEM_ID_WORD_ALIASES: dict[str, str] = {
     "ARTEFACT": "Artifact",
     "METALBAR": "Metal Bar",
@@ -806,9 +852,9 @@ class MarketSetupState(QObject):
         self._craft_plan_sort_desc = False
         self._active_market_tab_index = 0
         self._market_data_tabs_live_bootstrap_done = False
-        self._manual_refresh_cooldown_seconds = 20.0
-        self._min_live_refresh_interval_seconds = 1.25
-        self._rate_limit_cooldown_seconds = 20.0
+        self._manual_refresh_cooldown_seconds = 30.0
+        self._min_live_refresh_interval_seconds = 2.0
+        self._rate_limit_cooldown_seconds = 90.0
         self._next_live_fetch_not_before = 0.0
         self._deferred_price_refresh_timer = QTimer(self)
         self._deferred_price_refresh_timer.setSingleShot(True)
@@ -1301,9 +1347,13 @@ class MarketSetupState(QObject):
         family_ids: list[str] = []
         if self._recipe_search_query.strip():
             filtered_ids = self._recipe_options_model.recipe_ids()
-            family_ids = self._family_recipe_ids_for_filtered(filtered_ids)
+            family_ids = self._station_recipe_ids_for_filtered(filtered_ids)
+            if not family_ids:
+                family_ids = self._family_recipe_ids_for_filtered(filtered_ids)
         else:
-            family_ids = self._family_recipe_ids(self._recipe.item.unique_name)
+            family_ids = self._station_recipe_ids(self._recipe.item.unique_name)
+            if not family_ids:
+                family_ids = self._family_recipe_ids(self._recipe.item.unique_name)
         if not family_ids:
             self._set_list_action_text("No recipes found for selected family.")
             return
@@ -1699,6 +1749,8 @@ class MarketSetupState(QObject):
         base_recipe = self._catalog.get(recipe_id)
         if base_recipe is None:
             return []
+        if not _is_recipe_plan_candidate(base_recipe):
+            return []
         family_key = _item_family_key(base_recipe.item.unique_name)
         if not family_key:
             return [base_recipe.item.unique_name]
@@ -1707,6 +1759,8 @@ class MarketSetupState(QObject):
         for candidate_id in self._catalog.items():
             recipe = self._catalog.get(candidate_id)
             if recipe is None:
+                continue
+            if not _is_recipe_plan_candidate(recipe):
                 continue
             if _item_family_key(recipe.item.unique_name) != family_key:
                 continue
@@ -1746,6 +1800,60 @@ class MarketSetupState(QObject):
                 collected.append(family_recipe_id)
         return collected
 
+    def _station_recipe_ids(self, recipe_id: str) -> list[str]:
+        base_recipe = self._catalog.get(recipe_id)
+        if base_recipe is None:
+            return []
+        if not _is_recipe_plan_candidate(base_recipe):
+            return []
+        station_key = str(base_recipe.station or "").strip().lower()
+        if not station_key:
+            return []
+
+        rows: list[tuple[int, int, str, str]] = []
+        for candidate_id in self._catalog.items():
+            recipe = self._catalog.get(candidate_id)
+            if recipe is None:
+                continue
+            if not _is_recipe_plan_candidate(recipe):
+                continue
+            if str(recipe.station or "").strip().lower() != station_key:
+                continue
+            enchant = int(recipe.item.enchantment or 0)
+            if self._recipe_enchant_filter is not None and enchant != int(self._recipe_enchant_filter):
+                continue
+            rows.append(
+                (
+                    int(recipe.item.tier or 0),
+                    enchant,
+                    _friendly_item_label(recipe.item.display_name, recipe.item.unique_name).lower(),
+                    recipe.item.unique_name,
+                )
+            )
+        rows.sort()
+        return [row[3] for row in rows]
+
+    def _station_recipe_ids_for_filtered(self, recipe_ids: list[str]) -> list[str]:
+        if not recipe_ids:
+            return []
+        collected: list[str] = []
+        seen_station_keys: set[str] = set()
+        seen_recipe_ids: set[str] = set()
+        for recipe_id in recipe_ids:
+            recipe = self._catalog.get(recipe_id)
+            if recipe is None:
+                continue
+            station_key = str(recipe.station or "").strip().lower()
+            if not station_key or station_key in seen_station_keys:
+                continue
+            seen_station_keys.add(station_key)
+            for station_recipe_id in self._station_recipe_ids(recipe.item.unique_name):
+                if station_recipe_id in seen_recipe_ids:
+                    continue
+                seen_recipe_ids.add(station_recipe_id)
+                collected.append(station_recipe_id)
+        return collected
+
     def _sorted_craft_plan_rows(self, rows: list[CraftPlanRow]) -> list[CraftPlanRow]:
         source = list(rows)
         sort_key = self._craft_plan_sort_key
@@ -1771,6 +1879,8 @@ class MarketSetupState(QObject):
     def _add_recipe_to_plan_internal(self, recipe_id: str, *, runs: int, enabled: bool) -> bool:
         recipe = self._catalog.get(recipe_id)
         if recipe is None:
+            return False
+        if not _is_recipe_plan_candidate(recipe):
             return False
         if self._find_plan_row_by_recipe(recipe_id) is not None:
             return False
@@ -1903,9 +2013,9 @@ class MarketSetupState(QObject):
         item_ids: set[str] = set()
         for recipe in self._recipes_for_pricing():
             for component in recipe.components:
-                item_ids.update(_item_id_candidates(component.item.unique_name))
+                item_ids.update(_item_id_query_candidates(component.item.unique_name))
             for output in recipe.outputs:
-                item_ids.update(_item_id_candidates(output.item.unique_name))
+                item_ids.update(_item_id_query_candidates(output.item.unique_name))
             journal_rule = _journal_rule_for_item(recipe.item.unique_name)
             if journal_rule is not None:
                 # Market IDs for journals are not fully consistent across dumps; query all common variants.
@@ -2492,7 +2602,7 @@ class MarketSetupState(QObject):
         if not locations:
             self._set_list_action_text("No market locations selected.")
             return None
-        qualities = [setup.quality, 1] if setup.quality != 1 else [1]
+        qualities = [setup.quality]
         params = urlencode(
             {
                 "locations": ",".join(locations),
@@ -2603,11 +2713,15 @@ class MarketSetupState(QObject):
         self._prices_status_text = "Fetching live prices..."
         self.pricesChanged.emit()
         try:
+            self._append_diag(
+                f"AO Data fetch request: {len(item_ids)} item IDs across {len(locations)} locations.",
+                level="INFO",
+            )
             index = self._service.get_price_index(
                 region=setup.region,
                 item_ids=item_ids,
                 locations=locations,
-                qualities=[setup.quality, 1] if setup.quality != 1 else [1],
+                qualities=[setup.quality],
                 ttl_seconds=120.0,
                 allow_stale=not force,
                 allow_cache=not force,
@@ -2799,6 +2913,8 @@ class MarketSetupState(QObject):
         for recipe_id in self._catalog.items():
             recipe = self._catalog.get(recipe_id)
             if recipe is None:
+                continue
+            if not _is_recipe_plan_candidate(recipe):
                 continue
             rows.append(
                 RecipeOptionRow(
@@ -3220,6 +3336,23 @@ def _item_family_key(item_id: str) -> str:
     return base
 
 
+def _is_recipe_plan_candidate(recipe: Recipe) -> bool:
+    item_id = str(recipe.item.unique_name or "").strip().upper()
+    if not item_id:
+        return False
+    if item_id.startswith("UNIQUE_"):
+        return False
+    # Exclude artefacts/resources/quest-token style intermediary entries.
+    if "_ARTEFACT_" in item_id or "_TOKEN_" in item_id:
+        return False
+    station = str(recipe.station or "").strip().lower()
+    if not station:
+        return False
+    if station.startswith("accessoires capes"):
+        return True
+    return station in _ALLOWED_PLAN_STATIONS
+
+
 def _humanize_item_id(item_id: str) -> str:
     raw = str(item_id or "").strip()
     if not raw:
@@ -3311,6 +3444,31 @@ def _item_id_candidates(item_id: str) -> tuple[str, ...]:
     if level is not None and enchant is not None:
         out.append(f"{stem}_LEVEL{level}@{enchant}")
     out.append(stem)
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for value in out:
+        if value and value not in seen:
+            seen.add(value)
+            ordered.append(value)
+    return tuple(ordered)
+
+
+def _item_id_query_candidates(item_id: str) -> tuple[str, ...]:
+    base = str(item_id or "").strip()
+    if not base:
+        return ()
+    out: list[str] = [base]
+
+    core = base
+    if "@" in core:
+        core = core.rsplit("@", 1)[0]
+        out.append(core)
+
+    level_match = _LEVEL_SUFFIX_RE.search(core)
+    if level_match is not None:
+        stem = core[: level_match.start()]
+        out.append(stem)
+
     seen: set[str] = set()
     ordered: list[str] = []
     for value in out:

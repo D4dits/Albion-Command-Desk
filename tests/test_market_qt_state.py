@@ -475,6 +475,26 @@ def test_market_setup_state_recipe_search_supports_tier_enchant_query() -> None:
     assert model.rowCount() == total
 
 
+def test_market_setup_state_add_recipe_family_expands_weapon_tree_station_group() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.setRecipeSearchQuery("curse")
+    state.setRecipeEnchantFilter(0)
+    state.addRecipeFamily()
+
+    model = state.craftPlanModel
+    recipe_ids: set[str] = set()
+    for idx in range(model.rowCount()):
+        model_index = model.index(idx, 0)
+        recipe_id = str(model.data(model_index, model.RecipeIdRole) or "")
+        if recipe_id:
+            recipe_ids.add(recipe_id)
+
+    assert any("CURSEDSTAFF" in recipe_id for recipe_id in recipe_ids)
+    assert any("DEMONICSTAFF" in recipe_id for recipe_id in recipe_ids)
+    assert any("SKULLORB_HELL" in recipe_id for recipe_id in recipe_ids)
+    assert all("_ARTEFACT_" not in recipe_id for recipe_id in recipe_ids)
+
+
 def _find_plan_row_id(state: MarketSetupState, recipe_id: str) -> int | None:
     model = state.craftPlanModel
     for idx in range(model.rowCount()):

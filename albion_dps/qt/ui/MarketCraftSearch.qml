@@ -53,7 +53,7 @@ ColumnLayout {
         AppTextField {
             id: recipeSearchInput
             Layout.fillWidth: true
-            implicitHeight: root.compactControlHeight
+            implicitHeight: Math.max(root.compactControlHeight, 26)
             font.pixelSize: 11
             placeholderText: "e.g. mistcaller 5.2"
             text: root.searchQuery

@@ -59,6 +59,8 @@ class AODataClient:
         retry_backoff_factor: float = 2.0,
         retry_backoff_max_seconds: float = 2.0,
         max_prices_url_length: int = 1800,
+        max_prices_items_per_batch: int = 100,
+        batch_pause_seconds: float = 0.35,
         sleeper: Callable[[float], None] | None = None,
         logger: logging.Logger | None = None,
     ) -> None:
@@ -70,6 +72,8 @@ class AODataClient:
         self._retry_backoff_factor = max(1.0, float(retry_backoff_factor))
         self._retry_backoff_max_seconds = max(0.0, float(retry_backoff_max_seconds))
         self._max_prices_url_length = max(256, int(max_prices_url_length))
+        self._max_prices_items_per_batch = max(1, int(max_prices_items_per_batch))
+        self._batch_pause_seconds = max(0.0, float(batch_pause_seconds))
         self._sleep = sleeper or time.sleep
         self._log = logger or logging.getLogger(__name__)
         self._last_request_stats = AODataRequestStats(
@@ -103,7 +107,9 @@ class AODataClient:
             "qualities": ",".join(str(x) for x in (qualities or [1])),
         }
         out: list[MarketPriceRecord] = []
-        for item_batch in self._split_price_batches(base=base, item_ids=item_ids, params=params):
+        for batch_index, item_batch in enumerate(self._split_price_batches(base=base, item_ids=item_ids, params=params)):
+            if batch_index > 0 and self._batch_pause_seconds > 0:
+                self._sleep(self._batch_pause_seconds)
             out.extend(self._fetch_prices_batch(base=base, item_ids=item_batch, params=params))
         return out
 
@@ -158,6 +164,9 @@ class AODataClient:
                 return payload
             except Exception as exc:
                 last_error = exc
+                # Rate-limited responses should be handled by higher-level batch splitting logic.
+                if _is_too_many_requests_error(exc):
+                    break
                 if attempt >= max_attempts:
                     break
                 if backoff_seconds > 0:
@@ -197,7 +206,9 @@ class AODataClient:
         current: list[str] = []
         for item_id in item_ids:
             candidate = current + [item_id]
-            if len(current) > 0 and len(self._build_prices_url(base=base, item_ids=candidate, params=params)) > self._max_prices_url_length:
+            exceeds_item_limit = len(candidate) > self._max_prices_items_per_batch
+            exceeds_url_limit = len(current) > 0 and len(self._build_prices_url(base=base, item_ids=candidate, params=params)) > self._max_prices_url_length
+            if len(current) > 0 and (exceeds_item_limit or exceeds_url_limit):
                 batches.append(current)
                 current = [item_id]
             else:
@@ -218,7 +229,9 @@ class AODataClient:
             data = self._fetch_with_retry(url=url, endpoint="prices")
             return _normalize_prices(data)
         except RuntimeError as exc:
-            if len(item_ids) <= 1 or not _is_uri_too_large_error(exc):
+            if len(item_ids) <= 1:
+                raise
+            if not (_is_uri_too_large_error(exc) or _is_too_many_requests_error(exc)):
                 raise
             midpoint = max(1, len(item_ids) // 2)
             left = self._fetch_prices_batch(base=base, item_ids=item_ids[:midpoint], params=params)
@@ -294,5 +307,10 @@ def _default_fetch_json(url: str, timeout_seconds: float, user_agent: str) -> ob
 def _is_uri_too_large_error(exc: Exception) -> bool:
     message = str(exc).lower()
     return "414" in message or "request-uri too large" in message or "uri too large" in message
+
+
+def _is_too_many_requests_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return "429" in message or "too many requests" in message
 
 

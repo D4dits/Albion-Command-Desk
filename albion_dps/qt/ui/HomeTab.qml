@@ -31,6 +31,7 @@ CardPanel {
 
     property bool compactLayout: false
     property bool twoColumn: width >= 900
+    property bool wideLayout: width >= 1040
 
     // Theme
     property var theme: null
@@ -38,9 +39,6 @@ CardPanel {
     property color mutedColor: theme.textMuted
 
     // Signals
-    signal goToMeter()
-    signal goToScanner()
-    signal goToMarket()
     signal refreshCaptureRuntimeStatus()
     signal openCaptureRuntimeAction()
     signal refreshGitStatus()
@@ -76,18 +74,67 @@ CardPanel {
         anchors.margins: 12
         spacing: 10
 
-        Text {
-            text: "Start"
-            color: textColor
-            font.pixelSize: 14
-            font.bold: true
-        }
-        Text {
+        RowLayout {
             Layout.fillWidth: true
-            text: "Quick setup and health checks. Use this tab first before running live scanner actions."
-            color: mutedColor
-            font.pixelSize: 11
-            wrapMode: Text.WordWrap
+            spacing: 10
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
+
+                Text {
+                    text: "Start"
+                    color: textColor
+                    font.pixelSize: 14
+                    font.bold: true
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: "Use this tab as your startup checklist: verify dependencies first, then move to Scanner or Market actions."
+                    color: mutedColor
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                }
+            }
+
+            TableSurface {
+                visible: root.wideLayout
+                level: 1
+                Layout.preferredWidth: 230
+                Layout.minimumWidth: 230
+                Layout.preferredHeight: 96
+                Layout.minimumHeight: 96
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 8
+
+                    Image {
+                        source: "command_desk_icon.png"
+                        sourceSize.width: 60
+                        sourceSize.height: 60
+                        fillMode: Image.PreserveAspectFit
+                        Layout.preferredWidth: 60
+                        Layout.preferredHeight: 60
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 2
+                        Text {
+                            text: "Command Desk"
+                            color: textColor
+                            font.pixelSize: 11
+                            font.bold: true
+                        }
+                        Text {
+                            text: "Startup center"
+                            color: mutedColor
+                            font.pixelSize: 10
+                        }
+                    }
+                }
+            }
         }
 
         GridLayout {
@@ -97,12 +144,17 @@ CardPanel {
             rowSpacing: 10
 
             TableSurface {
+                id: captureCard
                 Layout.fillWidth: true
-                Layout.fillHeight: true
                 level: 1
                 ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 10
+                    id: captureCardContent
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    anchors.topMargin: 10
                     spacing: 8
 
                     Text {
@@ -156,15 +208,22 @@ CardPanel {
                         Item { Layout.fillWidth: true }
                     }
                 }
+
+                implicitHeight: captureCardContent.implicitHeight + 20
             }
 
             TableSurface {
+                id: gitCard
                 Layout.fillWidth: true
-                Layout.fillHeight: true
                 level: 1
                 ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: 10
+                    id: gitCardContent
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    anchors.topMargin: 10
                     spacing: 8
 
                     Text {
@@ -218,77 +277,195 @@ CardPanel {
                         Item { Layout.fillWidth: true }
                     }
                 }
+
+                implicitHeight: gitCardContent.implicitHeight + 20
+            }
+        }
+
+        GridLayout {
+            Layout.fillWidth: true
+            columns: root.twoColumn ? 2 : 1
+            columnSpacing: 10
+            rowSpacing: 10
+            property int infoRowHeight: Math.max(checklistContent.implicitHeight, modulesContent.implicitHeight) + 20
+
+            TableSurface {
+                id: checklistCard
+                Layout.fillWidth: true
+                Layout.preferredHeight: infoRowHeight
+                level: 1
+
+                ColumnLayout {
+                    id: checklistContent
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    anchors.topMargin: 10
+                    spacing: 8
+
+                    Text {
+                        text: "Startup checklist"
+                        color: textColor
+                        font.pixelSize: 12
+                        font.bold: true
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "1) Capture runtime: " + root.runtimeStateLabel()
+                        color: root.runtimeStateColor()
+                        font.pixelSize: 11
+                        font.bold: true
+                        wrapMode: Text.WordWrap
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "2) Git dependency: " + root.gitStateLabel()
+                        color: root.gitStateColor()
+                        font.pixelSize: 11
+                        font.bold: true
+                        wrapMode: Text.WordWrap
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "3) Scanner status: " + root.scannerStatusText
+                        color: mutedColor
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "When all checks are ready, go to Scanner to sync/build client and start live mode."
+                        color: mutedColor
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                implicitHeight: checklistContent.implicitHeight + 20
+            }
+
+            TableSurface {
+                id: modulesCard
+                Layout.fillWidth: true
+                Layout.preferredHeight: infoRowHeight
+                level: 1
+
+                ColumnLayout {
+                    id: modulesContent
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    anchors.topMargin: 10
+                    spacing: 8
+
+                    Text {
+                        text: "Modules overview"
+                        color: textColor
+                        font.pixelSize: 12
+                        font.bold: true
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Meter: combat stats and history from live capture or replay data."
+                        color: mutedColor
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Scanner: sync/build/start Albion Data Client integration."
+                        color: mutedColor
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Market: crafting and profitability planning using market data."
+                        color: mutedColor
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                implicitHeight: modulesContent.implicitHeight + 20
             }
         }
 
         TableSurface {
+            id: quickActionsCard
             Layout.fillWidth: true
             level: 1
             ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 10
+                id: quickActionsContent
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                anchors.topMargin: 10
                 spacing: 8
 
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 6
                     Text {
-                        text: "Quick actions"
+                        text: "Update checks"
                         color: textColor
                         font.pixelSize: 12
                         font.bold: true
                     }
                     Item { Layout.fillWidth: true }
-                    AppCheckBox {
-                        text: compactLayout ? "Auto" : "Auto update"
-                        checked: root.updateAutoCheck
-                        onToggled: root.setUpdateAutoCheck(checked)
-                    }
-                    AppButton {
-                        text: "Check updates"
-                        compact: true
-                        onClicked: root.requestManualUpdateCheck()
-                    }
-                }
-
-                Text {
-                    text: "Scanner: " + root.scannerStatusText + "  |  Repo updates: " + root.scannerUpdateText
-                    color: mutedColor
-                    font.pixelSize: 11
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
-                }
-                Text {
-                    visible: root.updateCheckStatus.length > 0
-                    text: "App update: " + root.updateCheckStatus
-                    color: mutedColor
-                    font.pixelSize: 11
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
                 }
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 8
-                    AppButton {
-                        text: "Open Meter"
-                        variant: "primary"
-                        compact: true
-                        onClicked: root.goToMeter()
+                    spacing: 10
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
+                        Text {
+                            text: "Use this section to check for new Albion Command Desk releases."
+                            color: mutedColor
+                            font.pixelSize: 11
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
+                        }
                     }
-                    AppButton {
-                        text: "Open Scanner"
-                        compact: true
-                        onClicked: root.goToScanner()
+
+                    ColumnLayout {
+                        Layout.alignment: Qt.AlignRight | Qt.AlignTop
+                        spacing: 4
+                        RowLayout {
+                            spacing: 6
+                            AppCheckBox {
+                                text: compactLayout ? "Auto" : "Auto update"
+                                checked: root.updateAutoCheck
+                                onToggled: root.setUpdateAutoCheck(checked)
+                            }
+                            AppButton {
+                                text: "Check updates"
+                                compact: true
+                                onClicked: root.requestManualUpdateCheck()
+                            }
+                        }
+                        Text {
+                            visible: root.updateCheckStatus.length > 0
+                            text: root.updateCheckStatus
+                            color: mutedColor
+                            font.pixelSize: 11
+                            horizontalAlignment: Text.AlignRight
+                        }
                     }
-                    AppButton {
-                        text: "Open Market"
-                        compact: true
-                        onClicked: root.goToMarket()
-                    }
-                    Item { Layout.fillWidth: true }
                 }
+
             }
+
+            implicitHeight: quickActionsContent.implicitHeight + 20
         }
     }
 }

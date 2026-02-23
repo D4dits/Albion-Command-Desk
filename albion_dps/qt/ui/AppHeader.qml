@@ -7,7 +7,7 @@ import "." // for Theme, AppButton, AppComboBox, AppCheckBox access
  *
  * Contains:
  * - Left zone: Title and contextual status
- * - Right zone: Meter meta, Update banner, Update controls, Support buttons
+ * - Right zone: Meter meta, Update banner, Support buttons
  */
 Rectangle {
     id: root
@@ -173,46 +173,6 @@ Rectangle {
                 availableWidth: root.width
                 theme: root.theme
                 onDismissBanner: root.dismissUpdateBanner()
-            }
-
-            // Update Controls Zone
-            ColumnLayout {
-                id: shellUpdateZone
-                Layout.preferredWidth: implicitWidth
-                Layout.minimumWidth: implicitWidth
-                spacing: 2
-
-                RowLayout {
-                    Layout.alignment: Qt.AlignRight
-                    spacing: 6
-                    AppCheckBox {
-                        id: autoUpdateCheckBox
-                        implicitHeight: theme.shellActionHeight
-                        checked: root.updateAutoCheck
-                        text: root.autoUpdateLabel
-                        onToggled: root.setUpdateAutoCheck(checked)
-                    }
-                    AppButton {
-                        id: checkUpdatesButton
-                        text: "Check updates"
-                        variant: "secondary"
-                        fontBold: true
-                        compact: true
-                        implicitHeight: theme.shellActionHeight
-                        implicitWidth: root.narrowLayout ? 116 : 126
-                        onClicked: root.requestManualUpdateCheck()
-                    }
-                }
-                Text {
-                    Layout.fillWidth: true
-                    visible: root.updateCheckStatus.length > 0
-                    text: root.updateCheckStatus
-                    color: mutedColor
-                    font.pixelSize: 10
-                    horizontalAlignment: Text.AlignRight
-                    elide: Text.ElideRight
-                    wrapMode: Text.NoWrap
-                }
             }
 
             // Support Buttons Zone

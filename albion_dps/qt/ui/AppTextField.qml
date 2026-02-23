@@ -8,7 +8,11 @@ TextField {
 
     implicitHeight: Theme.controlHeightRegular
     focusPolicy: Qt.StrongFocus
-    padding: Theme.spacingSm
+    leftPadding: Theme.spacingSm
+    rightPadding: Theme.spacingMd
+    topPadding: Theme.spacingXs
+    bottomPadding: Theme.spacingXs + 1
+    verticalAlignment: TextInput.AlignVCenter
     color: enabled ? Theme.textPrimary : Theme.textDisabled
     placeholderTextColor: Theme.textMuted
     selectByMouse: true
