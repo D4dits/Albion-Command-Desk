@@ -383,6 +383,32 @@ def test_journal_rule_mapping_and_factor_for_crafting_item(monkeypatch: pytest.M
     assert round(factor, 2) == 1.10
 
 
+def test_results_rows_render_journal_estimate_with_specific_name() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state._journal_totals = market_state._JournalTotals(
+        input_cost=1000.0,
+        output_value=2500.0,
+        market_tax=100.0,
+        full_quantity=2.0,
+        lines=(
+            market_state._JournalLine(
+                kind="MAGE",
+                tier=4,
+                empty_item_id="T4_JOURNAL_MAGE",
+                full_item_id="T4_JOURNAL_MAGE_FULL",
+                full_quantity=2.0,
+                input_cost=1000.0,
+                output_value=2500.0,
+                market_tax=100.0,
+            ),
+        ),
+    )
+    rows = state._build_results_rows([])
+    labels = [row.item for row in rows]
+    assert "T4 Imbuer's Journal (est.)" in labels
+    assert "Crafting Journals (est.)" not in labels
+
+
 def test_market_setup_state_can_switch_recipe_by_index() -> None:
     state = MarketSetupState()
     before = state.recipeId

@@ -530,6 +530,23 @@ class _JournalTotals:
     output_value: float = 0.0
     market_tax: float = 0.0
     full_quantity: float = 0.0
+    lines: tuple["_JournalLine", ...] = ()
+
+    @property
+    def net_profit(self) -> float:
+        return float(self.output_value - self.input_cost - self.market_tax)
+
+
+@dataclass(frozen=True)
+class _JournalLine:
+    kind: str
+    tier: int
+    empty_item_id: str
+    full_item_id: str
+    full_quantity: float
+    input_cost: float
+    output_value: float
+    market_tax: float
 
     @property
     def net_profit(self) -> float:
@@ -2362,29 +2379,30 @@ class MarketSetupState(QObject):
                 )
             )
 
-        if self._journal_totals.output_value > 0 or self._journal_totals.input_cost > 0:
-            journal_profit = float(self._journal_totals.net_profit)
-            journal_margin = (
-                (journal_profit / float(self._journal_totals.input_cost) * 100.0)
-                if self._journal_totals.input_cost > 0
-                else 0.0
-            )
-            rows.append(
-                ResultItemRow(
-                    item_id="JOURNALS_ESTIMATE",
-                    item="Crafting Journals (est.)",
-                    city="",
-                    quantity=float(self._journal_totals.full_quantity),
-                    unit_price=0.0,
-                    revenue=float(self._journal_totals.output_value),
-                    allocated_cost=float(self._journal_totals.input_cost),
-                    fee_value=0.0,
-                    tax_value=float(self._journal_totals.market_tax),
-                    profit=journal_profit,
-                    margin_percent=float(journal_margin),
-                    demand_proxy=0.0,
+        if self._journal_totals.lines:
+            for journal_line in self._journal_totals.lines:
+                journal_profit = float(journal_line.net_profit)
+                journal_margin = (
+                    (journal_profit / float(journal_line.input_cost) * 100.0)
+                    if journal_line.input_cost > 0
+                    else 0.0
                 )
-            )
+                rows.append(
+                    ResultItemRow(
+                        item_id=str(journal_line.full_item_id),
+                        item=f"{_journal_display_name(journal_line.kind, journal_line.tier)} (est.)",
+                        city="",
+                        quantity=float(journal_line.full_quantity),
+                        unit_price=0.0,
+                        revenue=float(journal_line.output_value),
+                        allocated_cost=float(journal_line.input_cost),
+                        fee_value=0.0,
+                        tax_value=float(journal_line.market_tax),
+                        profit=journal_profit,
+                        margin_percent=float(journal_margin),
+                        demand_proxy=0.0,
+                    )
+                )
 
         if self._results_sort_key == "margin":
             rows.sort(key=lambda x: x.margin_percent, reverse=True)
@@ -2519,6 +2537,8 @@ class MarketSetupState(QObject):
             row = aggregates.get(key)
             if row is None:
                 aggregates[key] = {
+                    "kind": rule.kind,
+                    "tier": float(rule.tier),
                     "empty_item_id": rule.empty_item_id,
                     "full_item_id": rule.full_item_id,
                     "max_fame": float(rule.max_fame),
@@ -2533,11 +2553,14 @@ class MarketSetupState(QObject):
         total_input_cost = 0.0
         total_output_value = 0.0
         total_full_quantity = 0.0
+        journal_lines: list[_JournalLine] = []
         for row in aggregates.values():
             max_fame = max(1.0, float(row["max_fame"]))
             full_quantity = max(0.0, float(row["gained_fame"]) / max_fame)
             if full_quantity <= 0:
                 continue
+            kind = str(row.get("kind", ""))
+            tier = int(float(row.get("tier", 0.0)))
             empty_item_id = str(row["empty_item_id"])
             full_item_id = str(row["full_item_id"])
 
@@ -2564,16 +2587,33 @@ class MarketSetupState(QObject):
             if full_unit_price <= 0:
                 continue
 
-            total_input_cost += full_quantity * empty_unit_price
-            total_output_value += full_quantity * full_unit_price
-            total_full_quantity += full_quantity
+            line_input_cost = float(full_quantity * empty_unit_price)
+            line_output_value = float(full_quantity * full_unit_price)
+            line_market_tax = max(0.0, line_output_value * (float(setup.market_tax_percent) / 100.0))
 
-        journal_market_tax = max(0.0, total_output_value * (float(setup.market_tax_percent) / 100.0))
+            total_input_cost += line_input_cost
+            total_output_value += line_output_value
+            total_full_quantity += full_quantity
+            journal_lines.append(
+                _JournalLine(
+                    kind=kind,
+                    tier=tier,
+                    empty_item_id=empty_item_id,
+                    full_item_id=full_item_id,
+                    full_quantity=float(full_quantity),
+                    input_cost=line_input_cost,
+                    output_value=line_output_value,
+                    market_tax=float(line_market_tax),
+                )
+            )
+
+        journal_market_tax = max(0.0, sum(line.market_tax for line in journal_lines))
         return _JournalTotals(
             input_cost=float(total_input_cost),
             output_value=float(total_output_value),
             market_tax=float(journal_market_tax),
             full_quantity=float(total_full_quantity),
+            lines=tuple(journal_lines),
         )
 
     def _resolve_market_price_for_item_ids(
@@ -3328,6 +3368,14 @@ def _journal_rule_for_item(item_id: str) -> _JournalRule | None:
 def _journal_fame_factor_for_item(item_id: str) -> float:
     _, fame_factor_by_item = _journal_maps()
     return float(fame_factor_by_item.get(_base_item_id(item_id), 1.0))
+
+
+def _journal_display_name(kind: str, tier: int) -> str:
+    base_name = _JOURNAL_NAME_BY_KIND.get(str(kind or "").upper(), "Journal")
+    normalized_tier = max(0, int(tier))
+    if normalized_tier > 0:
+        return f"T{normalized_tier} {base_name}"
+    return base_name
 
 
 def _friendly_item_label(display_name: str, item_id: str) -> str:
