@@ -383,9 +383,16 @@ def test_journal_rule_mapping_and_factor_for_crafting_item(monkeypatch: pytest.M
     assert round(factor, 2) == 1.10
 
 
-def test_results_rows_render_journal_estimate_with_specific_name() -> None:
+def test_journal_display_name_uses_specific_kind_and_tier() -> None:
+    assert market_state._journal_display_name("MAGE", 4) == "T4 Imbuer's Journal"
+    assert market_state._journal_display_name("WARRIOR", 8) == "T8 Blacksmith's Journal"
+
+
+def test_market_setup_state_includes_journals_in_inputs_outputs_models(monkeypatch: pytest.MonkeyPatch) -> None:
     state = MarketSetupState(auto_refresh_prices=False)
-    state._journal_totals = market_state._JournalTotals(
+    state.addCurrentRecipeToPlan()
+
+    fake_totals = market_state._JournalTotals(
         input_cost=1000.0,
         output_value=2500.0,
         market_tax=100.0,
@@ -403,10 +410,32 @@ def test_results_rows_render_journal_estimate_with_specific_name() -> None:
             ),
         ),
     )
-    rows = state._build_results_rows([])
-    labels = [row.item for row in rows]
-    assert "T4 Imbuer's Journal (est.)" in labels
-    assert "Crafting Journals (est.)" not in labels
+    monkeypatch.setattr(state, "_estimate_journal_totals", lambda **_: fake_totals)
+    state.refreshPrices()
+
+    input_item_ids = set()
+    input_labels = set()
+    for idx in range(state.inputsModel.rowCount()):
+        model_index = state.inputsModel.index(idx, 0)
+        input_item_ids.add(str(state.inputsModel.data(model_index, state.inputsModel.ItemIdRole)))
+        input_labels.add(str(state.inputsModel.data(model_index, state.inputsModel.ItemRole)))
+    assert "T4_JOURNAL_MAGE" in input_item_ids
+    assert "T4 Imbuer's Journal (empty)" in input_labels
+
+    output_item_ids = set()
+    output_labels = set()
+    for idx in range(state.outputsModel.rowCount()):
+        model_index = state.outputsModel.index(idx, 0)
+        output_item_ids.add(str(state.outputsModel.data(model_index, state.outputsModel.ItemIdRole)))
+        output_labels.add(str(state.outputsModel.data(model_index, state.outputsModel.ItemRole)))
+    assert "T4_JOURNAL_MAGE_FULL" in output_item_ids
+    assert "T4 Imbuer's Journal (full)" in output_labels
+
+    result_labels = set()
+    for idx in range(state.resultsItemsModel.rowCount()):
+        model_index = state.resultsItemsModel.index(idx, 0)
+        result_labels.add(str(state.resultsItemsModel.data(model_index, state.resultsItemsModel.ItemRole)))
+    assert "Crafting Journals (est.)" not in result_labels
 
 
 def test_market_setup_state_can_switch_recipe_by_index() -> None:

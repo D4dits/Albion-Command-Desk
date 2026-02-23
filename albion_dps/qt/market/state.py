@@ -1082,7 +1082,7 @@ class MarketSetupState(QObject):
             value = self._inputs_model.data(model_index, MarketInputsModel.TotalCostRole)
             if value is not None:
                 total += float(value)
-        return float(total + self._journal_totals.input_cost)
+        return float(total)
 
     @Property(float, notify=outputsChanged)
     def outputsTotalValue(self) -> float:
@@ -1092,7 +1092,7 @@ class MarketSetupState(QObject):
             value = self._outputs_model.data(model_index, MarketOutputsModel.TotalValueRole)
             if value is not None:
                 total += float(value)
-        return float(total + self._journal_totals.output_value)
+        return float(total)
 
     @Property(float, notify=outputsChanged)
     def outputsNetValue(self) -> float:
@@ -1102,7 +1102,7 @@ class MarketSetupState(QObject):
             value = self._outputs_model.data(model_index, MarketOutputsModel.NetValueRole)
             if value is not None:
                 total += float(value)
-        return float(total + self._journal_totals.output_value - self._journal_totals.market_tax)
+        return float(total)
 
     @Property(float, notify=resultsChanged)
     def stationFeeValue(self) -> float:
@@ -2175,6 +2175,49 @@ class MarketSetupState(QObject):
                 row["quantity"] = float(row["quantity"]) + float(line.quantity)
                 row["total_cost"] = float(row["total_cost"]) + float(line.total_cost)
 
+        journal_buy_city = (setup.default_buy_city or setup.craft_city or "").strip()
+        journal_sell_city = (setup.default_sell_city or setup.craft_city or "").strip()
+        for journal_line in self._journal_totals.lines:
+            if journal_line.full_quantity <= 0:
+                continue
+            empty_unit_price = float(journal_line.input_cost) / float(journal_line.full_quantity)
+            empty_item_id = str(journal_line.empty_item_id)
+            empty_name = f"{_journal_display_name(journal_line.kind, journal_line.tier)} (empty)"
+            key = (
+                empty_item_id,
+                journal_buy_city,
+                PriceType.SELL_ORDER.value,
+                float(empty_unit_price),
+            )
+            row = input_acc.get(key)
+            if row is None:
+                input_acc[key] = {
+                    "item_id": empty_item_id,
+                    "item": empty_name,
+                    "item_ref": ItemRef(
+                        unique_name=empty_item_id,
+                        display_name=empty_name,
+                        tier=int(journal_line.tier),
+                        enchantment=0,
+                    ),
+                    "city": journal_buy_city,
+                    "price_type": PriceType.SELL_ORDER.value,
+                    "price_age_text": self._price_age_text(
+                        item_id=empty_item_id,
+                        city=journal_buy_city,
+                        quality=self._setup.quality,
+                        price_type=PriceType.SELL_ORDER.value,
+                    ),
+                    "unit_price": float(empty_unit_price),
+                    "quantity": float(journal_line.full_quantity),
+                    "total_cost": float(journal_line.input_cost),
+                    "returnable": False,
+                }
+            else:
+                row["quantity"] = float(row["quantity"]) + float(journal_line.full_quantity)
+                row["total_cost"] = float(row["total_cost"]) + float(journal_line.input_cost)
+            self._input_price_types.setdefault(empty_item_id, PriceType.SELL_ORDER)
+
         input_rows: list[InputPreviewRow] = []
         adjusted_inputs: list[InputLine] = []
         for row in input_acc.values():
@@ -2215,11 +2258,8 @@ class MarketSetupState(QObject):
                 )
         input_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
 
-        self._breakdown = compute_batch_profit(tuple(runs))
+        run_breakdown = compute_batch_profit(tuple(runs))
         self._base_input_total_cost = float(sum(row.total_cost for row in input_rows))
-        self._breakdown.input_cost = float(self._base_input_total_cost + self._journal_totals.input_cost)
-        self._breakdown.output_value = float(self._breakdown.output_value + self._journal_totals.output_value)
-        self._breakdown.market_tax = float(self._breakdown.market_tax + self._journal_totals.market_tax)
         valuations = compute_output_valuations(
             output_lines=all_outputs,
             station_fee_percent=setup.station_fee_percent,
@@ -2251,6 +2291,41 @@ class MarketSetupState(QObject):
                 row["tax_value"] = float(row["tax_value"]) + float(valuation.tax_value)
                 row["net_value"] = float(row["net_value"]) + float(valuation.net_value)
 
+        for journal_line in self._journal_totals.lines:
+            if journal_line.full_quantity <= 0:
+                continue
+            full_item_id = str(journal_line.full_item_id)
+            full_name = f"{_journal_display_name(journal_line.kind, journal_line.tier)} (full)"
+            full_unit_price = float(journal_line.output_value) / float(journal_line.full_quantity)
+            key = (
+                full_item_id,
+                journal_sell_city,
+                PriceType.SELL_ORDER.value,
+                float(full_unit_price),
+            )
+            row = output_acc.get(key)
+            if row is None:
+                output_acc[key] = {
+                    "item_id": full_item_id,
+                    "item": full_name,
+                    "city": journal_sell_city,
+                    "price_type": PriceType.SELL_ORDER.value,
+                    "unit_price": float(full_unit_price),
+                    "quantity": float(journal_line.full_quantity),
+                    "total_value": float(journal_line.output_value),
+                    "fee_value": 0.0,
+                    "tax_value": float(journal_line.market_tax),
+                    "net_value": float(journal_line.output_value - journal_line.market_tax),
+                }
+            else:
+                row["quantity"] = float(row["quantity"]) + float(journal_line.full_quantity)
+                row["total_value"] = float(row["total_value"]) + float(journal_line.output_value)
+                row["tax_value"] = float(row["tax_value"]) + float(journal_line.market_tax)
+                row["net_value"] = float(row["net_value"]) + float(journal_line.output_value - journal_line.market_tax)
+            self._output_price_types.setdefault(full_item_id, PriceType.SELL_ORDER)
+            if journal_sell_city:
+                self._output_cities.setdefault(full_item_id, journal_sell_city)
+
         output_rows = [
             OutputPreviewRow(
                 item_id=str(row["item_id"]),
@@ -2268,6 +2343,15 @@ class MarketSetupState(QObject):
             for row in output_acc.values()
         ]
         output_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
+
+        self._breakdown = ProfitBreakdown(
+            input_cost=float(sum(row.total_cost for row in input_rows)),
+            output_value=float(sum(row.total_value for row in output_rows)),
+            station_fee=float(sum(row.fee_value for row in output_rows)),
+            market_tax=float(sum(row.tax_value for row in output_rows)),
+            focus_used=float(run_breakdown.focus_used),
+            notes=list(run_breakdown.notes),
+        )
 
         self._inputs_model.set_items(input_rows)
         self._outputs_model.set_items(output_rows)
@@ -2378,31 +2462,6 @@ class MarketSetupState(QObject):
                     ),
                 )
             )
-
-        if self._journal_totals.lines:
-            for journal_line in self._journal_totals.lines:
-                journal_profit = float(journal_line.net_profit)
-                journal_margin = (
-                    (journal_profit / float(journal_line.input_cost) * 100.0)
-                    if journal_line.input_cost > 0
-                    else 0.0
-                )
-                rows.append(
-                    ResultItemRow(
-                        item_id=str(journal_line.full_item_id),
-                        item=f"{_journal_display_name(journal_line.kind, journal_line.tier)} (est.)",
-                        city="",
-                        quantity=float(journal_line.full_quantity),
-                        unit_price=0.0,
-                        revenue=float(journal_line.output_value),
-                        allocated_cost=float(journal_line.input_cost),
-                        fee_value=0.0,
-                        tax_value=float(journal_line.market_tax),
-                        profit=journal_profit,
-                        margin_percent=float(journal_margin),
-                        demand_proxy=0.0,
-                    )
-                )
 
         if self._results_sort_key == "margin":
             rows.sort(key=lambda x: x.margin_percent, reverse=True)
