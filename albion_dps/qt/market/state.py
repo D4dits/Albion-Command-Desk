@@ -2079,31 +2079,42 @@ class MarketSetupState(QObject):
             force_refresh=force_price_refresh,
             allow_live=allow_live_fetch,
         )
-        try:
-            runs = []
-            for row, recipe in planned_recipes:
-                self._ensure_price_preferences_for_recipe(recipe)
-                row_setup = self._setup_for_plan_row(setup, row)
-                runs.append(
-                    build_craft_run(
-                        recipe=recipe,
-                        quantity=max(1, int(row.runs)),
-                        setup=row_setup,
-                        price_index=price_index,
-                        input_price_types=dict(self._input_price_types),
-                        output_cities=dict(self._output_cities),
-                        output_price_types=dict(self._output_price_types),
-                        manual_input_prices=dict(self._manual_input_prices),
-                        manual_output_prices=dict(self._manual_output_prices),
-                    )
+        runs: list[CraftRun] = []
+        prepared_recipes: list[tuple[CraftPlanRow, Recipe]] = []
+        skipped_rows: list[str] = []
+        for row, recipe in planned_recipes:
+            self._ensure_price_preferences_for_recipe(recipe)
+            row_setup = self._setup_for_plan_row(setup, row)
+            try:
+                run = build_craft_run(
+                    recipe=recipe,
+                    quantity=max(1, int(row.runs)),
+                    setup=row_setup,
+                    price_index=price_index,
+                    input_price_types=dict(self._input_price_types),
+                    output_cities=dict(self._output_cities),
+                    output_price_types=dict(self._output_price_types),
+                    manual_input_prices=dict(self._manual_input_prices),
+                    manual_output_prices=dict(self._manual_output_prices),
                 )
-        except Exception:
+            except Exception as exc:
+                recipe_id = str(recipe.item.unique_name or row.recipe_id)
+                skipped_rows.append(recipe_id)
+                self._append_diag(
+                    f"Preview build skipped recipe {recipe_id}: {exc}",
+                    level="WARN",
+                )
+                continue
+            runs.append(run)
+            prepared_recipes.append((row, recipe))
+
+        if not runs:
             self._clear_preview_state("preview build failed")
             return
 
         run_profit_by_row: dict[int, float] = {}
         run_rrr_by_row: dict[int, float] = {}
-        for (plan_row, recipe), run in zip(planned_recipes, runs):
+        for (plan_row, recipe), run in zip(prepared_recipes, runs):
             breakdown = compute_run_profit(run)
             run_profit_by_row[int(plan_row.row_id)] = float(breakdown.margin_percent)
             row_setup = self._setup_for_plan_row(setup, plan_row)
@@ -2116,7 +2127,7 @@ class MarketSetupState(QObject):
         all_outputs = [line for run in runs for line in run.outputs]
         self._journal_totals = self._estimate_journal_totals(runs=runs, setup=setup, price_index=price_index)
         returnable_by_item: dict[str, bool] = {}
-        for _, recipe in planned_recipes:
+        for _, recipe in prepared_recipes:
             for component in recipe.components:
                 item_id = str(component.item.unique_name)
                 returnable_by_item[item_id] = bool(returnable_by_item.get(item_id, False) or component.returnable)
@@ -2312,6 +2323,10 @@ class MarketSetupState(QObject):
         self.resultsChanged.emit()
         self.listsChanged.emit()
         self.resultsDetailsChanged.emit()
+        if skipped_rows:
+            self._set_fallback_status(
+                f"Skipped {len(skipped_rows)} recipe(s) that could not be previewed."
+            )
 
     def _build_results_rows(self, output_rows: list[OutputPreviewRow]) -> list[ResultItemRow]:
         total_revenue = max(0.0, sum(row.total_value for row in output_rows))
@@ -3347,6 +3362,10 @@ def _is_recipe_plan_candidate(recipe: Recipe) -> bool:
         return False
     station = str(recipe.station or "").strip().lower()
     if not station:
+        return False
+    if not recipe.components:
+        return False
+    if not recipe.outputs:
         return False
     if station.startswith("accessoires capes"):
         return True
