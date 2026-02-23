@@ -702,6 +702,7 @@ ApplicationWindow {
                 outputsModel: marketSetupState.outputsModel
                 outputsTotalValue: marketSetupState.outputsTotalValue
                 outputsNetValue: marketSetupState.outputsNetValue
+                netProfitValue: marketSetupState.netProfitValue
                 resultsItemsModel: marketSetupState.resultsItemsModel
                 marginPercent: marketSetupState.marginPercent
                 resultsSortKey: marketSetupState.resultsSortKey

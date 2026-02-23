@@ -61,6 +61,7 @@ CardPanel {
     property var outputsModel: null
     property int outputsTotalValue: 0
     property int outputsNetValue: 0
+    property real netProfitValue: 0
     property var resultsItemsModel: null
     property int marginPercent: 0
     property string resultsSortKey: "profit"
@@ -457,114 +458,321 @@ CardPanel {
                 }
             }
 
-            // Inputs Tab - Simplified inline version
-            Item {
-                TableSurface {
-                    level: 1
+            // Inputs Tab
+            TableSurface {
+                level: 1
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                ColumnLayout {
                     anchors.fill: parent
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
+                    anchors.margins: 10
+                    spacing: 8
 
-                        Text {
-                            text: "Inputs"
-                            color: textColor
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
-
-                        Text {
-                            text: "Note: Full inputs table included in MarketTab. For full functionality, the original inline implementation is preserved."
-                            color: mutedColor
-                            font.pixelSize: 10
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
-                        }
-
-                        Text {
-                            text: "Total input cost: " + formatInt(root.inputsTotalCost)
-                            color: textColor
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
+                    Text {
+                        text: "Inputs"
+                        color: textColor
+                        font.pixelSize: 12
+                        font.bold: true
                     }
-                }
-            }
 
-            // Outputs Tab - Simplified inline version
-            Item {
-                TableSurface {
-                    level: 1
-                    anchors.fill: parent
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
-
-                        Text {
-                            text: "Outputs"
-                            color: textColor
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
-
-                        Text {
-                            text: "Note: Full outputs table included in MarketTab. For full functionality, the original inline implementation is preserved."
-                            color: mutedColor
-                            font.pixelSize: 10
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
-                        }
-
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 24
+                        radius: 4
+                        color: "#111b28"
                         RowLayout {
-                            Text {
-                                text: "Gross output: " + formatInt(root.outputsTotalValue)
-                                color: textColor
-                                font.pixelSize: 12
-                                font.bold: true
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            spacing: marketColumnSpacing
+                            Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; elide: Text.ElideRight }
+                            Text { text: "Need"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
+                            Text { text: "Stock"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsStockWidth }
+                            Text { text: "Buy"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth }
+                            Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; elide: Text.ElideRight }
+                            Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsModeWidth }
+                            Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth }
+                            Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth }
+                            Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth }
+                            Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketInputsTotalMinWidth }
+                        }
+                    }
+
+                    ListView {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.minimumHeight: 120
+                        clip: true
+                        model: root.inputsModel
+
+                        delegate: Rectangle {
+                            width: ListView.view.width
+                            height: 30
+                            color: tableRowColor(index)
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                spacing: marketColumnSpacing
+
+                                Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; elide: Text.ElideRight }
+                                Text { text: formatInt(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
+
+                                TextField {
+                                    Layout.preferredWidth: marketInputsStockWidth
+                                    implicitHeight: compactControlHeight
+                                    font.pixelSize: 11
+                                    text: stockQuantity > 0 ? formatFixed(stockQuantity, 2) : ""
+                                    placeholderText: "0"
+                                    onEditingFinished: root.setInputStockQuantity(itemId, text)
+                                }
+
+                                Text { text: formatFixed(buyQuantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth }
+                                Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; elide: Text.ElideRight }
+
+                                ComboBox {
+                                    Layout.preferredWidth: marketInputsModeWidth
+                                    implicitHeight: compactControlHeight
+                                    font.pixelSize: 11
+                                    model: ["buy_order", "sell_order", "average"]
+                                    currentIndex: Math.max(0, model.indexOf(priceType))
+                                    onActivated: root.setInputPriceType(itemId, currentText)
+                                }
+
+                                TextField {
+                                    Layout.preferredWidth: marketInputsManualWidth
+                                    implicitHeight: compactControlHeight
+                                    font.pixelSize: 11
+                                    text: manualPrice > 0 ? String(manualPrice) : ""
+                                    placeholderText: "-"
+                                    inputMethodHints: Qt.ImhDigitsOnly
+                                    onEditingFinished: root.setInputManualPrice(itemId, text)
+                                }
+
+                                Text { text: formatInt(unitPrice); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth }
+                                Text { text: priceAgeText; color: adpAgeColor(priceAgeText); font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth }
+                                Text { text: formatInt(totalCost); color: textColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketInputsTotalMinWidth }
                             }
-                            Text {
-                                text: "Net output: " + formatInt(root.outputsNetValue)
-                                color: textColor
-                                font.pixelSize: 12
-                                font.bold: true
-                            }
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 28
+                        radius: 4
+                        color: "#111b28"
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 6
+                            Text { text: "Total input cost"; color: mutedColor; font.pixelSize: 11 }
+                            Item { Layout.fillWidth: true }
+                            Text { text: formatInt(root.inputsTotalCost); color: textColor; font.pixelSize: 12; font.bold: true }
                         }
                     }
                 }
             }
 
-            // Results Tab - Simplified inline version
-            Item {
-                TableSurface {
-                    level: 1
+            // Outputs Tab
+            TableSurface {
+                level: 1
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                ColumnLayout {
                     anchors.fill: parent
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
+                    anchors.margins: 10
+                    spacing: 8
 
-                        Text {
-                            text: "Results"
-                            color: textColor
-                            font.pixelSize: 12
-                            font.bold: true
+                    Text {
+                        text: "Outputs"
+                        color: textColor
+                        font.pixelSize: 12
+                        font.bold: true
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 24
+                        radius: 4
+                        color: "#111b28"
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            spacing: marketColumnSpacing
+                            Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; elide: Text.ElideRight }
+                            Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
+                            Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; elide: Text.ElideRight }
+                            Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsModeWidth }
+                            Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsManualWidth }
+                            Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth }
+                            Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth }
+                            Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth }
+                            Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth }
+                            Text { text: "Net"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketOutputsNetMinWidth }
                         }
+                    }
 
-                        Text {
-                            text: "Note: Full results view included in MarketTab. For full functionality, the original inline implementation is preserved."
-                            color: mutedColor
-                            font.pixelSize: 10
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
+                    ListView {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.minimumHeight: 120
+                        clip: true
+                        model: root.outputsModel
+
+                        delegate: Rectangle {
+                            width: ListView.view.width
+                            height: 30
+                            color: tableRowColor(index)
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                spacing: marketColumnSpacing
+
+                                Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; elide: Text.ElideRight }
+                                Text { text: formatFixed(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
+                                Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; elide: Text.ElideRight }
+
+                                ComboBox {
+                                    Layout.preferredWidth: marketOutputsModeWidth
+                                    implicitHeight: compactControlHeight
+                                    font.pixelSize: 11
+                                    model: ["sell_order", "buy_order", "average"]
+                                    currentIndex: Math.max(0, model.indexOf(priceType))
+                                    onActivated: root.setOutputPriceType(itemId, currentText)
+                                }
+
+                                TextField {
+                                    Layout.preferredWidth: marketOutputsManualWidth
+                                    implicitHeight: compactControlHeight
+                                    font.pixelSize: 11
+                                    text: manualPrice > 0 ? String(manualPrice) : ""
+                                    placeholderText: "-"
+                                    inputMethodHints: Qt.ImhDigitsOnly
+                                    onEditingFinished: root.setOutputManualPrice(itemId, text)
+                                }
+
+                                Text { text: formatInt(unitPrice); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth }
+                                Text { text: formatInt(totalValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth }
+                                Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth }
+                                Text { text: formatInt(taxValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth }
+                                Text { text: formatInt(netValue); color: textColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketOutputsNetMinWidth }
+                            }
                         }
+                    }
 
-                        Text {
-                            text: "Margin: " + formatFixed(root.marginPercent, 2) + "%"
-                            color: signedValueColor(root.marginPercent)
-                            font.pixelSize: 12
-                            font.bold: true
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 28
+                        radius: 4
+                        color: "#111b28"
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 6
+                            Text { text: "Gross output"; color: mutedColor; font.pixelSize: 11 }
+                            Text { text: formatInt(root.outputsTotalValue); color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
+                            Text { text: "Net output"; color: mutedColor; font.pixelSize: 11 }
+                            Text { text: formatInt(root.outputsNetValue); color: textColor; font.pixelSize: 12; font.bold: true }
+                            Item { Layout.fillWidth: true }
+                        }
+                    }
+                }
+            }
+
+            // Results Tab
+            TableSurface {
+                level: 1
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 8
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Text { text: "Results"; color: textColor; font.pixelSize: 12; font.bold: true }
+                        Item { Layout.fillWidth: true }
+                        Text { text: "Sort"; color: mutedColor; font.pixelSize: 11 }
+                        ComboBox {
+                            Layout.preferredWidth: 120
+                            implicitHeight: compactControlHeight
+                            font.pixelSize: 11
+                            model: ["profit", "margin", "revenue"]
+                            currentIndex: Math.max(0, model.indexOf(root.resultsSortKey))
+                            onActivated: root.setResultsSortKey(currentText)
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 28
+                        radius: 4
+                        color: "#111b28"
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 6
+                            spacing: 12
+                            Text { text: "Investment: " + formatInt(root.inputsTotalCost); color: mutedColor; font.pixelSize: 11 }
+                            Text { text: "Revenue: " + formatInt(root.outputsTotalValue); color: mutedColor; font.pixelSize: 11 }
+                            Text { text: "Net: " + formatInt(root.netProfitValue); color: signedValueColor(root.netProfitValue); font.pixelSize: 11 }
+                            Item { Layout.fillWidth: true }
+                            Text { text: "Margin: " + formatFixed(root.marginPercent, 2) + "%"; color: signedValueColor(root.marginPercent); font.pixelSize: 11 }
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 24
+                        radius: 4
+                        color: "#111b28"
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 4
+                            spacing: 6
+                            Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 200; elide: Text.ElideRight }
+                            Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 92 }
+                            Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 58 }
+                            Text { text: "Revenue"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84 }
+                            Text { text: "Cost"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84 }
+                            Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68 }
+                            Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68 }
+                            Text { text: "Profit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84 }
+                            Text { text: "Margin"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
+                            Text { text: "Demand"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
+                        }
+                    }
+
+                    ListView {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.minimumHeight: 120
+                        clip: true
+                        model: root.resultsItemsModel
+
+                        delegate: Rectangle {
+                            width: ListView.view.width
+                            height: 28
+                            color: tableRowColor(index)
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 4
+                                spacing: 6
+
+                                Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: 200; elide: Text.ElideRight }
+                                Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 92; elide: Text.ElideRight }
+                                Text { text: formatFixed(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 58; horizontalAlignment: Text.AlignRight }
+                                Text { text: formatInt(revenue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignRight }
+                                Text { text: formatInt(cost); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignRight }
+                                Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68; horizontalAlignment: Text.AlignRight }
+                                Text { text: formatInt(taxValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68; horizontalAlignment: Text.AlignRight }
+                                Text { text: formatInt(profit); color: signedValueColor(profit); font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignRight }
+                                Text { text: formatFixed(marginPercent, 1) + "%"; color: signedValueColor(marginPercent); font.pixelSize: 11; Layout.preferredWidth: 70; horizontalAlignment: Text.AlignRight }
+                                Text { text: formatFixed(demandProxy, 1) + "%"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; horizontalAlignment: Text.AlignRight }
+                            }
                         }
                     }
                 }
