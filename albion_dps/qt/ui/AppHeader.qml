@@ -23,6 +23,7 @@ Rectangle {
     property int zoneSpacing: 20
 
     // View state
+    property bool homeView: false
     property bool meterView: false
     property bool scannerView: false
     property bool marketView: false
@@ -41,6 +42,8 @@ Rectangle {
     property string meterFamePerHourText: ""
     property string scannerStatusText: ""
     property string scannerUpdateText: ""
+    property string captureRuntimeState: ""
+    property bool gitAvailable: false
     property string marketRegion: ""
     property int marketCraftPlanEnabledCount: 0
     property int marketCraftPlanCount: 0
@@ -107,12 +110,14 @@ Rectangle {
                 Layout.fillWidth: true
                 text: root.meterView
                     ? "Mode: " + root.meterMode + "  |  Zone: " + root.meterZone
-                    : (root.scannerView
+                    : (root.homeView
+                        ? "Start  |  Capture runtime: " + root.captureRuntimeState + "  |  Git: " + (root.gitAvailable ? "ready" : "missing")
+                        : (root.scannerView
                         ? "Scanner status: " + root.scannerStatusText + "  |  Updates: " + root.scannerUpdateText
                         : "Market setup  |  Region: " + root.marketRegion
                           + "  |  Crafts: " + root.marketCraftPlanEnabledCount + "/" + root.marketCraftPlanCount
                           + "  |  Inputs: " + formatInt(root.marketInputsTotalCost)
-                          + "  |  Net: " + formatInt(root.marketNetProfitValue))
+                          + "  |  Net: " + formatInt(root.marketNetProfitValue)))
                 color: mutedColor
                 font.pixelSize: 12
                 elide: Text.ElideRight

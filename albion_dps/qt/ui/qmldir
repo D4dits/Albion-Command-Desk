@@ -13,6 +13,7 @@ TableSurface 1.0 TableSurface.qml
 singleton Theme 1.0 Theme.qml
 UpdateBanner 1.0 UpdateBanner.qml
 # Tab components
+HomeTab 1.0 HomeTab.qml
 ScannerTab 1.0 ScannerTab.qml
 ScannerControls 1.0 ScannerControls.qml
 ScannerLogView 1.0 ScannerLogView.qml

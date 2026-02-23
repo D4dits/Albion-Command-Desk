@@ -74,9 +74,10 @@ ApplicationWindow {
         + marketOutputsNetMinWidth
         + marketColumnSpacing * 9
         + 12
-    property bool meterView: viewTabs.currentIndex === 0
-    property bool scannerView: viewTabs.currentIndex === 1
-    property bool marketView: viewTabs.currentIndex === 2
+    property bool homeView: viewTabs.currentIndex === 0
+    property bool meterView: viewTabs.currentIndex === 1
+    property bool scannerView: viewTabs.currentIndex === 2
+    property bool marketView: viewTabs.currentIndex === 3
     property bool marketDiagnosticsVisible: false
     property bool marketStatusExpanded: false
     property bool marketBreakdownExpanded: false
@@ -309,6 +310,7 @@ ApplicationWindow {
             headerHeight: shellHeaderHeight
             headerMargin: shellHeaderMargin
             zoneSpacing: shellHeaderZoneSpacing
+            homeView: root.homeView
             meterView: root.meterView
             scannerView: root.scannerView
             marketView: root.marketView
@@ -323,6 +325,8 @@ ApplicationWindow {
             meterFamePerHourText: uiState.famePerHourText
             scannerStatusText: scannerState.statusText
             scannerUpdateText: scannerState.updateText
+            captureRuntimeState: scannerState.captureRuntimeState
+            gitAvailable: scannerState.gitAvailable
             marketRegion: marketSetupState.region
             marketCraftPlanEnabledCount: marketSetupState.craftPlanEnabledCount
             marketCraftPlanCount: marketSetupState.craftPlanCount
@@ -377,6 +381,17 @@ ApplicationWindow {
                 }
 
                 ShellTabButton {
+                    id: startTabButton
+                    text: "Start"
+                    activeColor: accentColor
+                    inactiveColor: shellTabIdleBackground
+                    activeTextColor: shellTabActiveText
+                    inactiveTextColor: textColor
+                    borderColor: borderColor
+                    cornerRadius: shellTabRadius
+                    labelPixelSize: 13
+                }
+                ShellTabButton {
                     id: meterTabButton
                     text: "Meter"
                     activeColor: accentColor
@@ -425,10 +440,64 @@ ApplicationWindow {
                 prevIndex = currentIndex
             }
 
+            // Start Tab - First launch guidance and dependency status
+            Item {
+                id: homeTabContainer
+                opacity: viewTabs.currentIndex === 0 ? 1.0 : 0.0
+                visible: true
+                Layout.fillHeight: true
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Utils.AnimationUtils.durationNormal
+                        easing.type: Utils.AnimationUtils.easingOut
+                    }
+                }
+
+                HomeTab {
+                    id: homeTab
+                    anchors.fill: parent
+                    compactLayout: root.compactLayout
+                    scannerStatusText: scannerState.statusText
+                    scannerUpdateText: scannerState.updateText
+                    updateCheckStatus: uiState.updateCheckStatus
+                    updateAutoCheck: uiState.updateAutoCheck
+                    captureRuntimeState: scannerState.captureRuntimeState
+                    captureRuntimeDetail: scannerState.captureRuntimeDetail
+                    captureRuntimeActionLabel: scannerState.captureRuntimeActionLabel
+                    captureRuntimeInstallHint: scannerState.captureRuntimeInstallHint
+                    captureRuntimeInstallCommand: scannerState.captureRuntimeInstallCommand
+                    gitAvailable: scannerState.gitAvailable
+                    gitDetail: scannerState.gitDetail
+                    gitActionLabel: scannerState.gitActionLabel
+                    gitInstallHint: scannerState.gitInstallHint
+                    gitInstallCommand: scannerState.gitInstallCommand
+                    theme: root.theme
+                    onGoToMeter: viewTabs.currentIndex = 1
+                    onGoToScanner: viewTabs.currentIndex = 2
+                    onGoToMarket: viewTabs.currentIndex = 3
+                    onRefreshCaptureRuntimeStatus: scannerState.refreshCaptureRuntimeStatus()
+                    onOpenCaptureRuntimeAction: scannerState.openCaptureRuntimeAction()
+                    onRefreshGitStatus: scannerState.refreshGitStatus()
+                    onOpenGitInstallAction: scannerState.openGitInstallAction()
+                    onCopyCommand: function(commandText) {
+                        scannerState.copyText(commandText)
+                        toastManager.showSuccess("Copied to clipboard", commandText)
+                    }
+                    onRequestManualUpdateCheck: {
+                        uiState.requestManualUpdateCheck()
+                        toastManager.showInfo("Checking for updates", "Looking for new version...")
+                    }
+                    onSetUpdateAutoCheck: function(checked) {
+                        uiState.setUpdateAutoCheck(checked)
+                        toastManager.showInfo(checked ? "Auto-update enabled" : "Auto-update disabled", "")
+                    }
+                }
+            }
+
             // Meter Tab - Extracted component
             Item {
                 id: meterTabContainer
-                opacity: viewTabs.currentIndex === 0 ? 1.0 : 0.0
+                opacity: viewTabs.currentIndex === 1 ? 1.0 : 0.0
                 visible: true
                 Layout.fillHeight: true
                 Behavior on opacity {
@@ -489,7 +558,7 @@ ApplicationWindow {
             // Scanner Tab - Extracted component
             Item {
                 id: scannerTabContainer
-                opacity: viewTabs.currentIndex === 1 ? 1.0 : 0.0
+                opacity: viewTabs.currentIndex === 2 ? 1.0 : 0.0
                 visible: true
                 Layout.fillHeight: true
                 Behavior on opacity {
@@ -572,13 +641,14 @@ ApplicationWindow {
                         scannerState.copyText(commandText)
                         toastManager.showSuccess("Copied to clipboard", commandText)
                     }
+                    onOpenStartTab: viewTabs.currentIndex = 0
                 }
             }
 
             // Market Tab - Extracted component (inline Inputs/Outputs/Results preserved for full functionality)
             Item {
                 id: marketTabContainer
-                opacity: viewTabs.currentIndex === 2 ? 1.0 : 0.0
+                opacity: viewTabs.currentIndex === 3 ? 1.0 : 0.0
                 visible: true
                 Layout.fillHeight: true
                 Behavior on opacity {

@@ -60,6 +60,7 @@ CardPanel {
     signal refreshGitStatus()
     signal openGitInstallAction()
     signal copyCommand(string commandText)
+    signal openStartTab()
 
     // Access to theme (injected by parent)
     property var theme: null
@@ -131,153 +132,19 @@ CardPanel {
             Layout.fillWidth: true
             spacing: 8
 
-            Rectangle {
+            Text {
                 Layout.fillWidth: true
-                Layout.preferredHeight: runtimeColumn.implicitHeight + 12
-                radius: 6
-                color: root.captureRuntimeState === "available"
-                    ? (theme ? theme.stateSuccessBg : "#11261b")
-                    : (theme ? theme.stateWarningBg : "#2a220f")
-                border.width: 1
-                border.color: root.captureRuntimeState === "available"
-                    ? (theme ? theme.stateSuccess : "#2ecc71")
-                    : (theme ? theme.stateWarning : "#f39c12")
-
-                ColumnLayout {
-                    id: runtimeColumn
-                    anchors.fill: parent
-                    anchors.margins: 6
-                    spacing: 4
-
-                    Text {
-                        text: root.captureRuntimeState === "available" ? "Capture runtime: ready" : "Capture runtime: action required"
-                        color: root.captureRuntimeState === "available"
-                            ? (theme ? theme.stateSuccess : "#2ecc71")
-                            : (theme ? theme.stateWarning : "#f39c12")
-                        font.pixelSize: 11
-                        font.bold: true
-                    }
-                    Text {
-                        text: root.captureRuntimeDetail
-                        color: mutedColor
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
-                        Layout.fillWidth: true
-                    }
-                    Text {
-                        visible: root.captureRuntimeInstallHint.length > 0
-                        text: root.captureRuntimeInstallHint
-                        color: textColor
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
-                        Layout.fillWidth: true
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 6
-                        AppButton {
-                            visible: root.captureRuntimeActionLabel.length > 0
-                            text: root.captureRuntimeActionLabel
-                            variant: root.captureRuntimeNeedsAction ? "primary" : "secondary"
-                            compact: true
-                            onClicked: root.openCaptureRuntimeAction()
-                        }
-                        AppButton {
-                            visible: root.captureRuntimeInstallCommand.length > 0
-                            text: "Copy command"
-                            compact: true
-                            onClicked: root.copyCommand(root.captureRuntimeInstallCommand)
-                        }
-                        AppButton {
-                            text: "Refresh runtime"
-                            compact: true
-                            onClicked: root.refreshCaptureRuntimeStatus()
-                        }
-                        Item { Layout.fillWidth: true }
-                    }
-                }
+                text: "Dependency setup moved to Start tab. Runtime: " + root.captureRuntimeState + " | Git: " + (root.gitAvailable ? "available" : "missing")
+                color: mutedColor
+                font.pixelSize: 11
+                wrapMode: Text.Wrap
             }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 8
-
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: gitColumn.implicitHeight + 12
-                radius: 6
-                color: root.gitAvailable
-                    ? (theme ? theme.stateSuccessBg : "#11261b")
-                    : (theme ? theme.stateWarningBg : "#2a220f")
-                border.width: 1
-                border.color: root.gitAvailable
-                    ? (theme ? theme.stateSuccess : "#2ecc71")
-                    : (theme ? theme.stateWarning : "#f39c12")
-
-                ColumnLayout {
-                    id: gitColumn
-                    anchors.fill: parent
-                    anchors.margins: 6
-                    spacing: 4
-
-                    Text {
-                        text: root.gitAvailable ? "Git: ready" : "Git: missing"
-                        color: root.gitAvailable
-                            ? (theme ? theme.stateSuccess : "#2ecc71")
-                            : (theme ? theme.stateWarning : "#f39c12")
-                        font.pixelSize: 11
-                        font.bold: true
-                    }
-                    Text {
-                        text: root.gitDetail
-                        color: mutedColor
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
-                        Layout.fillWidth: true
-                    }
-                    Text {
-                        visible: root.gitInstallHint.length > 0
-                        text: root.gitInstallHint
-                        color: textColor
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
-                        Layout.fillWidth: true
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 6
-                        AppButton {
-                            visible: root.gitActionLabel.length > 0
-                            text: root.gitActionLabel
-                            variant: root.gitNeedsInstall ? "primary" : "secondary"
-                            compact: true
-                            onClicked: root.openGitInstallAction()
-                        }
-                        AppButton {
-                            visible: root.gitInstallCommand.length > 0
-                            text: "Copy command"
-                            compact: true
-                            onClicked: root.copyCommand(root.gitInstallCommand)
-                        }
-                        AppButton {
-                            text: "Refresh Git"
-                            compact: true
-                            onClicked: root.refreshGitStatus()
-                        }
-                        Item { Layout.fillWidth: true }
-                    }
-                }
+            AppButton {
+                text: "Open Start"
+                compact: true
+                variant: "primary"
+                onClicked: root.openStartTab()
             }
-        }
-
-        Text {
-            visible: Qt.platform.os === "windows"
-            text: "Live mode requires Npcap Runtime (Npcap installer). Npcap SDK is only needed for optional capture-profile builds."
-            color: mutedColor
-            font.pixelSize: 11
-            wrapMode: Text.Wrap
-            Layout.fillWidth: true
         }
 
         // Control buttons
