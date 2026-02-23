@@ -3462,7 +3462,9 @@ def _item_id_candidates(item_id: str) -> tuple[str, ...]:
         out.append(f"{stem}@{enchant}")
     if level is not None and enchant is not None:
         out.append(f"{stem}_LEVEL{level}@{enchant}")
-    out.append(stem)
+    # For enchanted/leveled entries do not silently fall back to plain tier item.
+    if not had_level and enchant is None:
+        out.append(stem)
     seen: set[str] = set()
     ordered: list[str] = []
     for value in out:
@@ -3479,13 +3481,40 @@ def _item_id_query_candidates(item_id: str) -> tuple[str, ...]:
     out: list[str] = [base]
 
     core = base
+    had_at = "@" in base
+    enchant: int | None = None
     if "@" in core:
-        core = core.rsplit("@", 1)[0]
-        out.append(core)
+        maybe_core, maybe_enchant = core.rsplit("@", 1)
+        try:
+            enchant = int(maybe_enchant)
+            core = maybe_core
+        except ValueError:
+            pass
 
+    stem = core
+    level: int | None = None
     level_match = _LEVEL_SUFFIX_RE.search(core)
+    had_level = level_match is not None
     if level_match is not None:
         stem = core[: level_match.start()]
+        suffix = level_match.group(0)
+        try:
+            level = int(suffix.rsplit("LEVEL", 1)[1])
+        except (IndexError, ValueError):
+            level = None
+
+    if enchant is None and level is not None:
+        enchant = level
+    if level is None and enchant is not None:
+        level = enchant
+
+    if level is not None:
+        out.append(f"{stem}_LEVEL{level}")
+    if enchant is not None and (had_at or not had_level):
+        out.append(f"{stem}@{enchant}")
+    if level is not None and enchant is not None:
+        out.append(f"{stem}_LEVEL{level}@{enchant}")
+    if not had_level and enchant is None:
         out.append(stem)
 
     seen: set[str] = set()

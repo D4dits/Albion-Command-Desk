@@ -214,7 +214,7 @@ def test_market_setup_state_price_age_handles_aliases_and_invalid_dates() -> Non
         quality=1,
         price_type="buy_order",
     )
-    assert age_buy != "n/a"
+    assert age_buy == "n/a"
 
     state._price_index = {
         ("T7_METALBAR", "Bridgewatch", 1): MarketPriceRecord(
@@ -493,6 +493,35 @@ def test_market_setup_state_add_recipe_family_expands_weapon_tree_station_group(
     assert any("DEMONICSTAFF" in recipe_id for recipe_id in recipe_ids)
     assert any("SKULLORB_HELL" in recipe_id for recipe_id in recipe_ids)
     assert all("_ARTEFACT_" not in recipe_id for recipe_id in recipe_ids)
+
+
+def test_item_id_query_candidates_include_enchant_variants_for_level_items() -> None:
+    candidates = market_state._item_id_query_candidates("T4_METALBAR_LEVEL3")
+    assert "T4_METALBAR_LEVEL3" in candidates
+    assert "T4_METALBAR_LEVEL3@3" in candidates
+    assert "T4_METALBAR" not in candidates
+
+
+def test_find_price_quote_does_not_fallback_to_plain_tier_for_enchanted_items() -> None:
+    index = {
+        ("T4_METALBAR", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_METALBAR",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=100,
+            buy_price_max=90,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+    }
+    quote = market_state._find_price_quote(
+        index,
+        item_id="T4_METALBAR_LEVEL3",
+        city="Bridgewatch",
+        quality=1,
+        preferred_mode="sell_order",
+    )
+    assert quote is None
 
 
 def _find_plan_row_id(state: MarketSetupState, recipe_id: str) -> int | None:
