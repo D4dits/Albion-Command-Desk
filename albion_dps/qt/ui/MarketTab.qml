@@ -155,7 +155,34 @@ CardPanel {
     property var validationColor: function(isValid) { return root.theme.stateSuccess }
     property var tableRowColor: function(index) { return index % 2 === 0 ? root.theme.tableRowEven : root.theme.tableRowOdd }
     property var tableRowStrongColor: function(index) { return index % 2 === 0 ? root.theme.surfaceInteractive : root.theme.tableRowEven }
-    property var itemLabelWithTier: function(labelValue, itemIdValue) { return labelValue }
+    property var itemLabelWithTier: function(labelValue, itemIdValue) {
+        var label = String(labelValue || "").trim()
+        var itemId = String(itemIdValue || "").trim().toUpperCase()
+        if (itemId.length === 0) return label
+
+        var tierMatch = itemId.match(/^T(\d+)_/)
+        if (!tierMatch) return label
+        var tier = parseInt(tierMatch[1], 10)
+        if (!isFinite(tier) || tier <= 0) return label
+
+        var enchant = 0
+        var enchantMatch = itemId.match(/@(\d+)$/)
+        if (enchantMatch) {
+            enchant = parseInt(enchantMatch[1], 10)
+            if (!isFinite(enchant) || enchant < 0) enchant = 0
+        } else {
+            var levelMatch = itemId.match(/_LEVEL(\d+)$/)
+            if (levelMatch) {
+                enchant = parseInt(levelMatch[1], 10)
+                if (!isFinite(enchant) || enchant < 0) enchant = 0
+            }
+        }
+
+        var suffix = enchant > 0 ? (" T" + tier + "." + enchant) : (" T" + tier)
+        var withoutTier = label.replace(/\s+(?:T?\d+(?:\.\d+)?)\s*$/i, "").trim()
+        var baseLabel = withoutTier.length > 0 ? withoutTier : label
+        return baseLabel + suffix
+    }
     property var itemLabelWithTierParts: function(label, tier, enchant) {
         if (!isFinite(tier) || tier <= 0) return label
         var suffix = enchant > 0 ? (" T" + tier + "." + enchant) : (" T" + tier)
@@ -515,7 +542,18 @@ CardPanel {
                                 anchors.margins: 4
                                 spacing: marketColumnSpacing
 
-                                Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; elide: Text.ElideRight }
+                                Text {
+                                    text: itemLabelWithTier(item, itemId)
+                                    color: textColor
+                                    font.pixelSize: 11
+                                    Layout.preferredWidth: marketInputsItemWidth
+                                    elide: Text.ElideRight
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        acceptedButtons: Qt.LeftButton
+                                        onDoubleClicked: root.copyCellText(parent.text)
+                                    }
+                                }
                                 Text { text: formatInt(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
 
                                 TextField {
@@ -629,7 +667,18 @@ CardPanel {
                                 anchors.margins: 4
                                 spacing: marketColumnSpacing
 
-                                Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; elide: Text.ElideRight }
+                                Text {
+                                    text: itemLabelWithTier(item, itemId)
+                                    color: textColor
+                                    font.pixelSize: 11
+                                    Layout.preferredWidth: marketOutputsItemWidth
+                                    elide: Text.ElideRight
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        acceptedButtons: Qt.LeftButton
+                                        onDoubleClicked: root.copyCellText(parent.text)
+                                    }
+                                }
                                 Text { text: formatFixed(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
                                 Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; elide: Text.ElideRight }
 
@@ -762,7 +811,18 @@ CardPanel {
                                 anchors.margins: 4
                                 spacing: 6
 
-                                Text { text: item; color: textColor; font.pixelSize: 11; Layout.preferredWidth: 200; elide: Text.ElideRight }
+                                Text {
+                                    text: itemLabelWithTier(item, itemId)
+                                    color: textColor
+                                    font.pixelSize: 11
+                                    Layout.preferredWidth: 200
+                                    elide: Text.ElideRight
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        acceptedButtons: Qt.LeftButton
+                                        onDoubleClicked: root.copyCellText(parent.text)
+                                    }
+                                }
                                 Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 92; elide: Text.ElideRight }
                                 Text { text: formatFixed(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 58; horizontalAlignment: Text.AlignRight }
                                 Text { text: formatInt(revenue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignRight }
