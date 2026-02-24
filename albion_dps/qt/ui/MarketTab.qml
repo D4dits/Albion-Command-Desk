@@ -23,6 +23,7 @@ CardPanel {
     property string region: "europe"
     property bool premium: false
     property bool priceFetchInProgress: false
+    property bool priceFetchPending: false
     property string validationText: ""
     property string pricesSource: ""
     property string listActionText: ""
@@ -43,7 +44,8 @@ CardPanel {
     property bool focusEnabled: false
 
     property string searchQuery: ""
-    property int recipeEnchantFilter: -1
+    property var recipeTierFilters: []
+    property var recipeEnchantFilters: []
     property int suggestionsCount: 0
     property var recipeOptionsModel: null
     property string currentRecipeId: ""
@@ -56,6 +58,7 @@ CardPanel {
     property int craftPlanEnabledCount: 0
     property string craftPlanSortKey: "added"
     property bool craftPlanSortDescending: false
+    property bool hideRowsWithoutFreshPrices: false
 
     property var inputsModel: null
     property int inputsTotalCost: 0
@@ -126,7 +129,8 @@ CardPanel {
     signal addFirstRecipeOption()
     signal addFilteredRecipeOptions()
     signal addRecipeFamily()
-    signal setRecipeEnchantFilter(int filter)
+    signal setRecipeTierFilters(var filters)
+    signal setRecipeEnchantFilters(var filters)
     signal addRecipeAtIndex(int index)
     signal setSelectedPresetName(string name)
     signal savePreset(string name)
@@ -140,6 +144,7 @@ CardPanel {
     signal setPlanRowDailyBonus(var rowId, string bonus)
     signal setPlanRowRuns(var rowId, int runs)
     signal removePlanRow(var rowId)
+    signal setHideRowsWithoutFreshPrices(bool enabled)
     signal setInputStockQuantity(var itemId, string qty)
     signal setInputPriceType(var itemId, string type)
     signal setInputManualPrice(var itemId, string price)
@@ -458,7 +463,8 @@ CardPanel {
                     craftPlanSortDescending: root.craftPlanSortDescending
                     currentRecipeId: root.currentRecipeId
                     searchQuery: root.searchQuery
-                    recipeEnchantFilter: root.recipeEnchantFilter
+                    recipeTierFilters: root.recipeTierFilters
+                    recipeEnchantFilters: root.recipeEnchantFilters
                     suggestionsCount: root.suggestionsCount
                     recipeOptionsModel: root.recipeOptionsModel
                     presetNames: root.presetNames
@@ -484,7 +490,8 @@ CardPanel {
                     onAddFirstRecipeOption: root.addFirstRecipeOption()
                     onAddFilteredRecipeOptions: root.addFilteredRecipeOptions()
                     onAddRecipeFamily: root.addRecipeFamily()
-                    onSetRecipeEnchantFilter: function(filter) { root.setRecipeEnchantFilter(filter) }
+                    onSetRecipeTierFilters: function(filters) { root.setRecipeTierFilters(filters) }
+                    onSetRecipeEnchantFilters: function(filters) { root.setRecipeEnchantFilters(filters) }
                     onAddRecipeAtIndex: function(index) { root.addRecipeAtIndex(index) }
                     onSetSelectedPresetName: function(name) { root.setSelectedPresetName(name) }
                     onSavePreset: function(name) { root.savePreset(name) }
@@ -503,6 +510,7 @@ CardPanel {
                     craftPlanEnabledCount: root.craftPlanEnabledCount
                     craftPlanSortKey: root.craftPlanSortKey
                     craftPlanSortDescending: root.craftPlanSortDescending
+                    hideRowsWithoutFreshPrices: root.hideRowsWithoutFreshPrices
                     currentRecipeId: root.currentRecipeId
                     compactControlHeight: root.compactControlHeight
                     craftPlanPendingContentY: root.craftPlanPendingContentY
@@ -522,6 +530,7 @@ CardPanel {
                     onSetPlanRowDailyBonus: function(rowId, bonus) { root.setPlanRowDailyBonus(rowId, bonus) }
                     onSetPlanRowRuns: function(rowId, runs) { root.setPlanRowRuns(rowId, runs) }
                     onRemovePlanRow: function(rowId) { root.removePlanRow(rowId) }
+                    onSetHideRowsWithoutFreshPrices: function(enabled) { root.setHideRowsWithoutFreshPrices(enabled) }
                 }
             }
 
@@ -882,7 +891,7 @@ CardPanel {
 
     Rectangle {
         anchors.fill: parent
-        visible: root.priceFetchInProgress
+        visible: root.priceFetchInProgress || root.priceFetchPending
         z: 200
         color: Qt.rgba(6 / 255, 14 / 255, 24 / 255, 0.72)
 

@@ -663,6 +663,7 @@ ApplicationWindow {
                 region: marketSetupState.region
                 premium: marketSetupState.premium
                 priceFetchInProgress: marketSetupState.priceFetchInProgress
+                priceFetchPending: marketSetupState.priceFetchPending
                 validationText: marketSetupState.validationText
                 pricesSource: marketSetupState.pricesSource
                 listActionText: marketSetupState.listActionText
@@ -683,7 +684,8 @@ ApplicationWindow {
                 focusEnabled: marketSetupState.focusEnabled
 
                 searchQuery: marketSetupState.searchQuery || ""
-                recipeEnchantFilter: marketSetupState.recipeEnchantFilter
+                recipeTierFilters: marketSetupState.recipeTierFilters
+                recipeEnchantFilters: marketSetupState.recipeEnchantFilters
                 suggestionsCount: marketSetupState.recipeOptionsModel.rowCount()
                 recipeOptionsModel: marketSetupState.recipeOptionsModel
                 currentRecipeId: marketSetupState.recipeId || ""
@@ -696,6 +698,7 @@ ApplicationWindow {
                 craftPlanEnabledCount: marketSetupState.craftPlanEnabledCount
                 craftPlanSortKey: marketSetupState.craftPlanSortKey
                 craftPlanSortDescending: marketSetupState.craftPlanSortDescending
+                hideRowsWithoutFreshPrices: marketSetupState.hideRowsWithoutFreshPrices
 
                 inputsModel: marketSetupState.inputsModel
                 inputsTotalCost: marketSetupState.inputsTotalCost
@@ -738,7 +741,8 @@ ApplicationWindow {
                 onAddFirstRecipeOption: marketSetupState.addFirstRecipeOption()
                 onAddFilteredRecipeOptions: marketSetupState.addFilteredRecipeOptions()
                 onAddRecipeFamily: marketSetupState.addRecipeFamily()
-                onSetRecipeEnchantFilter: function(filter) { marketSetupState.setRecipeEnchantFilter(filter) }
+                onSetRecipeTierFilters: function(filters) { marketSetupState.setRecipeTierFilters(filters) }
+                onSetRecipeEnchantFilters: function(filters) { marketSetupState.setRecipeEnchantFilters(filters) }
                 onAddRecipeAtIndex: function(index) { marketSetupState.addRecipeAtIndex(index) }
                 onSetSelectedPresetName: function(name) { marketSetupState.setSelectedPresetName(name) }
                 onSavePreset: function(name) {
@@ -764,6 +768,7 @@ ApplicationWindow {
                 onSetPlanRowDailyBonus: function(rowId, bonus) { marketSetupState.setPlanRowDailyBonus(rowId, bonus) }
                 onSetPlanRowRuns: function(rowId, runs) { marketSetupState.setPlanRowRuns(rowId, runs) }
                 onRemovePlanRow: function(rowId) { marketSetupState.removePlanRow(rowId) }
+                onSetHideRowsWithoutFreshPrices: function(enabled) { marketSetupState.setHideRowsWithoutFreshPrices(enabled) }
                 onSetInputStockQuantity: function(itemId, qty) { marketSetupState.setInputStockQuantity(itemId, qty) }
                 onSetInputPriceType: function(itemId, type) { marketSetupState.setInputPriceType(itemId, type) }
                 onSetInputManualPrice: function(itemId, price) { marketSetupState.setInputManualPrice(itemId, price) }

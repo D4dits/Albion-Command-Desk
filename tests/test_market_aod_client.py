@@ -231,7 +231,7 @@ def test_fetch_prices_retries_with_smaller_batches_on_414() -> None:
     assert any("/stats/prices/T4_MAIN_SWORD.json" in url for url in called)
 
 
-def test_fetch_prices_does_not_split_batches_on_429() -> None:
+def test_fetch_prices_does_not_split_batches_on_429_after_retry_exhaustion() -> None:
     called: list[str] = []
 
     def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):

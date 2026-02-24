@@ -12,10 +12,10 @@ from functools import lru_cache
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 from urllib.parse import urlencode
 
-from PySide6.QtCore import QAbstractListModel, QModelIndex, QObject, Property, Qt, QTimer, Signal, Slot
+from PySide6.QtCore import QAbstractListModel, QCoreApplication, QModelIndex, QObject, Property, Qt, QTimer, Signal, Slot
 
 from albion_dps.market.aod_client import MarketPriceRecord, REGION_HOSTS
 from albion_dps.market.catalog import RecipeCatalog
@@ -629,7 +629,8 @@ class RecipeOptionsModel(QAbstractListModel):
         self._all_items: list[RecipeOptionRow] = []
         self._items: list[RecipeOptionRow] = []
         self._filter = RecipeFilter(terms=(), tier=None, enchant=None)
-        self._enchant_filter: int | None = None
+        self._tier_filters: tuple[int, ...] = ()
+        self._enchant_filters: tuple[int, ...] = ()
 
     def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
         return len(self._items)
@@ -667,24 +668,40 @@ class RecipeOptionsModel(QAbstractListModel):
         self._filter = _parse_recipe_filter(query)
         self._apply_filter()
 
-    def set_enchant_filter(self, enchant: int | None) -> None:
-        normalized: int | None
-        if enchant is None:
-            normalized = None
-        else:
-            parsed = int(enchant)
-            normalized = parsed if 0 <= parsed <= 4 else None
-        if normalized == self._enchant_filter:
+    def set_tier_filters(self, tiers: Sequence[int] | None) -> None:
+        normalized = tuple(_normalize_int_values(tiers, minimum=1, maximum=8))
+        if normalized == self._tier_filters:
             return
-        self._enchant_filter = normalized
+        self._tier_filters = normalized
         self._apply_filter()
+
+    def set_enchant_filters(self, enchants: Sequence[int] | None) -> None:
+        normalized = tuple(_normalize_int_values(enchants, minimum=0, maximum=4))
+        if normalized == self._enchant_filters:
+            return
+        self._enchant_filters = normalized
+        self._apply_filter()
+
+    def set_enchant_filter(self, enchant: int | None) -> None:
+        if enchant is None:
+            self.set_enchant_filters(())
+            return
+        parsed = int(enchant)
+        if parsed < 0:
+            self.set_enchant_filters(())
+            return
+        self.set_enchant_filters((parsed,))
 
     def _apply_filter(self) -> None:
         rows = self._all_items
         if self._filter.terms or self._filter.tier is not None or self._filter.enchant is not None:
             rows = [row for row in rows if _matches_recipe_filter(row, self._filter)]
-        if self._enchant_filter is not None:
-            rows = [row for row in rows if int(row.enchant) == int(self._enchant_filter)]
+        if self._tier_filters:
+            tiers = set(self._tier_filters)
+            rows = [row for row in rows if int(row.tier) in tiers]
+        if self._enchant_filters:
+            enchants = set(self._enchant_filters)
+            rows = [row for row in rows if int(row.enchant) in enchants]
         self.beginResetModel()
         self._items = list(rows)
         self.endResetModel()
@@ -717,6 +734,7 @@ class CraftPlanRow:
     runs: int
     enabled: bool
     profit_percent: float | None = None
+    has_fresh_component_prices: bool = True
 
 
 class CraftPlanModel(QAbstractListModel):
@@ -731,6 +749,7 @@ class CraftPlanModel(QAbstractListModel):
     RunsRole = Qt.UserRole + 9
     EnabledRole = Qt.UserRole + 10
     ProfitPercentRole = Qt.UserRole + 11
+    HasFreshComponentPricesRole = Qt.UserRole + 12
 
     def __init__(self) -> None:
         super().__init__()
@@ -768,6 +787,8 @@ class CraftPlanModel(QAbstractListModel):
             return item.enabled
         if role == self.ProfitPercentRole:
             return item.profit_percent
+        if role == self.HasFreshComponentPricesRole:
+            return bool(item.has_fresh_component_prices)
         return None
 
     def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
@@ -783,6 +804,7 @@ class CraftPlanModel(QAbstractListModel):
             self.RunsRole: b"runs",
             self.EnabledRole: b"isEnabled",
             self.ProfitPercentRole: b"profitPercent",
+            self.HasFreshComponentPricesRole: b"hasFreshComponentPrices",
         }
 
     def set_items(self, rows: list[CraftPlanRow]) -> None:
@@ -861,7 +883,9 @@ class MarketSetupState(QObject):
         self._list_action_text = ""
         self._diagnostics_lines: list[str] = []
         self._recipe_search_query = ""
-        self._recipe_enchant_filter: int | None = None
+        self._recipe_tier_filters: list[int] = []
+        self._recipe_enchant_filters: list[int] = []
+        self._hide_rows_without_fresh_prices = False
         self._preset_path = _default_preset_path()
         self._presets: dict[str, dict[str, object]] = self._load_presets()
         self._selected_preset_name = ""
@@ -879,6 +903,7 @@ class MarketSetupState(QObject):
         self._refresh_cooldown_tick_timer = QTimer(self)
         self._refresh_cooldown_tick_timer.setInterval(1000)
         self._refresh_cooldown_tick_timer.timeout.connect(self._on_refresh_cooldown_tick)
+        self._deferred_force_price_refresh = False
         self._ensure_price_preferences_for_recipe(self._recipe)
         if auto_refresh_prices and self._service is not None:
             self._refresh_price_index(self.to_setup(), force=True)
@@ -967,7 +992,21 @@ class MarketSetupState(QObject):
 
     @Property(int, notify=setupChanged)
     def recipeEnchantFilter(self) -> int:
-        return -1 if self._recipe_enchant_filter is None else int(self._recipe_enchant_filter)
+        if not self._recipe_enchant_filters:
+            return -1
+        return int(self._recipe_enchant_filters[0])
+
+    @Property("QVariantList", notify=setupChanged)
+    def recipeTierFilters(self) -> list[int]:
+        return list(self._recipe_tier_filters)
+
+    @Property("QVariantList", notify=setupChanged)
+    def recipeEnchantFilters(self) -> list[int]:
+        return list(self._recipe_enchant_filters)
+
+    @Property(bool, notify=setupChanged)
+    def hideRowsWithoutFreshPrices(self) -> bool:
+        return bool(self._hide_rows_without_fresh_prices)
 
     @Property("QVariantList", notify=setupChanged)
     def presetNames(self) -> list[str]:
@@ -988,6 +1027,10 @@ class MarketSetupState(QObject):
     @Property(bool, notify=pricesChanged)
     def priceFetchInProgress(self) -> bool:
         return self._price_fetch_in_progress
+
+    @Property(bool, notify=pricesChanged)
+    def priceFetchPending(self) -> bool:
+        return self._price_fetch_in_progress or self._deferred_price_refresh_timer.isActive()
 
     @Property(int, notify=pricesChanged)
     def refreshCooldownSeconds(self) -> int:
@@ -1168,7 +1211,10 @@ class MarketSetupState(QObject):
             return
         self._active_market_tab_index = normalized
         if self._active_market_tab_index >= 1:
-            self._rebuild_preview(force_price_refresh=False)
+            if QCoreApplication.instance() is None:
+                self._rebuild_preview(force_price_refresh=False)
+            else:
+                self._schedule_deferred_price_refresh(0.05, force=False)
 
     @Slot(int)
     def setRecipeIndex(self, index: int) -> None:
@@ -1204,19 +1250,40 @@ class MarketSetupState(QObject):
 
     @Slot(int)
     def setRecipeEnchantFilter(self, value: int) -> None:
-        normalized: int | None
         raw = int(value)
         if raw < 0:
-            normalized = None
-        elif raw <= 4:
-            normalized = raw
-        else:
+            self.setRecipeEnchantFilters([])
             return
-        if normalized == self._recipe_enchant_filter:
+        if raw > 4:
             return
-        self._recipe_enchant_filter = normalized
-        self._recipe_options_model.set_enchant_filter(normalized)
+        self.setRecipeEnchantFilters([raw])
+
+    @Slot("QVariantList")
+    def setRecipeTierFilters(self, values: list[object]) -> None:
+        normalized = self._normalize_int_filter_list(values, minimum=1, maximum=8)
+        if normalized == self._recipe_tier_filters:
+            return
+        self._recipe_tier_filters = normalized
+        self._recipe_options_model.set_tier_filters(normalized)
         self.setupChanged.emit()
+
+    @Slot("QVariantList")
+    def setRecipeEnchantFilters(self, values: list[object]) -> None:
+        normalized = self._normalize_int_filter_list(values, minimum=0, maximum=4)
+        if normalized == self._recipe_enchant_filters:
+            return
+        self._recipe_enchant_filters = normalized
+        self._recipe_options_model.set_enchant_filters(normalized)
+        self.setupChanged.emit()
+
+    @Slot(bool)
+    def setHideRowsWithoutFreshPrices(self, enabled: bool) -> None:
+        normalized = bool(enabled)
+        if normalized == self._hide_rows_without_fresh_prices:
+            return
+        self._hide_rows_without_fresh_prices = normalized
+        self.setupChanged.emit()
+        self._rebuild_preview(force_price_refresh=False)
 
     @Slot(str)
     def setSelectedPresetName(self, value: str) -> None:
@@ -1237,6 +1304,9 @@ class MarketSetupState(QObject):
             "craft_runs": int(self._craft_runs),
             "recipe_id": self._recipe.item.unique_name,
             "recipe_search_query": self._recipe_search_query,
+            "recipe_tier_filters": list(self._recipe_tier_filters),
+            "recipe_enchant_filters": list(self._recipe_enchant_filters),
+            "hide_rows_without_fresh_prices": bool(self._hide_rows_without_fresh_prices),
             "craft_plan": [_craft_plan_row_to_dict(row) for row in self._craft_plan_rows],
         }
         if self._save_presets():
@@ -1285,6 +1355,21 @@ class MarketSetupState(QObject):
         search_query = str(payload.get("recipe_search_query") or "").strip()
         self._recipe_search_query = search_query
         self._recipe_options_model.set_query(search_query)
+        tier_filters = payload.get("recipe_tier_filters")
+        enchant_filters = payload.get("recipe_enchant_filters")
+        self._recipe_tier_filters = self._normalize_int_filter_list(
+            tier_filters if isinstance(tier_filters, list) else [],
+            minimum=1,
+            maximum=8,
+        )
+        self._recipe_enchant_filters = self._normalize_int_filter_list(
+            enchant_filters if isinstance(enchant_filters, list) else [],
+            minimum=0,
+            maximum=4,
+        )
+        self._recipe_options_model.set_tier_filters(self._recipe_tier_filters)
+        self._recipe_options_model.set_enchant_filters(self._recipe_enchant_filters)
+        self._hide_rows_without_fresh_prices = bool(payload.get("hide_rows_without_fresh_prices", False))
 
         self._craft_runs = max(1, int(payload.get("craft_runs") or self._craft_runs))
         active_row = self._find_plan_row_by_recipe(self._recipe.item.unique_name)
@@ -1558,7 +1643,13 @@ class MarketSetupState(QObject):
             return
         self._append_diag("Manual price refresh requested.", level="INFO")
         self._set_next_live_fetch_cooldown(self._manual_refresh_cooldown_seconds)
-        self._rebuild_preview(force_price_refresh=True)
+        if QCoreApplication.instance() is None:
+            self._rebuild_preview(force_price_refresh=True)
+        else:
+            self._prices_source = "loading"
+            self._prices_status_text = "Queued live refresh..."
+            self.pricesChanged.emit()
+            self._schedule_deferred_price_refresh(0.01, force=True)
 
     @Slot()
     def showAoDataRaw(self) -> None:
@@ -1781,12 +1872,15 @@ class MarketSetupState(QObject):
                 continue
             if _item_family_key(recipe.item.unique_name) != family_key:
                 continue
+            tier = int(recipe.item.tier or 0)
             enchant = int(recipe.item.enchantment or 0)
-            if self._recipe_enchant_filter is not None and enchant != int(self._recipe_enchant_filter):
+            if self._recipe_tier_filters and tier not in self._recipe_tier_filters:
+                continue
+            if self._recipe_enchant_filters and enchant not in self._recipe_enchant_filters:
                 continue
             rows.append(
                 (
-                    int(recipe.item.tier or 0),
+                    tier,
                     enchant,
                     _friendly_item_label(recipe.item.display_name, recipe.item.unique_name).lower(),
                     recipe.item.unique_name,
@@ -1836,12 +1930,15 @@ class MarketSetupState(QObject):
                 continue
             if str(recipe.station or "").strip().lower() != station_key:
                 continue
+            tier = int(recipe.item.tier or 0)
             enchant = int(recipe.item.enchantment or 0)
-            if self._recipe_enchant_filter is not None and enchant != int(self._recipe_enchant_filter):
+            if self._recipe_tier_filters and tier not in self._recipe_tier_filters:
+                continue
+            if self._recipe_enchant_filters and enchant not in self._recipe_enchant_filters:
                 continue
             rows.append(
                 (
-                    int(recipe.item.tier or 0),
+                    tier,
                     enchant,
                     _friendly_item_label(recipe.item.display_name, recipe.item.unique_name).lower(),
                     recipe.item.unique_name,
@@ -1914,6 +2011,7 @@ class MarketSetupState(QObject):
             runs=max(1, int(runs)),
             enabled=bool(enabled),
             profit_percent=None,
+            has_fresh_component_prices=True,
         )
         self._next_plan_row_id += 1
         self._craft_plan_rows.append(row)
@@ -1969,6 +2067,7 @@ class MarketSetupState(QObject):
                 runs=next_runs,
                 enabled=next_enabled,
                 profit_percent=row.profit_percent,
+                has_fresh_component_prices=row.has_fresh_component_prices,
             )
             changed = next_row != row
             next_rows.append(next_row)
@@ -2067,7 +2166,7 @@ class MarketSetupState(QObject):
         self._selling_model.set_items([])
         self._results_items_model.set_items([])
         self._breakdown_model.set_items([])
-        self._set_plan_profit_map({})
+        self._set_plan_profit_map({}, fresh_component_prices={})
         self._shopping_csv = ""
         self._selling_csv = ""
         self._breakdown = ProfitBreakdown(notes=[note] if note else [])
@@ -2131,6 +2230,7 @@ class MarketSetupState(QObject):
 
         run_profit_by_row: dict[int, float] = {}
         run_rrr_by_row: dict[int, float] = {}
+        run_fresh_by_row: dict[int, bool] = {}
         for (plan_row, recipe), run in zip(prepared_recipes, runs):
             breakdown = compute_run_profit(run)
             run_profit_by_row[int(plan_row.row_id)] = float(breakdown.margin_percent)
@@ -2138,13 +2238,30 @@ class MarketSetupState(QObject):
             run_rrr_by_row[int(plan_row.row_id)] = float(
                 effective_return_fraction(setup=row_setup, recipe=recipe) * 100.0
             )
-        self._set_plan_profit_map(run_profit_by_row, run_rrr_by_row)
+            run_fresh_by_row[int(plan_row.row_id)] = self._run_has_fresh_component_prices(run)
+        self._set_plan_profit_map(run_profit_by_row, run_rrr_by_row, run_fresh_by_row)
 
-        all_inputs = [line for run in runs for line in run.inputs]
-        all_outputs = [line for run in runs for line in run.outputs]
-        self._journal_totals = self._estimate_journal_totals(runs=runs, setup=setup, price_index=price_index)
+        visible_runs: list[CraftRun] = list(runs)
+        visible_prepared_recipes: list[tuple[CraftPlanRow, Recipe]] = list(prepared_recipes)
+        if self._hide_rows_without_fresh_prices:
+            visible_runs = []
+            visible_prepared_recipes = []
+            for (plan_row, recipe), run in zip(prepared_recipes, runs):
+                if run_fresh_by_row.get(int(plan_row.row_id), True):
+                    visible_prepared_recipes.append((plan_row, recipe))
+                    visible_runs.append(run)
+            hidden_count = len(runs) - len(visible_runs)
+            if hidden_count > 0:
+                self._append_diag(
+                    f"Hidden {hidden_count} craft row(s) missing fresh AO Data component prices.",
+                    level="INFO",
+                )
+
+        all_inputs = [line for run in visible_runs for line in run.inputs]
+        all_outputs = [line for run in visible_runs for line in run.outputs]
+        self._journal_totals = self._estimate_journal_totals(runs=visible_runs, setup=setup, price_index=price_index)
         returnable_by_item: dict[str, bool] = {}
-        for _, recipe in prepared_recipes:
+        for _, recipe in visible_prepared_recipes:
             for component in recipe.components:
                 item_id = str(component.item.unique_name)
                 returnable_by_item[item_id] = bool(returnable_by_item.get(item_id, False) or component.returnable)
@@ -2258,7 +2375,7 @@ class MarketSetupState(QObject):
                 )
         input_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
 
-        run_breakdown = compute_batch_profit(tuple(runs))
+        run_breakdown = compute_batch_profit(tuple(visible_runs))
         self._base_input_total_cost = float(sum(row.total_cost for row in input_rows))
         valuations = compute_output_valuations(
             output_lines=all_outputs,
@@ -2502,13 +2619,21 @@ class MarketSetupState(QObject):
         self,
         values: dict[int, float],
         return_rates: dict[int, float] | None = None,
+        fresh_component_prices: dict[int, bool] | None = None,
     ) -> None:
         rates = return_rates or {}
+        freshness = fresh_component_prices or {}
         next_rows: list[CraftPlanRow] = []
         changed = False
         for row in self._craft_plan_rows:
             next_profit = values.get(int(row.row_id))
             next_rrr = rates.get(int(row.row_id), row.return_rate_percent)
+            if int(row.row_id) in freshness:
+                next_has_fresh = bool(freshness[int(row.row_id)])
+            elif row.enabled and fresh_component_prices is not None:
+                next_has_fresh = False
+            else:
+                next_has_fresh = bool(row.has_fresh_component_prices)
             next_row = CraftPlanRow(
                 row_id=row.row_id,
                 recipe_id=row.recipe_id,
@@ -2521,6 +2646,7 @@ class MarketSetupState(QObject):
                 runs=row.runs,
                 enabled=row.enabled,
                 profit_percent=next_profit,
+                has_fresh_component_prices=next_has_fresh,
             )
             if next_row != row:
                 changed = True
@@ -2559,6 +2685,43 @@ class MarketSetupState(QObject):
         if dt is None:
             return "n/a"
         return _format_age(dt)
+
+    def _run_has_fresh_component_prices(self, run: CraftRun) -> bool:
+        checked: set[tuple[str, str, str]] = set()
+        for line in run.inputs:
+            key = (str(line.item.unique_name), str(line.city), str(line.price_type.value))
+            if key in checked:
+                continue
+            checked.add(key)
+            if not self._has_fresh_price(
+                item_id=str(line.item.unique_name),
+                city=str(line.city),
+                quality=int(self._setup.quality),
+                price_type=str(line.price_type.value),
+            ):
+                return False
+        return True
+
+    def _has_fresh_price(self, *, item_id: str, city: str, quality: int, price_type: str) -> bool:
+        normalized = str(price_type).strip().lower()
+        if normalized == PriceType.MANUAL.value:
+            return True
+        quote = _find_price_quote(
+            self._price_index,
+            item_id=item_id,
+            city=city,
+            quality=quality,
+            preferred_mode=normalized,
+        )
+        if quote is None:
+            return False
+        if normalized == PriceType.BUY_ORDER.value:
+            return int(quote.buy_price_max or 0) > 0 and _parse_iso_datetime(quote.buy_price_max_date) is not None
+        if normalized == PriceType.SELL_ORDER.value:
+            return int(quote.sell_price_min or 0) > 0 and _parse_iso_datetime(quote.sell_price_min_date) is not None
+        has_buy = int(quote.buy_price_max or 0) > 0 and _parse_iso_datetime(quote.buy_price_max_date) is not None
+        has_sell = int(quote.sell_price_min or 0) > 0 and _parse_iso_datetime(quote.sell_price_min_date) is not None
+        return bool(has_buy or has_sell)
 
     def _estimate_journal_totals(
         self,
@@ -2823,14 +2986,37 @@ class MarketSetupState(QObject):
                 return self._price_index
 
         self._price_fetch_in_progress = True
+        batch_count = 0
+        try:
+            client = getattr(self._service, "client", None)
+            if client is not None and hasattr(client, "_split_price_batches") and hasattr(client, "_base_url"):
+                base = client._base_url(setup.region)
+                params = {
+                    "locations": ",".join(locations),
+                    "qualities": ",".join(str(x) for x in [setup.quality]),
+                }
+                batch_count = len(client._split_price_batches(base=base, item_ids=item_ids, params=params))
+        except Exception:
+            batch_count = 0
         self._prices_source = "loading"
-        self._prices_status_text = "Fetching live prices..."
+        self._prices_status_text = (
+            f"Fetching live prices ({len(item_ids)} IDs"
+            + (f", ~{batch_count} batch(es)" if batch_count > 0 else "")
+            + f", {len(locations)} location(s))..."
+        )
         self.pricesChanged.emit()
+        self._process_ui_events()
         try:
             self._append_diag(
                 f"AO Data fetch request: {len(item_ids)} item IDs across {len(locations)} locations.",
                 level="INFO",
             )
+            if len(item_ids) >= 200:
+                self._append_diag(
+                    "Large refresh in progress. This can take up to ~60s depending on AO Data rate limits.",
+                    level="INFO",
+                )
+            self._process_ui_events()
             index = self._service.get_price_index(
                 region=setup.region,
                 item_ids=item_ids,
@@ -2883,6 +3069,15 @@ class MarketSetupState(QObject):
         self._price_context_key = context_key
         return self._price_index
 
+    def _process_ui_events(self) -> None:
+        app = QCoreApplication.instance()
+        if app is None:
+            return
+        try:
+            app.processEvents()
+        except Exception:
+            return
+
     def _set_fallback_status(self, message: str) -> None:
         self._prices_source = "fallback"
         self._prices_status_text = message
@@ -2896,20 +3091,29 @@ class MarketSetupState(QObject):
             self._diagnostics_lines = self._diagnostics_lines[-200:]
         self.diagnosticsChanged.emit()
 
-    def _schedule_deferred_price_refresh(self, delay_seconds: float) -> None:
+    def _schedule_deferred_price_refresh(self, delay_seconds: float, *, force: bool = False) -> None:
+        if force:
+            self._deferred_force_price_refresh = True
         delay_ms = max(50, int(delay_seconds * 1000))
         if self._deferred_price_refresh_timer.isActive():
             remaining = self._deferred_price_refresh_timer.remainingTime()
             if remaining >= 0 and remaining <= delay_ms:
                 return
         self._deferred_price_refresh_timer.start(delay_ms)
+        self.pricesChanged.emit()
 
     @Slot()
     def _on_deferred_price_refresh_timeout(self) -> None:
+        self.pricesChanged.emit()
         if self._price_fetch_in_progress:
-            self._schedule_deferred_price_refresh(0.35)
+            self._schedule_deferred_price_refresh(
+                0.35,
+                force=self._deferred_force_price_refresh,
+            )
             return
-        self._rebuild_preview(force_price_refresh=False)
+        force_refresh = bool(self._deferred_force_price_refresh)
+        self._deferred_force_price_refresh = False
+        self._rebuild_preview(force_price_refresh=force_refresh)
 
     def _set_next_live_fetch_cooldown(self, seconds: float) -> None:
         target = time.monotonic() + max(0.0, float(seconds))
@@ -2977,6 +3181,15 @@ class MarketSetupState(QObject):
         if raw >= 5:
             return 10.0
         return 0.0
+
+    @staticmethod
+    def _normalize_int_filter_list(
+        values: Sequence[object] | None,
+        *,
+        minimum: int,
+        maximum: int,
+    ) -> list[int]:
+        return _normalize_int_values(values, minimum=minimum, maximum=maximum)
 
     @staticmethod
     def _to_price_type(value: str) -> PriceType | None:
@@ -3312,6 +3525,7 @@ def _craft_plan_rows_from_payload(
                 runs=runs,
                 enabled=enabled,
                 profit_percent=None,
+                has_fresh_component_prices=True,
             )
         )
     return rows
@@ -3743,6 +3957,43 @@ def _parse_recipe_filter(query: str) -> RecipeFilter:
     clean = "".join(ch if ch.isalnum() else " " for ch in remainder)
     terms = tuple(part for part in clean.split() if part)
     return RecipeFilter(terms=terms, tier=tier, enchant=enchant)
+
+
+def _normalize_int_values(
+    values: Sequence[object] | None,
+    *,
+    minimum: int,
+    maximum: int,
+) -> list[int]:
+    normalized: set[int] = set()
+    for raw in values or ():
+        candidate: object = raw
+        to_variant = getattr(candidate, "toVariant", None)
+        if callable(to_variant):
+            try:
+                candidate = to_variant()
+            except Exception:
+                continue
+        if isinstance(candidate, bool):
+            continue
+        parsed: int
+        if isinstance(candidate, int):
+            parsed = candidate
+        elif isinstance(candidate, float):
+            parsed = int(candidate)
+        elif isinstance(candidate, str):
+            text = candidate.strip()
+            if not text:
+                continue
+            try:
+                parsed = int(text)
+            except ValueError:
+                continue
+        else:
+            continue
+        if minimum <= parsed <= maximum:
+            normalized.add(parsed)
+    return sorted(normalized)
 
 
 def _matches_recipe_filter(row: RecipeOptionRow, recipe_filter: RecipeFilter) -> bool:

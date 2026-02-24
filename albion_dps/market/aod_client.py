@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from datetime import date
 from typing import Callable
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -54,13 +55,13 @@ class AODataClient:
         timeout_seconds: float = 12.0,
         user_agent: str = "albion-command-desk-market/0.1",
         fetch_json: Callable[[str, float, str], object] | None = None,
-        max_retries: int = 4,
+        max_retries: int = 5,
         retry_backoff_initial_seconds: float = 1.0,
         retry_backoff_factor: float = 2.0,
-        retry_backoff_max_seconds: float = 12.0,
-        max_prices_url_length: int = 1800,
-        max_prices_items_per_batch: int = 100,
-        batch_pause_seconds: float = 1.0,
+        retry_backoff_max_seconds: float = 30.0,
+        max_prices_url_length: int = 3200,
+        max_prices_items_per_batch: int = 140,
+        batch_pause_seconds: float = 0.35,
         sleeper: Callable[[float], None] | None = None,
         logger: logging.Logger | None = None,
     ) -> None:
@@ -166,8 +167,18 @@ class AODataClient:
                 last_error = exc
                 if attempt >= max_attempts:
                     break
-                if backoff_seconds > 0:
-                    self._sleep(backoff_seconds)
+                sleep_seconds = backoff_seconds
+                if _is_too_many_requests_error(exc):
+                    retry_after_seconds = _retry_after_seconds(exc)
+                    if retry_after_seconds is not None:
+                        sleep_seconds = max(sleep_seconds, retry_after_seconds)
+                    else:
+                        sleep_seconds = max(
+                            sleep_seconds,
+                            min(self._retry_backoff_max_seconds, 3.0 * attempt),
+                        )
+                if sleep_seconds > 0:
+                    self._sleep(sleep_seconds)
                     backoff_seconds = min(
                         self._retry_backoff_max_seconds,
                         backoff_seconds * self._retry_backoff_factor,
@@ -228,10 +239,14 @@ class AODataClient:
         except RuntimeError as exc:
             if len(item_ids) <= 1:
                 raise
-            # Split only when URL is too long. Splitting on 429 increases request count and makes
-            # API throttling worse.
+            # Split only when URL is too large. Splitting on 429 increases request count
+            # and can make throttling worse on AO Data.
             if not _is_uri_too_large_error(exc):
                 raise
+            self._log.warning(
+                "AO Data prices batch URL too large, splitting batch of %d items.",
+                len(item_ids),
+            )
             midpoint = max(1, len(item_ids) // 2)
             left = self._fetch_prices_batch(base=base, item_ids=item_ids[:midpoint], params=params)
             right = self._fetch_prices_batch(base=base, item_ids=item_ids[midpoint:], params=params)
@@ -305,11 +320,33 @@ def _default_fetch_json(url: str, timeout_seconds: float, user_agent: str) -> ob
 
 def _is_uri_too_large_error(exc: Exception) -> bool:
     message = str(exc).lower()
+    code = getattr(exc, "code", None)
+    if code == 414:
+        return True
     return "414" in message or "request-uri too large" in message or "uri too large" in message
 
 
 def _is_too_many_requests_error(exc: Exception) -> bool:
     message = str(exc).lower()
+    code = getattr(exc, "code", None)
+    if code == 429:
+        return True
     return "429" in message or "too many requests" in message
+
+
+def _retry_after_seconds(exc: Exception) -> float | None:
+    if not isinstance(exc, HTTPError):
+        return None
+    retry_after = exc.headers.get("Retry-After")
+    if not retry_after:
+        return None
+    try:
+        parsed = float(retry_after)
+    except (TypeError, ValueError):
+        return None
+    if parsed <= 0:
+        return None
+    # clamp to a sane upper bound to avoid excessive stalls from bad headers
+    return min(parsed, 60.0)
 
 
