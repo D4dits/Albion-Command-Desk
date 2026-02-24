@@ -1213,8 +1213,12 @@ class MarketSetupState(QObject):
         if self._active_market_tab_index >= 1:
             if QCoreApplication.instance() is None:
                 self._rebuild_preview(force_price_refresh=False)
-            else:
+            elif not self._market_data_tabs_live_bootstrap_done:
+                # First data-tab visit: schedule async refresh so UI can paint loading state.
                 self._schedule_deferred_price_refresh(0.05, force=False)
+            else:
+                # Subsequent tab switches: rebuild synchronously using current data (no loading flash).
+                self._rebuild_preview(force_price_refresh=False)
 
     @Slot(int)
     def setRecipeIndex(self, index: int) -> None:
