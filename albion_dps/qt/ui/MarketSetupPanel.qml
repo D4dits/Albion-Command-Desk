@@ -46,7 +46,8 @@ TableSurface {
 
     // Search state
     property string searchQuery: ""
-    property int recipeEnchantFilter: -1
+    property var recipeTierFilters: []
+    property var recipeEnchantFilters: []
     property int suggestionsCount: 0
     property var recipeOptionsModel: null
 
@@ -67,7 +68,8 @@ TableSurface {
     signal addFirstRecipeOption()
     signal addFilteredRecipeOptions()
     signal addRecipeFamily()
-    signal setRecipeEnchantFilter(int filter)
+    signal setRecipeTierFilters(var filters)
+    signal setRecipeEnchantFilters(var filters)
     signal addRecipeAtIndex(int index)
 
     signal setSelectedPresetName(string name)
@@ -138,7 +140,8 @@ TableSurface {
                     mutedColor: root.mutedColor
                     compactControlHeight: root.compactControlHeight
                     searchQuery: root.searchQuery
-                    recipeEnchantFilter: root.recipeEnchantFilter
+                    recipeTierFilters: root.recipeTierFilters
+                    recipeEnchantFilters: root.recipeEnchantFilters
                     suggestionsCount: root.suggestionsCount
                     recipeOptionsModel: root.recipeOptionsModel
                     currentRecipeId: root.currentRecipeId
@@ -147,7 +150,8 @@ TableSurface {
                     onAddFirstRecipeOption: root.addFirstRecipeOption()
                     onAddFilteredRecipeOptions: root.addFilteredRecipeOptions()
                     onAddRecipeFamily: root.addRecipeFamily()
-                    onSetRecipeEnchantFilter: function(filter) { root.setRecipeEnchantFilter(filter) }
+                    onSetRecipeTierFilters: function(filters) { root.setRecipeTierFilters(filters) }
+                    onSetRecipeEnchantFilters: function(filters) { root.setRecipeEnchantFilters(filters) }
                     onAddRecipeAtIndex: function(index) { root.addRecipeAtIndex(index) }
                 }
 

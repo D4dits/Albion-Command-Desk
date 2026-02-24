@@ -151,6 +151,7 @@ class OutputPreviewRow:
     quantity: float
     city: str
     price_type: str
+    price_age_text: str
     manual_price: int
     unit_price: float
     total_value: float
@@ -165,12 +166,13 @@ class MarketOutputsModel(QAbstractListModel):
     QuantityRole = Qt.UserRole + 3
     CityRole = Qt.UserRole + 4
     PriceTypeRole = Qt.UserRole + 5
-    ManualPriceRole = Qt.UserRole + 6
-    UnitPriceRole = Qt.UserRole + 7
-    TotalValueRole = Qt.UserRole + 8
-    FeeValueRole = Qt.UserRole + 9
-    TaxValueRole = Qt.UserRole + 10
-    NetValueRole = Qt.UserRole + 11
+    PriceAgeRole = Qt.UserRole + 6
+    ManualPriceRole = Qt.UserRole + 7
+    UnitPriceRole = Qt.UserRole + 8
+    TotalValueRole = Qt.UserRole + 9
+    FeeValueRole = Qt.UserRole + 10
+    TaxValueRole = Qt.UserRole + 11
+    NetValueRole = Qt.UserRole + 12
 
     def __init__(self) -> None:
         super().__init__()
@@ -196,6 +198,8 @@ class MarketOutputsModel(QAbstractListModel):
             return item.city
         if role == self.PriceTypeRole:
             return item.price_type
+        if role == self.PriceAgeRole:
+            return item.price_age_text
         if role == self.ManualPriceRole:
             return item.manual_price
         if role == self.UnitPriceRole:
@@ -217,6 +221,7 @@ class MarketOutputsModel(QAbstractListModel):
             self.QuantityRole: b"quantity",
             self.CityRole: b"city",
             self.PriceTypeRole: b"priceType",
+            self.PriceAgeRole: b"priceAgeText",
             self.ManualPriceRole: b"manualPrice",
             self.UnitPriceRole: b"unitPrice",
             self.TotalValueRole: b"totalValue",
@@ -2447,6 +2452,12 @@ class MarketSetupState(QObject):
                     "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
                     "city": line.city,
                     "price_type": line.price_type.value,
+                    "price_age_text": self._price_age_text(
+                        item_id=line.item.unique_name,
+                        city=line.city,
+                        quality=self._setup.quality,
+                        price_type=line.price_type.value,
+                    ),
                     "unit_price": float(line.unit_price),
                     "quantity": float(line.quantity),
                     "total_value": float(valuation.gross_value),
@@ -2480,6 +2491,12 @@ class MarketSetupState(QObject):
                     "item": full_name,
                     "city": journal_sell_city,
                     "price_type": PriceType.SELL_ORDER.value,
+                    "price_age_text": self._price_age_text(
+                        item_id=full_item_id,
+                        city=journal_sell_city,
+                        quality=self._setup.quality,
+                        price_type=PriceType.SELL_ORDER.value,
+                    ),
                     "unit_price": float(full_unit_price),
                     "quantity": float(journal_line.full_quantity),
                     "total_value": float(journal_line.output_value),
@@ -2503,6 +2520,7 @@ class MarketSetupState(QObject):
                 quantity=float(row["quantity"]),
                 city=str(row["city"]),
                 price_type=str(row["price_type"]),
+                price_age_text=str(row.get("price_age_text", "n/a")),
                 manual_price=self._manual_output_prices.get(str(row["item_id"]), 0),
                 unit_price=float(row["unit_price"]),
                 total_value=float(row["total_value"]),
@@ -2592,6 +2610,12 @@ class MarketSetupState(QObject):
                     "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
                     "city": line.city,
                     "price_type": line.price_type.value,
+                    "price_age_text": self._price_age_text(
+                        item_id=line.item.unique_name,
+                        city=line.city,
+                        quality=self._setup.quality,
+                        price_type=line.price_type.value,
+                    ),
                     "unit_price": float(line.unit_price),
                     "quantity": float(line.quantity),
                     "total_value": float(valuation.gross_value),
@@ -2625,6 +2649,12 @@ class MarketSetupState(QObject):
                     "item": full_name,
                     "city": journal_sell_city,
                     "price_type": PriceType.SELL_ORDER.value,
+                    "price_age_text": self._price_age_text(
+                        item_id=full_item_id,
+                        city=journal_sell_city,
+                        quality=self._setup.quality,
+                        price_type=PriceType.SELL_ORDER.value,
+                    ),
                     "unit_price": float(full_unit_price),
                     "quantity": float(journal_line.full_quantity),
                     "total_value": float(journal_line.output_value),
@@ -2645,6 +2675,7 @@ class MarketSetupState(QObject):
                 quantity=float(row["quantity"]),
                 city=str(row["city"]),
                 price_type=str(row["price_type"]),
+                price_age_text=str(row.get("price_age_text", "n/a")),
                 manual_price=self._manual_output_prices.get(str(row["item_id"]), 0),
                 unit_price=float(row["unit_price"]),
                 total_value=float(row["total_value"]),

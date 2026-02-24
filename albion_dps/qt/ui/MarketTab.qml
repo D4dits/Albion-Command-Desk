@@ -110,11 +110,12 @@ CardPanel {
     readonly property int marketOutputsModeWidth: 92
     readonly property int marketOutputsManualWidth: 70
     readonly property int marketOutputsUnitWidth: 74
+    readonly property int marketOutputsAgeWidth: 76
     readonly property int marketOutputsGrossWidth: 82
     readonly property int marketOutputsFeeWidth: 74
     readonly property int marketOutputsTaxWidth: 74
     readonly property int marketOutputsNetMinWidth: 116
-    readonly property int marketOutputsContentMinWidth: marketOutputsItemWidth + marketOutputsQtyWidth + marketOutputsCityWidth + marketOutputsModeWidth + marketOutputsManualWidth + marketOutputsUnitWidth + marketOutputsGrossWidth + marketOutputsFeeWidth + marketOutputsTaxWidth + marketOutputsNetMinWidth + marketColumnSpacing * 9 + 12
+    readonly property int marketOutputsContentMinWidth: marketOutputsItemWidth + marketOutputsQtyWidth + marketOutputsCityWidth + marketOutputsModeWidth + marketOutputsManualWidth + marketOutputsUnitWidth + marketOutputsAgeWidth + marketOutputsGrossWidth + marketOutputsFeeWidth + marketOutputsTaxWidth + marketOutputsNetMinWidth + marketColumnSpacing * 10 + 12
 
     readonly property int marketResultsItemWidth: Math.max(narrowLayout ? 180 : 220, Math.min(340, Math.round(width * (narrowLayout ? 0.24 : 0.28))))
 
@@ -746,6 +747,7 @@ CardPanel {
                             Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsModeWidth }
                             Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsManualWidth }
                             Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth }
+                            Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsAgeWidth }
                             Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth }
                             Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth }
                             Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth }
@@ -807,6 +809,7 @@ CardPanel {
                                 }
 
                                 Text { text: formatInt(unitPrice); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth }
+                                Text { text: priceAgeText; color: adpAgeColor(priceAgeText); font.pixelSize: 11; Layout.preferredWidth: marketOutputsAgeWidth }
                                 Text { text: formatInt(totalValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth }
                                 Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth }
                                 Text { text: formatInt(taxValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth }

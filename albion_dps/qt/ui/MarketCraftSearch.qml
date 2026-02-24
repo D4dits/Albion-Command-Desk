@@ -9,7 +9,7 @@ import "." // for Theme, AppButton, AppTextField, AppComboBox access
  * Provides:
  * - Search input for crafting recipes
  * - Add filtered / Add family buttons
- * - Enchant level filter
+ * - Tier + enchant multiselect filters
  * - Suggestions dropdown with matching recipes
  */
 ColumnLayout {
@@ -19,7 +19,8 @@ ColumnLayout {
 
     // State properties
     property string searchQuery: ""
-    property int recipeEnchantFilter: -1
+    property var recipeTierFilters: []
+    property var recipeEnchantFilters: []
     property int suggestionsCount: 0
     property var recipeOptionsModel: null
     property string currentRecipeId: ""
@@ -37,13 +38,85 @@ ColumnLayout {
     signal addFirstRecipeOption()
     signal addFilteredRecipeOptions()
     signal addRecipeFamily()
-    signal setRecipeEnchantFilter(int filter)
+    signal setRecipeTierFilters(var filters)
+    signal setRecipeEnchantFilters(var filters)
     signal addRecipeAtIndex(int index)
 
     // Access to theme
     property var theme: null
     property color textColor: theme.textPrimary
     property color mutedColor: theme.textMuted
+
+    function _asArray(items) {
+        if (!items) {
+            return []
+        }
+        if (Array.isArray(items)) {
+            return items.slice()
+        }
+        var out = []
+        var len = Number(items.length)
+        if (!isNaN(len) && len > 0) {
+            for (var i = 0; i < len; i += 1) {
+                out.push(items[i])
+            }
+            return out
+        }
+        return out
+    }
+
+    function _containsFilter(items, value) {
+        var list = _asArray(items)
+        for (var i = 0; i < list.length; i += 1) {
+            if (Number(list[i]) === Number(value)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    function _toggleFilter(items, value) {
+        var list = _asArray(items)
+        var out = []
+        var found = false
+        for (var i = 0; i < list.length; i += 1) {
+            var candidate = Number(list[i])
+            if (candidate === Number(value)) {
+                found = true
+                continue
+            }
+            out.push(candidate)
+        }
+        if (!found) {
+            out.push(Number(value))
+        }
+        out.sort(function(a, b) { return a - b })
+        return out
+    }
+
+    function _formatTierSelection() {
+        if (!root.recipeTierFilters || root.recipeTierFilters.length === 0) {
+            return "all"
+        }
+        var values = _asArray(root.recipeTierFilters).sort(function(a, b) { return Number(a) - Number(b) })
+        var labels = []
+        for (var i = 0; i < values.length; i += 1) {
+            labels.push("T" + Number(values[i]))
+        }
+        return labels.join(", ")
+    }
+
+    function _formatEnchantSelection() {
+        if (!root.recipeEnchantFilters || root.recipeEnchantFilters.length === 0) {
+            return "all"
+        }
+        var values = _asArray(root.recipeEnchantFilters).sort(function(a, b) { return Number(a) - Number(b) })
+        var labels = []
+        for (var i = 0; i < values.length; i += 1) {
+            labels.push(String(Number(values[i])))
+        }
+        return labels.join(", ")
+    }
 
     // Search input row
     RowLayout {
@@ -91,40 +164,107 @@ ColumnLayout {
         }
     }
 
-    // Filter row
-    RowLayout {
+    // Filter rows
+    ColumnLayout {
         Layout.fillWidth: true
         spacing: 6
-        Text {
-            text: "Enchant"
-            color: mutedColor
-            font.pixelSize: 10
-            Layout.preferredWidth: 52
-        }
-        AppComboBox {
-            implicitWidth: 72
-            implicitHeight: 22
-            font.pixelSize: 10
-            model: ["all", "0", "1", "2", "3", "4"]
-            currentIndex: {
-                var filterValue = root.recipeEnchantFilter
-                if (filterValue < 0) return 0
-                return Math.min(5, filterValue + 1)
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: 3
+
+            Text {
+                text: "Tier"
+                color: mutedColor
+                font.pixelSize: 10
             }
-            onActivated: {
-                if (currentIndex <= 0) {
-                    root.setRecipeEnchantFilter(-1)
-                } else {
-                    root.setRecipeEnchantFilter(parseInt(currentText))
+            Flow {
+                Layout.fillWidth: true
+                spacing: 4
+                Repeater {
+                    model: [4, 5, 6, 7, 8]
+                    delegate: AppButton {
+                        readonly property int filterValue: Number(modelData)
+                        readonly property bool selected: root._containsFilter(root.recipeTierFilters, filterValue)
+                        text: selected ? ("\u2713 T" + filterValue) : ("T" + filterValue)
+                        compact: true
+                        implicitHeight: 20
+                        implicitWidth: selected ? 52 : 40
+                        fontPixelSize: 10
+                        variant: selected ? "primary" : "secondary"
+                        onClicked: root.setRecipeTierFilters(root._toggleFilter(root.recipeTierFilters, filterValue))
+                    }
+                }
+                AppButton {
+                    readonly property bool selected: !root.recipeTierFilters || root.recipeTierFilters.length === 0
+                    text: selected ? "\u2713 All" : "All"
+                    compact: true
+                    implicitHeight: 20
+                    implicitWidth: selected ? 58 : 44
+                    fontPixelSize: 10
+                    variant: selected ? "primary" : "secondary"
+                    onClicked: root.setRecipeTierFilters([])
                 }
             }
+            Text {
+                text: "Selected: " + root._formatTierSelection()
+                color: mutedColor
+                font.pixelSize: 10
+            }
         }
-        Text {
-            text: root.suggestionsCount + " matches"
-            color: mutedColor
-            font.pixelSize: 10
+
+        ColumnLayout {
             Layout.fillWidth: true
-            horizontalAlignment: Text.AlignRight
+            spacing: 3
+
+            Text {
+                text: "Enchant"
+                color: mutedColor
+                font.pixelSize: 10
+            }
+            Flow {
+                Layout.fillWidth: true
+                spacing: 4
+                Repeater {
+                    model: [0, 1, 2, 3, 4]
+                    delegate: AppButton {
+                        readonly property int filterValue: Number(modelData)
+                        readonly property bool selected: root._containsFilter(root.recipeEnchantFilters, filterValue)
+                        text: selected ? ("\u2713 " + filterValue) : String(filterValue)
+                        compact: true
+                        implicitHeight: 20
+                        implicitWidth: selected ? 42 : 30
+                        fontPixelSize: 10
+                        variant: selected ? "primary" : "secondary"
+                        onClicked: root.setRecipeEnchantFilters(root._toggleFilter(root.recipeEnchantFilters, filterValue))
+                    }
+                }
+                AppButton {
+                    readonly property bool selected: !root.recipeEnchantFilters || root.recipeEnchantFilters.length === 0
+                    text: selected ? "\u2713 All" : "All"
+                    compact: true
+                    implicitHeight: 20
+                    implicitWidth: selected ? 58 : 44
+                    fontPixelSize: 10
+                    variant: selected ? "primary" : "secondary"
+                    onClicked: root.setRecipeEnchantFilters([])
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    text: "Selected: " + root._formatEnchantSelection()
+                    color: mutedColor
+                    font.pixelSize: 10
+                    Layout.fillWidth: true
+                }
+                Text {
+                    text: root.suggestionsCount + " matches"
+                    color: mutedColor
+                    font.pixelSize: 10
+                    horizontalAlignment: Text.AlignRight
+                }
+            }
         }
     }
 
