@@ -844,15 +844,6 @@ CardPanel {
                     RowLayout {
                         Layout.fillWidth: true
                         Text { text: "Results"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Text { text: "Search"; color: mutedColor; font.pixelSize: 11 }
-                        AppTextField {
-                            Layout.preferredWidth: 220
-                            implicitHeight: compactControlHeight
-                            font.pixelSize: 11
-                            placeholderText: "item name"
-                            text: root.resultsSearchQuery
-                            onTextChanged: root.resultsSearchQuery = text
-                        }
                         Item { Layout.fillWidth: true }
                         Text { text: "Sort"; color: mutedColor; font.pixelSize: 11 }
                         ComboBox {
@@ -863,6 +854,21 @@ CardPanel {
                             currentIndex: Math.max(0, model.indexOf(root.resultsSortKey))
                             onActivated: root.setResultsSortKey(currentText)
                         }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        Text { text: "Search"; color: mutedColor; font.pixelSize: 11 }
+                        AppTextField {
+                            Layout.preferredWidth: 240
+                            implicitHeight: compactControlHeight
+                            font.pixelSize: 11
+                            placeholderText: "item name"
+                            text: root.resultsSearchQuery
+                            onTextChanged: root.resultsSearchQuery = text
+                        }
+                        Item { Layout.fillWidth: true }
                     }
 
                     Rectangle {

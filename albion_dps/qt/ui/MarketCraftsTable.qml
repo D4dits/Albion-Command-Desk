@@ -25,7 +25,9 @@ TableSurface {
     property int craftPlanEnabledCount: 0
     property string craftPlanSortKey: "added"
     property bool craftPlanSortDescending: false
+    property string craftPlanSearchQuery: ""
     property string currentRecipeId: ""
+    property bool hideRowsWithoutFreshPrices: false
 
     // Layout flags
     property int compactControlHeight: 24
@@ -37,6 +39,13 @@ TableSurface {
     property var itemLabelWithTierParts: function(label, tier, enchant) { return label }
     property var signedValueColor: function(value) { return root.theme.stateSuccess }
     property var copyCellText: function(text) {}
+    property var matchesSearch: function(itemText, queryText) {
+        var query = String(queryText || "").trim().toLowerCase()
+        if (query.length === 0) {
+            return true
+        }
+        return String(itemText || "").toLowerCase().indexOf(query) >= 0
+    }
 
     // Signals
     signal setCraftPlanSortKey(string key)
@@ -47,6 +56,7 @@ TableSurface {
     signal setPlanRowDailyBonus(var rowId, string bonus)
     signal setPlanRowRuns(var rowId, int runs)
     signal removePlanRow(var rowId)
+    signal setHideRowsWithoutFreshPrices(bool enabled)
 
     // For scroll position restoration
     property real craftPlanPendingContentY: -1
@@ -92,6 +102,19 @@ TableSurface {
                 font.pixelSize: 11
             }
             Text {
+                text: "Search"
+                color: mutedColor
+                font.pixelSize: 10
+            }
+            AppTextField {
+                implicitWidth: 170
+                implicitHeight: 20
+                font.pixelSize: 10
+                placeholderText: "craft name"
+                text: root.craftPlanSearchQuery
+                onTextChanged: root.craftPlanSearchQuery = text
+            }
+            Text {
                 text: "Sort"
                 color: mutedColor
                 font.pixelSize: 10
@@ -130,6 +153,11 @@ TableSurface {
                 fontPixelSize: 10
                 onClicked: root.clearCraftPlan()
             }
+            AppCheckBox {
+                text: "Hide missing ADP prices"
+                checked: root.hideRowsWithoutFreshPrices
+                onToggled: root.setHideRowsWithoutFreshPrices(checked)
+            }
         }
 
         // Table header
@@ -151,6 +179,7 @@ TableSurface {
                 Text { text: "RRR"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 54 }
                 Text { text: "Runs"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 68 }
                 Text { text: "P/L%"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 54 }
+                Text { text: "AODP"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 48 }
                 Text { text: ""; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 40 }
             }
         }
@@ -178,10 +207,16 @@ TableSurface {
 
             delegate: Rectangle {
                 width: ListView.view.width
-                height: 32
-                color: recipeId === root.currentRecipeId
-                    ? "#1b2635"
-                    : root.tableRowColor(index)
+                readonly property string rowSearchText: itemLabelWithTierParts(displayName, tier, enchant)
+                readonly property bool searchMatches: root.matchesSearch(rowSearchText, root.craftPlanSearchQuery)
+                readonly property bool rowHasFreshPrices: hasFreshComponentPrices === undefined || hasFreshComponentPrices === null
+                    ? true
+                    : Boolean(hasFreshComponentPrices)
+                visible: searchMatches && (!root.hideRowsWithoutFreshPrices || rowHasFreshPrices)
+                height: visible ? 32 : 0
+                color: !rowHasFreshPrices
+                    ? "#2b1f1f"
+                    : (recipeId === root.currentRecipeId ? "#1b2635" : root.tableRowColor(index))
 
                 RowLayout {
                     anchors.fill: parent
@@ -297,6 +332,14 @@ TableSurface {
                         color: profitPercent === undefined || profitPercent === null
                             ? mutedColor
                             : root.signedValueColor(Number(profitPercent))
+                        font.pixelSize: 10
+                        horizontalAlignment: Text.AlignLeft
+                    }
+
+                    Text {
+                        Layout.preferredWidth: 48
+                        text: rowHasFreshPrices ? "OK" : "MISS"
+                        color: rowHasFreshPrices ? root.theme.stateSuccess : root.theme.stateWarning
                         font.pixelSize: 10
                         horizontalAlignment: Text.AlignLeft
                     }
