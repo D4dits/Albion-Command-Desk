@@ -2,6 +2,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import "." // for all component access
+import "components" as Components
 
 /**
  * MarketTab - Main market tab container
@@ -77,6 +78,8 @@ CardPanel {
     property int marketSetupPanelActiveWidth: marketSetupStackedLayout ? -1 : marketSetupPanelWidth
     property int compactControlHeight: 24
     property bool narrowLayout: width < 1160
+    property double priceFetchStartedAtMs: 0
+    property int priceFetchElapsedSeconds: 0
 
     // Computed widths for tables
     readonly property int marketInputsItemWidth: Math.max(narrowLayout ? 130 : 150, Math.min(240, Math.round(width * (narrowLayout ? 0.15 : 0.17))))
@@ -228,6 +231,14 @@ CardPanel {
         if (parts.length === 1 || decimals <= 0) return formatInt(whole)
         return formatInt(whole) + "." + parts[1]
     }
+    property var formatElapsed: function(totalSeconds) {
+        var seconds = Math.max(0, Number(totalSeconds) || 0)
+        var mm = Math.floor(seconds / 60)
+        var ss = seconds % 60
+        var mmText = mm < 10 ? ("0" + mm) : String(mm)
+        var ssText = ss < 10 ? ("0" + ss) : String(ss)
+        return mmText + ":" + ssText
+    }
     property var copyCellText: function(value) {
         root.copyText(String(value === undefined || value === null ? "" : value))
     }
@@ -237,6 +248,35 @@ CardPanel {
     property color textColor: theme.textPrimary
     property color mutedColor: theme.textMuted
     property color accentColor: theme.brandPrimary
+
+    onPriceFetchInProgressChanged: {
+        if (priceFetchInProgress) {
+            priceFetchStartedAtMs = Date.now()
+            priceFetchElapsedSeconds = 0
+            fetchElapsedTimer.start()
+        } else {
+            fetchElapsedTimer.stop()
+            priceFetchElapsedSeconds = 0
+        }
+    }
+
+    Timer {
+        id: fetchElapsedTimer
+        interval: 1000
+        repeat: true
+        running: false
+        onTriggered: {
+            if (!root.priceFetchInProgress) {
+                stop()
+                root.priceFetchElapsedSeconds = 0
+                return
+            }
+            root.priceFetchElapsedSeconds = Math.max(
+                0,
+                Math.floor((Date.now() - root.priceFetchStartedAtMs) / 1000)
+            )
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -835,6 +875,68 @@ CardPanel {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        visible: root.priceFetchInProgress
+        z: 200
+        color: Qt.rgba(6 / 255, 14 / 255, 24 / 255, 0.72)
+
+        MouseArea {
+            anchors.fill: parent
+            enabled: parent.visible
+            acceptedButtons: Qt.AllButtons
+        }
+
+        TableSurface {
+            anchors.centerIn: parent
+            width: Math.min(560, root.width - 48)
+            height: overlayContent.implicitHeight + 28
+            level: 1
+
+            ColumnLayout {
+                id: overlayContent
+                anchors.fill: parent
+                anchors.margins: 14
+                spacing: 8
+
+                Components.Spinner {
+                    Layout.alignment: Qt.AlignHCenter
+                    size: "lg"
+                    active: root.priceFetchInProgress
+                    theme: root.theme
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: "Fetching market prices..."
+                    color: root.textColor
+                    font.pixelSize: 14
+                    font.bold: true
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: root.pricesStatusText.length > 0 ? root.pricesStatusText : "Preparing AO Data request..."
+                    color: root.mutedColor
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                Text {
+                    Layout.fillWidth: true
+                    text: "Elapsed: " + root.formatElapsed(root.priceFetchElapsedSeconds)
+                        + "  |  Large plans (400+ IDs) may take up to ~40s."
+                    color: root.theme.stateInfo
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                    horizontalAlignment: Text.AlignHCenter
                 }
             }
         }
