@@ -3031,7 +3031,7 @@ class MarketSetupState(QObject):
                 meta = self._service.last_prices_meta
                 self._price_index = index
                 self._price_context_key = context_key
-                if not force:
+                if not force and meta.source == "live":
                     self._set_next_live_fetch_cooldown(self._min_live_refresh_interval_seconds)
                 self._prices_source = meta.source
                 self._prices_status_text = (
@@ -3042,6 +3042,21 @@ class MarketSetupState(QObject):
                     f"Prices loaded from {meta.source} ({meta.record_count} rows, {meta.elapsed_ms:.0f} ms).",
                     level="INFO",
                 )
+                # If setup tab/tab switch returned stale cache, queue one forced live refresh.
+                # This keeps UI responsive (immediate stale data), then upgrades to live data automatically.
+                if (
+                    meta.source == "stale_cache"
+                    and not force
+                    and QCoreApplication.instance() is not None
+                    and self.refreshCooldownSeconds <= 0
+                    and not self._deferred_price_refresh_timer.isActive()
+                    and not self._deferred_force_price_refresh
+                ):
+                    self._append_diag(
+                        "Stale cache shown first; scheduling background live refresh.",
+                        level="INFO",
+                    )
+                    self._schedule_deferred_price_refresh(0.15, force=True)
                 return self._price_index
             self._set_fallback_status("AO Data returned no price rows. Using bundled fallback prices.")
             self._append_diag("AO Data returned no rows; using fallback prices.", level="WARN")
