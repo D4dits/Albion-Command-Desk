@@ -759,11 +759,16 @@ def test_market_setup_state_results_include_only_enabled_rows() -> None:
     # With no rows enabled, results should be empty.
     assert state.craftPlanEnabledCount == 0
     assert state.resultsItemsModel.rowCount() == 0
+    assert state.selectedInputsTotalCost == 0
+    assert state.selectedOutputsTotalValue == 0
+    assert state.selectedNetProfitValue == 0
 
     # Enabling rows should populate results without changing the "all rows" inputs/outputs behavior.
     _enable_all_plan_rows(state)
     assert state.craftPlanEnabledCount >= 1
     assert state.resultsItemsModel.rowCount() >= 1
+    assert state.selectedInputsTotalCost > 0
+    assert state.selectedOutputsTotalValue > 0
 
 
 def test_market_setup_state_clear_plan_keeps_active_recipe() -> None:

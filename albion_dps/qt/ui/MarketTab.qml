@@ -68,6 +68,10 @@ CardPanel {
     property real netProfitValue: 0
     property var resultsItemsModel: null
     property int marginPercent: 0
+    property real resultsInputCost: 0
+    property real resultsOutputValue: 0
+    property real resultsNetValue: 0
+    property real resultsMarginPercent: 0
     property string resultsSortKey: "profit"
     property bool marketBreakdownExpanded: false
     property var breakdownModel: null
@@ -880,11 +884,11 @@ CardPanel {
                             anchors.fill: parent
                             anchors.margins: 6
                             spacing: 12
-                            Text { text: "Investment: " + formatInt(root.inputsTotalCost); color: mutedColor; font.pixelSize: 11 }
-                            Text { text: "Revenue: " + formatInt(root.outputsTotalValue); color: mutedColor; font.pixelSize: 11 }
-                            Text { text: "Net: " + formatInt(root.netProfitValue); color: signedValueColor(root.netProfitValue); font.pixelSize: 11 }
+                            Text { text: "Investment: " + formatInt(root.resultsInputCost); color: mutedColor; font.pixelSize: 11 }
+                            Text { text: "Revenue: " + formatInt(root.resultsOutputValue); color: mutedColor; font.pixelSize: 11 }
+                            Text { text: "Net: " + formatInt(root.resultsNetValue); color: signedValueColor(root.resultsNetValue); font.pixelSize: 11 }
                             Item { Layout.fillWidth: true }
-                            Text { text: "Margin: " + formatFixed(root.marginPercent, 2) + "%"; color: signedValueColor(root.marginPercent); font.pixelSize: 11 }
+                            Text { text: "Margin: " + formatFixed(root.resultsMarginPercent, 2) + "%"; color: signedValueColor(root.resultsMarginPercent); font.pixelSize: 11 }
                         }
                     }
 

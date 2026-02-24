@@ -866,6 +866,13 @@ class MarketSetupState(QObject):
         self._breakdown = ProfitBreakdown()
         self._base_input_total_cost = 0.0
         self._journal_totals = _JournalTotals()
+        self._results_journal_totals = _JournalTotals()
+        self._selected_material_input_total_cost = 0.0
+        self._selected_input_total_cost = 0.0
+        self._selected_output_total_value = 0.0
+        self._selected_output_net_value = 0.0
+        self._selected_net_profit_value = 0.0
+        self._selected_margin_percent = 0.0
         self._input_price_types: dict[str, PriceType] = {}
         self._output_price_types: dict[str, PriceType] = {}
         self._manual_input_prices: dict[str, int] = {}
@@ -1162,6 +1169,26 @@ class MarketSetupState(QObject):
     @Property(float, notify=resultsChanged)
     def marginPercent(self) -> float:
         return float(self._breakdown.margin_percent)
+
+    @Property(float, notify=resultsChanged)
+    def selectedInputsTotalCost(self) -> float:
+        return float(self._selected_input_total_cost)
+
+    @Property(float, notify=resultsChanged)
+    def selectedOutputsTotalValue(self) -> float:
+        return float(self._selected_output_total_value)
+
+    @Property(float, notify=resultsChanged)
+    def selectedOutputsNetValue(self) -> float:
+        return float(self._selected_output_net_value)
+
+    @Property(float, notify=resultsChanged)
+    def selectedNetProfitValue(self) -> float:
+        return float(self._selected_net_profit_value)
+
+    @Property(float, notify=resultsChanged)
+    def selectedMarginPercent(self) -> float:
+        return float(self._selected_margin_percent)
 
     @Property(float, notify=resultsChanged)
     def focusUsed(self) -> float:
@@ -2172,6 +2199,13 @@ class MarketSetupState(QObject):
         self._breakdown = ProfitBreakdown(notes=[note] if note else [])
         self._base_input_total_cost = 0.0
         self._journal_totals = _JournalTotals()
+        self._results_journal_totals = _JournalTotals()
+        self._selected_material_input_total_cost = 0.0
+        self._selected_input_total_cost = 0.0
+        self._selected_output_total_value = 0.0
+        self._selected_output_net_value = 0.0
+        self._selected_net_profit_value = 0.0
+        self._selected_margin_percent = 0.0
         self.inputsChanged.emit()
         self.outputsChanged.emit()
         self.resultsChanged.emit()
@@ -2264,6 +2298,18 @@ class MarketSetupState(QObject):
                 continue
             selected_visible_prepared_recipes.append((plan_row, recipe))
             selected_visible_runs.append(run)
+        selected_journal_totals = self._estimate_journal_totals(
+            runs=selected_visible_runs,
+            setup=setup,
+            price_index=price_index,
+        )
+        self._results_journal_totals = selected_journal_totals
+        selected_inputs = [line for run in selected_visible_runs for line in run.inputs]
+        selected_material_input_total = self._compute_input_total_from_lines(
+            input_lines=selected_inputs,
+            prepared_recipes=selected_visible_prepared_recipes,
+        )
+        selected_input_total = float(selected_material_input_total + float(selected_journal_totals.input_cost))
 
         all_inputs = [line for run in visible_runs for line in run.inputs]
         all_outputs = [line for run in visible_runs for line in run.outputs]
@@ -2383,7 +2429,6 @@ class MarketSetupState(QObject):
                 )
         input_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
 
-        run_breakdown = compute_batch_profit(tuple(visible_runs))
         self._base_input_total_cost = float(sum(row.total_cost for row in input_rows))
         valuations = compute_output_valuations(
             output_lines=all_outputs,
@@ -2468,15 +2513,6 @@ class MarketSetupState(QObject):
             for row in output_acc.values()
         ]
         output_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
-
-        self._breakdown = ProfitBreakdown(
-            input_cost=float(sum(row.total_cost for row in input_rows)),
-            output_value=float(sum(row.total_value for row in output_rows)),
-            station_fee=float(sum(row.fee_value for row in output_rows)),
-            market_tax=float(sum(row.tax_value for row in output_rows)),
-            focus_used=float(run_breakdown.focus_used),
-            notes=list(run_breakdown.notes),
-        )
 
         self._inputs_model.set_items(input_rows)
         self._outputs_model.set_items(output_rows)
@@ -2570,11 +2606,6 @@ class MarketSetupState(QObject):
                 row["tax_value"] = float(row["tax_value"]) + float(valuation.tax_value)
                 row["net_value"] = float(row["net_value"]) + float(valuation.net_value)
 
-        selected_journal_totals = self._estimate_journal_totals(
-            runs=selected_visible_runs,
-            setup=setup,
-            price_index=price_index,
-        )
         for journal_line in selected_journal_totals.lines:
             if journal_line.full_quantity <= 0:
                 continue
@@ -2625,7 +2656,27 @@ class MarketSetupState(QObject):
         ]
         selected_output_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
 
-        results_rows = self._build_results_rows(selected_output_rows)
+        selected_output_total_value = float(sum(row.total_value for row in selected_output_rows))
+        selected_output_net_value = float(sum(row.net_value for row in selected_output_rows))
+        selected_station_fee = float(sum(row.fee_value for row in selected_output_rows))
+        selected_market_tax = float(sum(row.tax_value for row in selected_output_rows))
+        selected_run_breakdown = compute_batch_profit(tuple(selected_visible_runs))
+        self._breakdown = ProfitBreakdown(
+            input_cost=float(selected_input_total),
+            output_value=selected_output_total_value,
+            station_fee=selected_station_fee,
+            market_tax=selected_market_tax,
+            focus_used=float(selected_run_breakdown.focus_used),
+            notes=list(selected_run_breakdown.notes),
+        )
+        self._selected_input_total_cost = float(selected_input_total)
+        self._selected_material_input_total_cost = float(selected_material_input_total)
+        self._selected_output_total_value = selected_output_total_value
+        self._selected_output_net_value = selected_output_net_value
+        self._selected_net_profit_value = float(self._breakdown.net_profit)
+        self._selected_margin_percent = float(self._breakdown.margin_percent)
+
+        results_rows = self._build_results_rows(selected_output_rows, selected_input_total)
         self._results_items_model.set_items(results_rows)
         breakdown_rows = self._build_breakdown_rows()
         self._breakdown_model.set_items(breakdown_rows)
@@ -2640,9 +2691,12 @@ class MarketSetupState(QObject):
                 f"Skipped {len(skipped_rows)} recipe(s) that could not be previewed."
             )
 
-    def _build_results_rows(self, output_rows: list[OutputPreviewRow]) -> list[ResultItemRow]:
+    def _build_results_rows(
+        self,
+        output_rows: list[OutputPreviewRow],
+        input_total: float,
+    ) -> list[ResultItemRow]:
         total_revenue = max(0.0, sum(row.total_value for row in output_rows))
-        input_total = float(self._base_input_total_cost)
         rows: list[ResultItemRow] = []
         for output in output_rows:
             share = (output.total_value / total_revenue) if total_revenue > 0 else 0.0
@@ -2684,16 +2738,57 @@ class MarketSetupState(QObject):
 
     def _build_breakdown_rows(self) -> list[BreakdownRow]:
         rows: list[BreakdownRow] = [
-            BreakdownRow(label="Raw materials", value=float(self._base_input_total_cost)),
+            BreakdownRow(label="Raw materials", value=float(self._selected_material_input_total_cost)),
         ]
-        if self._journal_totals.input_cost > 0:
-            rows.append(BreakdownRow(label="Journals (empty)", value=float(self._journal_totals.input_cost)))
+        if self._results_journal_totals.input_cost > 0:
+            rows.append(BreakdownRow(label="Journals (empty)", value=float(self._results_journal_totals.input_cost)))
         rows.append(BreakdownRow(label="Station fee", value=float(self._breakdown.station_fee)))
         rows.append(BreakdownRow(label="Market tax", value=float(self._breakdown.market_tax)))
-        if self._journal_totals.output_value > 0:
-            rows.append(BreakdownRow(label="Journals (full)", value=float(self._journal_totals.output_value)))
+        if self._results_journal_totals.output_value > 0:
+            rows.append(BreakdownRow(label="Journals (full)", value=float(self._results_journal_totals.output_value)))
         rows.append(BreakdownRow(label="Net profit", value=float(self._breakdown.net_profit)))
         return rows
+
+    def _compute_input_total_from_lines(
+        self,
+        *,
+        input_lines: list[InputLine] | tuple[InputLine, ...],
+        prepared_recipes: list[tuple[CraftPlanRow, Recipe]],
+    ) -> float:
+        returnable_by_item: dict[str, bool] = {}
+        for _, recipe in prepared_recipes:
+            for component in recipe.components:
+                item_id = str(component.item.unique_name)
+                returnable_by_item[item_id] = bool(returnable_by_item.get(item_id, False) or component.returnable)
+
+        input_acc: dict[tuple[str, str, str, float], dict[str, float | str]] = {}
+        for line in input_lines:
+            key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
+            row = input_acc.get(key)
+            if row is None:
+                input_acc[key] = {
+                    "item_id": line.item.unique_name,
+                    "city": line.city,
+                    "price_type": line.price_type.value,
+                    "unit_price": float(line.unit_price),
+                    "quantity": float(line.quantity),
+                }
+            else:
+                row["quantity"] = float(row["quantity"]) + float(line.quantity)
+
+        total_cost = 0.0
+        for row in input_acc.values():
+            item_id = str(row["item_id"])
+            quantity_raw = float(row["quantity"])
+            is_returnable = bool(returnable_by_item.get(item_id, False))
+            need_qty = float(max(0, _need_quantity_with_safety_buffer(quantity_raw, is_returnable)))
+            stock_qty = float(max(0.0, self._input_stock_quantities.get(item_id, 0.0)))
+            stock_qty = min(stock_qty, need_qty)
+            buy_qty = max(0.0, need_qty - stock_qty)
+            unit_price = float(row["unit_price"])
+            total_cost += float(buy_qty * unit_price)
+
+        return float(total_cost)
 
     def _demand_proxy_percent(self, *, item_id: str, city: str, quality: int) -> float:
         quote = _find_price_quote(

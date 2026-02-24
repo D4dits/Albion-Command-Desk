@@ -330,8 +330,8 @@ ApplicationWindow {
             marketRegion: marketSetupState.region
             marketCraftPlanEnabledCount: marketSetupState.craftPlanEnabledCount
             marketCraftPlanCount: marketSetupState.craftPlanCount
-            marketInputsTotalCost: marketSetupState.inputsTotalCost
-            marketNetProfitValue: marketSetupState.netProfitValue
+            marketInputsTotalCost: marketSetupState.selectedInputsTotalCost
+            marketNetProfitValue: marketSetupState.selectedNetProfitValue
             updateBannerVisible: uiState.updateBannerVisible
             updateBannerText: uiState.updateBannerText
             updateBannerUrl: uiState.updateBannerUrl
@@ -708,6 +708,10 @@ ApplicationWindow {
                 netProfitValue: marketSetupState.netProfitValue
                 resultsItemsModel: marketSetupState.resultsItemsModel
                 marginPercent: marketSetupState.marginPercent
+                resultsInputCost: marketSetupState.selectedInputsTotalCost
+                resultsOutputValue: marketSetupState.selectedOutputsTotalValue
+                resultsNetValue: marketSetupState.selectedNetProfitValue
+                resultsMarginPercent: marketSetupState.selectedMarginPercent
                 resultsSortKey: marketSetupState.resultsSortKey
                 marketBreakdownExpanded: marketBreakdownExpanded
                 breakdownModel: marketSetupState.breakdownModel
