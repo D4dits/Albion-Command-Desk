@@ -1186,8 +1186,8 @@ class MarketSetupState(QObject):
         errors = validate_setup(self._setup)
         if self._craft_runs <= 0:
             errors.append("craftRuns must be > 0")
-        if not any(row.enabled for row in self._craft_plan_rows):
-            errors.append("craftPlan must contain at least one enabled recipe")
+        if not self._craft_plan_rows:
+            errors.append("craftPlan must contain at least one recipe")
         if not errors:
             return ""
         return "; ".join(errors)
@@ -2089,8 +2089,6 @@ class MarketSetupState(QObject):
     def _recipes_for_preview(self) -> list[tuple[CraftPlanRow, Recipe]]:
         rows: list[tuple[CraftPlanRow, Recipe]] = []
         for row in self._craft_plan_rows:
-            if not row.enabled:
-                continue
             recipe = self._catalog.get(row.recipe_id)
             if recipe is None:
                 continue
@@ -2118,8 +2116,6 @@ class MarketSetupState(QObject):
         recipes: list[Recipe] = []
         seen: set[str] = set()
         for row in self._craft_plan_rows:
-            if not row.enabled:
-                continue
             recipe = self._catalog.get(row.recipe_id)
             if recipe is None:
                 continue
@@ -2260,6 +2256,14 @@ class MarketSetupState(QObject):
                     f"Hidden {hidden_count} craft row(s) missing fresh AO Data component prices.",
                     level="INFO",
                 )
+
+        selected_visible_runs: list[CraftRun] = []
+        selected_visible_prepared_recipes: list[tuple[CraftPlanRow, Recipe]] = []
+        for (plan_row, recipe), run in zip(visible_prepared_recipes, visible_runs):
+            if not plan_row.enabled:
+                continue
+            selected_visible_prepared_recipes.append((plan_row, recipe))
+            selected_visible_runs.append(run)
 
         all_inputs = [line for run in visible_runs for line in run.inputs]
         all_outputs = [line for run in visible_runs for line in run.outputs]
@@ -2535,7 +2539,93 @@ class MarketSetupState(QObject):
             ],
         )
 
-        results_rows = self._build_results_rows(output_rows)
+        selected_outputs = [line for run in selected_visible_runs for line in run.outputs]
+        selected_valuations = compute_output_valuations(
+            output_lines=selected_outputs,
+            station_fee_percent=setup.station_fee_percent,
+            market_tax_percent=setup.market_tax_percent,
+        )
+        selected_output_acc: dict[tuple[str, str, str, float], dict[str, float | str]] = {}
+        for valuation in selected_valuations:
+            line = valuation.line
+            key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
+            row = selected_output_acc.get(key)
+            if row is None:
+                selected_output_acc[key] = {
+                    "item_id": line.item.unique_name,
+                    "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
+                    "city": line.city,
+                    "price_type": line.price_type.value,
+                    "unit_price": float(line.unit_price),
+                    "quantity": float(line.quantity),
+                    "total_value": float(valuation.gross_value),
+                    "fee_value": float(valuation.fee_value),
+                    "tax_value": float(valuation.tax_value),
+                    "net_value": float(valuation.net_value),
+                }
+            else:
+                row["quantity"] = float(row["quantity"]) + float(line.quantity)
+                row["total_value"] = float(row["total_value"]) + float(valuation.gross_value)
+                row["fee_value"] = float(row["fee_value"]) + float(valuation.fee_value)
+                row["tax_value"] = float(row["tax_value"]) + float(valuation.tax_value)
+                row["net_value"] = float(row["net_value"]) + float(valuation.net_value)
+
+        selected_journal_totals = self._estimate_journal_totals(
+            runs=selected_visible_runs,
+            setup=setup,
+            price_index=price_index,
+        )
+        for journal_line in selected_journal_totals.lines:
+            if journal_line.full_quantity <= 0:
+                continue
+            full_item_id = str(journal_line.full_item_id)
+            full_name = f"{_journal_display_name(journal_line.kind, journal_line.tier)} (full)"
+            full_unit_price = float(journal_line.output_value) / float(journal_line.full_quantity)
+            key = (
+                full_item_id,
+                journal_sell_city,
+                PriceType.SELL_ORDER.value,
+                float(full_unit_price),
+            )
+            row = selected_output_acc.get(key)
+            if row is None:
+                selected_output_acc[key] = {
+                    "item_id": full_item_id,
+                    "item": full_name,
+                    "city": journal_sell_city,
+                    "price_type": PriceType.SELL_ORDER.value,
+                    "unit_price": float(full_unit_price),
+                    "quantity": float(journal_line.full_quantity),
+                    "total_value": float(journal_line.output_value),
+                    "fee_value": 0.0,
+                    "tax_value": float(journal_line.market_tax),
+                    "net_value": float(journal_line.output_value - journal_line.market_tax),
+                }
+            else:
+                row["quantity"] = float(row["quantity"]) + float(journal_line.full_quantity)
+                row["total_value"] = float(row["total_value"]) + float(journal_line.output_value)
+                row["tax_value"] = float(row["tax_value"]) + float(journal_line.market_tax)
+                row["net_value"] = float(row["net_value"]) + float(journal_line.output_value - journal_line.market_tax)
+
+        selected_output_rows = [
+            OutputPreviewRow(
+                item_id=str(row["item_id"]),
+                item=str(row["item"]),
+                quantity=float(row["quantity"]),
+                city=str(row["city"]),
+                price_type=str(row["price_type"]),
+                manual_price=self._manual_output_prices.get(str(row["item_id"]), 0),
+                unit_price=float(row["unit_price"]),
+                total_value=float(row["total_value"]),
+                fee_value=float(row["fee_value"]),
+                tax_value=float(row["tax_value"]),
+                net_value=float(row["net_value"]),
+            )
+            for row in selected_output_acc.values()
+        ]
+        selected_output_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
+
+        results_rows = self._build_results_rows(selected_output_rows)
         self._results_items_model.set_items(results_rows)
         breakdown_rows = self._build_breakdown_rows()
         self._breakdown_model.set_items(breakdown_rows)

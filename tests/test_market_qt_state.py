@@ -734,10 +734,36 @@ def test_market_setup_state_craft_plan_toggle_changes_preview() -> None:
     assert expanded_input >= baseline_input
     assert expanded_output >= baseline_output
 
+    rows_before_disable = state.resultsItemsModel.rowCount()
     state.setPlanRowEnabled(int(row_id), False)
     assert state.craftPlanEnabledCount >= 1
-    assert state.inputsTotalCost == pytest.approx(baseline_input)
-    assert state.outputsTotalValue == pytest.approx(baseline_output)
+    # Inputs/outputs aggregate all craft rows; toggling On affects only Results tab.
+    assert state.inputsTotalCost == pytest.approx(expanded_input)
+    assert state.outputsTotalValue == pytest.approx(expanded_output)
+    assert state.resultsItemsModel.rowCount() <= rows_before_disable
+
+
+def test_market_setup_state_results_include_only_enabled_rows() -> None:
+    state = MarketSetupState()
+    state.addCurrentRecipeToPlan()
+    alternate_recipe = _find_alternate_recipe_id(state)
+    if not alternate_recipe:
+        return
+    state.addRecipeToPlan(alternate_recipe)
+
+    # Inputs/outputs should include all rows even when disabled.
+    assert state.craftPlanCount >= 2
+    assert state.inputsModel.rowCount() >= 1
+    assert state.outputsModel.rowCount() >= 1
+
+    # With no rows enabled, results should be empty.
+    assert state.craftPlanEnabledCount == 0
+    assert state.resultsItemsModel.rowCount() == 0
+
+    # Enabling rows should populate results without changing the "all rows" inputs/outputs behavior.
+    _enable_all_plan_rows(state)
+    assert state.craftPlanEnabledCount >= 1
+    assert state.resultsItemsModel.rowCount() >= 1
 
 
 def test_market_setup_state_clear_plan_keeps_active_recipe() -> None:
