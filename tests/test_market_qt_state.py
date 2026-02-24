@@ -72,6 +72,15 @@ class _FakeMarketService:
         return
 
 
+def _enable_all_plan_rows(state: MarketSetupState) -> None:
+    model = state.craftPlanModel
+    for idx in range(model.rowCount()):
+        model_index = model.index(idx, 0)
+        row_id = int(model.data(model_index, model.RowIdRole) or 0)
+        if row_id > 0:
+            state.setPlanRowEnabled(row_id, True)
+
+
 def test_market_setup_state_sanitizes_values() -> None:
     state = MarketSetupState()
     state.setRegion("west")
@@ -108,6 +117,7 @@ def test_market_setup_state_builds_outputs_and_results() -> None:
     assert state.craftPlanCount == 0
     assert state.craftPlanEnabledCount == 0
     state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
     state.setCraftRuns(12)
     state.setReturnRatePercent(10.0)
 
@@ -148,6 +158,7 @@ def test_market_setup_state_uses_service_and_manual_overrides() -> None:
 
     assert service.calls == 0
     state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
     assert state.pricesSource == "live"
     assert service.calls >= 1
 
@@ -177,6 +188,7 @@ def test_market_setup_state_skips_live_fetch_in_setup_tab_until_data_tabs() -> N
     # Setup tab should not trigger live AO Data calls while building craft plan.
     state.setActiveMarketTab(0)
     state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
     assert service.calls == 0
 
     # Entering Inputs/Outputs/Results should enable live fetch.
@@ -326,6 +338,7 @@ def test_market_setup_state_diagnostics_log_lifecycle() -> None:
 def test_market_setup_state_applies_input_stock_to_buy_costs() -> None:
     state = MarketSetupState(auto_refresh_prices=False)
     state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
     if state.inputsModel.rowCount() <= 0:
         return
 
@@ -391,6 +404,7 @@ def test_journal_display_name_uses_specific_kind_and_tier() -> None:
 def test_market_setup_state_includes_journals_in_inputs_outputs_models(monkeypatch: pytest.MonkeyPatch) -> None:
     state = MarketSetupState(auto_refresh_prices=False)
     state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
 
     fake_totals = market_state._JournalTotals(
         input_cost=1000.0,
@@ -455,6 +469,7 @@ def test_market_setup_state_can_switch_recipe_by_index() -> None:
 def test_market_setup_state_supports_output_city_and_results_sorting() -> None:
     state = MarketSetupState()
     state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
     if state.outputsModel.rowCount() <= 0:
         return
 
@@ -474,6 +489,7 @@ def test_market_setup_state_supports_output_city_and_results_sorting() -> None:
 def test_market_setup_state_can_export_csv_lists() -> None:
     state = MarketSetupState()
     state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
     tmp_dir = Path(f"tmp_market_qt_state_{uuid.uuid4().hex}")
     tmp_dir.mkdir(parents=True, exist_ok=True)
     try:
@@ -550,6 +566,69 @@ def test_market_setup_state_add_recipe_family_expands_weapon_tree_station_group(
     assert all("_ARTEFACT_" not in recipe_id for recipe_id in recipe_ids)
 
 
+def test_market_setup_state_new_plan_rows_default_to_disabled() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.setRecipeSearchQuery("curse")
+    state.addRecipeFamily()
+
+    model = state.craftPlanModel
+    assert model.rowCount() >= 1
+    for idx in range(model.rowCount()):
+        model_index = model.index(idx, 0)
+        assert model.data(model_index, model.EnabledRole) is False
+
+
+def test_market_setup_state_add_recipe_family_respects_multi_tier_and_enchant_filters() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.setRecipeSearchQuery("curse")
+    state.setRecipeTierFilters([4])
+    state.setRecipeEnchantFilters([0])
+    state.addRecipeFamily()
+
+    model = state.craftPlanModel
+    assert model.rowCount() >= 1
+    for idx in range(model.rowCount()):
+        model_index = model.index(idx, 0)
+        assert int(model.data(model_index, model.TierRole) or 0) == 4
+        assert int(model.data(model_index, model.EnchantRole) or 0) == 0
+
+
+def test_market_setup_state_craft_plan_exposes_fresh_component_price_role() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.addCurrentRecipeToPlan()
+
+    model = state.craftPlanModel
+    assert model.rowCount() >= 1
+    index = model.index(0, 0)
+    has_fresh = model.data(index, model.HasFreshComponentPricesRole)
+    assert isinstance(has_fresh, bool)
+
+
+def test_market_setup_state_hide_missing_adp_prices_filters_all_preview_tabs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
+    assert state.inputsModel.rowCount() >= 1
+
+    monkeypatch.setattr(state, "_run_has_fresh_component_prices", lambda _run: False)
+    state.refreshPrices()
+
+    craft_index = state.craftPlanModel.index(0, 0)
+    assert state.craftPlanModel.data(craft_index, state.craftPlanModel.HasFreshComponentPricesRole) is False
+
+    state.setHideRowsWithoutFreshPrices(True)
+    assert state.hideRowsWithoutFreshPrices is True
+    assert state.inputsModel.rowCount() == 0
+    assert state.outputsModel.rowCount() == 0
+    assert state.resultsItemsModel.rowCount() == 0
+
+    state.setHideRowsWithoutFreshPrices(False)
+    assert state.hideRowsWithoutFreshPrices is False
+    assert state.inputsModel.rowCount() >= 1
+
+
 def test_item_id_query_candidates_include_enchant_variants_for_level_items() -> None:
     candidates = market_state._item_id_query_candidates("T4_METALBAR_LEVEL3")
     assert "T4_METALBAR_LEVEL3" in candidates
@@ -613,6 +692,7 @@ def _find_plan_model_index_by_row_id(state: MarketSetupState, row_id: int) -> in
 def test_market_setup_state_craft_plan_can_aggregate_multiple_recipes() -> None:
     state = MarketSetupState()
     state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
     base_input = state.inputsTotalCost
     base_output = state.outputsTotalValue
 
@@ -621,6 +701,7 @@ def test_market_setup_state_craft_plan_can_aggregate_multiple_recipes() -> None:
         return
 
     state.addRecipeToPlan(alternate_recipe)
+    _enable_all_plan_rows(state)
     row_id = _find_plan_row_id(state, alternate_recipe)
     assert row_id is not None
     state.setPlanRowRuns(int(row_id), 2)
@@ -634,6 +715,7 @@ def test_market_setup_state_craft_plan_can_aggregate_multiple_recipes() -> None:
 def test_market_setup_state_craft_plan_toggle_changes_preview() -> None:
     state = MarketSetupState()
     state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
     baseline_input = state.inputsTotalCost
     baseline_output = state.outputsTotalValue
 
@@ -642,6 +724,7 @@ def test_market_setup_state_craft_plan_toggle_changes_preview() -> None:
         return
 
     state.addRecipeToPlan(alternate_recipe)
+    _enable_all_plan_rows(state)
     row_id = _find_plan_row_id(state, alternate_recipe)
     assert row_id is not None
     state.setPlanRowRuns(int(row_id), 3)
@@ -670,6 +753,7 @@ def test_market_setup_state_clear_plan_keeps_active_recipe() -> None:
 def test_market_setup_state_plan_row_city_and_daily_bonus_affect_preview() -> None:
     state = MarketSetupState()
     state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
     row_id = _find_plan_row_id(state, state.recipeId)
     assert row_id is not None
     row_index = _find_plan_model_index_by_row_id(state, int(row_id))

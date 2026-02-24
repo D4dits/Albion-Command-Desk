@@ -1438,12 +1438,12 @@ class MarketSetupState(QObject):
             return
         added = 0
         for recipe_id in recipe_ids:
-            if self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=True):
+            if self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=False):
                 added += 1
         if added <= 0:
             self._set_list_action_text("No new recipes were added.")
             return
-        self._set_list_action_text(f"Added {added} recipes to craft plan.")
+        self._set_list_action_text(f"Added {added} recipes to craft plan (On = off).")
         self._rebuild_preview(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
@@ -1465,34 +1465,34 @@ class MarketSetupState(QObject):
             return
         added = 0
         for recipe_id in family_ids:
-            if self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=True):
+            if self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=False):
                 added += 1
         if added <= 0:
             self._set_list_action_text("No new family recipes were added.")
             return
-        self._set_list_action_text(f"Added {added} family recipes.")
+        self._set_list_action_text(f"Added {added} family recipes (On = off).")
         self._rebuild_preview(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
     @Slot()
     def addCurrentRecipeToPlan(self) -> None:
-        added = self._add_recipe_to_plan_internal(self._recipe.item.unique_name, runs=self._craft_runs, enabled=True)
+        added = self._add_recipe_to_plan_internal(self._recipe.item.unique_name, runs=self._craft_runs, enabled=False)
         if not added:
             row = self._find_plan_row_by_recipe(self._recipe.item.unique_name)
-            if row is not None and (not row.enabled or row.runs != self._craft_runs):
-                self._update_plan_row(row.row_id, runs=self._craft_runs, enabled=True)
+            if row is not None and row.runs != self._craft_runs:
+                self._update_plan_row(row.row_id, runs=self._craft_runs)
         self._rebuild_preview(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
     @Slot(str)
     def addRecipeToPlan(self, recipe_id: str) -> None:
-        added = self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=True)
+        added = self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=False)
         if not added:
             row = self._find_plan_row_by_recipe(recipe_id)
-            if row is not None and not row.enabled:
-                self._update_plan_row(row.row_id, enabled=True)
+            if row is not None and row.runs != self._craft_runs:
+                self._update_plan_row(row.row_id, runs=self._craft_runs)
         self._rebuild_preview(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
