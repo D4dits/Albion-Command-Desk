@@ -762,6 +762,8 @@ def test_market_setup_state_results_include_only_enabled_rows() -> None:
     assert state.selectedInputsTotalCost == 0
     assert state.selectedOutputsTotalValue == 0
     assert state.selectedNetProfitValue == 0
+    assert state.selectedInputItemIds == []
+    assert state.selectedOutputItemIds == []
 
     # Enabling rows should populate results without changing the "all rows" inputs/outputs behavior.
     _enable_all_plan_rows(state)
@@ -769,6 +771,8 @@ def test_market_setup_state_results_include_only_enabled_rows() -> None:
     assert state.resultsItemsModel.rowCount() >= 1
     assert state.selectedInputsTotalCost > 0
     assert state.selectedOutputsTotalValue > 0
+    assert len(state.selectedInputItemIds) >= 1
+    assert len(state.selectedOutputItemIds) >= 1
 
 
 def test_market_setup_state_clear_plan_keeps_active_recipe() -> None:

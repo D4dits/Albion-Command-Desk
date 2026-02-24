@@ -702,9 +702,11 @@ ApplicationWindow {
 
                 inputsModel: marketSetupState.inputsModel
                 inputsTotalCost: marketSetupState.inputsTotalCost
+                selectedInputItemIds: marketSetupState.selectedInputItemIds
                 outputsModel: marketSetupState.outputsModel
                 outputsTotalValue: marketSetupState.outputsTotalValue
                 outputsNetValue: marketSetupState.outputsNetValue
+                selectedOutputItemIds: marketSetupState.selectedOutputItemIds
                 netProfitValue: marketSetupState.netProfitValue
                 resultsItemsModel: marketSetupState.resultsItemsModel
                 marginPercent: marketSetupState.marginPercent

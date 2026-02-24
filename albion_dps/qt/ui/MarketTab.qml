@@ -62,9 +62,11 @@ CardPanel {
 
     property var inputsModel: null
     property int inputsTotalCost: 0
+    property var selectedInputItemIds: []
     property var outputsModel: null
     property int outputsTotalValue: 0
     property int outputsNetValue: 0
+    property var selectedOutputItemIds: []
     property real netProfitValue: 0
     property var resultsItemsModel: null
     property int marginPercent: 0
@@ -79,6 +81,8 @@ CardPanel {
     property string inputsSearchQuery: ""
     property string outputsSearchQuery: ""
     property string resultsSearchQuery: ""
+    property bool inputsShowOnOnly: false
+    property bool outputsShowOnOnly: false
 
     // Layout flags
     property int marketColumnSpacing: 6
@@ -261,6 +265,18 @@ CardPanel {
             return true
         }
         return String(itemText || "").toLowerCase().indexOf(query) >= 0
+    }
+    property var containsItemId: function(itemId, listValue) {
+        var target = String(itemId || "")
+        if (target.length === 0 || !listValue) {
+            return false
+        }
+        for (var i = 0; i < listValue.length; i += 1) {
+            if (String(listValue[i]) === target) {
+                return true
+            }
+        }
+        return false
     }
 
     // Access to theme
@@ -583,6 +599,11 @@ CardPanel {
                             text: root.inputsSearchQuery
                             onTextChanged: root.inputsSearchQuery = text
                         }
+                        AppCheckBox {
+                            text: "Only On items"
+                            checked: root.inputsShowOnOnly
+                            onToggled: root.inputsShowOnOnly = checked
+                        }
                         Item { Layout.fillWidth: true }
                     }
 
@@ -617,9 +638,11 @@ CardPanel {
 
                         delegate: Rectangle {
                             readonly property bool searchMatches: root.matchesSearch(item, root.inputsSearchQuery)
+                            readonly property bool onMatches: !root.inputsShowOnOnly
+                                || root.containsItemId(itemId, root.selectedInputItemIds)
                             width: ListView.view.width
-                            height: searchMatches ? 30 : 0
-                            visible: searchMatches
+                            height: (searchMatches && onMatches) ? 30 : 0
+                            visible: searchMatches && onMatches
                             color: tableRowColor(index)
 
                             RowLayout {
@@ -729,6 +752,11 @@ CardPanel {
                             text: root.outputsSearchQuery
                             onTextChanged: root.outputsSearchQuery = text
                         }
+                        AppCheckBox {
+                            text: "Only On items"
+                            checked: root.outputsShowOnOnly
+                            onToggled: root.outputsShowOnOnly = checked
+                        }
                         Item { Layout.fillWidth: true }
                     }
 
@@ -764,9 +792,11 @@ CardPanel {
 
                         delegate: Rectangle {
                             readonly property bool searchMatches: root.matchesSearch(item, root.outputsSearchQuery)
+                            readonly property bool onMatches: !root.outputsShowOnOnly
+                                || root.containsItemId(itemId, root.selectedOutputItemIds)
                             width: ListView.view.width
-                            height: searchMatches ? 30 : 0
-                            visible: searchMatches
+                            height: (searchMatches && onMatches) ? 30 : 0
+                            visible: searchMatches && onMatches
                             color: tableRowColor(index)
 
                             RowLayout {

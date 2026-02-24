@@ -878,6 +878,8 @@ class MarketSetupState(QObject):
         self._selected_output_net_value = 0.0
         self._selected_net_profit_value = 0.0
         self._selected_margin_percent = 0.0
+        self._selected_input_item_ids: list[str] = []
+        self._selected_output_item_ids: list[str] = []
         self._input_price_types: dict[str, PriceType] = {}
         self._output_price_types: dict[str, PriceType] = {}
         self._manual_input_prices: dict[str, int] = {}
@@ -1194,6 +1196,14 @@ class MarketSetupState(QObject):
     @Property(float, notify=resultsChanged)
     def selectedMarginPercent(self) -> float:
         return float(self._selected_margin_percent)
+
+    @Property("QVariantList", notify=inputsChanged)
+    def selectedInputItemIds(self) -> list[str]:
+        return list(self._selected_input_item_ids)
+
+    @Property("QVariantList", notify=outputsChanged)
+    def selectedOutputItemIds(self) -> list[str]:
+        return list(self._selected_output_item_ids)
 
     @Property(float, notify=resultsChanged)
     def focusUsed(self) -> float:
@@ -2211,6 +2221,8 @@ class MarketSetupState(QObject):
         self._selected_output_net_value = 0.0
         self._selected_net_profit_value = 0.0
         self._selected_margin_percent = 0.0
+        self._selected_input_item_ids = []
+        self._selected_output_item_ids = []
         self.inputsChanged.emit()
         self.outputsChanged.emit()
         self.resultsChanged.emit()
@@ -2310,6 +2322,11 @@ class MarketSetupState(QObject):
         )
         self._results_journal_totals = selected_journal_totals
         selected_inputs = [line for run in selected_visible_runs for line in run.inputs]
+        selected_input_item_ids: set[str] = {str(line.item.unique_name) for line in selected_inputs}
+        for journal_line in selected_journal_totals.lines:
+            if journal_line.full_quantity > 0:
+                selected_input_item_ids.add(str(journal_line.empty_item_id))
+        self._selected_input_item_ids = sorted(selected_input_item_ids)
         selected_material_input_total = self._compute_input_total_from_lines(
             input_lines=selected_inputs,
             prepared_recipes=selected_visible_prepared_recipes,
@@ -2686,6 +2703,7 @@ class MarketSetupState(QObject):
             for row in selected_output_acc.values()
         ]
         selected_output_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
+        self._selected_output_item_ids = sorted({str(row.item_id) for row in selected_output_rows})
 
         selected_output_total_value = float(sum(row.total_value for row in selected_output_rows))
         selected_output_net_value = float(sum(row.net_value for row in selected_output_rows))
