@@ -231,7 +231,7 @@ def test_fetch_prices_retries_with_smaller_batches_on_414() -> None:
     assert any("/stats/prices/T4_MAIN_SWORD.json" in url for url in called)
 
 
-def test_fetch_prices_retries_with_smaller_batches_on_429() -> None:
+def test_fetch_prices_does_not_split_batches_on_429() -> None:
     called: list[str] = []
 
     def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):
@@ -253,51 +253,20 @@ def test_fetch_prices_retries_with_smaller_batches_on_429() -> None:
             }
         ]
 
-    client = AODataClient(fetch_json=fake_fetch_json, max_prices_url_length=10000, max_retries=2)
-    rows = client.fetch_prices(
-        region=MarketRegion.EUROPE,
-        item_ids=["T4_MAIN_SWORD", "T4_MAIN_AXE", "T4_MAIN_MACE"],
-        locations=["Bridgewatch"],
-    )
-    assert len(rows) == 3
-    assert any("/stats/prices/T4_MAIN_SWORD,T4_MAIN_AXE,T4_MAIN_MACE.json" in url for url in called)
-    assert any("/stats/prices/T4_MAIN_SWORD.json" in url for url in called)
-
-
-def test_fetch_prices_retries_single_item_after_429() -> None:
-    calls = {"value": 0}
-
-    def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):
-        _ = (url, timeout_seconds, user_agent)
-        calls["value"] += 1
-        if calls["value"] <= 2:
-            raise RuntimeError("HTTP Error 429: Too Many Requests")
-        return [
-            {
-                "item_id": "T4_MAIN_SWORD",
-                "city": "Bridgewatch",
-                "quality": 1,
-                "sell_price_min": 100,
-                "buy_price_max": 90,
-                "sell_price_min_date": "",
-                "buy_price_max_date": "",
-            }
-        ]
-
-    sleeps: list[float] = []
     client = AODataClient(
         fetch_json=fake_fetch_json,
-        max_retries=0,
-        single_item_rate_limit_retries=4,
-        single_item_rate_limit_initial_delay_seconds=0.01,
-        single_item_rate_limit_max_delay_seconds=0.02,
-        sleeper=sleeps.append,
+        max_prices_url_length=10000,
+        max_retries=2,
+        retry_backoff_initial_seconds=0.0,
+        retry_backoff_max_seconds=0.0,
+        batch_pause_seconds=0.0,
     )
-    rows = client.fetch_prices(
-        region=MarketRegion.EUROPE,
-        item_ids=["T4_MAIN_SWORD"],
-        locations=["Bridgewatch"],
-    )
-    assert len(rows) == 1
-    assert calls["value"] == 3
-    assert len(sleeps) == 2
+    with pytest.raises(RuntimeError):
+        _ = client.fetch_prices(
+            region=MarketRegion.EUROPE,
+            item_ids=["T4_MAIN_SWORD", "T4_MAIN_AXE", "T4_MAIN_MACE"],
+            locations=["Bridgewatch"],
+        )
+    assert len(called) == 3
+    assert any("/stats/prices/T4_MAIN_SWORD,T4_MAIN_AXE,T4_MAIN_MACE.json" in url for url in called)
+    assert not any("/stats/prices/T4_MAIN_SWORD.json" in url for url in called)

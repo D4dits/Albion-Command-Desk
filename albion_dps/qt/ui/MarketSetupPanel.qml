@@ -143,11 +143,11 @@ TableSurface {
                     recipeOptionsModel: root.recipeOptionsModel
                     currentRecipeId: root.currentRecipeId
                     tableRowStrongColor: root.tableRowStrongColor
-                    onSetRecipeSearchQuery: root.setRecipeSearchQuery(query)
+                    onSetRecipeSearchQuery: function(query) { root.setRecipeSearchQuery(query) }
                     onAddFirstRecipeOption: root.addFirstRecipeOption()
                     onAddFilteredRecipeOptions: root.addFilteredRecipeOptions()
                     onAddRecipeFamily: root.addRecipeFamily()
-                    onSetRecipeEnchantFilter: root.setRecipeEnchantFilter(filter)
+                    onSetRecipeEnchantFilter: function(filter) { root.setRecipeEnchantFilter(filter) }
                     onAddRecipeAtIndex: function(index) { root.addRecipeAtIndex(index) }
                 }
 

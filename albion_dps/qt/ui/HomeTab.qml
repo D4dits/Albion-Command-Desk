@@ -283,6 +283,7 @@ CardPanel {
         }
 
         GridLayout {
+            id: infoGrid
             Layout.fillWidth: true
             columns: root.twoColumn ? 2 : 1
             columnSpacing: 10
@@ -292,7 +293,7 @@ CardPanel {
             TableSurface {
                 id: checklistCard
                 Layout.fillWidth: true
-                Layout.preferredHeight: infoRowHeight
+                Layout.preferredHeight: infoGrid.infoRowHeight
                 level: 1
 
                 ColumnLayout {
@@ -349,7 +350,7 @@ CardPanel {
             TableSurface {
                 id: modulesCard
                 Layout.fillWidth: true
-                Layout.preferredHeight: infoRowHeight
+                Layout.preferredHeight: infoGrid.infoRowHeight
                 level: 1
 
                 ColumnLayout {

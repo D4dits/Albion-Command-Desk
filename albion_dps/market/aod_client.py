@@ -54,17 +54,13 @@ class AODataClient:
         timeout_seconds: float = 12.0,
         user_agent: str = "albion-command-desk-market/0.1",
         fetch_json: Callable[[str, float, str], object] | None = None,
-        max_retries: int = 2,
-        retry_backoff_initial_seconds: float = 0.20,
+        max_retries: int = 4,
+        retry_backoff_initial_seconds: float = 1.0,
         retry_backoff_factor: float = 2.0,
-        retry_backoff_max_seconds: float = 2.0,
+        retry_backoff_max_seconds: float = 12.0,
         max_prices_url_length: int = 1800,
-        max_prices_items_per_batch: int = 40,
-        batch_pause_seconds: float = 0.80,
-        single_item_rate_limit_retries: int = 6,
-        single_item_rate_limit_initial_delay_seconds: float = 1.0,
-        single_item_rate_limit_backoff_factor: float = 1.8,
-        single_item_rate_limit_max_delay_seconds: float = 12.0,
+        max_prices_items_per_batch: int = 100,
+        batch_pause_seconds: float = 1.0,
         sleeper: Callable[[float], None] | None = None,
         logger: logging.Logger | None = None,
     ) -> None:
@@ -78,16 +74,6 @@ class AODataClient:
         self._max_prices_url_length = max(256, int(max_prices_url_length))
         self._max_prices_items_per_batch = max(1, int(max_prices_items_per_batch))
         self._batch_pause_seconds = max(0.0, float(batch_pause_seconds))
-        self._single_item_rate_limit_retries = max(0, int(single_item_rate_limit_retries))
-        self._single_item_rate_limit_initial_delay_seconds = max(
-            0.0, float(single_item_rate_limit_initial_delay_seconds)
-        )
-        self._single_item_rate_limit_backoff_factor = max(
-            1.0, float(single_item_rate_limit_backoff_factor)
-        )
-        self._single_item_rate_limit_max_delay_seconds = max(
-            0.0, float(single_item_rate_limit_max_delay_seconds)
-        )
         self._sleep = sleeper or time.sleep
         self._log = logger or logging.getLogger(__name__)
         self._last_request_stats = AODataRequestStats(
@@ -178,9 +164,6 @@ class AODataClient:
                 return payload
             except Exception as exc:
                 last_error = exc
-                # Rate-limited responses should be handled by higher-level batch splitting logic.
-                if _is_too_many_requests_error(exc):
-                    break
                 if attempt >= max_attempts:
                     break
                 if backoff_seconds > 0:
@@ -243,48 +226,16 @@ class AODataClient:
             data = self._fetch_with_retry(url=url, endpoint="prices")
             return _normalize_prices(data)
         except RuntimeError as exc:
-            if _is_too_many_requests_error(exc) and len(item_ids) <= 1:
-                return self._retry_single_item_rate_limited_batch(url=url, exc=exc)
             if len(item_ids) <= 1:
                 raise
-            if not (_is_uri_too_large_error(exc) or _is_too_many_requests_error(exc)):
+            # Split only when URL is too long. Splitting on 429 increases request count and makes
+            # API throttling worse.
+            if not _is_uri_too_large_error(exc):
                 raise
             midpoint = max(1, len(item_ids) // 2)
             left = self._fetch_prices_batch(base=base, item_ids=item_ids[:midpoint], params=params)
             right = self._fetch_prices_batch(base=base, item_ids=item_ids[midpoint:], params=params)
             return left + right
-
-    def _retry_single_item_rate_limited_batch(
-        self,
-        *,
-        url: str,
-        exc: RuntimeError,
-    ) -> list[MarketPriceRecord]:
-        attempts = max(0, int(self._single_item_rate_limit_retries))
-        delay = self._single_item_rate_limit_initial_delay_seconds
-        last_exc: RuntimeError = exc
-        for retry_idx in range(attempts):
-            sleep_for = min(delay, self._single_item_rate_limit_max_delay_seconds)
-            if sleep_for > 0:
-                self._sleep(sleep_for)
-            self._log.warning(
-                "AO Data single-item request rate-limited (429), retry %d/%d: %s",
-                retry_idx + 1,
-                attempts,
-                url,
-            )
-            try:
-                data = self._fetch_with_retry(url=url, endpoint="prices")
-                return _normalize_prices(data)
-            except RuntimeError as retry_exc:
-                if not _is_too_many_requests_error(retry_exc):
-                    raise
-                last_exc = retry_exc
-            delay = min(
-                self._single_item_rate_limit_max_delay_seconds,
-                delay * self._single_item_rate_limit_backoff_factor,
-            )
-        raise last_exc
 
     @staticmethod
     def _build_prices_url(*, base: str, item_ids: list[str], params: dict[str, str]) -> str:
