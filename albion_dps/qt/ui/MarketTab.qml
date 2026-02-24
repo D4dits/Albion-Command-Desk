@@ -72,6 +72,9 @@ CardPanel {
     property bool marketBreakdownExpanded: false
     property var breakdownModel: null
     property real craftPlanPendingContentY: -1
+    property string inputsSearchQuery: ""
+    property string outputsSearchQuery: ""
+    property string resultsSearchQuery: ""
 
     // Layout flags
     property int marketColumnSpacing: 6
@@ -246,6 +249,13 @@ CardPanel {
     }
     property var copyCellText: function(value) {
         root.copyText(String(value === undefined || value === null ? "" : value))
+    }
+    property var matchesSearch: function(itemText, queryText) {
+        var query = String(queryText || "").trim().toLowerCase()
+        if (query.length === 0) {
+            return true
+        }
+        return String(itemText || "").toLowerCase().indexOf(query) >= 0
     }
 
     // Access to theme
@@ -552,6 +562,25 @@ CardPanel {
                         font.bold: true
                     }
 
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        Text {
+                            text: "Search"
+                            color: mutedColor
+                            font.pixelSize: 11
+                        }
+                        AppTextField {
+                            Layout.preferredWidth: 240
+                            implicitHeight: compactControlHeight
+                            font.pixelSize: 11
+                            placeholderText: "item name"
+                            text: root.inputsSearchQuery
+                            onTextChanged: root.inputsSearchQuery = text
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
+
                     Rectangle {
                         Layout.fillWidth: true
                         height: 24
@@ -582,8 +611,10 @@ CardPanel {
                         model: root.inputsModel
 
                         delegate: Rectangle {
+                            readonly property bool searchMatches: root.matchesSearch(item, root.inputsSearchQuery)
                             width: ListView.view.width
-                            height: 30
+                            height: searchMatches ? 30 : 0
+                            visible: searchMatches
                             color: tableRowColor(index)
 
                             RowLayout {
@@ -677,6 +708,25 @@ CardPanel {
                         font.bold: true
                     }
 
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        Text {
+                            text: "Search"
+                            color: mutedColor
+                            font.pixelSize: 11
+                        }
+                        AppTextField {
+                            Layout.preferredWidth: 240
+                            implicitHeight: compactControlHeight
+                            font.pixelSize: 11
+                            placeholderText: "item name"
+                            text: root.outputsSearchQuery
+                            onTextChanged: root.outputsSearchQuery = text
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
+
                     Rectangle {
                         Layout.fillWidth: true
                         height: 24
@@ -707,8 +757,10 @@ CardPanel {
                         model: root.outputsModel
 
                         delegate: Rectangle {
+                            readonly property bool searchMatches: root.matchesSearch(item, root.outputsSearchQuery)
                             width: ListView.view.width
-                            height: 30
+                            height: searchMatches ? 30 : 0
+                            visible: searchMatches
                             color: tableRowColor(index)
 
                             RowLayout {
@@ -792,6 +844,15 @@ CardPanel {
                     RowLayout {
                         Layout.fillWidth: true
                         Text { text: "Results"; color: textColor; font.pixelSize: 12; font.bold: true }
+                        Text { text: "Search"; color: mutedColor; font.pixelSize: 11 }
+                        AppTextField {
+                            Layout.preferredWidth: 220
+                            implicitHeight: compactControlHeight
+                            font.pixelSize: 11
+                            placeholderText: "item name"
+                            text: root.resultsSearchQuery
+                            onTextChanged: root.resultsSearchQuery = text
+                        }
                         Item { Layout.fillWidth: true }
                         Text { text: "Sort"; color: mutedColor; font.pixelSize: 11 }
                         ComboBox {
@@ -851,8 +912,10 @@ CardPanel {
                         model: root.resultsItemsModel
 
                         delegate: Rectangle {
+                            readonly property bool searchMatches: root.matchesSearch(item, root.resultsSearchQuery)
                             width: ListView.view.width
-                            height: 28
+                            height: searchMatches ? 28 : 0
+                            visible: searchMatches
                             color: tableRowColor(index)
 
                             RowLayout {
