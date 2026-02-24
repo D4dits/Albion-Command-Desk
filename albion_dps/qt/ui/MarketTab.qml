@@ -81,8 +81,8 @@ CardPanel {
     property string inputsSearchQuery: ""
     property string outputsSearchQuery: ""
     property string resultsSearchQuery: ""
-    property bool inputsShowOnOnly: false
-    property bool outputsShowOnOnly: false
+    property bool inputsShowOnOnly: true
+    property bool outputsShowOnOnly: true
 
     // Layout flags
     property int marketColumnSpacing: 6
