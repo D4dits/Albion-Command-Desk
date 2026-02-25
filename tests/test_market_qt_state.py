@@ -248,6 +248,57 @@ def test_market_setup_state_price_age_handles_aliases_and_invalid_dates() -> Non
     assert age_invalid == "n/a"
 
 
+def test_market_setup_state_resolves_market_price_with_mode_fallback() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state._price_index = {
+        ("T6_JOURNAL_WARRIOR_EMPTY", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T6_JOURNAL_WARRIOR_EMPTY",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=0,
+            buy_price_max=7777,
+            sell_price_min_date="",
+            buy_price_max_date=datetime.now(timezone.utc).isoformat(),
+        )
+    }
+
+    price, mode, used_item_id = state._resolve_market_price_for_item_ids(
+        price_index=state._price_index,
+        item_ids=["T6_JOURNAL_WARRIOR_EMPTY", "T6_JOURNAL_WARRIOR"],
+        city="Bridgewatch",
+        quality=1,
+        preferred_mode="sell_order",
+    )
+
+    assert price == 7777.0
+    assert mode == "buy_order"
+    assert used_item_id == "T6_JOURNAL_WARRIOR_EMPTY"
+
+
+def test_market_setup_state_price_age_for_item_ids_uses_first_fresh_quote() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    now_iso = datetime.now(timezone.utc).isoformat()
+    state._price_index = {
+        ("T7_JOURNAL_MAGE_EMPTY", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T7_JOURNAL_MAGE_EMPTY",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=5000,
+            buy_price_max=0,
+            sell_price_min_date=now_iso,
+            buy_price_max_date="",
+        )
+    }
+
+    age = state._price_age_text_for_item_ids(
+        item_ids=["", "T7_JOURNAL_MAGE_EMPTY", "T7_JOURNAL_MAGE"],
+        city="Bridgewatch",
+        quality=1,
+        price_type="sell_order",
+    )
+    assert age != "n/a"
+
+
 def test_market_setup_state_supports_setup_presets(monkeypatch: pytest.MonkeyPatch) -> None:
     tmp_dir = Path(f"tmp_market_presets_{uuid.uuid4().hex}")
     tmp_dir.mkdir(parents=True, exist_ok=True)
