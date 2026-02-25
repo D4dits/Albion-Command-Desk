@@ -18,6 +18,13 @@ No client hooks, no overlays, no memory editing.
   <img src="https://img.shields.io/badge/Game-Albion%20Online-orange">
 </p>
 
+## Support the Project
+
+<p align="center">
+  <a href="https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00"><img src="https://img.shields.io/badge/PayPal-Donate-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="PayPal"></a>
+  <a href="https://buycoffee.to/ao-dps/"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?style=for-the-badge" alt="Buy Me a Coffee"></a>
+</p>
+
 ## Install
 
 ### Windows (recommended, no Git required)
@@ -109,13 +116,6 @@ Linux/macOS:
 </p>
 <p align="center">
   <img src="assets/ux-baseline/ph2-market.png" alt="Market tab" width="920">
-</p>
-
-## Support the Project
-
-<p align="center">
-  <a href="https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00"><img src="https://img.shields.io/badge/PayPal-Donate-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="PayPal"></a>
-  <a href="https://buycoffee.to/ao-dps/"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?style=for-the-badge" alt="Buy Me a Coffee"></a>
 </p>
 
 ## Docs
