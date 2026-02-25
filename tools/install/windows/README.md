@@ -9,11 +9,13 @@ One-command setup for Albion Command Desk from source checkout.
 3. Creates (or reuses) a virtual environment.
 4. Upgrades `pip`.
 5. Installs package using selected profile:
-   - `core` (default): base package `.` without live capture backend.
-   - `capture`: tries live backend `.[capture]`; falls back to `core` when capture prerequisites are missing.
+   - `capture` (default): tries live backend `.[capture]`.
+   - `core`: base package `.` without live capture backend.
+   - If capture prerequisites are missing, installer falls back to `core` automatically.
 6. Verifies CLI startup.
 7. Runs shared smoke checks (CLI import + Qt startup probe).
-8. Starts app in mode matching selected profile (unless `-SkipRun` is used).
+8. Starts app in `core` mode (unless `-SkipRun` is used).
+   - If capture extras are ready, installer prints the exact `live` launch command.
 
 ## Usage
 
@@ -23,16 +25,16 @@ From repository root:
 powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1
 ```
 
-Install with live capture backend:
+Force base/core install only:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile capture
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile core
 ```
 
 Require strict capture (no fallback to core):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile capture -StrictCapture
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -StrictCapture
 ```
 
 Install only (do not start app):
@@ -74,14 +76,13 @@ powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Sk
 ## Notes
 
 - Runtime requirement for end users:
-  - `core` profile: no Npcap required.
-  - `live` mode: requires **Npcap Runtime** (Npcap installer from `https://npcap.com/#download`).
-- Build requirement only for advanced capture install:
+  - `live` mode requires **Npcap Runtime** (`https://npcap.com/#download`).
+  - `core` mode works without Npcap.
+- Build requirement only for advanced capture install from source:
   - `capture` profile from source may need **Npcap SDK** + **MSVC Build Tools** to compile `pcapy-ng`.
-- Default path (`core`) never requires Npcap SDK.
-- Capture profile automatically falls back to `core` when SDK/build prerequisites are missing.
+- Default path now attempts `capture` first and automatically falls back to `core` when SDK/build prerequisites are missing.
 - Use `-StrictCapture` only when you explicitly want capture install to fail instead of fallback.
-- If using `-Profile capture`, prefer Python 3.11 or 3.12.
+- For capture install, prefer Python 3.11 or 3.12.
 - For local firewalls/AV restrictions, run PowerShell as Administrator.
 - If `winget` fails because of source issues, install Python manually from `https://www.python.org/downloads/windows/` and rerun.
 - `live` mode checks Npcap Runtime on startup and logs detected install path.

@@ -41,14 +41,13 @@ jobs:
             -ProjectRoot "$PWD" `
             -VenvPath "$PWD\.venv-smoke" `
             -Python "$env:pythonLocation\python.exe" `
-            -Profile core `
             -ForceRecreateVenv `
             -SkipRun *>&1 | Tee-Object -FilePath $bootstrapLog
 
           & "$PWD\.venv-smoke\Scripts\python.exe" `
             tools\install\common\smoke_check.py `
             --project-root "$PWD" `
-            --profile core `
+            --profile auto `
             --artifact-name "AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe" `
             --report-path "$logDir\smoke-report.json" *>&1 | Tee-Object -FilePath $bootstrapLog -Append
 
@@ -106,14 +105,13 @@ jobs:
             --project-root "$PWD" \
             --venv-path "$RUNNER_TEMP/acd-smoke-venv" \
             --python "$pythonLocation/bin/python" \
-            --profile core \
             --force-recreate-venv \
             --skip-run 2>&1 | tee "$EVIDENCE_DIR/bootstrap.log"
 
           "$RUNNER_TEMP/acd-smoke-venv/bin/python" \
             tools/install/common/smoke_check.py \
             --project-root "$PWD" \
-            --profile core \
+            --profile auto \
             --artifact-name "AlbionCommandDesk-vX.Y.Z-x86_64.AppImage" \
             --report-path "$EVIDENCE_DIR/smoke-report.json" 2>&1 | tee -a "$EVIDENCE_DIR/bootstrap.log"
 
@@ -192,14 +190,13 @@ jobs:
             --project-root "$PWD" \
             --venv-path "$RUNNER_TEMP/acd-smoke-venv" \
             --python "$pythonLocation/bin/python" \
-            --profile core \
             --force-recreate-venv \
             --skip-run 2>&1 | tee "$EVIDENCE_DIR/bootstrap.log"
 
           "$RUNNER_TEMP/acd-smoke-venv/bin/python" \
             tools/install/common/smoke_check.py \
             --project-root "$PWD" \
-            --profile core \
+            --profile auto \
             --artifact-name "AlbionCommandDesk-vX.Y.Z-universal.dmg" \
             --report-path "$EVIDENCE_DIR/smoke-report.json" 2>&1 | tee -a "$EVIDENCE_DIR/bootstrap.log"
 

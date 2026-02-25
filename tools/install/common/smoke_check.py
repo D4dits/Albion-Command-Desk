@@ -40,7 +40,12 @@ def _check_qt_probe(project_root: Path) -> tuple[bool, str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Albion Command Desk install smoke check")
     parser.add_argument("--project-root", required=True, help="Repository root path")
-    parser.add_argument("--profile", choices=("core", "capture"), default="core", help="Install profile context")
+    parser.add_argument(
+        "--profile",
+        choices=("core", "capture", "auto"),
+        default="core",
+        help="Install profile context",
+    )
     parser.add_argument("--artifact-name", default="", help="Expected primary release artifact name (diagnostic)")
     parser.add_argument(
         "--report-path",

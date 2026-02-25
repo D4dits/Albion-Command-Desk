@@ -8,11 +8,13 @@ One-command setup for Albion Command Desk from a source checkout.
 2. Creates (or reuses) a virtual environment.
 3. Upgrades `pip`.
 4. Installs package using selected profile:
-   - `core` (default): base package `.` without live capture backend.
-   - `capture`: tries live backend `.[capture]`; falls back to `core` when capture prerequisites are missing.
+   - `capture` (default): tries live backend `.[capture]`.
+   - `core`: base package `.` without live capture backend.
+   - If capture prerequisites are missing, installer falls back to `core` automatically.
 5. Verifies CLI startup.
 6. Runs shared smoke checks (CLI import + Qt startup probe).
-7. Starts app in mode matching selected profile (unless `--skip-run` is used).
+7. Starts app in `core` mode (unless `--skip-run` is used).
+   - If capture extras are ready, installer prints the exact `live` launch command.
 
 ## Usage
 
@@ -22,16 +24,16 @@ From repository root:
 bash ./tools/install/linux/install.sh
 ```
 
-Install with live capture backend:
+Force base/core install only:
 
 ```bash
-bash ./tools/install/linux/install.sh --profile capture
+bash ./tools/install/linux/install.sh --profile core
 ```
 
 Require strict capture (no fallback to core):
 
 ```bash
-bash ./tools/install/linux/install.sh --profile capture --strict-capture
+bash ./tools/install/linux/install.sh --strict-capture
 ```
 
 Install only (do not start app):
@@ -66,9 +68,9 @@ bash ./tools/install/linux/install.sh --release-version 0.2.0 --skip-run
 
 ## Notes
 
-- Default path (`core`) does not require packet-capture development headers.
-- Capture profile auto-falls back to `core` if `libpcap`/toolchain prerequisites are missing.
+- `core` mode does not require packet-capture development headers.
+- Default path now attempts `capture` first and auto-falls back to `core` if `libpcap`/toolchain prerequisites are missing.
 - Use `--strict-capture` only when you want capture install to fail instead of fallback.
-- If `--profile capture` fails on Python 3.13, retry with Python 3.11 or 3.12.
+- If capture install fails on Python 3.13, retry with Python 3.11 or 3.12.
 - Diagnostic output includes expected primary Linux artifact name:
   `AlbionCommandDesk-vX.Y.Z-x86_64.AppImage`.

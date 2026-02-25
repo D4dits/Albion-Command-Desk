@@ -25,7 +25,8 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap
 
 - `ReleaseTag` accepts tag (`vX.Y.Z`) or branch name.
 - Bootstrap EXE installs into `%LOCALAPPDATA%\AlbionCommandDesk` (persistent path) instead of temp folders.
-- Bootstrap EXE passes `-Profile core -ReleaseVersion X.Y.Z -SkipRun` to `install.ps1` to keep install zero-friction and avoid hard failure on machines without capture prerequisites.
+- Bootstrap EXE passes `-ReleaseVersion X.Y.Z -SkipRun` to `install.ps1`.
+- Installer now defaults to capture extras and auto-falls back to core when capture prerequisites are missing.
 - EXE requires outbound access to GitHub release/source URLs.
 - Expected post-install paths:
   - runtime snapshot: `%LOCALAPPDATA%\AlbionCommandDesk\runtime\vX.Y.Z`

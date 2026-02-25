@@ -7,7 +7,7 @@ VENV_PATH="${PROJECT_ROOT}/venv"
 PYTHON_CMD_OVERRIDE=""
 SKIP_RUN=0
 FORCE_RECREATE_VENV=0
-INSTALL_PROFILE="core"
+INSTALL_PROFILE="capture"
 STRICT_CAPTURE=0
 NON_INTERACTIVE=0
 RELEASE_VERSION="${ACD_RELEASE_VERSION:-local-dev}"
@@ -37,7 +37,7 @@ Options:
   --project-root <path>      Override repository root path.
   --venv-path <path>         Override virtual environment path.
   --python <path-or-command> Force Python interpreter command/path.
-  --profile <core|capture>   Install profile (`core` default, `capture` for live mode).
+  --profile <core|capture>   Install profile (`capture` default, `core` for base mode).
   --release-version <ver>    Release version label used for artifact contract diagnostics.
   --skip-run                 Install only (do not start app).
   --non-interactive          Disable pip prompts and force --skip-run (CI mode).
@@ -255,7 +255,7 @@ if [[ "$INSTALL_PROFILE" == "capture" ]]; then
       fail "Capture profile requested with --strict-capture but libpcap was not detected."
     fi
     log_warn "Capture profile requested, but libpcap was not detected. Falling back to core profile."
-    log_hint "Install libpcap-dev and rerun with --profile capture when ready."
+    log_hint "Install libpcap-dev and rerun installer when ready (capture is default)."
     INSTALL_PROFILE="core"
     INSTALL_TARGET="."
   fi
@@ -292,27 +292,20 @@ log_info "Running shared install smoke checks"
 
 if (( SKIP_RUN )); then
   log_info "Installation complete. Launch manually with:"
+  printf '  %s core\n' "$VENV_CLI"
   if [[ "$INSTALL_PROFILE" == "capture" ]]; then
-    printf '  %s live\n' "$VENV_CLI"
+    printf '  %s live   # capture extras installed\n' "$VENV_CLI"
   else
-    printf '  %s core\n' "$VENV_CLI"
-    printf '  %s live   # after reinstall with --profile capture\n' "$VENV_CLI"
+    printf '  %s live   # after reinstall with capture extras\n' "$VENV_CLI"
   fi
   exit 0
 fi
 
 if [[ "$INSTALL_PROFILE" == "capture" ]]; then
-  log_info "Starting Albion Command Desk (live mode)"
-else
-  log_info "Starting Albion Command Desk (core mode)"
+  log_info "Capture extras are ready. Launch live mode manually when needed: ${VENV_CLI} live"
 fi
+log_info "Starting Albion Command Desk (core mode)"
 if [[ -x "$VENV_CLI" ]]; then
-  if [[ "$INSTALL_PROFILE" == "capture" ]]; then
-    exec "$VENV_CLI" live
-  fi
   exec "$VENV_CLI" core
-fi
-if [[ "$INSTALL_PROFILE" == "capture" ]]; then
-  exec "$VENV_PYTHON" -m albion_dps.cli live
 fi
 exec "$VENV_PYTHON" -m albion_dps.cli core

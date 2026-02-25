@@ -62,7 +62,7 @@ Best setup before installing ACD:
 - Optional for live capture only:
   - Windows: Npcap Runtime (`https://npcap.com/#download`) for `live` mode.
   - Linux/macOS: system packet-capture libs (`libpcap`).
-- Npcap SDK is **not** required for normal users. It is only needed when you explicitly build/install the optional Windows `capture` profile from source.
+- Npcap SDK is **not** required for normal users. It is only needed when Windows source install must compile `pcapy-ng`.
 - Permissions to create a local virtual environment (`venv` folder in repo).
 
 ## Install (One-Click Bootstrap)
@@ -99,23 +99,23 @@ cd Albion-Command-Desk
 bash ./tools/install/macos/install.sh
 ```
 
-### Optional: enable live capture profile
-Capture profile is optional and not required for base app usage.
-On Windows, this profile may require extra build prerequisites (Npcap SDK + MSVC Build Tools) because it compiles Python capture bindings.
+### Optional: force base/core profile
+Default installers now attempt capture extras first and auto-fallback to core when prerequisites are missing.
+If you want to force core-only install explicitly:
 
 Windows:
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile capture
+powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile core
 ```
 
 Linux:
 ```bash
-bash ./tools/install/linux/install.sh --profile capture
+bash ./tools/install/linux/install.sh --profile core
 ```
 
 macOS:
 ```bash
-bash ./tools/install/macos/install.sh --profile capture
+bash ./tools/install/macos/install.sh --profile core
 ```
 
 If capture prerequisites are missing, installer falls back to `core` profile by default.  
@@ -139,9 +139,9 @@ Linux/macOS:
 ### What bootstrap installer does
 - checks Python and required tools
 - creates/reuses local `venv`
-- installs ACD profile (`core` default, `capture` optional)
+- installs ACD (`capture` attempted by default, auto-fallback to `core`)
 - runs smoke checks (CLI import + Qt startup probe)
-- starts app in mode matching profile (`core` or `live`)
+- starts app in `core` mode (prints `live` command when capture extras are ready)
 
 ## Run
 If you used bootstrap installer with `-SkipRun`, start from the repo venv:
@@ -149,14 +149,14 @@ If you used bootstrap installer with `-SkipRun`, start from the repo venv:
 Windows:
 ```powershell
 .\venv\Scripts\albion-command-desk core
-# live capture (capture profile required):
+# live capture (capture extras + runtime required):
 # .\venv\Scripts\albion-command-desk live
 ```
 
 Linux/macOS:
 ```bash
 ./venv/bin/albion-command-desk core
-# live capture (capture profile required):
+# live capture (capture extras + runtime required):
 # ./venv/bin/albion-command-desk live
 ```
 

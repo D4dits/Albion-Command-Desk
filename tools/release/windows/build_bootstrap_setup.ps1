@@ -96,7 +96,6 @@ namespace AlbionCommandDeskBootstrap
                 string psArgs = "-NoProfile -ExecutionPolicy Bypass -File " + Quote(installScript)
                     + " -ProjectRoot " + Quote(installRoot)
                     + " -VenvPath " + Quote(venvPath)
-                    + " -Profile core"
                     + " -ReleaseVersion " + Quote(releaseVersion)
                     + " -SkipRun";
 

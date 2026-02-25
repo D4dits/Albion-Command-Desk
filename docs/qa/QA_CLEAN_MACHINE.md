@@ -46,14 +46,13 @@ Each required job uploads a clean-machine evidence bundle containing:
 - `update-flow.log` (manifest/update banner contract probe),
 - `assets/ux-baseline/*.png` references for release-candidate review.
 
-## Manual local sanity (Windows core profile)
+## Manual local sanity (Windows default profile)
 
 Use only as supplemental check; CI matrix is the release gate:
 ```
 powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 `
   -ProjectRoot "$PWD" `
   -VenvPath "$PWD\.venv-qa-clean" `
-  -Profile core `
   -ForceRecreateVenv `
   -SkipRun
 ```

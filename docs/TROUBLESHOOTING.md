@@ -47,10 +47,10 @@ For Windows release-EXE install (outside repo), use:
   - If still failing, install manually:
     - `winget install --id Python.Python.3.12 -e --source winget --scope machine --accept-package-agreements --accept-source-agreements`
   - Then rerun bootstrap installer.
-- `Package install failed` during `.[capture]`:
+- `Package install failed` during capture install:
   - Use Python 3.11 or 3.12 (3.13 can fail for some capture wheels).
   - Install system build tools where required (Linux/macOS).
-  - Or install core profile only:
+  - Or force core profile explicitly:
     - Windows: `powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile core`
     - Linux: `bash ./tools/install/linux/install.sh --profile core`
     - macOS: `bash ./tools/install/macos/install.sh --profile core`

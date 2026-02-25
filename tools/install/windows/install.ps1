@@ -4,7 +4,7 @@ param(
     [string]$VenvPath = "",
     [string]$Python = "",
     [ValidateSet("core", "capture")]
-    [string]$Profile = "core",
+    [string]$Profile = "capture",
     [string]$ReleaseVersion = "local-dev",
     [switch]$SkipRun,
     [switch]$NonInteractive,
@@ -507,30 +507,28 @@ if ($SkipRun) {
     Write-InstallInfo "Installation complete. Launch manually with:"
     if ($Profile -eq "capture") {
         Write-Host "  $venvCli live"
+        Write-Host "  $venvCli core   # fallback mode if runtime is not available"
     } else {
         Write-Host "  $venvCli core"
-        Write-Host "  $venvCli live   # after reinstall with -Profile capture"
+        Write-Host "  $venvCli live   # after reinstall with capture extras"
     }
     exit 0
 }
 
 if ($Profile -eq "capture") {
-    Write-InstallInfo "Starting Albion Command Desk (live mode)"
-} else {
-    Write-InstallInfo "Starting Albion Command Desk (core mode)"
-}
-if (Test-Path $venvCli) {
-    if ($Profile -eq "capture") {
-        & $venvCli live
+    $runtimeStatus = Test-NpcapRuntime
+    if ($runtimeStatus.Available) {
+        Write-InstallInfo "Capture extras are ready. Launch live mode manually when needed: $venvCli live"
     } else {
-        & $venvCli core
+        Write-InstallWarn "Capture extras installed but Npcap Runtime was not detected."
+        Write-InstallHint "Install Npcap Runtime from https://npcap.com/#download and relaunch with: $venvCli live"
     }
+}
+Write-InstallInfo "Starting Albion Command Desk (core mode)"
+if (Test-Path $venvCli) {
+    & $venvCli core
     exit $LASTEXITCODE
 }
 
-if ($Profile -eq "capture") {
-    & $venvPython -m albion_dps.cli live
-} else {
-    & $venvPython -m albion_dps.cli core
-}
+& $venvPython -m albion_dps.cli core
 exit $LASTEXITCODE
