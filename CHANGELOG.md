@@ -7,6 +7,14 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.1.18] - 2026-02-25
+
+### Changed
+- First-run Qt startup no longer blocks with a game-folder picker when local game databases are missing.
+- Start tab now includes a dedicated **Game data** status card with manual setup and refresh actions.
+- Added explicit game database health reporting (indexed items/items/map index) and wiring into scanner/home UI state.
+- Startup checklist now includes game-data readiness as a separate step before scanner live-mode workflows.
+
 ## [0.1.17] - 2026-02-25
 
 ### Changed
