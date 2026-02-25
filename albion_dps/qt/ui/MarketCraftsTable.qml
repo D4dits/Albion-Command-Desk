@@ -335,6 +335,7 @@ TableSurface {
                     }
 
                     AppTextField {
+                        id: runsField
                         Layout.preferredWidth: 68
                         implicitHeight: 24
                         font.pixelSize: 10
@@ -352,13 +353,22 @@ TableSurface {
                             color: root.theme.surfaceInset
                             border.color: "#2a3a51"
                         }
-                        onEditingFinished: {
+                        function commitRunsValue() {
                             var parsed = parseInt(text)
                             if (isNaN(parsed) || parsed < 1) {
                                 parsed = 1
                             }
+                            root.craftPlanPendingContentY = craftPlanList.contentY
                             root.setPlanRowRuns(rowId, parsed)
                             text = String(parsed)
+                        }
+                        onEditingFinished: {
+                            commitRunsValue()
+                        }
+                        onActiveFocusChanged: {
+                            if (!activeFocus) {
+                                commitRunsValue()
+                            }
                         }
                     }
 

@@ -251,13 +251,16 @@ CardPanel {
         if (parts.length === 1 || decimals <= 0) return formatInt(whole)
         return formatInt(whole) + "." + parts[1]
     }
-    property var formatFixedFloor: function(value, decimals) {
+    property var formatIntFloor: function(value) {
         var n = Number(value)
-        var d = Math.max(0, Number(decimals) || 0)
         if (!isFinite(n)) n = 0
-        var factor = Math.pow(10, d)
-        var floored = n >= 0 ? Math.floor(n * factor) / factor : Math.ceil(n * factor) / factor
-        return formatFixed(floored, d)
+        var floored = n >= 0 ? Math.floor(n) : Math.ceil(n)
+        return formatInt(floored)
+    }
+    property var formatIntRound: function(value) {
+        var n = Number(value)
+        if (!isFinite(n)) n = 0
+        return formatInt(Math.round(n))
     }
     property var formatElapsed: function(totalSeconds) {
         var seconds = Math.max(0, Number(totalSeconds) || 0)
@@ -671,7 +674,7 @@ CardPanel {
                                         onDoubleClicked: root.copyCellText(parent.text)
                                     }
                                 }
-                                Text { text: formatFixed(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
+                                Text { text: formatIntRound(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
 
                                 TextField {
                                     Layout.preferredWidth: marketInputsStockWidth
@@ -682,7 +685,7 @@ CardPanel {
                                     onEditingFinished: root.setInputStockQuantity(itemId, text)
                                 }
 
-                                Text { text: formatFixed(buyQuantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth }
+                                Text { text: formatIntRound(buyQuantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth }
                                 Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; elide: Text.ElideRight }
 
                                 ComboBox {
@@ -828,7 +831,7 @@ CardPanel {
                                         onDoubleClicked: root.copyCellText(parent.text)
                                     }
                                 }
-                                Text { text: formatFixed(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
+                                Text { text: formatIntFloor(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
                                 Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; elide: Text.ElideRight }
 
                                 ComboBox {
@@ -1004,7 +1007,7 @@ CardPanel {
                                     }
                                 }
                                 Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 92; elide: Text.ElideRight }
-                                Text { text: formatFixedFloor(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 58; horizontalAlignment: Text.AlignLeft }
+                                Text { text: formatIntFloor(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 58; horizontalAlignment: Text.AlignLeft }
                                 Text { text: formatInt(revenue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignLeft }
                                 Text { text: formatInt(cost); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignLeft }
                                 Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68; horizontalAlignment: Text.AlignLeft }
