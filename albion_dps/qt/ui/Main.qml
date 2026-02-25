@@ -471,11 +471,20 @@ ApplicationWindow {
                     gitActionLabel: scannerState.gitActionLabel
                     gitInstallHint: scannerState.gitInstallHint
                     gitInstallCommand: scannerState.gitInstallCommand
+                    gameDataReady: scannerState.gameDataReady
+                    gameDataDetail: scannerState.gameDataDetail
+                    gameDataHint: scannerState.gameDataHint
+                    gameDataActionLabel: scannerState.gameDataActionLabel
                     theme: root.theme
                     onRefreshCaptureRuntimeStatus: scannerState.refreshCaptureRuntimeStatus()
                     onOpenCaptureRuntimeAction: scannerState.openCaptureRuntimeAction()
                     onRefreshGitStatus: scannerState.refreshGitStatus()
                     onOpenGitInstallAction: scannerState.openGitInstallAction()
+                    onRefreshGameDataStatus: scannerState.refreshGameDataStatus()
+                    onSetupGameData: {
+                        scannerState.setupGameData()
+                        toastManager.showInfo("Game data", "Running game data setup...")
+                    }
                     onCopyCommand: function(commandText) {
                         scannerState.copyText(commandText)
                         toastManager.showSuccess("Copied to clipboard", commandText)

@@ -54,7 +54,7 @@ def run_qt(args: argparse.Namespace) -> int:
     from albion_dps.qt.scanner import ScannerState
 
     names, party, fame, meter, decoder, mapper = _build_runtime(args)
-    ensure_game_databases(logger=logging.getLogger(__name__), interactive=True)
+    ensure_game_databases(logger=logging.getLogger(__name__), interactive=False)
     item_resolver = load_item_resolver(logger=logging.getLogger(__name__))
     map_resolver = load_map_resolver(logger=logging.getLogger(__name__))
     meter.map_lookup = map_resolver.name_for_index

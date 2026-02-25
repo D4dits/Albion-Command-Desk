@@ -29,6 +29,11 @@ CardPanel {
     property string gitInstallHint: ""
     property string gitInstallCommand: ""
 
+    property bool gameDataReady: false
+    property string gameDataDetail: ""
+    property string gameDataHint: ""
+    property string gameDataActionLabel: "Select game folder"
+
     property bool compactLayout: false
     property bool twoColumn: width >= 900
     property bool wideLayout: width >= 1040
@@ -43,6 +48,8 @@ CardPanel {
     signal openCaptureRuntimeAction()
     signal refreshGitStatus()
     signal openGitInstallAction()
+    signal refreshGameDataStatus()
+    signal setupGameData()
     signal copyCommand(string commandText)
     signal requestManualUpdateCheck()
     signal setUpdateAutoCheck(bool checked)
@@ -67,6 +74,14 @@ CardPanel {
 
     function gitStateLabel() {
         return gitAvailable ? "ready" : "missing"
+    }
+
+    function gameDataStateColor() {
+        return gameDataReady ? theme.stateSuccess : theme.stateWarning
+    }
+
+    function gameDataStateLabel() {
+        return gameDataReady ? "ready" : "missing"
     }
 
     ColumnLayout {
@@ -280,6 +295,69 @@ CardPanel {
 
                 implicitHeight: gitCardContent.implicitHeight + 20
             }
+
+            TableSurface {
+                id: gameDataCard
+                Layout.fillWidth: true
+                Layout.columnSpan: root.twoColumn ? 2 : 1
+                level: 1
+                ColumnLayout {
+                    id: gameDataCardContent
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    anchors.topMargin: 10
+                    spacing: 8
+
+                    Text {
+                        text: "Game data"
+                        color: textColor
+                        font.pixelSize: 12
+                        font.bold: true
+                    }
+                    Text {
+                        text: "Status: " + root.gameDataStateLabel()
+                        color: root.gameDataStateColor()
+                        font.pixelSize: 11
+                        font.bold: true
+                    }
+                    Text {
+                        text: root.gameDataDetail
+                        color: mutedColor
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        visible: root.gameDataHint.length > 0
+                        text: root.gameDataHint
+                        color: textColor
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        AppButton {
+                            text: root.gameDataActionLabel
+                            variant: "primary"
+                            compact: true
+                            onClicked: root.setupGameData()
+                        }
+                        AppButton {
+                            text: "Refresh"
+                            compact: true
+                            onClicked: root.refreshGameDataStatus()
+                        }
+                        Item { Layout.fillWidth: true }
+                    }
+                }
+
+                implicitHeight: gameDataCardContent.implicitHeight + 20
+            }
         }
 
         GridLayout {
@@ -330,7 +408,15 @@ CardPanel {
                     }
                     Text {
                         Layout.fillWidth: true
-                        text: "3) Scanner status: " + root.scannerStatusText
+                        text: "3) Game data: " + root.gameDataStateLabel()
+                        color: root.gameDataStateColor()
+                        font.pixelSize: 11
+                        font.bold: true
+                        wrapMode: Text.WordWrap
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "4) Scanner status: " + root.scannerStatusText
                         color: mutedColor
                         font.pixelSize: 11
                         wrapMode: Text.WordWrap

@@ -30,6 +30,20 @@ DEFAULT_MAP_INDEX_PATHS = (
 )
 
 
+class _NullLogger:
+    def warning(self, *_args, **_kwargs) -> None:
+        return
+
+    def info(self, *_args, **_kwargs) -> None:
+        return
+
+    def error(self, *_args, **_kwargs) -> None:
+        return
+
+    def exception(self, *_args, **_kwargs) -> None:
+        return
+
+
 def ensure_game_databases(*, logger, interactive: bool = True) -> bool:
     has_items = _has_indexed_items()
     has_catalog = _has_items_catalog()
@@ -57,6 +71,49 @@ def ensure_game_databases(*, logger, interactive: bool = True) -> bool:
 
 def ensure_item_databases(*, logger, interactive: bool = True) -> bool:
     return ensure_game_databases(logger=logger, interactive=interactive)
+
+
+def get_game_database_health(*, logger=None) -> dict[str, str | bool]:
+    has_items = _has_indexed_items()
+    has_catalog = _has_items_catalog()
+    has_maps = _has_map_index()
+    ready = has_items and has_catalog and has_maps
+
+    missing: list[str] = []
+    if not has_items:
+        missing.append("indexedItems.json")
+    if not has_catalog:
+        missing.append("items.json")
+    if not has_maps:
+        missing.append("map_index.json")
+
+    logger_obj = logger or _NullLogger()
+    resolved_root = _resolve_game_root(logger_obj)
+    root_text = str(resolved_root) if resolved_root is not None else ""
+
+    if ready:
+        detail = "All local game databases are present."
+        hint = "No action required."
+        action_label = "Rebuild data"
+    else:
+        detail = "Missing local game databases: " + ", ".join(missing)
+        if resolved_root is None:
+            hint = "Select Albion Online folder to extract missing databases."
+        else:
+            hint = (
+                "Detected game folder: "
+                + root_text
+                + ". Re-run extractor if files are stale or incomplete."
+            )
+        action_label = "Select game folder"
+
+    return {
+        "ready": ready,
+        "detail": detail,
+        "hint": hint,
+        "action_label": action_label,
+        "game_root": root_text,
+    }
 
 
 def _has_indexed_items() -> bool:

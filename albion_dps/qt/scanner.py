@@ -8,6 +8,7 @@ import subprocess
 import sys
 import threading
 import webbrowser
+import logging
 from collections import deque
 from datetime import datetime
 from pathlib import Path
@@ -24,6 +25,7 @@ from albion_dps.capture.npcap_runtime import (
     RUNTIME_STATE_UNKNOWN,
     detect_npcap_runtime,
 )
+from albion_dps.domain.item_db import ensure_game_databases, get_game_database_health
 
 
 DEFAULT_REPO_URL = "https://github.com/ao-data/albiondata-client.git"
@@ -45,6 +47,7 @@ class ScannerState(QObject):
     runningChanged = Signal()
     runtimeChanged = Signal()
     gitChanged = Signal()
+    gameDataChanged = Signal()
 
     _statusSignal = Signal(str)
     _updateSignal = Signal(str)
@@ -53,6 +56,7 @@ class ScannerState(QObject):
     _processExitSignal = Signal(int)
     _runtimeSignal = Signal(str, str, str, str)
     _gitSignal = Signal(bool, str, str, str)
+    _gameDataSignal = Signal(bool, str, str, str)
 
     def __init__(self) -> None:
         super().__init__()
@@ -71,6 +75,10 @@ class ScannerState(QObject):
         self._git_detail = "Git status not checked yet."
         self._git_action_label = ""
         self._git_action_url = ""
+        self._game_data_ready = False
+        self._game_data_detail = "Game data status not checked yet."
+        self._game_data_hint = ""
+        self._game_data_action_label = "Select game folder"
         self._process: subprocess.Popen[str] | None = None
         self._process_lock = threading.Lock()
         self._op_lock = threading.Lock()
@@ -84,10 +92,12 @@ class ScannerState(QObject):
         self._processExitSignal.connect(self._handle_process_exit)
         self._runtimeSignal.connect(self._set_runtime)
         self._gitSignal.connect(self._set_git)
+        self._gameDataSignal.connect(self._set_game_data)
 
         self._append_log("Scanner ready.")
         self.refreshCaptureRuntimeStatus()
         self.refreshGitStatus()
+        self.refreshGameDataStatus()
 
     @Property(str, notify=statusChanged)
     def statusText(self) -> str:
@@ -188,6 +198,26 @@ class ScannerState(QObject):
             return "winget install --id Git.Git -e --source winget"
         return "xdg-open https://git-scm.com/downloads"
 
+    @Property(bool, notify=gameDataChanged)
+    def gameDataReady(self) -> bool:
+        return self._game_data_ready
+
+    @Property(str, notify=gameDataChanged)
+    def gameDataState(self) -> str:
+        return "ready" if self._game_data_ready else "missing"
+
+    @Property(str, notify=gameDataChanged)
+    def gameDataDetail(self) -> str:
+        return self._game_data_detail
+
+    @Property(str, notify=gameDataChanged)
+    def gameDataHint(self) -> str:
+        return self._game_data_hint
+
+    @Property(str, notify=gameDataChanged)
+    def gameDataActionLabel(self) -> str:
+        return self._game_data_action_label
+
     @Slot()
     def clearLog(self) -> None:
         self._log_lines.clear()
@@ -253,6 +283,33 @@ class ScannerState(QObject):
             self._append_log(f"Opened Git install page: {url}")
         else:
             self._append_warn(f"Failed to open browser automatically: {url}")
+
+    @Slot()
+    def refreshGameDataStatus(self) -> None:
+        health = get_game_database_health(logger=logging.getLogger(__name__))
+        self._gameDataSignal.emit(
+            bool(health.get("ready", False)),
+            str(health.get("detail", "")),
+            str(health.get("hint", "")),
+            str(health.get("action_label", "Select game folder")),
+        )
+
+    @Slot()
+    def setupGameData(self) -> None:
+        self._append_log("Running game data setup...")
+        try:
+            ok = ensure_game_databases(logger=logging.getLogger(__name__), interactive=True)
+        except Exception as exc:
+            self._append_error(f"Game data setup failed: {exc}")
+            self.refreshGameDataStatus()
+            return
+        if ok:
+            self._append_log("Game data setup completed.")
+        else:
+            self._append_warn(
+                "Game data is still missing or setup was canceled. Live mode can run with fallback names."
+            )
+        self.refreshGameDataStatus()
 
     @Slot(str)
     def copyText(self, text: str) -> None:
@@ -742,6 +799,21 @@ class ScannerState(QObject):
         self._git_action_label = action_label
         self._git_action_url = action_url
         self.gitChanged.emit()
+
+    def _set_game_data(self, ready: bool, detail: str, hint: str, action_label: str) -> None:
+        changed = (
+            ready != self._game_data_ready
+            or detail != self._game_data_detail
+            or hint != self._game_data_hint
+            or action_label != self._game_data_action_label
+        )
+        if not changed:
+            return
+        self._game_data_ready = ready
+        self._game_data_detail = detail
+        self._game_data_hint = hint
+        self._game_data_action_label = action_label
+        self.gameDataChanged.emit()
 
     def _detect_capture_runtime_status(self) -> tuple[str, str, str, str]:
         if _is_windows():
