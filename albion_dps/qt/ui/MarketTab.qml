@@ -663,7 +663,7 @@ CardPanel {
                                         onDoubleClicked: root.copyCellText(parent.text)
                                     }
                                 }
-                                Text { text: formatInt(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
+                                Text { text: formatFixed(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
 
                                 TextField {
                                     Layout.preferredWidth: marketInputsStockWidth
@@ -932,10 +932,13 @@ CardPanel {
                             anchors.margins: 6
                             spacing: 12
                             Text { text: "Investment: " + formatInt(root.resultsInputCost); color: mutedColor; font.pixelSize: 11 }
+                            Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
                             Text { text: "Revenue: " + formatInt(root.resultsOutputValue); color: mutedColor; font.pixelSize: 11 }
+                            Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
                             Text { text: "Net: " + formatInt(root.resultsNetValue); color: signedValueColor(root.resultsNetValue); font.pixelSize: 11 }
-                            Item { Layout.fillWidth: true }
+                            Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
                             Text { text: "Margin: " + formatFixed(root.resultsMarginPercent, 2) + "%"; color: signedValueColor(root.resultsMarginPercent); font.pixelSize: 11 }
+                            Item { Layout.fillWidth: true }
                         }
                     }
 
@@ -993,14 +996,14 @@ CardPanel {
                                     }
                                 }
                                 Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 92; elide: Text.ElideRight }
-                                Text { text: formatFixed(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 58; horizontalAlignment: Text.AlignRight }
-                                Text { text: formatInt(revenue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignRight }
-                                Text { text: formatInt(cost); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignRight }
-                                Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68; horizontalAlignment: Text.AlignRight }
-                                Text { text: formatInt(taxValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68; horizontalAlignment: Text.AlignRight }
-                                Text { text: formatInt(profit); color: signedValueColor(profit); font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignRight }
-                                Text { text: formatFixed(marginPercent, 1) + "%"; color: signedValueColor(marginPercent); font.pixelSize: 11; Layout.preferredWidth: 70; horizontalAlignment: Text.AlignRight }
-                                Text { text: formatFixed(demandProxy, 1) + "%"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; horizontalAlignment: Text.AlignRight }
+                                Text { text: formatFixed(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 58; horizontalAlignment: Text.AlignLeft }
+                                Text { text: formatInt(revenue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignLeft }
+                                Text { text: formatInt(cost); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignLeft }
+                                Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68; horizontalAlignment: Text.AlignLeft }
+                                Text { text: formatInt(taxValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68; horizontalAlignment: Text.AlignLeft }
+                                Text { text: formatInt(profit); color: signedValueColor(profit); font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignLeft }
+                                Text { text: formatFixed(marginPercent, 1) + "%"; color: signedValueColor(marginPercent); font.pixelSize: 11; Layout.preferredWidth: 70; horizontalAlignment: Text.AlignLeft }
+                                Text { text: formatFixed(demandProxy, 1) + "%"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; horizontalAlignment: Text.AlignLeft }
                             }
                         }
                     }
