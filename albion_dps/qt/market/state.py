@@ -552,6 +552,10 @@ class _JournalLine:
     input_cost: float
     output_value: float
     market_tax: float
+    input_price_mode: str = PriceType.SELL_ORDER.value
+    output_price_mode: str = PriceType.SELL_ORDER.value
+    empty_price_item_id: str = ""
+    full_price_item_id: str = ""
 
     @property
     def net_profit(self) -> float:
@@ -2388,18 +2392,23 @@ class MarketSetupState(QObject):
             empty_unit_price = float(journal_line.input_cost) / float(journal_line.full_quantity)
             empty_item_id = str(journal_line.empty_item_id)
             empty_name = f"{_journal_display_name(journal_line.kind, journal_line.tier)} (empty)"
+            journal_input_price_type = str(journal_line.input_price_mode or PriceType.SELL_ORDER.value)
             key = (
                 empty_item_id,
                 journal_buy_city,
-                PriceType.SELL_ORDER.value,
+                journal_input_price_type,
                 float(empty_unit_price),
             )
             row = input_acc.get(key)
-            journal_input_age = self._price_age_text(
-                item_id=empty_item_id,
+            journal_input_age = self._price_age_text_for_item_ids(
+                item_ids=[
+                    str(journal_line.empty_price_item_id or ""),
+                    f"{empty_item_id}_EMPTY",
+                    empty_item_id,
+                ],
                 city=journal_buy_city,
                 quality=self._setup.quality,
-                price_type=PriceType.SELL_ORDER.value,
+                price_type=journal_input_price_type,
             )
             if journal_input_age.strip().lower() in {"", "n/a", "unknown"}:
                 journal_input_age = "npc"
@@ -2414,7 +2423,7 @@ class MarketSetupState(QObject):
                         enchantment=0,
                     ),
                     "city": journal_buy_city,
-                    "price_type": PriceType.SELL_ORDER.value,
+                    "price_type": journal_input_price_type,
                     "price_age_text": journal_input_age,
                     "unit_price": float(empty_unit_price),
                     "quantity": float(journal_line.full_quantity),
@@ -2424,7 +2433,7 @@ class MarketSetupState(QObject):
             else:
                 row["quantity"] = float(row["quantity"]) + float(journal_line.full_quantity)
                 row["total_cost"] = float(row["total_cost"]) + float(journal_line.input_cost)
-            self._input_price_types.setdefault(empty_item_id, PriceType.SELL_ORDER)
+            self._input_price_types.setdefault(empty_item_id, self._to_price_type(journal_input_price_type))
 
         input_rows: list[InputPreviewRow] = []
         adjusted_inputs: list[InputLine] = []
@@ -2502,18 +2511,23 @@ class MarketSetupState(QObject):
             empty_unit_price = float(journal_line.input_cost) / float(journal_line.full_quantity)
             empty_item_id = str(journal_line.empty_item_id)
             empty_name = f"{_journal_display_name(journal_line.kind, journal_line.tier)} (empty)"
+            selected_journal_input_price_type = str(journal_line.input_price_mode or PriceType.SELL_ORDER.value)
             key = (
                 empty_item_id,
                 journal_buy_city,
-                PriceType.SELL_ORDER.value,
+                selected_journal_input_price_type,
                 float(empty_unit_price),
             )
             row = selected_input_acc.get(key)
-            selected_journal_input_age = self._price_age_text(
-                item_id=empty_item_id,
+            selected_journal_input_age = self._price_age_text_for_item_ids(
+                item_ids=[
+                    str(journal_line.empty_price_item_id or ""),
+                    f"{empty_item_id}_EMPTY",
+                    empty_item_id,
+                ],
                 city=journal_buy_city,
                 quality=self._setup.quality,
-                price_type=PriceType.SELL_ORDER.value,
+                price_type=selected_journal_input_price_type,
             )
             if selected_journal_input_age.strip().lower() in {"", "n/a", "unknown"}:
                 selected_journal_input_age = "npc"
@@ -2522,7 +2536,7 @@ class MarketSetupState(QObject):
                     "item_id": empty_item_id,
                     "item": empty_name,
                     "city": journal_buy_city,
-                    "price_type": PriceType.SELL_ORDER.value,
+                    "price_type": selected_journal_input_price_type,
                     "price_age_text": selected_journal_input_age,
                     "unit_price": float(empty_unit_price),
                     "quantity": float(journal_line.full_quantity),
@@ -2602,10 +2616,11 @@ class MarketSetupState(QObject):
             full_item_id = str(journal_line.full_item_id)
             full_name = f"{_journal_display_name(journal_line.kind, journal_line.tier)} (full)"
             full_unit_price = float(journal_line.output_value) / float(journal_line.full_quantity)
+            journal_output_price_type = str(journal_line.output_price_mode or PriceType.SELL_ORDER.value)
             key = (
                 full_item_id,
                 journal_sell_city,
-                PriceType.SELL_ORDER.value,
+                journal_output_price_type,
                 float(full_unit_price),
             )
             row = output_acc.get(key)
@@ -2614,12 +2629,12 @@ class MarketSetupState(QObject):
                     "item_id": full_item_id,
                     "item": full_name,
                     "city": journal_sell_city,
-                    "price_type": PriceType.SELL_ORDER.value,
-                    "price_age_text": self._price_age_text(
-                        item_id=full_item_id,
+                    "price_type": journal_output_price_type,
+                    "price_age_text": self._price_age_text_for_item_ids(
+                        item_ids=[str(journal_line.full_price_item_id or ""), full_item_id],
                         city=journal_sell_city,
                         quality=self._setup.quality,
-                        price_type=PriceType.SELL_ORDER.value,
+                        price_type=journal_output_price_type,
                     ),
                     "unit_price": float(full_unit_price),
                     "quantity": float(journal_line.full_quantity),
@@ -2633,7 +2648,7 @@ class MarketSetupState(QObject):
                 row["total_value"] = float(row["total_value"]) + float(journal_line.output_value)
                 row["tax_value"] = float(row["tax_value"]) + float(journal_line.market_tax)
                 row["net_value"] = float(row["net_value"]) + float(journal_line.output_value - journal_line.market_tax)
-            self._output_price_types.setdefault(full_item_id, PriceType.SELL_ORDER)
+            self._output_price_types.setdefault(full_item_id, self._to_price_type(journal_output_price_type))
             if journal_sell_city:
                 self._output_cities.setdefault(full_item_id, journal_sell_city)
 
@@ -2761,10 +2776,11 @@ class MarketSetupState(QObject):
             full_item_id = str(journal_line.full_item_id)
             full_name = f"{_journal_display_name(journal_line.kind, journal_line.tier)} (full)"
             full_unit_price = float(journal_line.output_value) / float(journal_line.full_quantity)
+            selected_journal_output_price_type = str(journal_line.output_price_mode or PriceType.SELL_ORDER.value)
             key = (
                 full_item_id,
                 journal_sell_city,
-                PriceType.SELL_ORDER.value,
+                selected_journal_output_price_type,
                 float(full_unit_price),
             )
             row = selected_output_acc.get(key)
@@ -2773,12 +2789,12 @@ class MarketSetupState(QObject):
                     "item_id": full_item_id,
                     "item": full_name,
                     "city": journal_sell_city,
-                    "price_type": PriceType.SELL_ORDER.value,
-                    "price_age_text": self._price_age_text(
-                        item_id=full_item_id,
+                    "price_type": selected_journal_output_price_type,
+                    "price_age_text": self._price_age_text_for_item_ids(
+                        item_ids=[str(journal_line.full_price_item_id or ""), full_item_id],
                         city=journal_sell_city,
                         quality=self._setup.quality,
-                        price_type=PriceType.SELL_ORDER.value,
+                        price_type=selected_journal_output_price_type,
                     ),
                     "unit_price": float(full_unit_price),
                     "quantity": float(journal_line.full_quantity),
@@ -3133,7 +3149,7 @@ class MarketSetupState(QObject):
             empty_item_id = str(row["empty_item_id"])
             full_item_id = str(row["full_item_id"])
 
-            empty_market_price = self._resolve_market_price_for_item_ids(
+            empty_market_price, empty_price_mode, empty_price_item_id = self._resolve_market_price_for_item_ids(
                 price_index=price_index,
                 item_ids=[f"{empty_item_id}_EMPTY", empty_item_id],
                 city=buy_city,
@@ -3141,12 +3157,10 @@ class MarketSetupState(QObject):
                 preferred_mode=PriceType.SELL_ORDER.value,
             )
             empty_npc_price = float(_JOURNAL_NPC_EMPTY_PRICES.get(_tier_from_item_id(empty_item_id), 0))
-            if empty_market_price > 0 and empty_npc_price > 0:
-                empty_unit_price = min(empty_market_price, empty_npc_price)
-            else:
-                empty_unit_price = empty_market_price if empty_market_price > 0 else empty_npc_price
+            # Prefer ADP quote whenever available; NPC is fallback only.
+            empty_unit_price = empty_market_price if empty_market_price > 0 else empty_npc_price
 
-            full_unit_price = self._resolve_market_price_for_item_ids(
+            full_unit_price, full_price_mode, full_price_item_id = self._resolve_market_price_for_item_ids(
                 price_index=price_index,
                 item_ids=[full_item_id],
                 city=sell_city,
@@ -3169,10 +3183,14 @@ class MarketSetupState(QObject):
                     tier=tier,
                     empty_item_id=empty_item_id,
                     full_item_id=full_item_id,
+                    input_price_mode=str(empty_price_mode),
+                    output_price_mode=str(full_price_mode),
                     full_quantity=float(full_quantity),
                     input_cost=line_input_cost,
                     output_value=line_output_value,
                     market_tax=float(line_market_tax),
+                    empty_price_item_id=str(empty_price_item_id),
+                    full_price_item_id=str(full_price_item_id),
                 )
             )
 
@@ -3193,24 +3211,56 @@ class MarketSetupState(QObject):
         city: str,
         quality: int,
         preferred_mode: str,
-    ) -> float:
+    ) -> tuple[float, str, str]:
+        normalized_mode = str(preferred_mode).strip().lower()
+        fallback_modes: list[str] = []
+        if normalized_mode != PriceType.SELL_ORDER.value:
+            fallback_modes.append(PriceType.SELL_ORDER.value)
+        if normalized_mode != PriceType.BUY_ORDER.value:
+            fallback_modes.append(PriceType.BUY_ORDER.value)
+        mode_order = [normalized_mode] + fallback_modes
+        for mode in mode_order:
+            for item_id in item_ids:
+                quote = _find_price_quote(
+                    price_index,
+                    item_id=item_id,
+                    city=city,
+                    quality=quality,
+                    preferred_mode=mode,
+                )
+                if quote is None:
+                    continue
+                if mode == PriceType.BUY_ORDER.value:
+                    value = int(quote.buy_price_max or 0)
+                else:
+                    value = int(quote.sell_price_min or 0)
+                if value > 0:
+                    return float(value), mode, str(item_id)
+        return 0.0, normalized_mode, (str(item_ids[0]) if item_ids else "")
+
+    def _price_age_text_for_item_ids(
+        self,
+        *,
+        item_ids: Sequence[str],
+        city: str,
+        quality: int,
+        price_type: str,
+    ) -> str:
+        seen: set[str] = set()
         for item_id in item_ids:
-            quote = _find_price_quote(
-                price_index,
-                item_id=item_id,
+            normalized_item_id = str(item_id).strip()
+            if not normalized_item_id or normalized_item_id in seen:
+                continue
+            seen.add(normalized_item_id)
+            age_text = self._price_age_text(
+                item_id=normalized_item_id,
                 city=city,
                 quality=quality,
-                preferred_mode=preferred_mode,
+                price_type=price_type,
             )
-            if quote is None:
-                continue
-            if preferred_mode == PriceType.BUY_ORDER.value:
-                value = int(quote.buy_price_max or 0)
-            else:
-                value = int(quote.sell_price_min or 0)
-            if value > 0:
-                return float(value)
-        return 0.0
+            if age_text.strip().lower() not in {"", "n/a", "unknown"}:
+                return age_text
+        return "n/a"
 
     def _set_list_action_text(self, text: str) -> None:
         self._list_action_text = text
