@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "albion-command-desk"
-version = "0.1.16"
+version = "0.1.17"
 description = "Albion Online combat and market operations desk"
 requires-python = ">=3.10"
 dependencies = ["PySide6>=6.6"]
@@ -18,7 +18,7 @@ capture = ["pcapy-ng>=1.0.0"]
 all = ["pytest>=7.0", "pcapy-ng>=1.0.0"]
 
 [tool.albion_command_desk.install_profiles]
-default = "core"
+default = "capture"
 core = "."
 capture = ".[capture]"
 core_runtime_command = "core"

@@ -7,6 +7,15 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.1.17] - 2026-02-25
+
+### Changed
+- Installer defaults were switched to `capture` on Windows/Linux/macOS bootstrap scripts, with automatic fallback to `core` when capture prerequisites are missing.
+- Windows bootstrap EXE now runs `install.ps1` without forcing `-Profile core`, so release installs follow the same default capture-first path.
+- Bootstrap auto-run now starts `core` mode consistently after install and prints explicit `live` command guidance when capture extras/runtime are ready.
+- Bootstrap smoke CI now validates the default installer flow (no forced core profile) on required clean-machine jobs.
+- Install/release/troubleshooting docs were updated to reflect capture-first install behavior and fallback expectations.
+
 ## [0.1.16] - 2026-02-20
 
 ### Added
