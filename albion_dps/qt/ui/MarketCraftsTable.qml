@@ -32,7 +32,7 @@ TableSurface {
 
     // Layout flags
     property int compactControlHeight: 24
-    readonly property int craftNameColumnWidth: 260
+    readonly property int craftNameColumnWidth: Math.max(140, Math.min(260, root.width - (24 + 46 + 118 + 70 + 54 + 68 + 54 + 48 + 40 + (9 * 6) + 8)))
     readonly property int craftTableContentWidth: 8 + craftNameColumnWidth + 24 + 46 + 118 + 70 + 54 + 68 + 54 + 48 + 40 + (9 * 6)
 
     // Helper functions (injected by parent)

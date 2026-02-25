@@ -821,6 +821,23 @@ class CraftPlanModel(QAbstractListModel):
         self._items = list(rows)
         self.endResetModel()
 
+    def set_items_in_place(self, rows: list[CraftPlanRow]) -> None:
+        incoming = list(rows)
+        if len(incoming) != len(self._items):
+            self.set_items(incoming)
+            return
+        for idx, current in enumerate(self._items):
+            if int(current.row_id) != int(incoming[idx].row_id):
+                self.set_items(incoming)
+                return
+        changed_indexes = [idx for idx, current in enumerate(self._items) if incoming[idx] != current]
+        if not changed_indexes:
+            return
+        self._items = incoming
+        first = min(changed_indexes)
+        last = max(changed_indexes)
+        self.dataChanged.emit(self.index(first, 0), self.index(last, 0), [])
+
 
 class MarketSetupState(QObject):
     setupChanged = Signal()
@@ -2101,6 +2118,8 @@ class MarketSetupState(QObject):
     ) -> bool:
         changed = False
         next_rows: list[CraftPlanRow] = []
+        changed_city = False
+        changed_profit_drivers = False
         for row in self._craft_plan_rows:
             if int(row.row_id) != int(row_id):
                 next_rows.append(row)
@@ -2130,10 +2149,21 @@ class MarketSetupState(QObject):
                 has_fresh_component_prices=row.has_fresh_component_prices,
             )
             changed = next_row != row
+            changed_city = changed_city or (next_row.craft_city != row.craft_city)
+            changed_profit_drivers = changed_profit_drivers or (
+                next_row.enabled != row.enabled
+                or next_row.runs != row.runs
+                or float(next_row.daily_bonus_percent) != float(row.daily_bonus_percent)
+            )
             next_rows.append(next_row)
         if changed:
             self._craft_plan_rows = next_rows
-            self._sync_craft_plan_model()
+            sort_key = str(self._craft_plan_sort_key or "")
+            needs_resort = (sort_key == "city" and changed_city) or (sort_key == "pl" and changed_profit_drivers)
+            if needs_resort:
+                self._sync_craft_plan_model()
+            else:
+                self._craft_plan_model.set_items_in_place(self._sorted_craft_plan_rows(self._craft_plan_rows))
         return changed
 
     def _ensure_price_preferences_for_recipe(self, recipe: Recipe) -> None:
@@ -3016,7 +3046,10 @@ class MarketSetupState(QObject):
             next_rows.append(next_row)
         if changed:
             self._craft_plan_rows = next_rows
-            self._sync_craft_plan_model()
+            if str(self._craft_plan_sort_key or "") == "pl":
+                self._sync_craft_plan_model()
+            else:
+                self._craft_plan_model.set_items_in_place(self._sorted_craft_plan_rows(self._craft_plan_rows))
 
     def _price_age_text(self, *, item_id: str, city: str, quality: int, price_type: str) -> str:
         normalized = str(price_type).strip().lower()
