@@ -32,6 +32,8 @@ TableSurface {
 
     // Layout flags
     property int compactControlHeight: 24
+    readonly property int craftNameColumnWidth: 260
+    readonly property int craftTableContentWidth: 8 + craftNameColumnWidth + 24 + 46 + 118 + 70 + 54 + 68 + 54 + 48 + 40 + (9 * 6)
 
     // Helper functions (injected by parent)
     property var tableRowColor: function(index) {
@@ -166,105 +168,128 @@ TableSurface {
             }
         }
 
-        // Table header
-        Rectangle {
-            Layout.fillWidth: true
-            height: 22
-            radius: 4
-            color: theme.tableHeaderBackground
-            border.color: theme.borderSubtle
-            RowLayout {
-                anchors.fill: parent
-                anchors.margins: 4
-                spacing: 6
-                Text { text: "On"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 24 }
-                Text { text: "Craft"; color: mutedColor; font.pixelSize: 10; Layout.fillWidth: true }
-                Text { text: "Tier"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 46 }
-                Text { text: "City"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 118 }
-                Text { text: "Bonus"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 70 }
-                Text { text: "RRR"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 54 }
-                Text { text: "Runs"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 68 }
-                Text { text: "P/L%"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 54 }
-                Text { text: "AODP"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 48 }
-                Text { text: ""; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 40 }
-            }
-        }
-
-        // Craft list
-        ListView {
-            id: craftPlanList
+        Flickable {
+            id: craftTableFlick
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.preferredHeight: Math.max(190, Math.min(420, 86 + root.craftPlanCount * 24))
             clip: true
-            spacing: 1
-            reuseItems: true
-            cacheBuffer: 600
-            model: root.craftPlanModel
+            contentWidth: Math.max(width, root.craftTableContentWidth)
+            contentHeight: craftTableViewport.height
+            flickableDirection: Flickable.HorizontalFlick
+            boundsBehavior: Flickable.StopAtBounds
 
-            Connections {
-                target: craftPlanList.model
-                function onModelReset() {
-                    if (root.craftPlanPendingContentY >= 0) {
-                        craftPlanRestoreTimer.restart()
-                    }
-                }
+            ScrollBar.horizontal: ScrollBar {
+                policy: craftTableFlick.contentWidth > craftTableFlick.width ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
             }
 
-            delegate: Rectangle {
-                width: ListView.view.width
-                readonly property string rowSearchText: itemLabelWithTierParts(displayName, tier, enchant)
-                readonly property bool searchMatches: root.matchesSearch(rowSearchText, root.craftPlanSearchQuery)
-                readonly property bool rowHasFreshPrices: hasFreshComponentPrices === undefined || hasFreshComponentPrices === null
-                    ? true
-                    : Boolean(hasFreshComponentPrices)
-                readonly property bool enabledMatches: !root.showEnabledOnly || Boolean(isEnabled)
-                visible: searchMatches && enabledMatches && (!root.hideRowsWithoutFreshPrices || rowHasFreshPrices)
-                height: visible ? 32 : 0
-                color: !rowHasFreshPrices
-                    ? "#2b1f1f"
-                    : (recipeId === root.currentRecipeId ? "#1b2635" : root.tableRowColor(index))
+            Item {
+                id: craftTableViewport
+                width: craftTableFlick.contentWidth
+                height: craftTableFlick.height
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: 4
-                    anchors.rightMargin: 4
-                    spacing: 6
+                // Table header
+                Rectangle {
+                    id: craftTableHeader
+                    width: parent.width
+                    height: 22
+                    radius: 4
+                    color: theme.tableHeaderBackground
+                    border.color: theme.borderSubtle
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 4
+                        spacing: 6
+                        Text { text: "On"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 24 }
+                        Text { text: "Craft"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: root.craftNameColumnWidth; elide: Text.ElideRight }
+                        Text { text: "Tier"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 46 }
+                        Text { text: "City"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 118 }
+                        Text { text: "Bonus"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 70 }
+                        Text { text: "RRR"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 54 }
+                        Text { text: "Runs"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 68 }
+                        Text { text: "P/L%"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 54 }
+                        Text { text: "AODP"; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 48 }
+                        Text { text: ""; color: mutedColor; font.pixelSize: 10; Layout.preferredWidth: 40 }
+                    }
+                }
 
-                    CheckBox {
-                        id: enabledCheck
-                        Layout.preferredWidth: 24
-                        checked: isEnabled
-                        hoverEnabled: true
-                        padding: 0
-                        spacing: 0
-                        indicator: Rectangle {
-                            anchors.centerIn: parent
-                            implicitWidth: 14
-                            implicitHeight: 14
-                            radius: 2
-                            border.color: "#5f6b7a"
-                            color: enabledCheck.checked ? accentColor : root.theme.surfaceInteractive
-                        }
-                        contentItem: Item { implicitWidth: 0; implicitHeight: 0 }
-                        onClicked: {
-                            root.craftPlanPendingContentY = craftPlanList.contentY
-                            root.setPlanRowEnabled(rowId, checked)
+                // Craft list
+                ListView {
+                    id: craftPlanList
+                    anchors.top: craftTableHeader.bottom
+                    anchors.topMargin: 1
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    clip: true
+                    spacing: 1
+                    reuseItems: true
+                    cacheBuffer: 600
+                    model: root.craftPlanModel
+
+                    Connections {
+                        target: craftPlanList.model
+                        function onModelReset() {
+                            if (root.craftPlanPendingContentY >= 0) {
+                                craftPlanRestoreTimer.restart()
+                            }
                         }
                     }
 
-                    Text {
-                        Layout.fillWidth: true
-                        text: itemLabelWithTierParts(displayName, tier, enchant)
-                        color: textColor
-                        font.pixelSize: 10
-                        elide: Text.ElideRight
-                        MouseArea {
+                    delegate: Rectangle {
+                        width: ListView.view.width
+                        readonly property string rowSearchText: itemLabelWithTierParts(displayName, tier, enchant)
+                        readonly property bool searchMatches: root.matchesSearch(rowSearchText, root.craftPlanSearchQuery)
+                        readonly property bool rowHasFreshPrices: hasFreshComponentPrices === undefined || hasFreshComponentPrices === null
+                            ? true
+                            : Boolean(hasFreshComponentPrices)
+                        readonly property bool enabledMatches: !root.showEnabledOnly || Boolean(isEnabled)
+                        visible: searchMatches && enabledMatches && (!root.hideRowsWithoutFreshPrices || rowHasFreshPrices)
+                        height: visible ? 32 : 0
+                        color: !rowHasFreshPrices
+                            ? "#2b1f1f"
+                            : (recipeId === root.currentRecipeId ? "#1b2635" : root.tableRowColor(index))
+
+                        RowLayout {
                             anchors.fill: parent
-                            acceptedButtons: Qt.LeftButton
-                            onDoubleClicked: root.copyCellText(parent.text)
-                        }
-                    }
+                            anchors.leftMargin: 4
+                            anchors.rightMargin: 4
+                            spacing: 6
+
+                            CheckBox {
+                                id: enabledCheck
+                                Layout.preferredWidth: 24
+                                checked: isEnabled
+                                hoverEnabled: true
+                                padding: 0
+                                spacing: 0
+                                indicator: Rectangle {
+                                    anchors.centerIn: parent
+                                    implicitWidth: 14
+                                    implicitHeight: 14
+                                    radius: 2
+                                    border.color: "#5f6b7a"
+                                    color: enabledCheck.checked ? accentColor : root.theme.surfaceInteractive
+                                }
+                                contentItem: Item { implicitWidth: 0; implicitHeight: 0 }
+                                onClicked: {
+                                    root.craftPlanPendingContentY = craftPlanList.contentY
+                                    root.setPlanRowEnabled(rowId, checked)
+                                }
+                            }
+
+                            Text {
+                                Layout.preferredWidth: root.craftNameColumnWidth
+                                text: itemLabelWithTierParts(displayName, tier, enchant)
+                                color: textColor
+                                font.pixelSize: 10
+                                elide: Text.ElideRight
+                                MouseArea {
+                                    anchors.fill: parent
+                                    acceptedButtons: Qt.LeftButton
+                                    onDoubleClicked: root.copyCellText(parent.text)
+                                }
+                            }
 
                     Text {
                         Layout.preferredWidth: 46
@@ -357,14 +382,16 @@ TableSurface {
                         horizontalAlignment: Text.AlignLeft
                     }
 
-                    AppButton {
-                        Layout.preferredWidth: 40
-                        implicitHeight: 22
-                        fontPixelSize: 10
-                        text: "Del"
-                        onClicked: {
-                            root.craftPlanPendingContentY = craftPlanList.contentY
-                            root.removePlanRow(rowId)
+                            AppButton {
+                                Layout.preferredWidth: 40
+                                implicitHeight: 22
+                                fontPixelSize: 10
+                                text: "Del"
+                                onClicked: {
+                                    root.craftPlanPendingContentY = craftPlanList.contentY
+                                    root.removePlanRow(rowId)
+                                }
+                            }
                         }
                     }
                 }

@@ -251,6 +251,14 @@ CardPanel {
         if (parts.length === 1 || decimals <= 0) return formatInt(whole)
         return formatInt(whole) + "." + parts[1]
     }
+    property var formatFixedFloor: function(value, decimals) {
+        var n = Number(value)
+        var d = Math.max(0, Number(decimals) || 0)
+        if (!isFinite(n)) n = 0
+        var factor = Math.pow(10, d)
+        var floored = n >= 0 ? Math.floor(n * factor) / factor : Math.ceil(n * factor) / factor
+        return formatFixed(floored, d)
+    }
     property var formatElapsed: function(totalSeconds) {
         var seconds = Math.max(0, Number(totalSeconds) || 0)
         var mm = Math.floor(seconds / 60)
@@ -996,7 +1004,7 @@ CardPanel {
                                     }
                                 }
                                 Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 92; elide: Text.ElideRight }
-                                Text { text: formatFixed(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 58; horizontalAlignment: Text.AlignLeft }
+                                Text { text: formatFixedFloor(quantity, 2); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 58; horizontalAlignment: Text.AlignLeft }
                                 Text { text: formatInt(revenue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignLeft }
                                 Text { text: formatInt(cost); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignLeft }
                                 Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68; horizontalAlignment: Text.AlignLeft }
