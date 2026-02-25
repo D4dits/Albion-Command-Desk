@@ -4,13 +4,13 @@
 
 # Albion Command Desk
 
-Passive Albion Online companion app with a Qt desktop UI:
+External Albion Online companion app (Qt desktop UI):
 - DPS/HPS meter (live or PCAP replay)
-- Party-only combat aggregation (self + party)
-- Optional scanner helper tab
-- Market crafting workspace (inputs/outputs/results)
+- party-focused combat stats
+- scanner helper tab
+- market crafting workspace (setup, inputs, outputs, results)
 
-No game client hooks, no overlays, no memory editing.
+No client hooks, no overlays, no memory editing.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white">
@@ -18,181 +18,80 @@ No game client hooks, no overlays, no memory editing.
   <img src="https://img.shields.io/badge/Game-Albion%20Online-orange">
 </p>
 
-## Website (GitHub Pages)
-- Public landing page source lives in `website/` (SEO-focused static site).
-- Deployment workflow: `.github/workflows/pages.yml`.
-- Expected URL: `https://d4dits.github.io/Albion-Command-Desk/`
-- One-time repo setting required: GitHub **Settings -> Pages -> Source: GitHub Actions**.
+## Install
 
-## Support the Project
-If Albion Command Desk saves you time or silver, consider supporting future updates and maintenance.
+### Windows (recommended, no Git required)
+1. Open latest release: `https://github.com/D4dits/Albion-Command-Desk/releases/latest`
+2. Download `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`
+3. Run installer
 
-<p align="center">
-  <a href="https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00"><img src="https://img.shields.io/badge/PayPal-Donate-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="PayPal (default $20, editable on PayPal page)"></a>
-  <a href="https://buycoffee.to/ao-dps/"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?style=for-the-badge" alt="Buy Me a Coffee"></a>
-</p>
+Installer creates:
+- runtime: `%LOCALAPPDATA%\AlbionCommandDesk\runtime\vX.Y.Z`
+- venv: `%LOCALAPPDATA%\AlbionCommandDesk\venv`
+- shortcuts: Desktop + Start Menu
 
-Donors can be featured on a public supporters list. If you want to be listed, open a GitHub issue and share the display name you want to use.
+### Source install (Windows/Linux/macOS)
 
-## Screenshots
-<p align="center">
-  <img src="assets/ux-baseline/ph2-meter.png" alt="Meter tab" width="920">
-</p>
-
-<p align="center">
-  <img src="assets/ux-baseline/ph2-market.png" alt="Market tab" width="920">
-</p>
-
-<p align="center">
-  <img src="assets/ux-baseline/ph2-scanner.png" alt="Scanner tab" width="920">
-</p>
-
-## Visual Regression Baseline (PH2)
-- Baseline set lives in `assets/ux-baseline/`.
-- Before release, compare current UI against:
-  - `assets/ux-baseline/ph2-meter.png`
-  - `assets/ux-baseline/ph2-scanner.png`
-  - `assets/ux-baseline/ph2-market.png`
-- If changes are intentional, update baseline files and note it in `CHANGELOG.md`.
-
-## Before Install (Recommended)
-Best setup before installing ACD:
-- Python `3.11` or `3.12` (64-bit) with `pip` available in terminal.
-- `git` installed (if you install from source checkout).
-- Optional for live capture only:
-  - Windows: Npcap Runtime (`https://npcap.com/#download`) for `live` mode.
-  - Linux/macOS: system packet-capture libs (`libpcap`).
-- Npcap SDK is **not** required for normal users. It is only needed when Windows source install must compile `pcapy-ng`.
-- Permissions to create a local virtual environment (`venv` folder in repo).
-
-## Install (One-Click Bootstrap)
-
-### Windows (no Git required)
-1. Open Releases: `https://github.com/D4dits/Albion-Command-Desk/releases/latest`
-2. Download `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`.
-3. Run it (installer downloads source, installs Python automatically via `winget` when available, creates persistent runtime under `%LOCALAPPDATA%\AlbionCommandDesk`, and creates Start Menu + Desktop shortcuts).
-4. If installation fails, the window stays open with the exact error.
-
-Installed paths (release EXE):
-- Runtime source snapshot: `%LOCALAPPDATA%\AlbionCommandDesk\runtime\vX.Y.Z`
-- Virtual environment + CLI: `%LOCALAPPDATA%\AlbionCommandDesk\venv`
-- CLI binary: `%LOCALAPPDATA%\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe`
-
-### Windows (source checkout)
+Windows:
 ```powershell
 git clone https://github.com/D4dits/Albion-Command-Desk.git
 cd Albion-Command-Desk
 powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1
 ```
 
-### Linux
+Linux:
 ```bash
 git clone https://github.com/D4dits/Albion-Command-Desk.git
 cd Albion-Command-Desk
 bash ./tools/install/linux/install.sh
 ```
 
-### macOS
+macOS:
 ```bash
 git clone https://github.com/D4dits/Albion-Command-Desk.git
 cd Albion-Command-Desk
 bash ./tools/install/macos/install.sh
 ```
 
-### Optional: force base/core profile
-Default installers now attempt capture extras first and auto-fallback to core when prerequisites are missing.
-If you want to force core-only install explicitly:
-
-Windows:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\install\windows\install.ps1 -Profile core
-```
-
-Linux:
-```bash
-bash ./tools/install/linux/install.sh --profile core
-```
-
-macOS:
-```bash
-bash ./tools/install/macos/install.sh --profile core
-```
-
-If capture prerequisites are missing, installer falls back to `core` profile by default.  
-To force hard-fail instead of fallback, use strict mode:
-- Windows: `-StrictCapture`
-- Linux/macOS: `--strict-capture`
-
-### Optional: generate item/map databases
-For full item names, map labels, and market coverage:
-
-Windows:
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\extract_items\run_extract_items.ps1 -GameRoot "C:\Program Files\Albion Online"
-```
-
-Linux/macOS:
-```bash
-./tools/extract_items/run_extract_items.sh --game-root "/path/to/Albion Online"
-```
-
-### What bootstrap installer does
-- checks Python and required tools
-- creates/reuses local `venv`
-- installs ACD (`capture` attempted by default, auto-fallback to `core`)
-- runs smoke checks (CLI import + Qt startup probe)
-- starts app in `core` mode (prints `live` command when capture extras are ready)
-
 ## Run
-If you used bootstrap installer with `-SkipRun`, start from the repo venv:
 
 Windows:
 ```powershell
 .\venv\Scripts\albion-command-desk core
-# live capture (capture extras + runtime required):
+# live capture:
 # .\venv\Scripts\albion-command-desk live
 ```
 
 Linux/macOS:
 ```bash
 ./venv/bin/albion-command-desk core
-# live capture (capture extras + runtime required):
+# live capture:
 # ./venv/bin/albion-command-desk live
 ```
 
-PCAP replay:
+Release-EXE install path (Windows):
+```powershell
+& "$env:LOCALAPPDATA\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe" core
+```
+
+Replay mode:
 ```powershell
 albion-command-desk replay .\path\to\capture.pcap
 ```
 
-Interface selection:
-```powershell
-albion-command-desk live --list-interfaces
-albion-command-desk live --interface "Ethernet"
-```
+## Requirements
 
-Run after Windows release-EXE install (no repo required):
-```powershell
-& "$env:LOCALAPPDATA\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe" core
-# live capture (Npcap Runtime required):
-# & "$env:LOCALAPPDATA\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe" live
-```
+- Python 3.10+ (3.11/3.12 recommended)
+- For `live` mode:
+  - Windows: Npcap Runtime (`https://npcap.com/#download`)
+  - Linux/macOS: libpcap/system capture libs
+- Git is required only for scanner repo sync/update actions
 
-## Key Runtime Flags
-- `--sort dmg|dps|heal|hps`
-- `--top <N>`
-- `--mode battle|zone|manual`
-- `--history <N>`
-- `--battle-timeout <seconds>`
-- `--self-name "<name>"`
-- `--self-id <entity_id>`
-- `--debug`
+Npcap SDK is **not** required for normal end users.
 
-## Item/Map Databases (optional but recommended)
-For weapon-color mapping and map names (`Lazygrass Plain` etc.) generate local files:
-- `data/indexedItems.json`
-- `data/items.json`
-- `data/map_index.json`
+## Optional: game data extraction
+
+For better item/map coverage:
 
 Windows:
 ```powershell
@@ -204,63 +103,32 @@ Linux/macOS:
 ./tools/extract_items/run_extract_items.sh --game-root "/path/to/Albion Online"
 ```
 
-If missing, app falls back gracefully and can prompt for game path.
+## Screenshots
+<p align="center">
+  <img src="assets/ux-baseline/ph2-meter.png" alt="Meter tab" width="920">
+</p>
+<p align="center">
+  <img src="assets/ux-baseline/ph2-market.png" alt="Market tab" width="920">
+</p>
 
-## Market Dataset Pipeline
-Build market recipes from local game files:
+## Support the Project
 
-Windows:
-```powershell
-.\tools\market\run_build_recipes_from_items.ps1 -Strict
-```
+<p align="center">
+  <a href="https://www.paypal.com/donate/?business=albiosuperacc%40linuxmail.org&currency_code=USD&amount=20.00"><img src="https://img.shields.io/badge/PayPal-Donate-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="PayPal"></a>
+  <a href="https://buycoffee.to/ao-dps/"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?style=for-the-badge" alt="Buy Me a Coffee"></a>
+</p>
 
-Linux/macOS:
-```bash
-./tools/market/run_build_recipes_from_items.sh
-```
+## Docs
 
-Output:
-- `albion_dps/market/data/recipes.json`
-- `artifacts/market/recipes_from_items_report.json`
-- `artifacts/market/recipes_build_report.json`
-
-## Release Metadata (Update Contract)
-Update notifications and installer discovery use a release manifest contract:
-- Spec: `docs/release/RELEASE_MANIFEST_SPEC.md`
-- Example payload: `tools/release/manifest/manifest.example.json`
-- Builder: `tools/release/manifest/build_manifest.py`
-- Publisher helper (Windows): `tools/release/manifest/publish_manifest.ps1`
-- Last-known-good pointer updater: `tools/release/manifest/set_last_known_good.ps1`
-- One-command rollback: `tools/release/manifest/rollback_manifest.ps1`
-- CI publisher: `.github/workflows/release-manifest.yml`
-- Release asset smoke workflow: `.github/workflows/release-asset-smoke.yml`
-- Release asset verifier: `tools/qa/verify_release_artifact_matrix.py`
-- Default runtime endpoint: `https://github.com/D4dits/Albion-Command-Desk/releases/latest/download/manifest.json`
-- Clean-machine bootstrap smoke CI: `.github/workflows/bootstrap-smoke.yml`
-- Runtime override endpoint: set `ALBION_COMMAND_DESK_MANIFEST_URL`
-- UI controls: `Auto update` toggle + `Check now` action in the header
-
-## Troubleshooting and Docs
-- `docs/DELIVERY_BACKLOG.md` (active ticket queue and implementation order)
-- `CHANGELOG.md` (all delivered changes)
-- `docs/COMMUNITY_POSTS.md` (ready-to-copy Discord/release announcement texts)
 - `docs/TROUBLESHOOTING.md`
 - `docs/ARCHITECTURE.md`
-- `docs/MARKET_ARCHITECTURE.md`
-- `docs/MARKET_TROUBLESHOOTING.md`
-- `docs/MARKET_DATASET_UPDATE.md`
+- `docs/DELIVERY_BACKLOG.md`
 - `docs/release/RELEASE_CHECKLIST.md`
 - `docs/release/RELEASE_RUNBOOK.md`
-- `tools/release/windows/README.md`
+- `CHANGELOG.md`
 
 ## Tests
-```powershell
-python -m pytest -q
-```
 
-If Windows temp permissions break pytest, set:
 ```powershell
-$env:TEMP="$PWD\\artifacts\\tmp"
-$env:TMP=$env:TEMP
 python -m pytest -q
 ```
