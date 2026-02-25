@@ -856,7 +856,9 @@ class MarketSetupState(QObject):
         )
         self._craft_runs = 10
         self._inputs_model = MarketInputsModel()
+        self._inputs_on_model = MarketInputsModel()
         self._outputs_model = MarketOutputsModel()
+        self._outputs_on_model = MarketOutputsModel()
         self._shopping_model = MarketShoppingModel()
         self._selling_model = MarketSellingModel()
         self._results_items_model = MarketResultsItemsModel()
@@ -1068,8 +1070,16 @@ class MarketSetupState(QObject):
         return self._inputs_model
 
     @Property(QObject, constant=True)
+    def inputsOnModel(self) -> QObject:
+        return self._inputs_on_model
+
+    @Property(QObject, constant=True)
     def outputsModel(self) -> QObject:
         return self._outputs_model
+
+    @Property(QObject, constant=True)
+    def outputsOnModel(self) -> QObject:
+        return self._outputs_on_model
 
     @Property(QObject, constant=True)
     def recipeOptionsModel(self) -> QObject:
@@ -2203,7 +2213,9 @@ class MarketSetupState(QObject):
 
     def _clear_preview_state(self, note: str) -> None:
         self._inputs_model.set_items([])
+        self._inputs_on_model.set_items([])
         self._outputs_model.set_items([])
+        self._outputs_on_model.set_items([])
         self._shopping_model.set_items([])
         self._selling_model.set_items([])
         self._results_items_model.set_items([])
@@ -2383,6 +2395,14 @@ class MarketSetupState(QObject):
                 float(empty_unit_price),
             )
             row = input_acc.get(key)
+            journal_input_age = self._price_age_text(
+                item_id=empty_item_id,
+                city=journal_buy_city,
+                quality=self._setup.quality,
+                price_type=PriceType.SELL_ORDER.value,
+            )
+            if journal_input_age.strip().lower() in {"", "n/a", "unknown"}:
+                journal_input_age = "npc"
             if row is None:
                 input_acc[key] = {
                     "item_id": empty_item_id,
@@ -2395,12 +2415,7 @@ class MarketSetupState(QObject):
                     ),
                     "city": journal_buy_city,
                     "price_type": PriceType.SELL_ORDER.value,
-                    "price_age_text": self._price_age_text(
-                        item_id=empty_item_id,
-                        city=journal_buy_city,
-                        quality=self._setup.quality,
-                        price_type=PriceType.SELL_ORDER.value,
-                    ),
+                    "price_age_text": journal_input_age,
                     "unit_price": float(empty_unit_price),
                     "quantity": float(journal_line.full_quantity),
                     "total_cost": float(journal_line.input_cost),
@@ -2450,6 +2465,98 @@ class MarketSetupState(QObject):
                     )
                 )
         input_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
+
+        selected_returnable_by_item: dict[str, bool] = {}
+        for _, recipe in selected_visible_prepared_recipes:
+            for component in recipe.components:
+                item_id = str(component.item.unique_name)
+                selected_returnable_by_item[item_id] = bool(
+                    selected_returnable_by_item.get(item_id, False) or component.returnable
+                )
+        selected_input_acc: dict[tuple[str, str, str, float], dict[str, object]] = {}
+        for line in selected_inputs:
+            key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
+            row = selected_input_acc.get(key)
+            if row is None:
+                selected_input_acc[key] = {
+                    "item_id": line.item.unique_name,
+                    "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
+                    "city": line.city,
+                    "price_type": line.price_type.value,
+                    "price_age_text": self._price_age_text(
+                        item_id=line.item.unique_name,
+                        city=line.city,
+                        quality=self._setup.quality,
+                        price_type=line.price_type.value,
+                    ),
+                    "unit_price": float(line.unit_price),
+                    "quantity": float(line.quantity),
+                    "returnable": bool(selected_returnable_by_item.get(line.item.unique_name, False)),
+                }
+            else:
+                row["quantity"] = float(row["quantity"]) + float(line.quantity)
+
+        for journal_line in selected_journal_totals.lines:
+            if journal_line.full_quantity <= 0:
+                continue
+            empty_unit_price = float(journal_line.input_cost) / float(journal_line.full_quantity)
+            empty_item_id = str(journal_line.empty_item_id)
+            empty_name = f"{_journal_display_name(journal_line.kind, journal_line.tier)} (empty)"
+            key = (
+                empty_item_id,
+                journal_buy_city,
+                PriceType.SELL_ORDER.value,
+                float(empty_unit_price),
+            )
+            row = selected_input_acc.get(key)
+            selected_journal_input_age = self._price_age_text(
+                item_id=empty_item_id,
+                city=journal_buy_city,
+                quality=self._setup.quality,
+                price_type=PriceType.SELL_ORDER.value,
+            )
+            if selected_journal_input_age.strip().lower() in {"", "n/a", "unknown"}:
+                selected_journal_input_age = "npc"
+            if row is None:
+                selected_input_acc[key] = {
+                    "item_id": empty_item_id,
+                    "item": empty_name,
+                    "city": journal_buy_city,
+                    "price_type": PriceType.SELL_ORDER.value,
+                    "price_age_text": selected_journal_input_age,
+                    "unit_price": float(empty_unit_price),
+                    "quantity": float(journal_line.full_quantity),
+                    "returnable": False,
+                }
+            else:
+                row["quantity"] = float(row["quantity"]) + float(journal_line.full_quantity)
+
+        selected_input_rows: list[InputPreviewRow] = []
+        for row in selected_input_acc.values():
+            item_id = str(row["item_id"])
+            quantity_raw = float(row["quantity"])
+            is_returnable = bool(row.get("returnable", False))
+            need_qty = float(max(0, _need_quantity_with_safety_buffer(quantity_raw, is_returnable)))
+            stock_qty = float(max(0.0, self._input_stock_quantities.get(item_id, 0.0)))
+            stock_qty = min(stock_qty, need_qty)
+            buy_qty = max(0.0, need_qty - stock_qty)
+            unit_price = float(row["unit_price"])
+            selected_input_rows.append(
+                InputPreviewRow(
+                    item_id=item_id,
+                    item=str(row["item"]),
+                    quantity=need_qty,
+                    stock_quantity=stock_qty,
+                    buy_quantity=buy_qty,
+                    city=str(row["city"]),
+                    price_type=str(row["price_type"]),
+                    price_age_text=str(row["price_age_text"]),
+                    manual_price=self._manual_input_prices.get(item_id, 0),
+                    unit_price=unit_price,
+                    total_cost=float(buy_qty * unit_price),
+                )
+            )
+        selected_input_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
 
         self._base_input_total_cost = float(sum(row.total_cost for row in input_rows))
         valuations = compute_output_valuations(
@@ -2550,6 +2657,7 @@ class MarketSetupState(QObject):
         output_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
 
         self._inputs_model.set_items(input_rows)
+        self._inputs_on_model.set_items(selected_input_rows)
         self._outputs_model.set_items(output_rows)
 
         shopping_rows = [
@@ -2727,6 +2835,7 @@ class MarketSetupState(QObject):
 
         results_rows = self._build_results_rows(selected_output_rows, selected_input_total)
         self._results_items_model.set_items(results_rows)
+        self._outputs_on_model.set_items(selected_output_rows)
         breakdown_rows = self._build_breakdown_rows()
         self._breakdown_model.set_items(breakdown_rows)
 

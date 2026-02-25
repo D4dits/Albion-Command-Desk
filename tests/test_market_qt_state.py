@@ -759,6 +759,8 @@ def test_market_setup_state_results_include_only_enabled_rows() -> None:
     # With no rows enabled, results should be empty.
     assert state.craftPlanEnabledCount == 0
     assert state.resultsItemsModel.rowCount() == 0
+    assert state.inputsOnModel.rowCount() == 0
+    assert state.outputsOnModel.rowCount() == 0
     assert state.selectedInputsTotalCost == 0
     assert state.selectedOutputsTotalValue == 0
     assert state.selectedNetProfitValue == 0
@@ -769,6 +771,8 @@ def test_market_setup_state_results_include_only_enabled_rows() -> None:
     _enable_all_plan_rows(state)
     assert state.craftPlanEnabledCount >= 1
     assert state.resultsItemsModel.rowCount() >= 1
+    assert state.inputsOnModel.rowCount() >= 1
+    assert state.outputsOnModel.rowCount() >= 1
     assert state.selectedInputsTotalCost > 0
     assert state.selectedOutputsTotalValue > 0
     assert len(state.selectedInputItemIds) >= 1

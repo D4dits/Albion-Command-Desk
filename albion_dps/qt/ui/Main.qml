@@ -701,9 +701,11 @@ ApplicationWindow {
                 hideRowsWithoutFreshPrices: marketSetupState.hideRowsWithoutFreshPrices
 
                 inputsModel: marketSetupState.inputsModel
+                inputsOnModel: marketSetupState.inputsOnModel
                 inputsTotalCost: marketSetupState.inputsTotalCost
                 selectedInputItemIds: marketSetupState.selectedInputItemIds
                 outputsModel: marketSetupState.outputsModel
+                outputsOnModel: marketSetupState.outputsOnModel
                 outputsTotalValue: marketSetupState.outputsTotalValue
                 outputsNetValue: marketSetupState.outputsNetValue
                 selectedOutputItemIds: marketSetupState.selectedOutputItemIds
@@ -712,6 +714,7 @@ ApplicationWindow {
                 marginPercent: marketSetupState.marginPercent
                 resultsInputCost: marketSetupState.selectedInputsTotalCost
                 resultsOutputValue: marketSetupState.selectedOutputsTotalValue
+                resultsOutputNetValue: marketSetupState.selectedOutputsNetValue
                 resultsNetValue: marketSetupState.selectedNetProfitValue
                 resultsMarginPercent: marketSetupState.selectedMarginPercent
                 resultsSortKey: marketSetupState.resultsSortKey

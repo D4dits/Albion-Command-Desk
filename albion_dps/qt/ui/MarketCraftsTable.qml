@@ -28,6 +28,7 @@ TableSurface {
     property string craftPlanSearchQuery: ""
     property string currentRecipeId: ""
     property bool hideRowsWithoutFreshPrices: false
+    property bool showEnabledOnly: false
 
     // Layout flags
     property int compactControlHeight: 24
@@ -154,6 +155,11 @@ TableSurface {
                 onClicked: root.clearCraftPlan()
             }
             AppCheckBox {
+                text: "Show On only"
+                checked: root.showEnabledOnly
+                onToggled: root.showEnabledOnly = checked
+            }
+            AppCheckBox {
                 text: "Hide missing ADP prices"
                 checked: root.hideRowsWithoutFreshPrices
                 onToggled: root.setHideRowsWithoutFreshPrices(checked)
@@ -212,7 +218,8 @@ TableSurface {
                 readonly property bool rowHasFreshPrices: hasFreshComponentPrices === undefined || hasFreshComponentPrices === null
                     ? true
                     : Boolean(hasFreshComponentPrices)
-                visible: searchMatches && (!root.hideRowsWithoutFreshPrices || rowHasFreshPrices)
+                readonly property bool enabledMatches: !root.showEnabledOnly || Boolean(isEnabled)
+                visible: searchMatches && enabledMatches && (!root.hideRowsWithoutFreshPrices || rowHasFreshPrices)
                 height: visible ? 32 : 0
                 color: !rowHasFreshPrices
                     ? "#2b1f1f"
@@ -224,20 +231,26 @@ TableSurface {
                     anchors.rightMargin: 4
                     spacing: 6
 
-                    AppCheckBox {
+                    CheckBox {
                         id: enabledCheck
                         Layout.preferredWidth: 24
                         checked: isEnabled
-                        text: ""
+                        hoverEnabled: true
+                        padding: 0
+                        spacing: 0
                         indicator: Rectangle {
-                            implicitWidth: 12
-                            implicitHeight: 12
+                            anchors.centerIn: parent
+                            implicitWidth: 14
+                            implicitHeight: 14
                             radius: 2
                             border.color: "#5f6b7a"
-                            color: enabledCheck.checked ? accentColor : "transparent"
+                            color: enabledCheck.checked ? accentColor : root.theme.surfaceInteractive
                         }
                         contentItem: Item { implicitWidth: 0; implicitHeight: 0 }
-                        onToggled: root.setPlanRowEnabled(rowId, checked)
+                        onClicked: {
+                            root.craftPlanPendingContentY = craftPlanList.contentY
+                            root.setPlanRowEnabled(rowId, checked)
+                        }
                     }
 
                     Text {

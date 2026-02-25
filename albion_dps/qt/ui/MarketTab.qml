@@ -61,9 +61,11 @@ CardPanel {
     property bool hideRowsWithoutFreshPrices: false
 
     property var inputsModel: null
+    property var inputsOnModel: null
     property int inputsTotalCost: 0
     property var selectedInputItemIds: []
     property var outputsModel: null
+    property var outputsOnModel: null
     property int outputsTotalValue: 0
     property int outputsNetValue: 0
     property var selectedOutputItemIds: []
@@ -72,6 +74,7 @@ CardPanel {
     property int marginPercent: 0
     property real resultsInputCost: 0
     property real resultsOutputValue: 0
+    property real resultsOutputNetValue: 0
     property real resultsNetValue: 0
     property real resultsMarginPercent: 0
     property string resultsSortKey: "profit"
@@ -634,15 +637,13 @@ CardPanel {
                         Layout.fillHeight: true
                         Layout.minimumHeight: 120
                         clip: true
-                        model: root.inputsModel
+                        model: root.inputsShowOnOnly ? root.inputsOnModel : root.inputsModel
 
                         delegate: Rectangle {
                             readonly property bool searchMatches: root.matchesSearch(item, root.inputsSearchQuery)
-                            readonly property bool onMatches: !root.inputsShowOnOnly
-                                || root.containsItemId(itemId, root.selectedInputItemIds)
                             width: ListView.view.width
-                            height: (searchMatches && onMatches) ? 30 : 0
-                            visible: searchMatches && onMatches
+                            height: searchMatches ? 30 : 0
+                            visible: searchMatches
                             color: tableRowColor(index)
 
                             RowLayout {
@@ -712,7 +713,12 @@ CardPanel {
                             anchors.margins: 6
                             Text { text: "Total input cost"; color: mutedColor; font.pixelSize: 11 }
                             Item { Layout.fillWidth: true }
-                            Text { text: formatInt(root.inputsTotalCost); color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text {
+                                text: formatInt(root.inputsShowOnOnly ? root.resultsInputCost : root.inputsTotalCost)
+                                color: textColor
+                                font.pixelSize: 12
+                                font.bold: true
+                            }
                         }
                     }
                 }
@@ -788,15 +794,13 @@ CardPanel {
                         Layout.fillHeight: true
                         Layout.minimumHeight: 120
                         clip: true
-                        model: root.outputsModel
+                        model: root.outputsShowOnOnly ? root.outputsOnModel : root.outputsModel
 
                         delegate: Rectangle {
                             readonly property bool searchMatches: root.matchesSearch(item, root.outputsSearchQuery)
-                            readonly property bool onMatches: !root.outputsShowOnOnly
-                                || root.containsItemId(itemId, root.selectedOutputItemIds)
                             width: ListView.view.width
-                            height: (searchMatches && onMatches) ? 30 : 0
-                            visible: searchMatches && onMatches
+                            height: searchMatches ? 30 : 0
+                            visible: searchMatches
                             color: tableRowColor(index)
 
                             RowLayout {
@@ -857,10 +861,20 @@ CardPanel {
                             anchors.fill: parent
                             anchors.margins: 6
                             Text { text: "Gross output"; color: mutedColor; font.pixelSize: 11 }
-                            Text { text: formatInt(root.outputsTotalValue); color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text {
+                                text: formatInt(root.outputsShowOnOnly ? root.resultsOutputValue : root.outputsTotalValue)
+                                color: textColor
+                                font.pixelSize: 12
+                                font.bold: true
+                            }
                             Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
                             Text { text: "Net output"; color: mutedColor; font.pixelSize: 11 }
-                            Text { text: formatInt(root.outputsNetValue); color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text {
+                                text: formatInt(root.outputsShowOnOnly ? root.resultsOutputNetValue : root.outputsNetValue)
+                                color: textColor
+                                font.pixelSize: 12
+                                font.bold: true
+                            }
                             Item { Layout.fillWidth: true }
                         }
                     }
