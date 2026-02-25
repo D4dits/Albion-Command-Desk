@@ -32,7 +32,7 @@ TableSurface {
 
     // Layout flags
     property int compactControlHeight: 24
-    readonly property int craftNameColumnWidth: Math.max(140, Math.min(260, root.width - (24 + 46 + 118 + 70 + 54 + 68 + 54 + 48 + 40 + (9 * 6) + 8)))
+    readonly property int craftNameColumnWidth: 220
     readonly property int craftTableContentWidth: 8 + craftNameColumnWidth + 24 + 46 + 118 + 70 + 54 + 68 + 54 + 48 + 40 + (9 * 6)
 
     // Helper functions (injected by parent)
@@ -90,81 +90,84 @@ TableSurface {
         spacing: 8
 
         // Header with sort controls
-        RowLayout {
+        ColumnLayout {
             Layout.fillWidth: true
-            Text {
-                text: "Crafts Table"
-                color: textColor
-                font.pixelSize: 12
-                font.bold: true
-            }
-            Item { Layout.fillWidth: true }
-            Text {
-                text: root.craftPlanEnabledCount + "/" + root.craftPlanCount + " active"
-                color: mutedColor
-                font.pixelSize: 11
-            }
-            Text {
-                text: "Search"
-                color: mutedColor
-                font.pixelSize: 10
-            }
-            AppTextField {
-                implicitWidth: 170
-                implicitHeight: 20
-                font.pixelSize: 10
-                placeholderText: "craft name"
-                text: root.craftPlanSearchQuery
-                onTextChanged: root.craftPlanSearchQuery = text
-            }
-            Text {
-                text: "Sort"
-                color: mutedColor
-                font.pixelSize: 10
-            }
-            AppComboBox {
-                implicitWidth: 84
-                implicitHeight: 20
-                font.pixelSize: 10
-                model: ["added", "craft", "tier", "city", "p/l"]
-                currentIndex: {
-                    if (root.craftPlanSortKey === "craft") return 1
-                    if (root.craftPlanSortKey === "tier") return 2
-                    if (root.craftPlanSortKey === "city") return 3
-                    if (root.craftPlanSortKey === "pl") return 4
-                    return 0
+            spacing: 6
+
+            RowLayout {
+                Layout.fillWidth: true
+                Text {
+                    text: "Crafts Table"
+                    color: textColor
+                    font.pixelSize: 12
+                    font.bold: true
                 }
-                onActivated: {
-                    if (currentText === "p/l") {
-                        root.setCraftPlanSortKey("pl")
-                    } else {
-                        root.setCraftPlanSortKey(currentText)
+                Text {
+                    text: root.craftPlanEnabledCount + "/" + root.craftPlanCount + " active"
+                    color: mutedColor
+                    font.pixelSize: 11
+                }
+                Item { Layout.fillWidth: true }
+            }
+
+            Flow {
+                Layout.fillWidth: true
+                spacing: 6
+
+                Text { text: "Search"; color: mutedColor; font.pixelSize: 10 }
+                AppTextField {
+                    width: 170
+                    implicitHeight: 20
+                    font.pixelSize: 10
+                    placeholderText: "craft name"
+                    text: root.craftPlanSearchQuery
+                    onTextChanged: root.craftPlanSearchQuery = text
+                }
+                Text { text: "Sort"; color: mutedColor; font.pixelSize: 10 }
+                AppComboBox {
+                    width: 84
+                    implicitHeight: 20
+                    font.pixelSize: 10
+                    model: ["added", "craft", "tier", "city", "p/l"]
+                    currentIndex: {
+                        if (root.craftPlanSortKey === "craft") return 1
+                        if (root.craftPlanSortKey === "tier") return 2
+                        if (root.craftPlanSortKey === "city") return 3
+                        if (root.craftPlanSortKey === "pl") return 4
+                        return 0
+                    }
+                    onActivated: {
+                        if (currentText === "p/l") {
+                            root.setCraftPlanSortKey("pl")
+                        } else {
+                            root.setCraftPlanSortKey(currentText)
+                        }
                     }
                 }
-            }
-            AppButton {
-                text: root.craftPlanSortDescending ? "Desc" : "Asc"
-                implicitHeight: 20
-                implicitWidth: 48
-                fontPixelSize: 10
-                onClicked: root.toggleCraftPlanSortDescending()
-            }
-            AppButton {
-                text: "Clear"
-                implicitHeight: 20
-                implicitWidth: 52
-                fontPixelSize: 10
-                onClicked: root.clearCraftPlan()
-            }
-            AppCheckBox {
-                text: "Show On only"
-                checked: root.showEnabledOnly
-                onToggled: root.showEnabledOnly = checked
-            }
-            AppCheckBox {
-                text: "Hide missing ADP prices"
-                checked: root.hideRowsWithoutFreshPrices
-                onToggled: root.setHideRowsWithoutFreshPrices(checked)
+                AppButton {
+                    text: root.craftPlanSortDescending ? "Desc" : "Asc"
+                    implicitHeight: 20
+                    implicitWidth: 48
+                    fontPixelSize: 10
+                    onClicked: root.toggleCraftPlanSortDescending()
+                }
+                AppButton {
+                    text: "Clear"
+                    implicitHeight: 20
+                    implicitWidth: 52
+                    fontPixelSize: 10
+                    onClicked: root.clearCraftPlan()
+                }
+                AppCheckBox {
+                    text: "Show On only"
+                    checked: root.showEnabledOnly
+                    onToggled: root.showEnabledOnly = checked
+                }
+                AppCheckBox {
+                    text: "Hide missing ADP prices"
+                    checked: root.hideRowsWithoutFreshPrices
+                    onToggled: root.setHideRowsWithoutFreshPrices(checked)
+                }
             }
         }
 
@@ -320,8 +323,14 @@ TableSurface {
                         implicitHeight: 24
                         font.pixelSize: 10
                         model: ["0%", "10%", "20%"]
-                        currentIndex: Math.max(0, model.indexOf(String(Math.round(Number(dailyBonusPercent))) + "%"))
-                        onActivated: root.setPlanRowDailyBonus(rowId, currentText)
+                        currentIndex: {
+                            var bonus = Number(dailyBonusPercent)
+                            if (!isFinite(bonus)) return 0
+                            if (bonus >= 19.5) return 2
+                            if (bonus >= 9.5) return 1
+                            return 0
+                        }
+                        onActivated: root.setPlanRowDailyBonus(rowId, model[currentIndex])
                     }
 
                     Text {

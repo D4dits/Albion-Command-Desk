@@ -86,6 +86,16 @@ CardPanel {
     property string resultsSearchQuery: ""
     property bool inputsShowOnOnly: true
     property bool outputsShowOnOnly: true
+    property var inputPriceModeOptions: [
+        { label: "buy order", value: "buy_order" },
+        { label: "sell order", value: "sell_order" },
+        { label: "average", value: "average" }
+    ]
+    property var outputPriceModeOptions: [
+        { label: "sell order", value: "sell_order" },
+        { label: "buy order", value: "buy_order" },
+        { label: "average", value: "average" }
+    ]
 
     // Layout flags
     property int marketColumnSpacing: 6
@@ -291,6 +301,15 @@ CardPanel {
             }
         }
         return false
+    }
+    property var priceModeIndex: function(options, value) {
+        var needle = String(value || "").toLowerCase()
+        for (var i = 0; i < options.length; i += 1) {
+            if (String(options[i].value || "").toLowerCase() === needle) {
+                return i
+            }
+        }
+        return 0
     }
 
     // Access to theme
@@ -676,7 +695,7 @@ CardPanel {
                                 }
                                 Text { text: formatIntRound(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
 
-                                TextField {
+                                AppTextField {
                                     Layout.preferredWidth: marketInputsStockWidth
                                     implicitHeight: compactControlHeight
                                     font.pixelSize: 11
@@ -688,16 +707,22 @@ CardPanel {
                                 Text { text: formatIntRound(buyQuantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth }
                                 Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; elide: Text.ElideRight }
 
-                                ComboBox {
+                                AppComboBox {
                                     Layout.preferredWidth: marketInputsModeWidth
                                     implicitHeight: compactControlHeight
                                     font.pixelSize: 11
-                                    model: ["buy_order", "sell_order", "average"]
-                                    currentIndex: Math.max(0, model.indexOf(priceType))
-                                    onActivated: root.setInputPriceType(itemId, currentText)
+                                    model: root.inputPriceModeOptions
+                                    textRole: "label"
+                                    currentIndex: root.priceModeIndex(root.inputPriceModeOptions, priceType)
+                                    onActivated: {
+                                        var option = model[currentIndex]
+                                        if (option && option.value) {
+                                            root.setInputPriceType(itemId, option.value)
+                                        }
+                                    }
                                 }
 
-                                TextField {
+                                AppTextField {
                                     Layout.preferredWidth: marketInputsManualWidth
                                     implicitHeight: compactControlHeight
                                     font.pixelSize: 11
@@ -834,16 +859,22 @@ CardPanel {
                                 Text { text: formatIntFloor(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
                                 Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; elide: Text.ElideRight }
 
-                                ComboBox {
+                                AppComboBox {
                                     Layout.preferredWidth: marketOutputsModeWidth
                                     implicitHeight: compactControlHeight
                                     font.pixelSize: 11
-                                    model: ["sell_order", "buy_order", "average"]
-                                    currentIndex: Math.max(0, model.indexOf(priceType))
-                                    onActivated: root.setOutputPriceType(itemId, currentText)
+                                    model: root.outputPriceModeOptions
+                                    textRole: "label"
+                                    currentIndex: root.priceModeIndex(root.outputPriceModeOptions, priceType)
+                                    onActivated: {
+                                        var option = model[currentIndex]
+                                        if (option && option.value) {
+                                            root.setOutputPriceType(itemId, option.value)
+                                        }
+                                    }
                                 }
 
-                                TextField {
+                                AppTextField {
                                     Layout.preferredWidth: marketOutputsManualWidth
                                     implicitHeight: compactControlHeight
                                     font.pixelSize: 11
