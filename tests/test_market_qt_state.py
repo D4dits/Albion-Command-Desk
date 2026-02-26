@@ -885,6 +885,30 @@ def test_market_setup_state_results_include_only_enabled_rows() -> None:
     assert len(state.selectedOutputItemIds) >= 1
 
 
+def test_market_setup_state_results_margin_varies_per_item_when_prices_differ() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.addCurrentRecipeToPlan()
+    alternate_recipe = _find_alternate_recipe_id(state)
+    if not alternate_recipe:
+        return
+    state.addRecipeToPlan(alternate_recipe)
+    _enable_all_plan_rows(state)
+    if state.resultsItemsModel.rowCount() < 2:
+        return
+
+    first_index = state.resultsItemsModel.index(0, 0)
+    first_item_id = str(state.resultsItemsModel.data(first_index, state.resultsItemsModel.ItemIdRole) or "")
+    assert first_item_id
+    state.setOutputManualPrice(first_item_id, "9999999")
+
+    margins: list[float] = []
+    for idx in range(state.resultsItemsModel.rowCount()):
+        model_index = state.resultsItemsModel.index(idx, 0)
+        margins.append(float(state.resultsItemsModel.data(model_index, state.resultsItemsModel.MarginRole) or 0.0))
+    assert len(margins) >= 2
+    assert max(margins) - min(margins) > 0.01
+
+
 def test_market_setup_state_clear_plan_keeps_active_recipe() -> None:
     state = MarketSetupState()
     state.addCurrentRecipeToPlan()

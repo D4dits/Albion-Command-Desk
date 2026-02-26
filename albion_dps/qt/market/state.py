@@ -2904,73 +2904,62 @@ class MarketSetupState(QObject):
         runs: list[CraftRun],
         input_total: float,
     ) -> list[ResultItemRow]:
-        output_lines = [line for run in runs for line in run.outputs]
-        if not output_lines:
-            return []
-        valuations = compute_output_valuations(
-            output_lines=output_lines,
-            station_fee_percent=self._setup.station_fee_percent,
-            market_tax_percent=self._setup.market_tax_percent,
-        )
-        output_rows: list[OutputPreviewRow] = []
+        _ = input_total
         acc: dict[tuple[str, str, str, float], dict[str, float | str]] = {}
-        for valuation in valuations:
-            line = valuation.line
-            key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
-            row = acc.get(key)
-            if row is None:
-                acc[key] = {
-                    "item_id": line.item.unique_name,
-                    "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
-                    "quantity": float(line.quantity),
-                    "city": line.city,
-                    "price_type": line.price_type.value,
-                    "unit_price": float(line.unit_price),
-                    "total_value": float(valuation.gross_value),
-                    "fee_value": float(valuation.fee_value),
-                    "tax_value": float(valuation.tax_value),
-                    "net_value": float(valuation.net_value),
-                }
-            else:
-                row["quantity"] = float(row["quantity"]) + float(line.quantity)
-                row["total_value"] = float(row["total_value"]) + float(valuation.gross_value)
-                row["fee_value"] = float(row["fee_value"]) + float(valuation.fee_value)
-                row["tax_value"] = float(row["tax_value"]) + float(valuation.tax_value)
-                row["net_value"] = float(row["net_value"]) + float(valuation.net_value)
-        output_rows = [
-            OutputPreviewRow(
-                item_id=str(row["item_id"]),
-                item=str(row["item"]),
-                quantity=float(row["quantity"]),
-                city=str(row["city"]),
-                price_type=str(row["price_type"]),
-                price_age_text="n/a",
-                manual_price=self._manual_output_prices.get(str(row["item_id"]), 0),
-                unit_price=float(row["unit_price"]),
-                total_value=float(row["total_value"]),
-                fee_value=float(row["fee_value"]),
-                tax_value=float(row["tax_value"]),
-                net_value=float(row["net_value"]),
+        for run in runs:
+            if not run.outputs:
+                continue
+            run_input_cost = float(sum(line.total_cost for line in run.inputs))
+            valuations = compute_output_valuations(
+                output_lines=run.outputs,
+                station_fee_percent=self._setup.station_fee_percent,
+                market_tax_percent=self._setup.market_tax_percent,
             )
-            for row in acc.values()
-        ]
-        total_revenue = max(0.0, sum(row.total_value for row in output_rows))
+            run_revenue_total = max(0.0, sum(float(v.gross_value) for v in valuations))
+            for valuation in valuations:
+                line = valuation.line
+                share = (float(valuation.gross_value) / run_revenue_total) if run_revenue_total > 0 else 0.0
+                allocated_cost = run_input_cost * share
+                key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
+                row = acc.get(key)
+                if row is None:
+                    acc[key] = {
+                        "item_id": line.item.unique_name,
+                        "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
+                        "quantity": float(line.quantity),
+                        "city": line.city,
+                        "price_type": line.price_type.value,
+                        "unit_price": float(line.unit_price),
+                        "total_value": float(valuation.gross_value),
+                        "allocated_cost": float(allocated_cost),
+                        "fee_value": float(valuation.fee_value),
+                        "tax_value": float(valuation.tax_value),
+                        "net_value": float(valuation.net_value),
+                    }
+                else:
+                    row["quantity"] = float(row["quantity"]) + float(line.quantity)
+                    row["total_value"] = float(row["total_value"]) + float(valuation.gross_value)
+                    row["allocated_cost"] = float(row["allocated_cost"]) + float(allocated_cost)
+                    row["fee_value"] = float(row["fee_value"]) + float(valuation.fee_value)
+                    row["tax_value"] = float(row["tax_value"]) + float(valuation.tax_value)
+                    row["net_value"] = float(row["net_value"]) + float(valuation.net_value)
+
         rows: list[ResultItemRow] = []
-        for output in output_rows:
-            share = (output.total_value / total_revenue) if total_revenue > 0 else 0.0
-            allocated_cost = input_total * share
-            fee_value = float(output.fee_value)
-            tax_value = float(output.tax_value)
-            profit = float(output.net_value) - allocated_cost
+        for output in acc.values():
+            allocated_cost = float(output["allocated_cost"])
+            fee_value = float(output["fee_value"])
+            tax_value = float(output["tax_value"])
+            net_value = float(output["net_value"])
+            profit = net_value - allocated_cost
             margin = (profit / allocated_cost * 100.0) if allocated_cost > 0 else 0.0
             rows.append(
                 ResultItemRow(
-                    item_id=output.item_id,
-                    item=output.item,
-                    city=output.city,
-                    quantity=float(output.quantity),
-                    unit_price=float(output.unit_price),
-                    revenue=float(output.total_value),
+                    item_id=str(output["item_id"]),
+                    item=str(output["item"]),
+                    city=str(output["city"]),
+                    quantity=float(output["quantity"]),
+                    unit_price=float(output["unit_price"]),
+                    revenue=float(output["total_value"]),
                     allocated_cost=float(allocated_cost),
                     fee_value=float(fee_value),
                     tax_value=float(tax_value),
@@ -2978,8 +2967,8 @@ class MarketSetupState(QObject):
                     margin_percent=float(margin),
                     demand_proxy=float(
                         self._demand_proxy_percent(
-                            item_id=output.item_id,
-                            city=output.city,
+                            item_id=str(output["item_id"]),
+                            city=str(output["city"]),
                             quality=self._setup.quality,
                         )
                     ),

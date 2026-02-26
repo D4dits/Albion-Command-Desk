@@ -1056,7 +1056,7 @@ CardPanel {
 
     Rectangle {
         anchors.fill: parent
-        visible: root.priceFetchInProgress || root.priceFetchPending
+        visible: root.priceFetchInProgress
         z: 200
         color: Qt.rgba(6 / 255, 14 / 255, 24 / 255, 0.72)
 
@@ -1105,8 +1105,10 @@ CardPanel {
 
                 Text {
                     Layout.fillWidth: true
-                    text: "Elapsed: " + root.formatElapsed(root.priceFetchElapsedSeconds)
-                        + "  |  Large plans (400+ IDs) may take up to ~40s."
+                    text: root.priceFetchElapsedSeconds > 0
+                        ? ("Elapsed: " + root.formatElapsed(root.priceFetchElapsedSeconds)
+                           + "  |  Large plans (400+ IDs) may take up to ~40s.")
+                        : "Waiting for AO Data response..."
                     color: root.theme.stateInfo
                     font.pixelSize: 11
                     wrapMode: Text.WordWrap

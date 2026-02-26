@@ -63,6 +63,9 @@ TableSurface {
 
     // For scroll position restoration
     property real craftPlanPendingContentY: -1
+    onCraftPlanSearchQueryChanged: craftPlanList.forceLayout()
+    onShowEnabledOnlyChanged: craftPlanList.forceLayout()
+    onHideRowsWithoutFreshPricesChanged: craftPlanList.forceLayout()
 
     // Access to theme
     property var theme: null
@@ -225,9 +228,9 @@ TableSurface {
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     clip: true
-                    spacing: 1
-                    reuseItems: true
-                    cacheBuffer: 600
+                    spacing: 0
+                    reuseItems: false
+                    cacheBuffer: 0
                     model: root.craftPlanModel
 
                     Connections {
@@ -247,8 +250,9 @@ TableSurface {
                             ? true
                             : Boolean(hasFreshComponentPrices)
                         readonly property bool enabledMatches: !root.showEnabledOnly || Boolean(isEnabled)
-                        visible: searchMatches && enabledMatches && (!root.hideRowsWithoutFreshPrices || rowHasFreshPrices)
-                        height: visible ? 32 : 0
+                        readonly property bool rowVisible: searchMatches && enabledMatches && (!root.hideRowsWithoutFreshPrices || rowHasFreshPrices)
+                        visible: rowVisible
+                        height: rowVisible ? 32 : 0
                         color: !rowHasFreshPrices
                             ? "#2b1f1f"
                             : (recipeId === root.currentRecipeId ? "#1b2635" : root.tableRowColor(index))
