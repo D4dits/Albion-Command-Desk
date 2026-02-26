@@ -9,7 +9,7 @@ from albion_dps.models import CombatEvent, MeterSnapshot, PhotonMessage, RawPack
 from albion_dps.protocol.map_index import extract_map_index
 
 ZONE_PORTS = {5056, 5058}
-COMBAT_END_GRACE_SECONDS = 0.25
+COMBAT_END_GRACE_SECONDS = 2.0
 COMBAT_MERGE_GAP_SECONDS = 2.0
 
 

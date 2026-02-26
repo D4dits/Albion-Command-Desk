@@ -64,3 +64,35 @@ def test_combat_mapper_list_event() -> None:
     assert {item.kind for item in event} == {"damage", "heal"}
     assert {item.target_id for item in event} == {80639}
     assert {item.source_id for item in event} == {80387, 80639}
+
+
+def test_combat_mapper_drops_damage_without_causer(monkeypatch) -> None:
+    mapper = CombatEventMapper()
+
+    class _Event:
+        code = 1
+        parameters = {252: 6, 0: 111, 2: -50, 6: None}
+
+    monkeypatch.setattr("albion_dps.protocol.combat_mapper.decode_event_data", lambda _payload: _Event())
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"")
+
+    event = mapper.map(message, _packet())
+    assert event is None
+
+
+def test_combat_mapper_heal_without_causer_uses_target_as_source(monkeypatch) -> None:
+    mapper = CombatEventMapper()
+
+    class _Event:
+        code = 1
+        parameters = {252: 6, 0: 222, 2: 35, 6: None}
+
+    monkeypatch.setattr("albion_dps.protocol.combat_mapper.decode_event_data", lambda _payload: _Event())
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"")
+
+    event = mapper.map(message, _packet())
+    assert event is not None
+    assert event.kind == "heal"
+    assert event.target_id == 222
+    assert event.source_id == 222
+    assert event.amount == 35

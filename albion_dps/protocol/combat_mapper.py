@@ -61,12 +61,20 @@ class CombatEventMapper:
                 continue
             target_id = targets[index] if index < len(targets) else None
             source_id = sources[index] if index < len(sources) else None
-            if source_id is None:
-                source_id = target_id
-            if source_id is None or target_id is None:
+            if target_id is None:
                 continue
 
             kind = "heal" if change > 0 else "damage"
+            if source_id is None:
+                # Missing causer id on damage updates can incorrectly turn
+                # incoming mob hits into self-damage in the meter.
+                if kind == "heal":
+                    source_id = target_id
+                else:
+                    continue
+
+            if source_id is None:
+                continue
             raw_amount = float(abs(change))
             amount = raw_amount
             if self.clamp_overkill:
