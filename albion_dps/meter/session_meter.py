@@ -535,27 +535,47 @@ def _build_entries_from_totals_by_id(
     duration: float,
     name_lookup: Callable[[int], str | None] | None,
 ) -> list[SessionEntry]:
-    entries: list[SessionEntry] = []
+    grouped: dict[str, dict[str, float | int | None]] = {}
     for source_id, stats in totals.items():
         damage = float(stats.get("damage", 0.0))
         heal = float(stats.get("heal", 0.0))
-        if duration > 0:
-            dps = damage / duration
-            hps = heal / duration
-        else:
-            dps = 0.0
-            hps = 0.0
         label = name_lookup(source_id) if name_lookup else None
         if not label:
             label = str(source_id)
+        existing = grouped.get(label)
+        if existing is None:
+            grouped[label] = {
+                "damage": damage,
+                "heal": heal,
+                "source_id": source_id,
+            }
+            continue
+        existing["damage"] = float(existing["damage"]) + damage
+        existing["heal"] = float(existing["heal"]) + heal
+        # If multiple entity IDs resolve to one label (map/cluster swaps),
+        # keep grouped row label-only to avoid misleading single source_id.
+        if existing.get("source_id") != source_id:
+            existing["source_id"] = None
+
+    entries: list[SessionEntry] = []
+    for label, aggregated in grouped.items():
+        total_damage = float(aggregated["damage"])
+        total_heal = float(aggregated["heal"])
+        if duration > 0:
+            dps = total_damage / duration
+            hps = total_heal / duration
+        else:
+            dps = 0.0
+            hps = 0.0
+        source_id_value = aggregated.get("source_id")
         entries.append(
             SessionEntry(
                 label=label,
-                damage=damage,
-                heal=heal,
+                damage=total_damage,
+                heal=total_heal,
                 dps=dps,
                 hps=hps,
-                source_id=source_id,
+                source_id=source_id_value if isinstance(source_id_value, int) else None,
             )
         )
     entries.sort(key=lambda item: item.damage, reverse=True)

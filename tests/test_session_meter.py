@@ -142,3 +142,25 @@ def test_history_preserves_source_ids_for_replay_view() -> None:
     assert 222 in summary.totals_by_id
     assert any(entry.source_id == 111 for entry in summary.entries)
     assert any(entry.source_id == 222 for entry in summary.entries)
+
+
+def test_history_collapses_multiple_source_ids_with_same_label() -> None:
+    def lookup(entity_id: int) -> str | None:
+        if entity_id in {111, 222}:
+            return "D4dits"
+        return str(entity_id)
+
+    meter = SessionMeter(history_limit=5, mode="battle", name_lookup=lookup)
+    meter.push(CombatEvent(0.0, 111, 2, 100, "damage"))
+    meter.push(CombatEvent(0.5, 222, 2, 40, "damage"))
+    meter.observe_packet(_packet(30.0))
+
+    history = meter.history()
+    assert len(history) == 1
+    summary = history[0]
+    assert 111 in summary.totals_by_id
+    assert 222 in summary.totals_by_id
+    assert len(summary.entries) == 1
+    assert summary.entries[0].label == "D4dits"
+    assert summary.entries[0].damage == 140.0
+    assert summary.entries[0].source_id is None
