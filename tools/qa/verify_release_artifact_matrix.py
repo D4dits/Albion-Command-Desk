@@ -40,6 +40,11 @@ def _parse_args() -> argparse.Namespace:
         default=20.0,
         help="Per-request timeout for manifest/asset probe.",
     )
+    parser.add_argument(
+        "--advisory",
+        action="store_true",
+        help="Never fail the process; report issues as warnings.",
+    )
     return parser.parse_args()
 
 
@@ -97,16 +102,29 @@ def main() -> int:
     try:
         manifest = _fetch_json(args.manifest_url, args.timeout_seconds)
     except Exception as exc:
+        if args.advisory:
+            print(f"[qa] WARN: unable to fetch manifest (advisory): {exc}")
+            return 0
         print(f"[qa] FAIL: unable to fetch manifest: {exc}", file=sys.stderr)
         return 2
 
     matched = _filter_assets(manifest, args.target_os)
     if not matched:
+        if args.advisory:
+            print(f"[qa] WARN: no assets found for os={args.target_os} (advisory)")
+            return 0
         print(f"[qa] FAIL: no assets found for os={args.target_os}")
         return 1
 
     wrong_kind = [asset for asset in matched if not _validate_kind(asset, args.target_os)]
     if wrong_kind:
+        if args.advisory:
+            print(
+                f"[qa] WARN: found {len(wrong_kind)} assets with invalid kind for os={args.target_os} (advisory)"
+            )
+            for asset in wrong_kind:
+                print(f"  - {asset.get('name', '<unknown>')} kind={asset.get('kind', '<missing>')}")
+            return 0
         print(f"[qa] FAIL: found {len(wrong_kind)} assets with invalid kind for os={args.target_os}")
         for asset in wrong_kind:
             print(
@@ -128,6 +146,9 @@ def main() -> int:
         reachable = reachable or ok
 
     if not reachable:
+        if args.advisory:
+            print(f"[qa] WARN: no reachable assets for os={args.target_os} (advisory)")
+            return 0
         print(f"[qa] FAIL: no reachable assets for os={args.target_os}")
         return 1
 

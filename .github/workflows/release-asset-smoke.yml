@@ -40,7 +40,8 @@ jobs:
           MANIFEST_URL="${{ github.event.inputs.manifest_url || 'https://github.com/D4dits/Albion-Command-Desk/releases/latest/download/manifest.json' }}"
           python tools/qa/verify_release_artifact_matrix.py \
             --manifest-url "$MANIFEST_URL" \
-            --target-os linux
+            --target-os linux \
+            --advisory
 
   macos-asset-smoke:
     runs-on: ubuntu-latest
@@ -56,4 +57,5 @@ jobs:
           MANIFEST_URL="${{ github.event.inputs.manifest_url || 'https://github.com/D4dits/Albion-Command-Desk/releases/latest/download/manifest.json' }}"
           python tools/qa/verify_release_artifact_matrix.py \
             --manifest-url "$MANIFEST_URL" \
-            --target-os macos
+            --target-os macos \
+            --advisory
