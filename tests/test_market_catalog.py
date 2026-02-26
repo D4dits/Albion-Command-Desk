@@ -86,3 +86,141 @@ def test_resolve_item_value_handles_enchant_and_level_suffix() -> None:
         )
         == 4321
     )
+
+
+def test_recipe_catalog_inherits_component_enchant_when_enchanted_variant_exists() -> None:
+    tmp_dir = Path(f"tmp_market_catalog_{uuid.uuid4().hex}")
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        path = tmp_dir / "recipes.json"
+        path.write_text(
+            json.dumps(
+                [
+                    {
+                        "item": {
+                            "unique_name": "T4_ARMOR_PLATE_SET1@3",
+                            "display_name": "Adept's Soldier Armor 4.3",
+                            "tier": 4,
+                            "enchantment": 3,
+                        },
+                        "station": "Warrior Forge",
+                        "components": [
+                            {
+                                "item": {
+                                    "unique_name": "T4_METALBAR_LEVEL3",
+                                    "display_name": "Metal Bar 4.3",
+                                    "tier": 4,
+                                    "enchantment": 3,
+                                },
+                                "quantity": 16.0,
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "item": {
+                                    "unique_name": "T4_ARMOR_PLATE_SET1@3",
+                                    "display_name": "Adept's Soldier Armor 4.3",
+                                    "tier": 4,
+                                    "enchantment": 3,
+                                },
+                                "quantity": 1.0,
+                            }
+                        ],
+                    },
+                    {
+                        "item": {
+                            "unique_name": "T4_ARMOR_PLATE_ROYAL@3",
+                            "display_name": "Adept's Royal Armor 4.3",
+                            "tier": 4,
+                            "enchantment": 3,
+                        },
+                        "station": "Warrior Forge",
+                        "components": [
+                            {
+                                "item": {
+                                    "unique_name": "T4_ARMOR_PLATE_SET1",
+                                    "display_name": "Adept's Soldier Armor T4",
+                                    "tier": 4,
+                                    "enchantment": 0,
+                                },
+                                "quantity": 1.0,
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "item": {
+                                    "unique_name": "T4_ARMOR_PLATE_ROYAL@3",
+                                    "display_name": "Adept's Royal Armor 4.3",
+                                    "tier": 4,
+                                    "enchantment": 3,
+                                },
+                                "quantity": 1.0,
+                            }
+                        ],
+                    },
+                ]
+            ),
+            encoding="utf-8",
+        )
+        catalog = RecipeCatalog.from_json(path)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    royal_recipe = catalog.get("T4_ARMOR_PLATE_ROYAL@3")
+    assert royal_recipe is not None
+    assert royal_recipe.components
+    assert royal_recipe.components[0].item.unique_name == "T4_ARMOR_PLATE_SET1@3"
+    assert int(royal_recipe.components[0].item.enchantment or 0) == 3
+
+
+def test_recipe_catalog_marks_quest_tokens_non_returnable() -> None:
+    tmp_dir = Path(f"tmp_market_catalog_{uuid.uuid4().hex}")
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        path = tmp_dir / "recipes.json"
+        path.write_text(
+            json.dumps(
+                [
+                    {
+                        "item": {
+                            "unique_name": "T4_ARMOR_PLATE_ROYAL",
+                            "display_name": "Adept's Royal Armor",
+                            "tier": 4,
+                            "enchantment": 0,
+                        },
+                        "station": "Warrior Forge",
+                        "components": [
+                            {
+                                "item": {
+                                    "unique_name": "QUESTITEM_TOKEN_ROYAL_T4",
+                                    "display_name": "Royal Sigil",
+                                    "tier": 4,
+                                    "enchantment": 0,
+                                },
+                                "quantity": 4.0,
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "item": {
+                                    "unique_name": "T4_ARMOR_PLATE_ROYAL",
+                                    "display_name": "Adept's Royal Armor",
+                                    "tier": 4,
+                                    "enchantment": 0,
+                                },
+                                "quantity": 1.0,
+                            }
+                        ],
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+        catalog = RecipeCatalog.from_json(path)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    royal_recipe = catalog.get("T4_ARMOR_PLATE_ROYAL")
+    assert royal_recipe is not None
+    assert royal_recipe.components
+    assert royal_recipe.components[0].returnable is False

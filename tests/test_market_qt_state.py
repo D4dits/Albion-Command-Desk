@@ -501,6 +501,61 @@ def test_market_setup_state_includes_journals_in_inputs_outputs_models(monkeypat
         model_index = state.resultsItemsModel.index(idx, 0)
         result_labels.add(str(state.resultsItemsModel.data(model_index, state.resultsItemsModel.ItemRole)))
     assert "Crafting Journals (est.)" not in result_labels
+    assert not any("(full)" in label for label in result_labels)
+
+
+def test_market_setup_state_results_cost_not_coupled_to_journal_revenue(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
+
+    fake_totals = market_state._JournalTotals(
+        input_cost=1000.0,
+        output_value=2500.0,
+        market_tax=100.0,
+        full_quantity=2.0,
+        lines=(
+            market_state._JournalLine(
+                kind="MAGE",
+                tier=4,
+                empty_item_id="T4_JOURNAL_MAGE",
+                full_item_id="T4_JOURNAL_MAGE_FULL",
+                full_quantity=2.0,
+                input_cost=1000.0,
+                output_value=2500.0,
+                market_tax=100.0,
+            ),
+        ),
+    )
+    monkeypatch.setattr(state, "_estimate_journal_totals", lambda **_: fake_totals)
+    state.refreshPrices()
+
+    first_output_index = state.outputsModel.index(0, 0)
+    crafted_item_id = str(state.outputsModel.data(first_output_index, state.outputsModel.ItemIdRole) or "")
+    assert crafted_item_id
+
+    result_cost_before = None
+    for idx in range(state.resultsItemsModel.rowCount()):
+        model_index = state.resultsItemsModel.index(idx, 0)
+        item_id = str(state.resultsItemsModel.data(model_index, state.resultsItemsModel.ItemIdRole) or "")
+        if item_id == crafted_item_id:
+            result_cost_before = float(state.resultsItemsModel.data(model_index, state.resultsItemsModel.CostRole) or 0.0)
+            break
+    assert result_cost_before is not None
+
+    state.setOutputManualPrice(crafted_item_id, "999999")
+
+    result_cost_after = None
+    for idx in range(state.resultsItemsModel.rowCount()):
+        model_index = state.resultsItemsModel.index(idx, 0)
+        item_id = str(state.resultsItemsModel.data(model_index, state.resultsItemsModel.ItemIdRole) or "")
+        if item_id == crafted_item_id:
+            result_cost_after = float(state.resultsItemsModel.data(model_index, state.resultsItemsModel.CostRole) or 0.0)
+            break
+    assert result_cost_after is not None
+    assert result_cost_after == pytest.approx(result_cost_before, rel=0.0, abs=0.01)
 
 
 def test_market_setup_state_can_switch_recipe_by_index() -> None:

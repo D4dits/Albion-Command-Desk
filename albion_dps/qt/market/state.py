@@ -2879,7 +2879,10 @@ class MarketSetupState(QObject):
         self._selected_net_profit_value = float(self._breakdown.net_profit)
         self._selected_margin_percent = float(self._breakdown.margin_percent)
 
-        results_rows = self._build_results_rows(selected_output_rows, selected_input_total)
+        results_rows = self._build_results_rows_from_runs(
+            runs=selected_visible_runs,
+            input_total=selected_input_total,
+        )
         self._results_items_model.set_items(results_rows)
         self._outputs_on_model.set_items(selected_output_rows)
         breakdown_rows = self._build_breakdown_rows()
@@ -2895,11 +2898,62 @@ class MarketSetupState(QObject):
                 f"Skipped {len(skipped_rows)} recipe(s) that could not be previewed."
             )
 
-    def _build_results_rows(
+    def _build_results_rows_from_runs(
         self,
-        output_rows: list[OutputPreviewRow],
+        *,
+        runs: list[CraftRun],
         input_total: float,
     ) -> list[ResultItemRow]:
+        output_lines = [line for run in runs for line in run.outputs]
+        if not output_lines:
+            return []
+        valuations = compute_output_valuations(
+            output_lines=output_lines,
+            station_fee_percent=self._setup.station_fee_percent,
+            market_tax_percent=self._setup.market_tax_percent,
+        )
+        output_rows: list[OutputPreviewRow] = []
+        acc: dict[tuple[str, str, str, float], dict[str, float | str]] = {}
+        for valuation in valuations:
+            line = valuation.line
+            key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
+            row = acc.get(key)
+            if row is None:
+                acc[key] = {
+                    "item_id": line.item.unique_name,
+                    "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
+                    "quantity": float(line.quantity),
+                    "city": line.city,
+                    "price_type": line.price_type.value,
+                    "unit_price": float(line.unit_price),
+                    "total_value": float(valuation.gross_value),
+                    "fee_value": float(valuation.fee_value),
+                    "tax_value": float(valuation.tax_value),
+                    "net_value": float(valuation.net_value),
+                }
+            else:
+                row["quantity"] = float(row["quantity"]) + float(line.quantity)
+                row["total_value"] = float(row["total_value"]) + float(valuation.gross_value)
+                row["fee_value"] = float(row["fee_value"]) + float(valuation.fee_value)
+                row["tax_value"] = float(row["tax_value"]) + float(valuation.tax_value)
+                row["net_value"] = float(row["net_value"]) + float(valuation.net_value)
+        output_rows = [
+            OutputPreviewRow(
+                item_id=str(row["item_id"]),
+                item=str(row["item"]),
+                quantity=float(row["quantity"]),
+                city=str(row["city"]),
+                price_type=str(row["price_type"]),
+                price_age_text="n/a",
+                manual_price=self._manual_output_prices.get(str(row["item_id"]), 0),
+                unit_price=float(row["unit_price"]),
+                total_value=float(row["total_value"]),
+                fee_value=float(row["fee_value"]),
+                tax_value=float(row["tax_value"]),
+                net_value=float(row["net_value"]),
+            )
+            for row in acc.values()
+        ]
         total_revenue = max(0.0, sum(row.total_value for row in output_rows))
         rows: list[ResultItemRow] = []
         for output in output_rows:

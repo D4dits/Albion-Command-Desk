@@ -203,3 +203,55 @@ def test_extract_recipes_marks_artifact_components_as_non_returnable() -> None:
     returnable_by_id = {comp["item"]["unique_name"]: bool(comp["returnable"]) for comp in components}
     assert returnable_by_id["T4_METALBAR"] is True
     assert returnable_by_id["T4_ARTEFACT_2H_KEEPER_SWORD"] is False
+
+
+def test_extract_recipes_applies_component_enchant_level_and_non_returnable_tokens() -> None:
+    payload = {
+        "items": {
+            "equipmentitem": [
+                {
+                    "@uniquename": "T4_ARMOR_PLATE_ROYAL",
+                    "@tier": "4",
+                    "@enchantmentlevel": "0",
+                    "@craftingcategory": "plate",
+                    "@unlockedtocraft": "true",
+                    "craftingrequirements": {
+                        "@craftingfocus": "0",
+                        "@amountcrafted": "1",
+                        "craftresource": [
+                            {"@uniquename": "T4_ARMOR_PLATE_SET1", "@count": "1", "@enchantmentlevel": "0"},
+                            {"@uniquename": "QUESTITEM_TOKEN_ROYAL_T4", "@count": "4", "@maxreturnamount": "0"},
+                        ],
+                    },
+                    "enchantments": {
+                        "enchantment": [
+                            {
+                                "@enchantmentlevel": "3",
+                                "craftingrequirements": {
+                                    "@craftingfocus": "0",
+                                    "@amountcrafted": "1",
+                                    "craftresource": [
+                                        {
+                                            "@uniquename": "T4_ARMOR_PLATE_SET1",
+                                            "@enchantmentlevel": "3",
+                                            "@count": "1",
+                                            "@maxreturnamount": "0",
+                                        },
+                                        {"@uniquename": "QUESTITEM_TOKEN_ROYAL_T4", "@count": "4", "@maxreturnamount": "0"},
+                                    ],
+                                },
+                            }
+                        ]
+                    },
+                }
+            ]
+        }
+    }
+
+    rows, report = extract_recipes_from_items_payload(payload=payload, display_names={}, include_locked=True)
+    assert report.recipes_out == 2
+    row = next(entry for entry in rows if entry["item"]["unique_name"] == "T4_ARMOR_PLATE_ROYAL@3")
+    component_map = {comp["item"]["unique_name"]: comp for comp in row["components"]}
+    assert "T4_ARMOR_PLATE_SET1_LEVEL3" in component_map
+    assert component_map["T4_ARMOR_PLATE_SET1_LEVEL3"]["returnable"] is False
+    assert component_map["QUESTITEM_TOKEN_ROYAL_T4"]["returnable"] is False

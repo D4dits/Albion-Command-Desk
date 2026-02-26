@@ -87,6 +87,7 @@ class RecipeCatalog:
         raw = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(raw, list):
             raise ValueError(f"Recipe file must contain a JSON array: {path}")
+        craftable_item_ids = _collect_craftable_item_ids(raw)
         item_values = _load_item_values(DEFAULT_ITEMS_PATH)
         recipes: dict[str, Recipe] = {}
         for row in raw:
@@ -101,7 +102,12 @@ class RecipeCatalog:
             station = str(row.get("station") or "")
             city_bonus = str(row.get("city_bonus") or "")
             focus_per_craft = _to_int_or_none(row.get("focus_per_craft")) or 0
-            components = _parse_components(row.get("components"), item_values=item_values)
+            components = _parse_components(
+                row.get("components"),
+                item_values=item_values,
+                recipe_enchantment=int(item.enchantment or 0),
+                craftable_item_ids=craftable_item_ids,
+            )
             outputs = _parse_outputs(row.get("outputs"), item, item_values=item_values)
             recipes[item.unique_name] = Recipe(
                 item=item,
@@ -232,9 +238,12 @@ def _parse_components(
     payload: object,
     *,
     item_values: dict[str, int] | None = None,
+    recipe_enchantment: int = 0,
+    craftable_item_ids: set[str] | None = None,
 ) -> tuple[RecipeComponent, ...]:
     if not isinstance(payload, list):
         return ()
+    craftable_ids = craftable_item_ids or set()
     out: list[RecipeComponent] = []
     for row in payload:
         if not isinstance(row, dict):
@@ -245,6 +254,11 @@ def _parse_components(
         item = _to_item_ref(item_data, item_values=item_values)
         if not item.unique_name:
             continue
+        item = _inherit_component_enchantment(
+            item=item,
+            recipe_enchantment=recipe_enchantment,
+            craftable_item_ids=craftable_ids,
+        )
         quantity = float(row.get("quantity") or 0.0)
         if quantity <= 0:
             continue
@@ -271,6 +285,9 @@ def _infer_component_returnable(unique_name: str) -> bool:
         "_KEEPER",
         "_UNDEAD",
         "_DEMON",
+        "_TOKEN",
+        "QUESTITEM_",
+        "_SIGIL",
     )
     return not any(marker in name for marker in non_returnable_markers)
 
@@ -304,6 +321,58 @@ def _parse_outputs(
     if not out:
         return (RecipeOutput(item=fallback_item, quantity=1.0),)
     return tuple(out)
+
+
+def _collect_craftable_item_ids(raw_rows: list[object]) -> set[str]:
+    out: set[str] = set()
+    for row in raw_rows:
+        if not isinstance(row, dict):
+            continue
+        item_payload = row.get("item")
+        if isinstance(item_payload, dict):
+            unique_name = str(item_payload.get("unique_name") or "").strip()
+            if unique_name:
+                out.add(unique_name)
+        outputs_payload = row.get("outputs")
+        if not isinstance(outputs_payload, list):
+            continue
+        for output in outputs_payload:
+            if not isinstance(output, dict):
+                continue
+            output_item = output.get("item")
+            if not isinstance(output_item, dict):
+                continue
+            unique_name = str(output_item.get("unique_name") or "").strip()
+            if unique_name:
+                out.add(unique_name)
+    return out
+
+
+def _inherit_component_enchantment(
+    *,
+    item: ItemRef,
+    recipe_enchantment: int,
+    craftable_item_ids: set[str],
+) -> ItemRef:
+    if recipe_enchantment <= 0:
+        return item
+    if int(item.enchantment or 0) > 0:
+        return item
+    unique_name = str(item.unique_name or "").strip()
+    if not unique_name:
+        return item
+    if "@" in unique_name or _LEVEL_SUFFIX_RE.search(unique_name):
+        return item
+    candidate = f"{unique_name}@{recipe_enchantment}"
+    if candidate not in craftable_item_ids:
+        return item
+    return ItemRef(
+        unique_name=candidate,
+        display_name=item.display_name,
+        tier=item.tier,
+        enchantment=recipe_enchantment,
+        item_value=item.item_value,
+    )
 
 
 @lru_cache(maxsize=1)

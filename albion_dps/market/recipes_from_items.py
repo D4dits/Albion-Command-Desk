@@ -211,10 +211,19 @@ def _parse_resources(payload: Any) -> list[dict[str, Any]]:
 
     for row in source:
         unique_name = str(row.get("@uniquename") or "").strip()
+        resource_enchantment = _to_int(row.get("@enchantmentlevel"))
+        unique_name = _append_level_suffix(unique_name, resource_enchantment)
         quantity = _to_float(row.get("@count"))
         if not unique_name or quantity is None or quantity <= 0:
             continue
-        rows.append({"unique_name": unique_name, "quantity": float(quantity)})
+        returnable = _parse_resource_returnable(row)
+        rows.append(
+            {
+                "unique_name": unique_name,
+                "quantity": float(quantity),
+                "returnable": returnable,
+            }
+        )
     return rows
 
 
@@ -257,7 +266,9 @@ def _build_recipe_row(
                 ),
             ),
             "quantity": float(row["quantity"]),
-            "returnable": _is_returnable_component(row["unique_name"]),
+            "returnable": row["returnable"]
+            if isinstance(row.get("returnable"), bool)
+            else _is_returnable_component(row["unique_name"]),
         }
         for row in resources
     ]
@@ -384,8 +395,39 @@ def _is_returnable_component(unique_name: str) -> bool:
         "_KEEPER",
         "_UNDEAD",
         "_DEMON",
+        "_TOKEN",
+        "QUESTITEM_",
+        "_SIGIL",
     )
     return not any(marker in name for marker in non_returnable_markers)
+
+
+def _parse_resource_returnable(row: dict[str, Any]) -> bool | None:
+    max_return_raw = row.get("@maxreturnamount")
+    if max_return_raw is not None:
+        parsed = _to_float(max_return_raw)
+        if parsed is not None:
+            return parsed > 0
+    returnable_raw = row.get("@returnable")
+    if returnable_raw is None:
+        return None
+    normalized = str(returnable_raw).strip().lower()
+    if normalized in {"0", "false", "no"}:
+        return False
+    if normalized in {"1", "true", "yes"}:
+        return True
+    return None
+
+
+def _append_level_suffix(unique_name: str, enchantment_level: int | None) -> str:
+    base = str(unique_name or "").strip()
+    if not base:
+        return base
+    if enchantment_level is None or enchantment_level <= 0:
+        return base
+    if _LEVEL_RE.search(base) is not None or "@" in base:
+        return base
+    return f"{base}_LEVEL{enchantment_level}"
 
 
 def _parse_tier(unique_name: str) -> int | None:
