@@ -7,6 +7,12 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.1.19] - 2026-02-26
+
+### Changed
+- Meter history now collapses duplicate rows for the same player label when Albion assigns multiple source IDs across map/cluster transitions.
+- History summaries keep raw `totals_by_id` data for diagnostics, while UI-facing entries aggregate by player name to avoid duplicate names in one fight.
+
 ## [0.1.18] - 2026-02-25
 
 ### Changed
