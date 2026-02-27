@@ -103,12 +103,13 @@ Item {
             spacing: 0
             reuseItems: true
             cacheBuffer: 300
+            property int hoverIndex: -1
 
             delegate: Rectangle {
                 id: meterRow
                 width: ListView.view.width
                 height: 34
-                property bool hovered: meterHoverArea.containsMouse
+                property bool hovered: meterPlayersList.hoverIndex === index
                 color: hovered ? root.theme.tableRowHover : tableRowColor(index)
                 radius: 4
                 Behavior on color {
@@ -199,12 +200,6 @@ Item {
                     }
                 }
 
-                MouseArea {
-                    id: meterHoverArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    acceptedButtons: Qt.NoButton
-                }
             }
 
             // Empty state
@@ -219,6 +214,17 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
                 width: parent.width - 24
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                acceptedButtons: Qt.NoButton
+                onPositionChanged: function(mouse) {
+                    var row = meterPlayersList.indexAt(mouse.x + meterPlayersList.contentX, mouse.y + meterPlayersList.contentY)
+                    meterPlayersList.hoverIndex = row
+                }
+                onExited: meterPlayersList.hoverIndex = -1
             }
         }
     }

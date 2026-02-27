@@ -140,7 +140,9 @@ def build_input_lines(
             quality=setup.quality,
         )
         quantity_raw = component.quantity * float(quantity)
-        if component.returnable:
+        # For a single craft, returns are probabilistic and you must provide
+        # full upfront materials. Apply expected RRR savings only for batches.
+        if component.returnable and quantity > 1:
             quantity_effective = quantity_raw * (1.0 - return_fraction)
         else:
             quantity_effective = quantity_raw

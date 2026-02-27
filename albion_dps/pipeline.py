@@ -131,13 +131,9 @@ def stream_snapshots(
                     last_membership_version is not None
                     and membership_version != last_membership_version
                 ):
-                    # Party membership changed; close current segment to avoid
-                    # carrying ex-party stats into live scoreboard.
-                    if hasattr(meter, "end_session"):
-                        try:
-                            meter.end_session()
-                        except TypeError:
-                            pass
+                    # Party membership can change frequently and noisy updates may
+                    # arrive mid-fight. Keep the active segment running and rely on
+                    # live source filtering instead of hard-resetting the meter.
                     pending_events.clear()
                     pending_combat_states.clear()
                 last_membership_version = membership_version

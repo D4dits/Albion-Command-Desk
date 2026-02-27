@@ -548,6 +548,7 @@ class _JournalLine:
     tier: int
     empty_item_id: str
     full_item_id: str
+    empty_quantity: float
     full_quantity: float
     input_cost: float
     output_value: float
@@ -2370,7 +2371,7 @@ class MarketSetupState(QObject):
         selected_inputs = [line for run in selected_visible_runs for line in run.inputs]
         selected_input_item_ids: set[str] = {str(line.item.unique_name) for line in selected_inputs}
         for journal_line in selected_journal_totals.lines:
-            if journal_line.full_quantity > 0:
+            if journal_line.empty_quantity > 0:
                 selected_input_item_ids.add(str(journal_line.empty_item_id))
         self._selected_input_item_ids = sorted(selected_input_item_ids)
         selected_material_input_total = self._compute_input_total_from_lines(
@@ -2417,9 +2418,9 @@ class MarketSetupState(QObject):
         journal_buy_city = (setup.default_buy_city or setup.craft_city or "").strip()
         journal_sell_city = (setup.default_sell_city or setup.craft_city or "").strip()
         for journal_line in self._journal_totals.lines:
-            if journal_line.full_quantity <= 0:
+            if journal_line.empty_quantity <= 0:
                 continue
-            empty_unit_price = float(journal_line.input_cost) / float(journal_line.full_quantity)
+            empty_unit_price = float(journal_line.input_cost) / float(journal_line.empty_quantity)
             empty_item_id = str(journal_line.empty_item_id)
             empty_name = f"{_journal_display_name(journal_line.kind, journal_line.tier)} (empty)"
             journal_input_price_type = str(journal_line.input_price_mode or PriceType.SELL_ORDER.value)
@@ -2456,12 +2457,12 @@ class MarketSetupState(QObject):
                     "price_type": journal_input_price_type,
                     "price_age_text": journal_input_age,
                     "unit_price": float(empty_unit_price),
-                    "quantity": float(journal_line.full_quantity),
+                    "quantity": float(journal_line.empty_quantity),
                     "total_cost": float(journal_line.input_cost),
                     "returnable": False,
                 }
             else:
-                row["quantity"] = float(row["quantity"]) + float(journal_line.full_quantity)
+                row["quantity"] = float(row["quantity"]) + float(journal_line.empty_quantity)
                 row["total_cost"] = float(row["total_cost"]) + float(journal_line.input_cost)
             self._input_price_types.setdefault(empty_item_id, self._to_price_type(journal_input_price_type))
 
@@ -2536,9 +2537,9 @@ class MarketSetupState(QObject):
                 row["quantity"] = float(row["quantity"]) + float(line.quantity)
 
         for journal_line in selected_journal_totals.lines:
-            if journal_line.full_quantity <= 0:
+            if journal_line.empty_quantity <= 0:
                 continue
-            empty_unit_price = float(journal_line.input_cost) / float(journal_line.full_quantity)
+            empty_unit_price = float(journal_line.input_cost) / float(journal_line.empty_quantity)
             empty_item_id = str(journal_line.empty_item_id)
             empty_name = f"{_journal_display_name(journal_line.kind, journal_line.tier)} (empty)"
             selected_journal_input_price_type = str(journal_line.input_price_mode or PriceType.SELL_ORDER.value)
@@ -2569,11 +2570,11 @@ class MarketSetupState(QObject):
                     "price_type": selected_journal_input_price_type,
                     "price_age_text": selected_journal_input_age,
                     "unit_price": float(empty_unit_price),
-                    "quantity": float(journal_line.full_quantity),
+                    "quantity": float(journal_line.empty_quantity),
                     "returnable": False,
                 }
             else:
-                row["quantity"] = float(row["quantity"]) + float(journal_line.full_quantity)
+                row["quantity"] = float(row["quantity"]) + float(journal_line.empty_quantity)
 
         selected_input_rows: list[InputPreviewRow] = []
         for row in selected_input_acc.values():
@@ -3217,8 +3218,10 @@ class MarketSetupState(QObject):
         journal_lines: list[_JournalLine] = []
         for row in aggregates.values():
             max_fame = max(1.0, float(row["max_fame"]))
-            full_quantity = max(0.0, float(row["gained_fame"]) / max_fame)
-            if full_quantity <= 0:
+            full_equivalent = max(0.0, float(row["gained_fame"]) / max_fame)
+            empty_quantity = float(max(0, math.ceil(full_equivalent - 1e-9)))
+            full_quantity = float(max(0, math.floor(full_equivalent + 1e-9)))
+            if empty_quantity <= 0 and full_quantity <= 0:
                 continue
             kind = str(row.get("kind", ""))
             tier = int(float(row.get("tier", 0.0)))
@@ -3246,7 +3249,7 @@ class MarketSetupState(QObject):
             if full_unit_price <= 0:
                 continue
 
-            line_input_cost = float(full_quantity * empty_unit_price)
+            line_input_cost = float(empty_quantity * empty_unit_price)
             line_output_value = float(full_quantity * full_unit_price)
             line_market_tax = max(0.0, line_output_value * (float(setup.market_tax_percent) / 100.0))
 
@@ -3259,6 +3262,7 @@ class MarketSetupState(QObject):
                     tier=tier,
                     empty_item_id=empty_item_id,
                     full_item_id=full_item_id,
+                    empty_quantity=float(empty_quantity),
                     input_price_mode=str(empty_price_mode),
                     output_price_mode=str(full_price_mode),
                     full_quantity=float(full_quantity),

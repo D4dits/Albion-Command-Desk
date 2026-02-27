@@ -42,6 +42,8 @@ FALLBACK_PALETTE = [
     "#e879f9",
 ]
 FALLBACK_COLOR = "#9aa4af"
+NON_PLAYER_NAME_PREFIXES = ("@",)
+NON_PLAYER_NAMES = {"SYSTEM"}
 
 HISTORY_LABEL_LIMIT = 14
 
@@ -557,6 +559,8 @@ def _build_player_rows(
             or names.get(source_id)
             or str(source_id)
         )
+        if not _is_player_label(label):
+            continue
         damage = float(stats.get("damage", 0.0))
         heal = float(stats.get("heal", 0.0))
         dps = float(stats.get("dps", 0.0))
@@ -771,6 +775,8 @@ def _build_player_rows_from_entries(
     rows: list[PlayerRow] = []
     for entry in entries:
         label = _resolve_label(entry.label, names)
+        if not _is_player_label(label):
+            continue
         role = _infer_role(entry.damage, entry.heal, max_damage=max_damage, max_heal=max_heal) or ""
         rows.append(
             PlayerRow(
@@ -826,6 +832,7 @@ def _collapse_player_rows(rows: list[PlayerRow]) -> list[PlayerRow]:
                 "heal": float(row.heal),
                 "dps": float(row.dps),
                 "hps": float(row.hps),
+                "role": row.role or "",
                 "weapon_name": row.weapon_name,
                 "weapon_tier": row.weapon_tier,
                 "weapon_icon": row.weapon_icon,
@@ -835,6 +842,10 @@ def _collapse_player_rows(rows: list[PlayerRow]) -> list[PlayerRow]:
         current["heal"] = float(current["heal"]) + float(row.heal)
         current["dps"] = float(current["dps"]) + float(row.dps)
         current["hps"] = float(current["hps"]) + float(row.hps)
+        if row.role in WEAPON_COLORS:
+            current["role"] = row.role
+        elif not current["role"] and row.role:
+            current["role"] = row.role
         if not current["weapon_name"] and row.weapon_name:
             current["weapon_name"] = row.weapon_name
             current["weapon_tier"] = row.weapon_tier
@@ -848,7 +859,9 @@ def _collapse_player_rows(rows: list[PlayerRow]) -> list[PlayerRow]:
         heal = float(item["heal"])
         dps = float(item["dps"])
         hps = float(item["hps"])
-        role = _infer_role(damage, heal, max_damage=max_damage, max_heal=max_heal) or ""
+        role = str(item.get("role") or "")
+        if not role:
+            role = _infer_role(damage, heal, max_damage=max_damage, max_heal=max_heal) or ""
         collapsed.append(
             PlayerRow(
                 name=name,
@@ -876,6 +889,8 @@ def _collapse_history_entries(
     grouped: dict[str, tuple[float, float]] = {}
     for entry in entries:
         label = _resolve_label(entry.label, names)
+        if not _is_player_label(label):
+            continue
         damage, heal = grouped.get(label, (0.0, 0.0))
         grouped[label] = (damage + float(entry.damage), heal + float(entry.heal))
     collapsed: list[SessionEntry] = []
@@ -909,3 +924,14 @@ def _summary_key(summary: SessionSummary) -> tuple[Any, ...]:
         summary.label or "",
         summary.reason,
     )
+
+
+def _is_player_label(label: str | None) -> bool:
+    if not isinstance(label, str):
+        return False
+    normalized = label.strip()
+    if not normalized:
+        return False
+    if normalized in NON_PLAYER_NAMES:
+        return False
+    return not normalized.startswith(NON_PLAYER_NAME_PREFIXES)

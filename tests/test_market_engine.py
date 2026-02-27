@@ -496,6 +496,67 @@ def test_build_input_lines_do_not_return_non_returnable_components() -> None:
     assert round(relic_line.quantity, 2) == 10.0
 
 
+def test_build_input_lines_single_craft_keeps_full_upfront_returnable_cost() -> None:
+    sword = ItemRef(
+        unique_name="T4_MAIN_SWORD",
+        display_name="Broadsword",
+        tier=4,
+        enchantment=0,
+        item_value=1200,
+    )
+    bars = ItemRef(
+        unique_name="T4_METALBAR",
+        display_name="Metal Bar",
+        tier=4,
+        enchantment=0,
+        item_value=300,
+    )
+    recipe = Recipe(
+        item=sword,
+        station="Warrior Forge",
+        city_bonus="Bridgewatch",
+        components=(RecipeComponent(item=bars, quantity=16.0, returnable=True),),
+        outputs=(RecipeOutput(item=sword, quantity=1.0),),
+        focus_per_craft=200,
+    )
+    setup = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Bridgewatch",
+        default_buy_city="Bridgewatch",
+        default_sell_city="Bridgewatch",
+        return_rate_percent=20.0,
+        quality=1,
+    )
+    price_index = {
+        ("T4_METALBAR", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_METALBAR",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=1000,
+            buy_price_max=900,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+        ("T4_MAIN_SWORD", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_MAIN_SWORD",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=16000,
+            buy_price_max=15000,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+    }
+    run = build_craft_run(
+        recipe=recipe,
+        quantity=1,
+        setup=setup,
+        price_index=price_index,
+    )
+    bars_line = [x for x in run.inputs if x.item.unique_name == "T4_METALBAR"][0]
+    assert round(bars_line.quantity, 2) == 16.0
+
+
 def test_effective_return_fraction_uses_table_for_premium_and_city_bonus() -> None:
     recipe = _build_recipe()
     setup = CraftSetup(

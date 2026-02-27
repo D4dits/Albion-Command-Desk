@@ -468,6 +468,7 @@ def test_market_setup_state_includes_journals_in_inputs_outputs_models(monkeypat
                 tier=4,
                 empty_item_id="T4_JOURNAL_MAGE",
                 full_item_id="T4_JOURNAL_MAGE_FULL",
+                empty_quantity=3.0,
                 full_quantity=2.0,
                 input_cost=1000.0,
                 output_value=2500.0,
@@ -486,6 +487,14 @@ def test_market_setup_state_includes_journals_in_inputs_outputs_models(monkeypat
         input_labels.add(str(state.inputsModel.data(model_index, state.inputsModel.ItemRole)))
     assert "T4_JOURNAL_MAGE" in input_item_ids
     assert "T4 Imbuer's Journal (empty)" in input_labels
+    mage_input_qty = None
+    for idx in range(state.inputsModel.rowCount()):
+        model_index = state.inputsModel.index(idx, 0)
+        item_id = str(state.inputsModel.data(model_index, state.inputsModel.ItemIdRole) or "")
+        if item_id == "T4_JOURNAL_MAGE":
+            mage_input_qty = float(state.inputsModel.data(model_index, state.inputsModel.QuantityRole) or 0.0)
+            break
+    assert mage_input_qty == pytest.approx(3.0, rel=0.0, abs=0.01)
 
     output_item_ids = set()
     output_labels = set()
@@ -522,6 +531,7 @@ def test_market_setup_state_results_cost_not_coupled_to_journal_revenue(
                 tier=4,
                 empty_item_id="T4_JOURNAL_MAGE",
                 full_item_id="T4_JOURNAL_MAGE_FULL",
+                empty_quantity=3.0,
                 full_quantity=2.0,
                 input_cost=1000.0,
                 output_value=2500.0,
