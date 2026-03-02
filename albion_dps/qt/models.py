@@ -247,6 +247,7 @@ class UiState(QObject):
         self._update_check_status = ""
         self._latest_update_version = ""
         self._dismissed_update_version = ""
+        self._allowed_player_names: set[str] | None = None
 
     @Property(str, notify=modeChanged)
     def mode(self) -> str:
@@ -431,10 +432,16 @@ class UiState(QObject):
         zone: str | None,
         fame_total: int,
         fame_per_hour: float,
+        allowed_player_names: set[str] | None = None,
     ) -> None:
         self._last_snapshot = snapshot
         self._last_names = dict(names)
         self._last_history = list(history)
+        self._allowed_player_names = (
+            {name for name in allowed_player_names if isinstance(name, str) and name}
+            if allowed_player_names
+            else None
+        )
         self._set_mode(mode)
         self._set_zone(zone or "-")
         self._set_time(snapshot.timestamp)
@@ -517,16 +524,17 @@ class UiState(QObject):
         if self._last_snapshot is None:
             self._players.set_items([])
             return
-        self._players.set_items(
-            _build_player_rows(
-                self._last_snapshot.totals,
-                names=self._last_names,
-                sort_key=self._sort_key,
-                top_n=self._top_n,
-                role_lookup=self._role_lookup,
-                weapon_lookup=self._weapon_lookup,
+            self._players.set_items(
+                _build_player_rows(
+                    self._last_snapshot.totals,
+                    names=self._last_names,
+                    sort_key=self._sort_key,
+                    top_n=self._top_n,
+                    role_lookup=self._role_lookup,
+                    weapon_lookup=self._weapon_lookup,
+                    allowed_player_names=self._allowed_player_names,
+                )
             )
-        )
 
     def _refresh_history_table(self) -> None:
         self._history.set_items(
@@ -548,6 +556,7 @@ def _build_player_rows(
     role_lookup: Callable[[int], str | None] | None = None,
     weapon_lookup: Callable[[int], object | None] | None = None,
     label_overrides: dict[int, str] | None = None,
+    allowed_player_names: set[str] | None = None,
 ) -> list[PlayerRow]:
     rows: list[PlayerRow] = []
     metric = SORT_KEY_MAP.get(sort_key, "dps")
@@ -560,6 +569,8 @@ def _build_player_rows(
             or str(source_id)
         )
         if not _is_player_label(label):
+            continue
+        if allowed_player_names is not None and label not in allowed_player_names:
             continue
         damage = float(stats.get("damage", 0.0))
         heal = float(stats.get("heal", 0.0))
@@ -768,6 +779,7 @@ def _build_player_rows_from_entries(
     sort_key: str,
     top_n: int,
     names: dict[int, str],
+    allowed_player_names: set[str] | None = None,
 ) -> list[PlayerRow]:
     metric = SORT_KEY_MAP.get(sort_key, "dps")
     max_damage = max((entry.damage for entry in entries), default=0.0)
@@ -776,6 +788,8 @@ def _build_player_rows_from_entries(
     for entry in entries:
         label = _resolve_label(entry.label, names)
         if not _is_player_label(label):
+            continue
+        if allowed_player_names is not None and label not in allowed_player_names:
             continue
         role = _infer_role(entry.damage, entry.heal, max_damage=max_damage, max_heal=max_heal) or ""
         rows.append(
@@ -933,5 +947,8 @@ def _is_player_label(label: str | None) -> bool:
     if not normalized:
         return False
     if normalized in NON_PLAYER_NAMES:
+        return False
+    upper = normalized.upper()
+    if upper.startswith("MOB_") or upper.startswith("NPC_"):
         return False
     return not normalized.startswith(NON_PLAYER_NAME_PREFIXES)

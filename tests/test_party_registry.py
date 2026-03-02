@@ -415,6 +415,47 @@ def test_party_registry_ignores_mob_names_for_self_inference() -> None:
     assert registry._self_name is None
 
 
+def test_party_registry_disallows_non_player_labels_even_if_id_is_present() -> None:
+    registry = PartyRegistry()
+    names = NameRegistry()
+    registry.seed_names(["D4dits"])
+    registry.seed_ids([42])
+    names.record(42, "@MOB_WOLF")
+
+    assert not registry.allows(42, names)
+
+
+def test_party_registry_disallows_mob_prefix_without_at_symbol() -> None:
+    registry = PartyRegistry()
+    names = NameRegistry()
+    registry.seed_names(["D4dits"])
+    registry.seed_ids([77])
+    names.record(77, "MOB_MORGANA_CULTIST")
+
+    assert not registry.allows(77, names)
+
+
+def test_party_registry_disallows_stale_party_id_when_name_no_longer_matches() -> None:
+    registry = PartyRegistry()
+    names = NameRegistry()
+    registry.seed_self_ids([100])
+    registry.seed_names(["D4dits"])
+    registry.seed_ids([200])
+    names.record(200, "EnemyPlayer")
+
+    assert not registry.allows(200, names)
+
+
+def test_party_registry_disallows_unknown_name_when_roster_is_known() -> None:
+    registry = PartyRegistry()
+    names = NameRegistry()
+    registry.seed_self_ids([100])
+    registry.seed_names(["D4dits", "SocialFur10"])
+    registry.seed_ids([200])
+
+    assert not registry.allows(200, names)
+
+
 def test_party_registry_resolves_self_id_from_confirmed_name() -> None:
     registry = PartyRegistry()
     names = NameRegistry()

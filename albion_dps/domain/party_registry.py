@@ -62,7 +62,7 @@ JOIN_OPERATION_CODE = 2
 CHANGE_CLUSTER_OPERATION_CODE = 35
 JOIN_SELF_ID_KEY = 0
 JOIN_SELF_NAME_KEY = 2
-NON_PLAYER_NAME_PREFIXES = ("@",)
+NON_PLAYER_NAME_PREFIXES = ("@", "MOB_", "NPC_")
 NON_PLAYER_NAMES = {"SYSTEM"}
 KNOWN_PARTY_SUBTYPES = (
     set(PARTY_SUBTYPE_NAME_KEYS)
@@ -547,33 +547,46 @@ class PartyRegistry:
             return False
         self._combat_ids_seen.add(source_id)
         if self.strict:
+            if source_id in self._self_ids:
+                return True
+            if source_id in self._party_ids:
+                if name_registry is None:
+                    return True
+                name = name_registry.lookup(source_id)
+                if name is None:
+                    return not self._party_names
+                if not _looks_like_player_name(name):
+                    return False
+                if self._party_names:
+                    return name in self._party_names
+                return True
             if not self._self_ids:
                 if name_registry is None:
                     return False
                 name = name_registry.lookup(source_id)
+                if not _looks_like_player_name(name):
+                    return False
                 if self._self_name_confirmed and self._self_name:
                     if name == self._self_name:
                         return True
                 if self._party_names:
                     return name is not None and name in self._party_names
                 return False
-            if source_id in self._party_ids or source_id in self._self_ids:
-                return True
             if name_registry is None or not self._party_names:
                 return False
             name = name_registry.lookup(source_id)
-            return name is not None and name in self._party_names
+            return _looks_like_player_name(name) and name in self._party_names
         if self._party_ids:
             if source_id in self._party_ids:
                 return True
             if name_registry is None or not self._party_names:
                 return False
             name = name_registry.lookup(source_id)
-            return name is not None and name in self._party_names
+            return _looks_like_player_name(name) and name in self._party_names
         if not self._party_names or name_registry is None:
             return True
         name = name_registry.lookup(source_id)
-        return name is not None and name in self._party_names
+        return _looks_like_player_name(name) and name in self._party_names
 
     def _apply_target_request(self, message: PhotonMessage, packet: RawPacket) -> None:
         if message.event_code is not None:

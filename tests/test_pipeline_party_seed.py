@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from albion_dps.domain import NameRegistry
 from albion_dps.domain.party_registry import PartyRegistry
 from albion_dps.meter.aggregate import RollingMeter
 from albion_dps.meter.session_meter import SessionMeter
 from albion_dps.models import CombatEvent, PhotonMessage, RawPacket
-from albion_dps.pipeline import stream_snapshots
+from albion_dps.pipeline import _allow_combat_state, stream_snapshots
 
 _TARGET_OP_REQUEST_PAYLOAD_HEX = (
     "010007006c08de534edbcc5e5d0179000266c316dbf3c3a4be9f026641e8b62403"
@@ -174,3 +175,18 @@ def test_pending_combat_state_flush_enables_auto_end() -> None:
     assert len(history) == 1
     assert history[0].reason == "combat_state"
     assert history[0].end_ts == 0.1
+
+
+def test_allow_combat_state_respects_party_scope_in_strict_mode() -> None:
+    party = PartyRegistry(strict=True)
+    names = NameRegistry()
+    party.seed_self_ids([1001])
+    party.seed_names(["D4dits", "SocialFur10"])
+    party.seed_ids([1001, 1002])
+    names.record(1001, "D4dits")
+    names.record(1002, "SocialFur10")
+    names.record(1003, "EnemyPlayer")
+
+    assert _allow_combat_state(1001, party, names)
+    assert _allow_combat_state(1002, party, names)
+    assert not _allow_combat_state(1003, party, names)

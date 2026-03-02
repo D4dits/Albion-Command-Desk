@@ -169,6 +169,7 @@ def run_qt(args: argparse.Namespace) -> int:
             snapshot_queue,
             state,
             meter=meter,
+            party=party,
             fame=fame,
             stop_event=stop_event,
         )
@@ -391,6 +392,7 @@ def _drain_snapshots(
     state,
     *,
     meter: SessionMeter,
+    party: PartyRegistry,
     fame: FameTracker,
     stop_event: threading.Event,
 ) -> None:
@@ -403,6 +405,11 @@ def _drain_snapshots(
             stop_event.set()
             return
         names = snapshot.names or {}
+        allowed_names = set(party.snapshot_names())
+        for self_id in party.snapshot_self_ids():
+            resolved = names.get(self_id)
+            if isinstance(resolved, str) and resolved:
+                allowed_names.add(resolved)
         state.update(
             snapshot,
             names=names,
@@ -411,6 +418,7 @@ def _drain_snapshots(
             zone=meter.zone_label(),
             fame_total=fame.total(),
             fame_per_hour=fame.per_hour(),
+            allowed_player_names=allowed_names or None,
         )
 
 

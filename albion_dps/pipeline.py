@@ -288,8 +288,6 @@ def _allow_combat_state(
 ) -> bool:
     if party_registry is None:
         return True
-    if party_registry.strict:
-        return entity_id in party_registry.snapshot_self_ids()
     return party_registry.allows(entity_id, name_registry)
 
 
