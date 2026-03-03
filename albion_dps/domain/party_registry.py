@@ -396,7 +396,7 @@ class PartyRegistry:
 
     def has_ids(self) -> bool:
         if self.strict:
-            return bool(self._self_ids)
+            return bool(self._self_ids or self._party_ids)
         return bool(self._party_ids)
 
     def has_unresolved_names(self) -> bool:

@@ -456,6 +456,14 @@ def test_party_registry_disallows_unknown_name_when_roster_is_known() -> None:
     assert not registry.allows(200, names)
 
 
+def test_party_registry_has_ids_in_strict_mode_with_party_ids_only() -> None:
+    registry = PartyRegistry(strict=True)
+    assert not registry.has_ids()
+
+    registry.seed_ids([2001])
+    assert registry.has_ids()
+
+
 def test_party_registry_resolves_self_id_from_confirmed_name() -> None:
     registry = PartyRegistry()
     names = NameRegistry()
