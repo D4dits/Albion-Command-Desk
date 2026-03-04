@@ -20,6 +20,7 @@ ColumnLayout {
     property int currentTabIndex: 0
     property bool compactLayout: width < theme.breakpointCompact
     property bool narrowLayout: width < theme.breakpointNarrow
+    property bool veryNarrowLayout: width < 980
 
     // Navigation properties
     property int shellNavHeight: 34
@@ -69,10 +70,10 @@ ColumnLayout {
     property color shellTabIdleBackground: theme.shellTabIdleBackground
     property color shellTabActiveText: theme.shellTabActiveText
     property int shellTabRadius: theme.shellTabRadius
-    property string payPalLabel: "PayPal"
-    property string coffeeLabel: "Buy me a Coffee"
-    property int supportPayPalWidth: narrowLayout ? 108 : 118
-    property int supportCoffeeWidth: narrowLayout ? 156 : 166
+    property string payPalLabel: veryNarrowLayout ? "Pay" : "PayPal"
+    property string coffeeLabel: veryNarrowLayout ? "Coffee" : "Buy me a Coffee"
+    property int supportPayPalWidth: veryNarrowLayout ? 84 : (narrowLayout ? 108 : 118)
+    property int supportCoffeeWidth: veryNarrowLayout ? 112 : (narrowLayout ? 156 : 166)
     property string autoUpdateLabel: narrowLayout ? "Auto" : "Auto update"
 
     // Helper function

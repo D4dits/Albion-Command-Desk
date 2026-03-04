@@ -13,7 +13,7 @@ import "." // for Theme and AppButton access
 TableSurface {
     id: root
     level: 1
-    implicitHeight: 62
+    implicitHeight: 88
 
     // Properties to bind to parent state
     property string currentMode: "battle"
@@ -74,6 +74,12 @@ TableSurface {
                 onClicked: root.modeChanged("manual")
             }
             Item { Layout.fillWidth: true }
+        }
+
+        RowLayout {
+            spacing: 8
+            Layout.fillWidth: true
+
             Text {
                 text: "Sort:"
                 color: root.theme.textMuted

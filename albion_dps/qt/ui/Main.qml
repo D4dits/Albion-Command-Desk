@@ -11,6 +11,8 @@ ApplicationWindow {
     visible: true
     width: 1120
     height: 720
+    minimumWidth: 880
+    minimumHeight: 620
     title: "Albion Command Desk"
     color: Theme.surfaceApp
 

@@ -40,6 +40,7 @@ Item {
 
     // UI flags
     property bool compactLayout: false
+    property bool stackedLayout: width < 1080
 
     // Signals to notify parent of actions
     signal setMode(string mode)
@@ -90,15 +91,13 @@ Item {
         return mutedColor
     }
 
-    RowLayout {
-        anchors.fill: parent
-        spacing: 12
+    Component {
+        id: leftPanelComponent
 
         // Left Panel - Scoreboard
         CardPanel {
             level: 1
             Layout.fillWidth: true
-            Layout.fillHeight: true
 
             ColumnLayout {
                 anchors.fill: parent
@@ -216,12 +215,14 @@ Item {
                 }
             }
         }
+    }
 
-        // Right Panel - History
+    Component {
+        id: rightPanelComponent
+
         CardPanel {
             level: 1
-            Layout.preferredWidth: 360
-            Layout.fillHeight: true
+            Layout.fillWidth: true
 
             ColumnLayout {
                 anchors.fill: parent
@@ -250,8 +251,6 @@ Item {
                 MeterSessionStatsPanel {
                     id: meterSessionStats
                     Layout.fillWidth: true
-                    Layout.minimumHeight: implicitHeight
-                    Layout.preferredHeight: implicitHeight
                     theme: root.theme
                     textColor: root.textColor
                     mutedColor: root.mutedColor
@@ -261,6 +260,46 @@ Item {
                     silverPerHourText: root.silverPerHourText
                 }
             }
+        }
+    }
+
+    RowLayout {
+        anchors.fill: parent
+        spacing: 12
+        visible: !root.stackedLayout
+
+        Loader {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            sourceComponent: leftPanelComponent
+        }
+
+        Loader {
+            Layout.preferredWidth: 360
+            Layout.minimumWidth: 320
+            Layout.maximumWidth: 420
+            Layout.fillHeight: true
+            sourceComponent: rightPanelComponent
+        }
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 12
+        visible: root.stackedLayout
+
+        Loader {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            sourceComponent: leftPanelComponent
+        }
+
+        Loader {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 320
+            Layout.minimumHeight: 260
+            Layout.maximumHeight: 360
+            sourceComponent: rightPanelComponent
         }
     }
 }

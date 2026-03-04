@@ -387,10 +387,12 @@ CardPanel {
                 rowSpacing: 10
 
                 TableSurface {
+                    id: checklistCard
                     Layout.fillWidth: true
                     level: 1
 
                     ColumnLayout {
+                        id: checklistContent
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.top: parent.top
@@ -437,13 +439,17 @@ CardPanel {
                             wrapMode: Text.WordWrap
                         }
                     }
+
+                    implicitHeight: checklistContent.implicitHeight + 20
                 }
 
                 TableSurface {
+                    id: updatesCard
                     Layout.fillWidth: true
                     level: 1
 
                     ColumnLayout {
+                        id: updatesCardContent
                         anchors.left: parent.left
                         anchors.right: parent.right
                         anchors.top: parent.top
@@ -497,6 +503,8 @@ CardPanel {
                             }
                         }
                     }
+
+                    implicitHeight: updatesCardContent.implicitHeight + 20
                 }
             }
 
