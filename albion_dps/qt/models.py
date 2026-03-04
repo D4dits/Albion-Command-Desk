@@ -524,17 +524,17 @@ class UiState(QObject):
         if self._last_snapshot is None:
             self._players.set_items([])
             return
-            self._players.set_items(
-                _build_player_rows(
-                    self._last_snapshot.totals,
-                    names=self._last_names,
-                    sort_key=self._sort_key,
-                    top_n=self._top_n,
-                    role_lookup=self._role_lookup,
-                    weapon_lookup=self._weapon_lookup,
-                    allowed_player_names=self._allowed_player_names,
-                )
+        self._players.set_items(
+            _build_player_rows(
+                self._last_snapshot.totals,
+                names=self._last_names,
+                sort_key=self._sort_key,
+                top_n=self._top_n,
+                role_lookup=self._role_lookup,
+                weapon_lookup=self._weapon_lookup,
+                allowed_player_names=self._allowed_player_names,
             )
+        )
 
     def _refresh_history_table(self) -> None:
         self._history.set_items(
