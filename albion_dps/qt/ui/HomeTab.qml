@@ -35,8 +35,10 @@ CardPanel {
     property string gameDataActionLabel: "Select game folder"
 
     property bool compactLayout: false
-    property bool twoColumn: width >= 900
-    property bool wideLayout: width >= 1040
+    property bool twoColumn: width >= 980
+    property bool wideLayout: width >= 1120
+    property int contentPadding: compactLayout ? 8 : 12
+    property int contentSpacing: compactLayout ? 8 : 10
 
     // Theme
     property var theme: null
@@ -84,10 +86,19 @@ CardPanel {
         return gameDataReady ? "ready" : "missing"
     }
 
-    ColumnLayout {
+    ScrollView {
+        id: contentScroll
         anchors.fill: parent
-        anchors.margins: 12
-        spacing: 10
+        clip: true
+        contentWidth: availableWidth
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+        ColumnLayout {
+            id: contentLayout
+            width: Math.max(contentScroll.availableWidth - (root.contentPadding * 2), 320)
+            x: root.contentPadding
+            y: root.contentPadding
+            spacing: root.contentSpacing
 
         RowLayout {
             Layout.fillWidth: true
@@ -514,13 +525,17 @@ CardPanel {
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 4
+                        spacing: 2
                         Text {
-                            text: "Use this section to check for new Albion Command Desk releases."
+                            text: "Update status"
                             color: mutedColor
                             font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
+                        }
+                        Text {
+                            text: root.updateCheckStatus.length > 0 ? root.updateCheckStatus : "Not checked"
+                            color: textColor
+                            font.pixelSize: 11
+                            font.bold: true
                         }
                     }
 
@@ -540,19 +555,13 @@ CardPanel {
                                 onClicked: root.requestManualUpdateCheck()
                             }
                         }
-                        Text {
-                            visible: root.updateCheckStatus.length > 0
-                            text: root.updateCheckStatus
-                            color: mutedColor
-                            font.pixelSize: 11
-                            horizontalAlignment: Text.AlignRight
-                        }
                     }
                 }
 
             }
 
             implicitHeight: quickActionsContent.implicitHeight + 20
+        }
         }
     }
 }

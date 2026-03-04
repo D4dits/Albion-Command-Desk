@@ -14,7 +14,7 @@ CardPanel {
     property string silverText: "0"
     property string silverPerHourText: "0.0"
 
-    implicitHeight: 116
+    implicitHeight: Math.max(132, statsContent.implicitHeight + 24)
 
     function _formatInt(text) {
         var value = Number(text)
@@ -28,6 +28,7 @@ CardPanel {
     }
 
     ColumnLayout {
+        id: statsContent
         anchors.fill: parent
         anchors.margins: 12
         spacing: 10

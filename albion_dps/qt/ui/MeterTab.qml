@@ -250,6 +250,8 @@ Item {
                 MeterSessionStatsPanel {
                     id: meterSessionStats
                     Layout.fillWidth: true
+                    Layout.minimumHeight: implicitHeight
+                    Layout.preferredHeight: implicitHeight
                     theme: root.theme
                     textColor: root.textColor
                     mutedColor: root.mutedColor
