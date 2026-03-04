@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from albion_dps.meter.session_meter import SessionMeter
+from albion_dps.meter.session_meter import COMBAT_END_GRACE_SECONDS, SessionMeter
 from albion_dps.models import CombatEvent, RawPacket
 
 
@@ -70,7 +70,7 @@ def test_battle_mode_archives_on_combat_state_end() -> None:
     meter.observe_combat_state(1, True, False, 0.0)
     meter.push(CombatEvent(1.0, 1, 2, 10, "damage"))
     meter.observe_combat_state(1, False, False, 2.0)
-    meter.observe_packet(_packet(4.1))
+    meter.observe_packet(_packet(2.0 + COMBAT_END_GRACE_SECONDS + 0.1))
 
     history = meter.history()
     assert len(history) == 1
@@ -82,7 +82,7 @@ def test_battle_mode_archives_on_combat_state_end_same_tick() -> None:
     meter.observe_combat_state(1, True, False, 0.0)
     meter.push(CombatEvent(1.0, 1, 2, 10, "damage"))
     meter.observe_combat_state(1, False, False, 2.0)
-    meter.observe_packet(_packet(4.1))
+    meter.observe_packet(_packet(2.0 + COMBAT_END_GRACE_SECONDS + 0.1))
 
     history = meter.history()
     assert len(history) == 1
