@@ -39,7 +39,7 @@ from albion_dps.market.planner import build_selling_entries, build_shopping_entr
 from albion_dps.market.service import MarketDataService
 from albion_dps.market.setup import sanitized_setup, validate_setup
 
-_SHOPPING_SAFETY_BUFFER_PERCENT = 2.0
+_SHOPPING_SAFETY_BUFFER_PERCENT = 3.0
 _JOURNAL_NPC_EMPTY_PRICES: dict[int, int] = {
     2: 500,
     3: 1000,
