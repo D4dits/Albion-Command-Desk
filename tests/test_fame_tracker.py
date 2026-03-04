@@ -12,6 +12,12 @@ _UPDATE_FAME_TWO_HEX = (
     "01000700690000e3d8016c00000528381da13b02690011b980036900096640"
     "056f0106663dccccd0fc6b0052"
 )
+_SILVER_GAIN_ONE_HEX = (
+    "01000500690000e3d802730006443464697473036f010569005588d6fc6b0113"
+)
+_SILVER_GAIN_TWO_HEX = (
+    "01000500690000e3d802730006443464697473036f01056900184879fc6b0113"
+)
 
 
 def _packet(timestamp: float) -> RawPacket:
@@ -46,5 +52,13 @@ def test_fame_tracker_counts_update_fame() -> None:
     tracker.observe(_message(_UPDATE_FAME_TWO_HEX), _packet(111.0))
     assert tracker.total() == 348
 
+    tracker.observe(_message(_SILVER_GAIN_ONE_HEX), _packet(112.0))
+    assert tracker.silver_total() == 560
+
+    tracker.observe(_message(_SILVER_GAIN_TWO_HEX), _packet(122.0))
+    assert tracker.silver_total() == 719
+    assert tracker.silver_per_hour() > 0.0
+
     tracker.reset()
     assert tracker.total() == 0
+    assert tracker.silver_total() == 0

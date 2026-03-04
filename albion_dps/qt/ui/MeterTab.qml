@@ -28,6 +28,8 @@ Item {
     property string timeText: ""
     property string fameText: ""
     property string famePerHourText: ""
+    property string silverText: ""
+    property string silverPerHourText: ""
     property string captureRuntimeState: "unknown"
     property string captureRuntimeDetail: ""
     property string captureRuntimeActionLabel: ""
@@ -244,13 +246,17 @@ Item {
                     onCopyHistory: function(index) { root.copyHistory(index) }
                 }
 
-                // Legend
-                MeterLegend {
-                    id: meterLegend
+                // Session gains
+                MeterSessionStatsPanel {
+                    id: meterSessionStats
                     Layout.fillWidth: true
                     theme: root.theme
                     textColor: root.textColor
                     mutedColor: root.mutedColor
+                    fameText: root.fameText
+                    famePerHourText: root.famePerHourText
+                    silverText: root.silverText
+                    silverPerHourText: root.silverPerHourText
                 }
             }
         }

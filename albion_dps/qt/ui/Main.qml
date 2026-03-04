@@ -525,6 +525,8 @@ ApplicationWindow {
                     timeText: uiState.timeText
                     fameText: uiState.fameText
                     famePerHourText: uiState.famePerHourText
+                    silverText: uiState.silverText
+                    silverPerHourText: uiState.silverPerHourText
                     captureRuntimeState: scannerState.captureRuntimeState
                     captureRuntimeDetail: scannerState.captureRuntimeDetail
                     captureRuntimeActionLabel: scannerState.captureRuntimeActionLabel

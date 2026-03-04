@@ -226,6 +226,8 @@ class UiState(QObject):
         self._time_text = "-"
         self._fame_text = "0"
         self._fame_per_hour_text = "0.0"
+        self._silver_text = "0"
+        self._silver_per_hour_text = "0.0"
         self._sort_key = sort_key
         self._top_n = top_n
         self._history_limit = history_limit
@@ -268,6 +270,14 @@ class UiState(QObject):
     @Property(str, notify=fameChanged)
     def famePerHourText(self) -> str:
         return self._fame_per_hour_text
+
+    @Property(str, notify=fameChanged)
+    def silverText(self) -> str:
+        return self._silver_text
+
+    @Property(str, notify=fameChanged)
+    def silverPerHourText(self) -> str:
+        return self._silver_per_hour_text
 
     @Property(str, notify=sortChanged)
     def sortKey(self) -> str:
@@ -432,6 +442,8 @@ class UiState(QObject):
         zone: str | None,
         fame_total: int,
         fame_per_hour: float,
+        silver_total: int,
+        silver_per_hour: float,
         allowed_player_names: set[str] | None = None,
     ) -> None:
         self._last_snapshot = snapshot
@@ -445,7 +457,12 @@ class UiState(QObject):
         self._set_mode(mode)
         self._set_zone(zone or "-")
         self._set_time(snapshot.timestamp)
-        self._set_fame(fame_total, fame_per_hour)
+        self._set_meter_gains(
+            fame_total,
+            fame_per_hour,
+            silver_total,
+            silver_per_hour,
+        )
         self._sync_selected_history_index()
         self._refresh_player_table()
         self._refresh_history_table()
@@ -466,12 +483,27 @@ class UiState(QObject):
             self._time_text = text
             self.timeChanged.emit()
 
-    def _set_fame(self, total: int, per_hour: float) -> None:
-        total_text = str(int(total))
-        per_hour_text = f"{per_hour:.1f}"
-        if total_text != self._fame_text or per_hour_text != self._fame_per_hour_text:
-            self._fame_text = total_text
-            self._fame_per_hour_text = per_hour_text
+    def _set_meter_gains(
+        self,
+        fame_total: int,
+        fame_per_hour: float,
+        silver_total: int,
+        silver_per_hour: float,
+    ) -> None:
+        fame_total_text = str(int(fame_total))
+        fame_per_hour_text = f"{fame_per_hour:.1f}"
+        silver_total_text = str(int(silver_total))
+        silver_per_hour_text = f"{silver_per_hour:.1f}"
+        if (
+            fame_total_text != self._fame_text
+            or fame_per_hour_text != self._fame_per_hour_text
+            or silver_total_text != self._silver_text
+            or silver_per_hour_text != self._silver_per_hour_text
+        ):
+            self._fame_text = fame_total_text
+            self._fame_per_hour_text = fame_per_hour_text
+            self._silver_text = silver_total_text
+            self._silver_per_hour_text = silver_per_hour_text
             self.fameChanged.emit()
 
     def _set_selected_history_index(self, index: int) -> None:

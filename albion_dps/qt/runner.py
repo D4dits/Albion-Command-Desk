@@ -418,6 +418,8 @@ def _drain_snapshots(
             zone=meter.zone_label(),
             fame_total=fame.total(),
             fame_per_hour=fame.per_hour(),
+            silver_total=fame.silver_total(),
+            silver_per_hour=fame.silver_per_hour(),
             allowed_player_names=allowed_names or None,
         )
 

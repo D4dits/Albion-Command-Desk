@@ -48,6 +48,8 @@ def test_ui_state_update_populates_live_rows() -> None:
         zone="-",
         fame_total=0,
         fame_per_hour=0.0,
+        silver_total=0,
+        silver_per_hour=0.0,
         allowed_player_names={"D4dits"},
     )
 
