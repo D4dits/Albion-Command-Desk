@@ -6,8 +6,8 @@ import "." // for AppButton access
  * ScannerControls - Action buttons bar for scanner operations
  *
  * Provides buttons for:
- * - Check updates
- * - Sync repo
+ * - Check + update
+ * - Check only
  * - Start scanner
  * - Start scanner (sudo)
  * - Stop scanner
@@ -31,16 +31,16 @@ Flow {
     signal clearLog()
 
     AppButton {
-        text: "Check updates"
-        compact: true
-        enabled: root.gitAvailable
-        onClicked: root.checkForUpdates()
-    }
-    AppButton {
-        text: "Sync repo"
+        text: "Check + update"
         compact: true
         enabled: root.gitAvailable
         onClicked: root.syncClientRepo()
+    }
+    AppButton {
+        text: "Check only"
+        compact: true
+        enabled: root.gitAvailable
+        onClicked: root.checkForUpdates()
     }
     AppButton {
         text: "Start scanner"

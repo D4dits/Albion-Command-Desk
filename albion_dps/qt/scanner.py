@@ -414,15 +414,43 @@ class ScannerState(QObject):
             if fetch_result is None:
                 self._statusSignal.emit("fetch failed")
                 return
-            pull_result = self._run_command(
-                [git_path, "-C", str(self._client_dir), "pull", "--ff-only"],
+            relation_raw = self._run_command(
+                [git_path, "-C", str(self._client_dir), "rev-list", "--left-right", "--count", "HEAD...FETCH_HEAD"],
                 cwd=self._repo_root,
-                timeout=120,
+                timeout=30,
             )
-            if pull_result is None:
-                self._statusSignal.emit("pull failed")
+            relation = _parse_rev_list_counts(relation_raw)
+            if relation is None:
+                self._statusSignal.emit("sync failed")
+                self._append_error("Unable to determine local/remote git relation.")
                 return
-            self._append_log("Repository updated.")
+
+            local_only, remote_only = relation
+            if local_only == 0 and remote_only == 0:
+                self._append_log("Repository already up to date.")
+            elif local_only == 0 and remote_only > 0:
+                ff_result = self._run_command(
+                    [git_path, "-C", str(self._client_dir), "merge", "--ff-only", "FETCH_HEAD"],
+                    cwd=self._repo_root,
+                    timeout=120,
+                )
+                if ff_result is None:
+                    self._statusSignal.emit("pull failed")
+                    return
+                self._append_log("Repository updated (fast-forward).")
+            else:
+                self._append_warn(
+                    "Local scanner repository is ahead/diverged from upstream; forcing sync to remote HEAD."
+                )
+                reset_result = self._run_command(
+                    [git_path, "-C", str(self._client_dir), "reset", "--hard", "FETCH_HEAD"],
+                    cwd=self._repo_root,
+                    timeout=120,
+                )
+                if reset_result is None:
+                    self._statusSignal.emit("sync failed")
+                    return
+                self._append_log("Repository reset to remote HEAD.")
 
         self._check_for_updates_impl()
 
@@ -879,3 +907,15 @@ def _is_windows() -> bool:
     import os
 
     return os.name == "nt"
+
+
+def _parse_rev_list_counts(output: str | None) -> tuple[int, int] | None:
+    if not output:
+        return None
+    parts = output.strip().split()
+    if len(parts) < 2:
+        return None
+    try:
+        return int(parts[0]), int(parts[1])
+    except ValueError:
+        return None
