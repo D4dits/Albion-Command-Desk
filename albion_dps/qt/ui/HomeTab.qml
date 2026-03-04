@@ -318,6 +318,7 @@ CardPanel {
                 TableSurface {
                     id: gameDataCard
                     Layout.fillWidth: true
+                    Layout.columnSpan: root.statusTwoColumn && !root.statusThreeColumn ? 2 : 1
                     level: 1
 
                     ColumnLayout {

@@ -29,6 +29,7 @@ Rectangle {
     property bool marketView: false
     property bool compactLayout: false
     property bool narrowLayout: false
+    property bool veryNarrowLayout: width < 980
 
     // Right zone widths
     property int meterMetaWidth: 180
@@ -82,6 +83,27 @@ Rectangle {
         return sign + raw.replace(/\B(?=(\d{3})+(?!\d))/g, " ")
     }
 
+    function contextStatusText() {
+        var base = ""
+        if (root.meterView) {
+            base = "Mode: " + root.meterMode + "  |  Zone: " + root.meterZone
+        } else if (root.homeView) {
+            base = "Start  |  Capture runtime: " + root.captureRuntimeState + "  |  Git: "
+                + (root.gitAvailable ? "ready" : "missing")
+        } else if (root.scannerView) {
+            base = "Scanner status: " + root.scannerStatusText + "  |  Updates: " + root.scannerUpdateText
+        } else {
+            base = "Market setup  |  Region: " + root.marketRegion
+                + "  |  Crafts: " + root.marketCraftPlanEnabledCount + "/" + root.marketCraftPlanCount
+                + "  |  Inputs: " + formatInt(root.marketInputsTotalCost)
+                + "  |  Net: " + formatInt(root.marketNetProfitValue)
+        }
+        if (root.updateBannerVisible && root.narrowLayout && root.updateBannerText.length > 0) {
+            return base + "  |  " + root.updateBannerText
+        }
+        return base
+    }
+
     // Access to theme
     property var theme: null
     property color textColor: theme.textPrimary
@@ -108,16 +130,7 @@ Rectangle {
             }
             Text {
                 Layout.fillWidth: true
-                text: root.meterView
-                    ? "Mode: " + root.meterMode + "  |  Zone: " + root.meterZone
-                    : (root.homeView
-                        ? "Start  |  Capture runtime: " + root.captureRuntimeState + "  |  Git: " + (root.gitAvailable ? "ready" : "missing")
-                        : (root.scannerView
-                        ? "Scanner status: " + root.scannerStatusText + "  |  Updates: " + root.scannerUpdateText
-                        : "Market setup  |  Region: " + root.marketRegion
-                          + "  |  Crafts: " + root.marketCraftPlanEnabledCount + "/" + root.marketCraftPlanCount
-                          + "  |  Inputs: " + formatInt(root.marketInputsTotalCost)
-                          + "  |  Net: " + formatInt(root.marketNetProfitValue)))
+                text: root.contextStatusText()
                 color: mutedColor
                 font.pixelSize: 12
                 elide: Text.ElideRight
@@ -162,7 +175,7 @@ Rectangle {
             // Update Banner
             UpdateBanner {
                 id: shellUpdateBanner
-                visible: !root.narrowLayout
+                visible: root.updateBannerVisible && !root.veryNarrowLayout
                 bannerVisible: root.updateBannerVisible
                 bannerText: root.updateBannerText
                 bannerUrl: root.updateBannerUrl
@@ -173,6 +186,13 @@ Rectangle {
                 availableWidth: root.width
                 theme: root.theme
                 onDismissBanner: root.dismissUpdateBanner()
+            }
+
+            AppButton {
+                visible: root.updateBannerVisible && root.veryNarrowLayout
+                text: "Update"
+                compact: true
+                onClicked: root.requestManualUpdateCheck()
             }
 
             // Support Buttons Zone

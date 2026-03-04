@@ -11,7 +11,7 @@ ApplicationWindow {
     visible: true
     width: 1120
     height: 720
-    minimumWidth: 880
+    minimumWidth: 980
     minimumHeight: 620
     title: "Albion Command Desk"
     color: Theme.surfaceApp
@@ -25,6 +25,7 @@ ApplicationWindow {
     property color borderColor: theme.borderSubtle
     property bool compactLayout: width < theme.breakpointCompact
     property bool narrowLayout: width < theme.breakpointNarrow
+    property bool veryNarrowLayout: width < 980
     property int compactControlHeight: theme.controlHeightCompact
     property int marketColumnSpacing: theme.marketColumnSpacing
     property int marketSetupPanelWidth: theme.marketSetupPanelWidth
@@ -105,10 +106,10 @@ ApplicationWindow {
     property int shellHeaderMargin: narrowLayout ? 8 : 12
     property int shellHeaderZoneSpacing: narrowLayout ? 10 : 20
     property string autoUpdateLabel: narrowLayout ? "Auto" : "Auto update"
-    property string payPalButtonLabel: "PayPal"
-    property string coffeeButtonLabel: "Buy me a Coffee"
-    property int shellSupportPrimaryWidth: narrowLayout ? 108 : 118
-    property int shellSupportSecondaryWidth: narrowLayout ? 156 : 166
+    property string payPalButtonLabel: veryNarrowLayout ? "Pay" : "PayPal"
+    property string coffeeButtonLabel: veryNarrowLayout ? "Coffee" : "Buy me a Coffee"
+    property int shellSupportPrimaryWidth: veryNarrowLayout ? 84 : (narrowLayout ? 108 : 118)
+    property int shellSupportSecondaryWidth: veryNarrowLayout ? 112 : (narrowLayout ? 156 : 166)
 
     // Phase 0 shell contract:
     // - left zone: title + contextual status
