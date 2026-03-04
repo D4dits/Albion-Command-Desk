@@ -40,80 +40,93 @@ CardPanel {
             font.bold: true
         }
 
-        RowLayout {
+        GridLayout {
             Layout.fillWidth: true
-            spacing: 16
+            columns: 2
+            columnSpacing: 12
+            rowSpacing: 8
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 4
-
+                spacing: 2
                 Text {
                     text: "Fame"
                     color: root.mutedColor
                     font.pixelSize: 11
                 }
                 Text {
+                    Layout.fillWidth: true
                     text: root._formatInt(root.fameText)
                     color: root.textColor
-                    font.pixelSize: 16
                     font.bold: true
+                    font.pixelSize: 18
+                    minimumPixelSize: 11
+                    fontSizeMode: Text.Fit
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignLeft
                 }
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 4
-
+                spacing: 2
                 Text {
                     text: "Fame / h"
                     color: root.mutedColor
                     font.pixelSize: 11
                 }
                 Text {
+                    Layout.fillWidth: true
                     text: root._formatInt(root.famePerHourText)
                     color: root.textColor
-                    font.pixelSize: 16
                     font.bold: true
+                    font.pixelSize: 18
+                    minimumPixelSize: 11
+                    fontSizeMode: Text.Fit
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignLeft
                 }
             }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 16
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 4
-
+                spacing: 2
                 Text {
                     text: "Silver"
                     color: root.mutedColor
                     font.pixelSize: 11
                 }
                 Text {
+                    Layout.fillWidth: true
                     text: root._formatInt(root.silverText)
                     color: root.textColor
-                    font.pixelSize: 16
                     font.bold: true
+                    font.pixelSize: 18
+                    minimumPixelSize: 11
+                    fontSizeMode: Text.Fit
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignLeft
                 }
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 4
-
+                spacing: 2
                 Text {
                     text: "Silver / h"
                     color: root.mutedColor
                     font.pixelSize: 11
                 }
                 Text {
+                    Layout.fillWidth: true
                     text: root._formatInt(root.silverPerHourText)
                     color: root.textColor
-                    font.pixelSize: 16
                     font.bold: true
+                    font.pixelSize: 18
+                    minimumPixelSize: 11
+                    fontSizeMode: Text.Fit
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignLeft
                 }
             }
         }
