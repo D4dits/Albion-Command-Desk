@@ -41,6 +41,7 @@ Item {
     // UI flags
     property bool compactLayout: false
     property bool stackedLayout: width < 1080
+    property bool historyAvailable: historyModel && historyModel.count > 0
 
     // Signals to notify parent of actions
     signal setMode(string mode)
@@ -233,7 +234,9 @@ Item {
                 MeterHistoryPanel {
                     id: meterHistoryPanel
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
+                    Layout.fillHeight: !root.stackedLayout
+                    Layout.preferredHeight: root.stackedLayout ? (root.historyAvailable ? 180 : 130) : -1
+                    Layout.maximumHeight: root.stackedLayout ? 200 : 16777215
                     theme: root.theme
                     textColor: root.textColor
                     mutedColor: root.mutedColor
@@ -296,9 +299,9 @@ Item {
 
         Loader {
             Layout.fillWidth: true
-            Layout.preferredHeight: 320
-            Layout.minimumHeight: 260
-            Layout.maximumHeight: 360
+            Layout.preferredHeight: root.historyAvailable ? 250 : 200
+            Layout.minimumHeight: 180
+            Layout.maximumHeight: 280
             sourceComponent: rightPanelComponent
         }
     }

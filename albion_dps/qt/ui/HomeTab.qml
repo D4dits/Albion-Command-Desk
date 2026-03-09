@@ -39,7 +39,6 @@ CardPanel {
     property int contentPadding: compactLayout ? 8 : 12
     property int contentSpacing: compactLayout ? 8 : 10
     property bool showBrandTile: width >= 1060
-    property bool statusThreeColumn: width >= 1180
     property bool statusTwoColumn: width >= 860
     property bool bottomTwoColumn: width >= 980
 
@@ -167,218 +166,146 @@ CardPanel {
                 }
             }
 
-            GridLayout {
+            TableSurface {
+                id: systemHealthCard
                 Layout.fillWidth: true
-                columns: root.statusThreeColumn ? 3 : (root.statusTwoColumn ? 2 : 1)
-                columnSpacing: 10
-                rowSpacing: 10
+                level: 1
 
-                TableSurface {
-                    id: captureCard
-                    Layout.fillWidth: true
-                    level: 1
+                ColumnLayout {
+                    id: systemHealthContent
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.leftMargin: 10
+                    anchors.rightMargin: 10
+                    anchors.topMargin: 10
+                    spacing: 8
 
-                    ColumnLayout {
-                        id: captureCardContent
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 10
-                        anchors.topMargin: 10
-                        spacing: 6
-
-                        Text {
-                            text: "Capture runtime"
-                            color: textColor
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
-                        Text {
-                            text: "Status: " + root.runtimeStateLabel()
-                            color: root.runtimeStateColor()
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-                        Text {
-                            text: root.captureRuntimeDetail
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            visible: root.captureRuntimeInstallHint.length > 0
-                            text: root.captureRuntimeInstallHint
-                            color: textColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
-                        }
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 6
-
-                            AppButton {
-                                visible: root.captureRuntimeActionLabel.length > 0
-                                text: root.captureRuntimeActionLabel
-                                variant: "primary"
-                                compact: true
-                                onClicked: root.openCaptureRuntimeAction()
-                            }
-                            AppButton {
-                                visible: root.captureRuntimeInstallCommand.length > 0
-                                text: "Copy command"
-                                compact: true
-                                onClicked: root.copyCommand(root.captureRuntimeInstallCommand)
-                            }
-                            AppButton {
-                                text: "Refresh"
-                                compact: true
-                                onClicked: root.refreshCaptureRuntimeStatus()
-                            }
-                            Item { Layout.fillWidth: true }
-                        }
+                    Text {
+                        text: "System health"
+                        color: textColor
+                        font.pixelSize: 12
+                        font.bold: true
                     }
 
-                    implicitHeight: captureCardContent.implicitHeight + 20
-                }
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columns: root.statusTwoColumn ? 2 : 1
+                        rowSpacing: 8
+                        columnSpacing: 10
 
-                TableSurface {
-                    id: gitCard
-                    Layout.fillWidth: true
-                    level: 1
-
-                    ColumnLayout {
-                        id: gitCardContent
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 10
-                        anchors.topMargin: 10
-                        spacing: 6
-
-                        Text {
-                            text: "Git dependency"
-                            color: textColor
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
-                        Text {
-                            text: "Status: " + root.gitStateLabel()
-                            color: root.gitStateColor()
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-                        Text {
-                            text: root.gitDetail
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
+                        TableSurface {
                             Layout.fillWidth: true
+                            level: 0
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                spacing: 6
+                                Text { text: "Capture runtime"; color: textColor; font.pixelSize: 12; font.bold: true }
+                                Text { text: "Status: " + root.runtimeStateLabel(); color: root.runtimeStateColor(); font.pixelSize: 11; font.bold: true }
+                                Text { text: root.captureRuntimeDetail; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; wrapMode: Text.WordWrap }
+                                Text {
+                                    visible: root.captureRuntimeInstallHint.length > 0
+                                    text: root.captureRuntimeInstallHint
+                                    color: textColor
+                                    font.pixelSize: 11
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    AppButton {
+                                        visible: root.captureRuntimeActionLabel.length > 0
+                                        text: root.captureRuntimeActionLabel
+                                        variant: "primary"
+                                        compact: true
+                                        onClicked: root.openCaptureRuntimeAction()
+                                    }
+                                    AppButton {
+                                        visible: root.captureRuntimeInstallCommand.length > 0
+                                        text: "Copy command"
+                                        compact: true
+                                        onClicked: root.copyCommand(root.captureRuntimeInstallCommand)
+                                    }
+                                    AppButton { text: "Refresh"; compact: true; onClicked: root.refreshCaptureRuntimeStatus() }
+                                    Item { Layout.fillWidth: true }
+                                }
+                            }
                         }
-                        Text {
-                            visible: root.gitInstallHint.length > 0
-                            text: root.gitInstallHint
-                            color: textColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
-                        }
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 6
 
-                            AppButton {
-                                visible: root.gitActionLabel.length > 0
-                                text: root.gitActionLabel
-                                variant: "primary"
-                                compact: true
-                                onClicked: root.openGitInstallAction()
+                        TableSurface {
+                            Layout.fillWidth: true
+                            level: 0
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                spacing: 6
+                                Text { text: "Git dependency"; color: textColor; font.pixelSize: 12; font.bold: true }
+                                Text { text: "Status: " + root.gitStateLabel(); color: root.gitStateColor(); font.pixelSize: 11; font.bold: true }
+                                Text { text: root.gitDetail; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; wrapMode: Text.WordWrap }
+                                Text {
+                                    visible: root.gitInstallHint.length > 0
+                                    text: root.gitInstallHint
+                                    color: textColor
+                                    font.pixelSize: 11
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    AppButton {
+                                        visible: root.gitActionLabel.length > 0
+                                        text: root.gitActionLabel
+                                        variant: "primary"
+                                        compact: true
+                                        onClicked: root.openGitInstallAction()
+                                    }
+                                    AppButton {
+                                        visible: root.gitInstallCommand.length > 0
+                                        text: "Copy command"
+                                        compact: true
+                                        onClicked: root.copyCommand(root.gitInstallCommand)
+                                    }
+                                    AppButton { text: "Refresh"; compact: true; onClicked: root.refreshGitStatus() }
+                                    Item { Layout.fillWidth: true }
+                                }
                             }
-                            AppButton {
-                                visible: root.gitInstallCommand.length > 0
-                                text: "Copy command"
-                                compact: true
-                                onClicked: root.copyCommand(root.gitInstallCommand)
+                        }
+
+                        TableSurface {
+                            Layout.fillWidth: true
+                            Layout.columnSpan: root.statusTwoColumn ? 2 : 1
+                            level: 0
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                spacing: 6
+                                Text { text: "Game data"; color: textColor; font.pixelSize: 12; font.bold: true }
+                                Text { text: "Status: " + root.gameDataStateLabel(); color: root.gameDataStateColor(); font.pixelSize: 11; font.bold: true }
+                                Text { text: root.gameDataDetail; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; wrapMode: Text.WordWrap }
+                                Text {
+                                    visible: root.gameDataHint.length > 0
+                                    text: root.gameDataHint
+                                    color: textColor
+                                    font.pixelSize: 11
+                                    Layout.fillWidth: true
+                                    wrapMode: Text.WordWrap
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    AppButton { text: root.gameDataActionLabel; variant: "primary"; compact: true; onClicked: root.setupGameData() }
+                                    AppButton { text: "Refresh"; compact: true; onClicked: root.refreshGameDataStatus() }
+                                    Item { Layout.fillWidth: true }
+                                }
                             }
-                            AppButton {
-                                text: "Refresh"
-                                compact: true
-                                onClicked: root.refreshGitStatus()
-                            }
-                            Item { Layout.fillWidth: true }
                         }
                     }
-
-                    implicitHeight: gitCardContent.implicitHeight + 20
                 }
 
-                TableSurface {
-                    id: gameDataCard
-                    Layout.fillWidth: true
-                    Layout.columnSpan: root.statusTwoColumn && !root.statusThreeColumn ? 2 : 1
-                    level: 1
-
-                    ColumnLayout {
-                        id: gameDataCardContent
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.leftMargin: 10
-                        anchors.rightMargin: 10
-                        anchors.topMargin: 10
-                        spacing: 6
-
-                        Text {
-                            text: "Game data"
-                            color: textColor
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
-                        Text {
-                            text: "Status: " + root.gameDataStateLabel()
-                            color: root.gameDataStateColor()
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-                        Text {
-                            text: root.gameDataDetail
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
-                        }
-                        Text {
-                            visible: root.gameDataHint.length > 0
-                            text: root.gameDataHint
-                            color: textColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                            Layout.fillWidth: true
-                        }
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 6
-
-                            AppButton {
-                                text: root.gameDataActionLabel
-                                variant: "primary"
-                                compact: true
-                                onClicked: root.setupGameData()
-                            }
-                            AppButton {
-                                text: "Refresh"
-                                compact: true
-                                onClicked: root.refreshGameDataStatus()
-                            }
-                            Item { Layout.fillWidth: true }
-                        }
-                    }
-
-                    implicitHeight: gameDataCardContent.implicitHeight + 20
-                }
+                implicitHeight: systemHealthContent.implicitHeight + 20
             }
 
             GridLayout {
@@ -402,43 +329,11 @@ CardPanel {
                         anchors.topMargin: 10
                         spacing: 6
 
-                        Text {
-                            text: "Startup checklist"
-                            color: textColor
-                            font.pixelSize: 12
-                            font.bold: true
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "1) Capture runtime: " + root.runtimeStateLabel()
-                            color: root.runtimeStateColor()
-                            font.pixelSize: 11
-                            font.bold: true
-                            wrapMode: Text.WordWrap
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "2) Git dependency: " + root.gitStateLabel()
-                            color: root.gitStateColor()
-                            font.pixelSize: 11
-                            font.bold: true
-                            wrapMode: Text.WordWrap
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "3) Game data: " + root.gameDataStateLabel()
-                            color: root.gameDataStateColor()
-                            font.pixelSize: 11
-                            font.bold: true
-                            wrapMode: Text.WordWrap
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "4) Scanner status: " + root.scannerStatusText
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
+                        Text { text: "Startup checklist"; color: textColor; font.pixelSize: 12; font.bold: true }
+                        Text { Layout.fillWidth: true; text: "1) Capture runtime: " + root.runtimeStateLabel(); color: root.runtimeStateColor(); font.pixelSize: 11; font.bold: true; wrapMode: Text.WordWrap }
+                        Text { Layout.fillWidth: true; text: "2) Git dependency: " + root.gitStateLabel(); color: root.gitStateColor(); font.pixelSize: 11; font.bold: true; wrapMode: Text.WordWrap }
+                        Text { Layout.fillWidth: true; text: "3) Game data: " + root.gameDataStateLabel(); color: root.gameDataStateColor(); font.pixelSize: 11; font.bold: true; wrapMode: Text.WordWrap }
+                        Text { Layout.fillWidth: true; text: "4) Scanner status: " + root.scannerStatusText; color: mutedColor; font.pixelSize: 11; wrapMode: Text.WordWrap }
                     }
 
                     implicitHeight: checklistContent.implicitHeight + 20
@@ -459,49 +354,31 @@ CardPanel {
                         anchors.topMargin: 10
                         spacing: 8
 
+                        Text { text: "Update checks"; color: textColor; font.pixelSize: 12; font.bold: true }
+                        Text { text: "Status"; color: mutedColor; font.pixelSize: 11 }
                         Text {
-                            text: "Update checks"
+                            text: root.updateCheckStatus.length > 0 ? root.updateCheckStatus : "Not checked"
                             color: textColor
-                            font.pixelSize: 12
+                            font.pixelSize: 11
                             font.bold: true
+                            wrapMode: Text.WordWrap
+                            Layout.fillWidth: true
                         }
 
                         RowLayout {
                             Layout.fillWidth: true
-                            spacing: 10
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 2
-
-                                Text {
-                                    text: "Status"
-                                    color: mutedColor
-                                    font.pixelSize: 11
-                                }
-                                Text {
-                                    text: root.updateCheckStatus.length > 0 ? root.updateCheckStatus : "Not checked"
-                                    color: textColor
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                    wrapMode: Text.WordWrap
-                                    Layout.fillWidth: true
-                                }
+                            spacing: 8
+                            AppCheckBox {
+                                text: compactLayout ? "Auto" : "Auto update"
+                                checked: root.updateAutoCheck
+                                onToggled: root.setUpdateAutoCheck(checked)
                             }
-
-                            RowLayout {
-                                spacing: 6
-                                AppCheckBox {
-                                    text: compactLayout ? "Auto" : "Auto update"
-                                    checked: root.updateAutoCheck
-                                    onToggled: root.setUpdateAutoCheck(checked)
-                                }
-                                AppButton {
-                                    text: "Check updates"
-                                    compact: true
-                                    onClicked: root.requestManualUpdateCheck()
-                                }
+                            AppButton {
+                                text: "Check updates"
+                                compact: true
+                                onClicked: root.requestManualUpdateCheck()
                             }
+                            Item { Layout.fillWidth: true }
                         }
                     }
 
