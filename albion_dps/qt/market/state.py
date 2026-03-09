@@ -2504,7 +2504,7 @@ class MarketSetupState(QObject):
                         unit_price=unit_price,
                     )
                 )
-        input_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
+        input_rows.sort(key=_input_preview_sort_key)
 
         selected_returnable_by_item: dict[str, bool] = {}
         for _, recipe in selected_visible_prepared_recipes:
@@ -2601,7 +2601,7 @@ class MarketSetupState(QObject):
                     total_cost=float(buy_qty * unit_price),
                 )
             )
-        selected_input_rows.sort(key=lambda x: (x.item.lower(), x.city.lower()))
+        selected_input_rows.sort(key=_input_preview_sort_key)
 
         self._base_input_total_cost = float(sum(row.total_cost for row in input_rows))
         valuations = compute_output_valuations(
@@ -4041,6 +4041,32 @@ def _tier_from_item_id(item_id: str) -> int:
         return int(match.group("tier"))
     except (TypeError, ValueError):
         return 0
+
+
+def _input_group_rank(item_id: str) -> int:
+    base_id = _base_item_id(item_id)
+    if "_JOURNAL_" in base_id:
+        return 2
+    if (
+        "_ARTEFACT_" in base_id
+        or "_TOKEN_" in base_id
+        or "_RELIC_" in base_id
+        or "_SOUL_" in base_id
+        or "_RUNE_" in base_id
+    ):
+        return 0
+    return 1
+
+
+def _input_preview_sort_key(row: InputPreviewRow) -> tuple[int, int, str, str, str]:
+    item_id = str(row.item_id or "")
+    return (
+        _input_group_rank(item_id),
+        _tier_from_item_id(item_id),
+        _item_family_key(item_id),
+        str(row.item or "").lower(),
+        str(row.city or "").lower(),
+    )
 
 
 @lru_cache(maxsize=1)

@@ -452,6 +452,55 @@ def test_journal_display_name_uses_specific_kind_and_tier() -> None:
     assert market_state._journal_display_name("WARRIOR", 8) == "T8 Blacksmith's Journal"
 
 
+def test_input_preview_sort_groups_artifacts_then_materials_then_journals() -> None:
+    rows = [
+        market_state.InputPreviewRow(
+            item_id="T5_JOURNAL_WARRIOR",
+            item="T5 Blacksmith's Journal (empty)",
+            quantity=10.0,
+            stock_quantity=0.0,
+            buy_quantity=10.0,
+            city="Bridgewatch",
+            price_type="sell_order",
+            price_age_text="1m",
+            manual_price=0,
+            unit_price=5000.0,
+            total_cost=50000.0,
+        ),
+        market_state.InputPreviewRow(
+            item_id="T5_METALBAR_LEVEL1",
+            item="Metal Bar T5.1",
+            quantity=24.0,
+            stock_quantity=0.0,
+            buy_quantity=24.0,
+            city="Bridgewatch",
+            price_type="sell_order",
+            price_age_text="1m",
+            manual_price=0,
+            unit_price=900.0,
+            total_cost=21600.0,
+        ),
+        market_state.InputPreviewRow(
+            item_id="T5_ARTEFACT_2H_KEEPER_SWORD",
+            item="Adept's Remnants of the Old King T5",
+            quantity=2.0,
+            stock_quantity=0.0,
+            buy_quantity=2.0,
+            city="Bridgewatch",
+            price_type="sell_order",
+            price_age_text="1m",
+            manual_price=0,
+            unit_price=8000.0,
+            total_cost=16000.0,
+        ),
+    ]
+
+    rows.sort(key=market_state._input_preview_sort_key)
+    assert rows[0].item_id == "T5_ARTEFACT_2H_KEEPER_SWORD"
+    assert rows[1].item_id == "T5_METALBAR_LEVEL1"
+    assert rows[2].item_id == "T5_JOURNAL_WARRIOR"
+
+
 def test_market_setup_state_includes_journals_in_inputs_outputs_models(monkeypatch: pytest.MonkeyPatch) -> None:
     state = MarketSetupState(auto_refresh_prices=False)
     state.addCurrentRecipeToPlan()

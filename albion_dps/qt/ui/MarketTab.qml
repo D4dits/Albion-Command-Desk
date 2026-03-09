@@ -939,7 +939,7 @@ CardPanel {
                         Text { text: "Results"; color: textColor; font.pixelSize: 12; font.bold: true }
                         Item { Layout.fillWidth: true }
                         Text { text: "Sort"; color: mutedColor; font.pixelSize: 11 }
-                        ComboBox {
+                        AppComboBox {
                             Layout.preferredWidth: 120
                             implicitHeight: compactControlHeight
                             font.pixelSize: 11
