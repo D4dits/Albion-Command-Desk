@@ -30,6 +30,7 @@ Item {
     property var theme: null
     property color textColor: theme.textPrimary
     property color mutedColor: theme.textMuted
+    property real preservedContentY: 0
 
     // Helper functions (injected by parent)
     property var tableRowColor: function(index) {
@@ -66,12 +67,18 @@ Item {
             model: root.historyModel
             reuseItems: true
             cacheBuffer: 300
+            boundsBehavior: Flickable.StopAtBounds
+
+            ScrollBar.vertical: ScrollBar {
+                policy: ScrollBar.AsNeeded
+            }
 
             delegate: Rectangle {
                 id: historyRow
                 width: Math.max(0, ListView.view.width - 6)
                 height: 98
                 radius: 6
+                clip: true
                 property bool hovered: historyHover.containsMouse
                 color: selected
                     ? root.theme.tableSelectedBackground
@@ -94,11 +101,12 @@ Item {
                         Layout.fillWidth: true
                         Text {
                             text: label
+                            Layout.fillWidth: true
                             color: textColor
                             font.pixelSize: 12
                             font.bold: true
+                            elide: Text.ElideRight
                         }
-                        Item { Layout.fillWidth: true }
                         AppButton {
                             text: "Copy"
                             variant: "ghost"
@@ -110,15 +118,20 @@ Item {
                     }
                     Text {
                         text: meta
+                        Layout.fillWidth: true
                         color: root.theme.tableTextSecondary
                         font.pixelSize: 11
+                        elide: Text.ElideRight
                     }
                     Text {
                         text: players
+                        Layout.fillWidth: true
                         color: root.theme.tableTextPrimary
                         font.pixelSize: 11
-                        wrapMode: Text.NoWrap
+                        wrapMode: Text.WordWrap
                         elide: Text.ElideRight
+                        maximumLineCount: 2
+                        clip: true
                     }
                 }
 
@@ -138,6 +151,21 @@ Item {
                 color: root.theme.textSecondary
                 font.pixelSize: 12
             }
+        }
+    }
+
+    Connections {
+        target: root.historyModel
+
+        function onModelAboutToBeReset() {
+            root.preservedContentY = historyList.contentY
+        }
+
+        function onModelReset() {
+            Qt.callLater(function() {
+                var maxContentY = Math.max(0, historyList.contentHeight - historyList.height)
+                historyList.contentY = Math.min(root.preservedContentY, maxContentY)
+            })
         }
     }
 }

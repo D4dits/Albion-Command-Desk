@@ -456,6 +456,19 @@ def test_party_registry_disallows_unknown_name_when_roster_is_known() -> None:
     assert not registry.allows(200, names)
 
 
+def test_party_registry_disallows_name_only_fallback_after_party_id_resolution() -> None:
+    registry = PartyRegistry()
+    registry.seed_self_ids([100])
+    registry.seed_names(["D4dits", "SocialFur3"])
+    registry.seed_ids([200])
+    names = NameRegistry()
+    names.record(200, "SocialFur3")
+    names.record(300, "SocialFur3")
+
+    assert registry.allows(200, names)
+    assert not registry.allows(300, names)
+
+
 def test_party_registry_has_ids_in_strict_mode_with_party_ids_only() -> None:
     registry = PartyRegistry(strict=True)
     assert not registry.has_ids()

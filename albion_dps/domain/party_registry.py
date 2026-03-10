@@ -546,6 +546,7 @@ class PartyRegistry:
         if not isinstance(source_id, int):
             return False
         self._combat_ids_seen.add(source_id)
+        allow_name_only_fallback = self._allow_name_only_fallback()
         if self.strict:
             if source_id in self._self_ids:
                 return True
@@ -570,9 +571,11 @@ class PartyRegistry:
                     if name == self._self_name:
                         return True
                 if self._party_names:
+                    if not allow_name_only_fallback:
+                        return False
                     return name is not None and name in self._party_names
                 return False
-            if name_registry is None or not self._party_names:
+            if not allow_name_only_fallback or name_registry is None or not self._party_names:
                 return False
             name = name_registry.lookup(source_id)
             return _looks_like_player_name(name) and name in self._party_names
@@ -587,6 +590,11 @@ class PartyRegistry:
             return True
         name = name_registry.lookup(source_id)
         return _looks_like_player_name(name) and name in self._party_names
+
+    def _allow_name_only_fallback(self) -> bool:
+        if not self.strict:
+            return True
+        return not self._party_ids.difference(self._self_ids)
 
     def _apply_target_request(self, message: PhotonMessage, packet: RawPacket) -> None:
         if message.event_code is not None:

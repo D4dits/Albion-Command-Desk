@@ -195,9 +195,11 @@ CardPanel {
                         columnSpacing: 10
 
                         TableSurface {
+                            id: captureRuntimeInnerCard
                             Layout.fillWidth: true
                             level: 0
                             ColumnLayout {
+                                id: captureRuntimeInnerContent
                                 anchors.fill: parent
                                 anchors.margins: 8
                                 spacing: 6
@@ -232,12 +234,16 @@ CardPanel {
                                     Item { Layout.fillWidth: true }
                                 }
                             }
+
+                            implicitHeight: captureRuntimeInnerContent.implicitHeight + 16
                         }
 
                         TableSurface {
+                            id: gitDependencyInnerCard
                             Layout.fillWidth: true
                             level: 0
                             ColumnLayout {
+                                id: gitDependencyInnerContent
                                 anchors.fill: parent
                                 anchors.margins: 8
                                 spacing: 6
@@ -272,13 +278,17 @@ CardPanel {
                                     Item { Layout.fillWidth: true }
                                 }
                             }
+
+                            implicitHeight: gitDependencyInnerContent.implicitHeight + 16
                         }
 
                         TableSurface {
+                            id: gameDataInnerCard
                             Layout.fillWidth: true
                             Layout.columnSpan: root.statusTwoColumn ? 2 : 1
                             level: 0
                             ColumnLayout {
+                                id: gameDataInnerContent
                                 anchors.fill: parent
                                 anchors.margins: 8
                                 spacing: 6
@@ -301,6 +311,8 @@ CardPanel {
                                     Item { Layout.fillWidth: true }
                                 }
                             }
+
+                            implicitHeight: gameDataInnerContent.implicitHeight + 16
                         }
                     }
                 }
