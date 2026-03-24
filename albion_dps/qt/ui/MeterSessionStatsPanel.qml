@@ -13,6 +13,7 @@ CardPanel {
     property string famePerHourText: "0.0"
     property string silverText: "0"
     property string silverPerHourText: "0.0"
+    property bool singleColumnLayout: width < 260
 
     implicitHeight: Math.max(132, statsContent.implicitHeight + 24)
 
@@ -42,7 +43,7 @@ CardPanel {
 
         GridLayout {
             Layout.fillWidth: true
-            columns: 2
+            columns: root.singleColumnLayout ? 1 : 2
             columnSpacing: 12
             rowSpacing: 8
 

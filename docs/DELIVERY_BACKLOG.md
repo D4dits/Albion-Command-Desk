@@ -337,7 +337,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Update CTA/header actions do not hide critical meter content.
 
 ### PH5-MTR-054 - Session gains validation
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: validate fame/silver/session-rate calculations against controlled PCAP samples.
 - Files:
   1. `albion_dps/domain/fame_tracker.py`
@@ -611,6 +611,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-03-24: PH5-MTR-054 completed (pcap53 fame/silver totals are now regression-locked, session rate strings stay stable, and the session-gains panel falls back to a single-column grid at narrow widths).
 - 2026-03-24: PH5-MTR-053 completed (meter now switches to stacked layout earlier, compact control groups adapt to narrow widths, and scoreboard content uses controlled horizontal overflow instead of clipping columns).
 - 2026-03-24: PH5-MTR-052 completed (history rows now preserve scroll position across unchanged model refreshes, long summaries wrap inside card bounds, and `Copy` remains consistently visible).
 - 2026-03-24: PH5-MTR-050 started (added recent local-entity tracking in `NameRegistry`, runner-side display filtering for resolved party IDs, and safer history panel behavior while preserving bootstrap fallback before IDs resolve).
