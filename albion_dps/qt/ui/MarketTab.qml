@@ -181,7 +181,8 @@ CardPanel {
     // Helper functions
     property var priceSourceColor: function(source) {
         var source = String(source || "").toLowerCase()
-        if (source === "fallback" || source === "stale_cache") return root.theme.stateWarning
+        if (source === "fallback" || source === "stale_cache" || source === "cooldown") return root.theme.stateWarning
+        if (source === "refreshing_cache" || source === "loading") return root.theme.stateInfo
         if (source === "live" || source === "cache") return root.theme.stateSuccess
         return root.theme.textMuted
     }
@@ -318,16 +319,22 @@ CardPanel {
     property color mutedColor: theme.textMuted
     property color accentColor: theme.brandPrimary
 
-    onPriceFetchInProgressChanged: {
-        if (priceFetchInProgress) {
-            priceFetchStartedAtMs = Date.now()
-            priceFetchElapsedSeconds = 0
-            fetchElapsedTimer.start()
-        } else {
-            fetchElapsedTimer.stop()
-            priceFetchElapsedSeconds = 0
+    function syncFetchTimer() {
+        if (priceFetchPending) {
+            if (priceFetchStartedAtMs <= 0) {
+                priceFetchStartedAtMs = Date.now()
+                priceFetchElapsedSeconds = 0
+            }
+            if (!fetchElapsedTimer.running)
+                fetchElapsedTimer.start()
+            return
         }
+        fetchElapsedTimer.stop()
+        priceFetchStartedAtMs = 0
+        priceFetchElapsedSeconds = 0
     }
+    onPriceFetchInProgressChanged: syncFetchTimer()
+    onPriceFetchPendingChanged: syncFetchTimer()
 
     Timer {
         id: fetchElapsedTimer
@@ -335,8 +342,9 @@ CardPanel {
         repeat: true
         running: false
         onTriggered: {
-            if (!root.priceFetchInProgress) {
+            if (!root.priceFetchPending) {
                 stop()
+                root.priceFetchStartedAtMs = 0
                 root.priceFetchElapsedSeconds = 0
                 return
             }
@@ -394,6 +402,7 @@ CardPanel {
             textColor: root.textColor
             mutedColor: root.mutedColor
             priceFetchInProgress: root.priceFetchInProgress
+            priceFetchPending: root.priceFetchPending
             validationText: root.validationText
             pricesSource: root.pricesSource
             listActionText: root.listActionText
@@ -1056,7 +1065,7 @@ CardPanel {
 
     Rectangle {
         anchors.fill: parent
-        visible: root.priceFetchInProgress
+        visible: root.priceFetchPending
         z: 200
         color: Qt.rgba(6 / 255, 14 / 255, 24 / 255, 0.72)
 
@@ -1081,7 +1090,7 @@ CardPanel {
                 Components.Spinner {
                     Layout.alignment: Qt.AlignHCenter
                     size: "lg"
-                    active: root.priceFetchInProgress
+                    active: root.priceFetchPending
                     theme: root.theme
                 }
 
@@ -1096,7 +1105,9 @@ CardPanel {
 
                 Text {
                     Layout.fillWidth: true
-                    text: root.pricesStatusText.length > 0 ? root.pricesStatusText : "Preparing AO Data request..."
+                    text: root.pricesStatusText.length > 0
+                        ? root.pricesStatusText
+                        : (root.priceFetchInProgress ? "Preparing AO Data request..." : "Queued live refresh...")
                     color: root.mutedColor
                     font.pixelSize: 11
                     wrapMode: Text.WordWrap
@@ -1107,8 +1118,8 @@ CardPanel {
                     Layout.fillWidth: true
                     text: root.priceFetchElapsedSeconds > 0
                         ? ("Elapsed: " + root.formatElapsed(root.priceFetchElapsedSeconds)
-                           + "  |  Large plans (400+ IDs) may take up to ~40s.")
-                        : "Waiting for AO Data response..."
+                           + "  |  Large plans (400+ IDs) may take longer under AO Data rate limits.")
+                        : (root.priceFetchInProgress ? "Waiting for AO Data response..." : "Waiting for queued refresh...")
                     color: root.theme.stateInfo
                     font.pixelSize: 11
                     wrapMode: Text.WordWrap

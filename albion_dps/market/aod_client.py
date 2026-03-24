@@ -60,8 +60,10 @@ class AODataClient:
         retry_backoff_factor: float = 2.0,
         retry_backoff_max_seconds: float = 30.0,
         max_prices_url_length: int = 3200,
-        max_prices_items_per_batch: int = 140,
+        max_prices_items_per_batch: int = 100,
+        max_prices_items_per_rate_limited_batch: int = 40,
         batch_pause_seconds: float = 0.35,
+        rate_limited_batch_pause_seconds: float = 1.25,
         sleeper: Callable[[float], None] | None = None,
         logger: logging.Logger | None = None,
     ) -> None:
@@ -74,7 +76,9 @@ class AODataClient:
         self._retry_backoff_max_seconds = max(0.0, float(retry_backoff_max_seconds))
         self._max_prices_url_length = max(256, int(max_prices_url_length))
         self._max_prices_items_per_batch = max(1, int(max_prices_items_per_batch))
+        self._max_prices_items_per_rate_limited_batch = max(1, int(max_prices_items_per_rate_limited_batch))
         self._batch_pause_seconds = max(0.0, float(batch_pause_seconds))
+        self._rate_limited_batch_pause_seconds = max(0.0, float(rate_limited_batch_pause_seconds))
         self._sleep = sleeper or time.sleep
         self._log = logger or logging.getLogger(__name__)
         self._last_request_stats = AODataRequestStats(
@@ -239,18 +243,33 @@ class AODataClient:
         except RuntimeError as exc:
             if len(item_ids) <= 1:
                 raise
-            # Split only when URL is too large. Splitting on 429 increases request count
-            # and can make throttling worse on AO Data.
-            if not _is_uri_too_large_error(exc):
-                raise
-            self._log.warning(
-                "AO Data prices batch URL too large, splitting batch of %d items.",
-                len(item_ids),
-            )
-            midpoint = max(1, len(item_ids) // 2)
-            left = self._fetch_prices_batch(base=base, item_ids=item_ids[:midpoint], params=params)
-            right = self._fetch_prices_batch(base=base, item_ids=item_ids[midpoint:], params=params)
-            return left + right
+            if _is_uri_too_large_error(exc):
+                self._log.warning(
+                    "AO Data prices batch URL too large, splitting batch of %d items.",
+                    len(item_ids),
+                )
+                midpoint = max(1, len(item_ids) // 2)
+                left = self._fetch_prices_batch(base=base, item_ids=item_ids[:midpoint], params=params)
+                right = self._fetch_prices_batch(base=base, item_ids=item_ids[midpoint:], params=params)
+                return left + right
+            if _is_too_many_requests_error(exc) and len(item_ids) > self._max_prices_items_per_rate_limited_batch:
+                self._log.warning(
+                    "AO Data prices batch rate-limited (429), splitting batch of %d items.",
+                    len(item_ids),
+                )
+                out: list[MarketPriceRecord] = []
+                for chunk_index, chunk in enumerate(
+                    self._split_rate_limited_price_batches(item_ids=item_ids)
+                ):
+                    if chunk_index > 0 and self._rate_limited_batch_pause_seconds > 0:
+                        self._sleep(self._rate_limited_batch_pause_seconds)
+                    out.extend(self._fetch_prices_batch(base=base, item_ids=chunk, params=params))
+                return out
+            raise
+
+    def _split_rate_limited_price_batches(self, *, item_ids: list[str]) -> list[list[str]]:
+        chunk_size = self._max_prices_items_per_rate_limited_batch
+        return [item_ids[index : index + chunk_size] for index in range(0, len(item_ids), chunk_size)]
 
     @staticmethod
     def _build_prices_url(*, base: str, item_ids: list[str], params: dict[str, str]) -> str:

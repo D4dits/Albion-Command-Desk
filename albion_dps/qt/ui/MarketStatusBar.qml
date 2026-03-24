@@ -20,6 +20,7 @@ ColumnLayout {
 
     // State properties
     property bool priceFetchInProgress: false
+    property bool priceFetchPending: false
     property string validationText: ""
     property string pricesSource: ""
     property string listActionText: ""
@@ -34,6 +35,17 @@ ColumnLayout {
     // Helper functions (injected by parent)
     property var priceSourceColor: function(source) { return root.theme.stateSuccess }
     property var validationColor: function(isValid) { return root.theme.stateSuccess }
+    property var priceSourceLabel: function(source) {
+        var normalized = String(source || "").toLowerCase()
+        if (normalized === "live") return "live"
+        if (normalized === "cache") return "cache"
+        if (normalized === "stale_cache") return "stale cache"
+        if (normalized === "refreshing_cache") return "stale cache -> live queued"
+        if (normalized === "cooldown") return "cooldown"
+        if (normalized === "loading") return "loading"
+        if (normalized === "fallback") return "fallback"
+        return normalized.length > 0 ? normalized : "none"
+    }
 
     // Signals
     signal setRegion(string region)
@@ -50,10 +62,10 @@ ColumnLayout {
     // Main status line
     Text {
         Layout.fillWidth: true
-        text: (root.priceFetchInProgress ? "[loading] " : "")
+        text: (root.priceFetchInProgress ? "[loading] " : (root.priceFetchPending ? "[queued] " : ""))
             + "Status: "
             + (root.validationText.length === 0 ? "ok" : "invalid")
-            + "  |  Prices: " + root.pricesSource
+            + "  |  Prices: " + root.priceSourceLabel(root.pricesSource)
             + (root.listActionText.length > 0 ? "  |  " + root.listActionText : "")
         color: root.validationText.length === 0
             ? root.priceSourceColor(root.pricesSource)
@@ -95,14 +107,14 @@ ColumnLayout {
             text: root.refreshPricesButtonText
             compact: true
             implicitHeight: 24
-            enabled: root.canRefreshPrices && !root.priceFetchInProgress
+            enabled: root.canRefreshPrices && !root.priceFetchPending
             onClicked: root.refreshPrices()
         }
 
         // Loading spinner for price fetch
         CommonComponents.Spinner {
             size: "xs"
-            active: root.priceFetchInProgress
+            active: root.priceFetchPending
             Layout.alignment: Qt.AlignVCenter
         }
         AppButton {

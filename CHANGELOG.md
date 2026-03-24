@@ -11,6 +11,7 @@ and this project uses semantic versioning.
 - Battle sessions no longer finalize from a stale combat-state stop marker while fresh damage/heal events are still arriving, which reduces mid-fight resets during target swaps and noisy combat-state transitions.
 - Market journal mapping now falls back for royal plate items that are missing explicit journal metadata, and planner regressions now lock royal sigils/tokens as non-returnable inputs.
 - Market result-row profit/margin math now uses the same documented basis as top-level KPIs: net output value is compared against allocated input cost, with fee/tax remaining explicit columns.
+- AO Data market refreshes now default to smaller batches, split oversized 429-limited requests into predictable sub-batches, and expose clearer queued/loading/cooldown states while falling back to cache or bundled prices.
 - Meter history list now preserves scroll position across history model refreshes, keeps `Copy` visible per row, and clips/wraps long history summaries inside the panel.
 - Live meter display now prefers self IDs and recently local party entity IDs once party member IDs are resolved, reducing false-positive party rows from stale/non-local name matches.
 - Name registry now tracks recent local entity observations from live/replay packets for safer UI-side party filtering.

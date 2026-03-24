@@ -270,3 +270,51 @@ def test_fetch_prices_does_not_split_batches_on_429_after_retry_exhaustion() -> 
     assert len(called) == 3
     assert any("/stats/prices/T4_MAIN_SWORD,T4_MAIN_AXE,T4_MAIN_MACE.json" in url for url in called)
     assert not any("/stats/prices/T4_MAIN_SWORD.json" in url for url in called)
+
+
+def test_fetch_prices_splits_large_batches_on_429_into_smaller_chunks() -> None:
+    called: list[str] = []
+
+    def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):
+        _ = (timeout_seconds, user_agent)
+        called.append(url)
+        item_part = url.split("/stats/prices/", 1)[1].split(".json", 1)[0]
+        items = [] if not item_part else item_part.split(",")
+        if len(items) > 40:
+            raise RuntimeError("HTTP Error 429: Too Many Requests")
+        return [
+            {
+                "item_id": item_id,
+                "city": "Bridgewatch",
+                "quality": 1,
+                "sell_price_min": 100,
+                "buy_price_max": 90,
+                "sell_price_min_date": "",
+                "buy_price_max_date": "",
+            }
+            for item_id in items
+        ]
+
+    client = AODataClient(
+        fetch_json=fake_fetch_json,
+        max_prices_url_length=10000,
+        max_prices_items_per_batch=100,
+        max_prices_items_per_rate_limited_batch=40,
+        max_retries=0,
+        batch_pause_seconds=0.0,
+        rate_limited_batch_pause_seconds=0.0,
+    )
+    item_ids = [f"T4_MAIN_SWORD_{idx:03d}" for idx in range(90)]
+    rows = client.fetch_prices(
+        region=MarketRegion.EUROPE,
+        item_ids=item_ids,
+        locations=["Bridgewatch"],
+    )
+
+    assert len(rows) == 90
+    assert len(called) == 4
+    batch_sizes = []
+    for url in called:
+        item_part = url.split("/stats/prices/", 1)[1].split(".json", 1)[0]
+        batch_sizes.append(0 if not item_part else len(item_part.split(",")))
+    assert batch_sizes == [90, 40, 40, 10]

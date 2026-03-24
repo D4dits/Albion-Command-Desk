@@ -73,6 +73,24 @@ class _FakeMarketService:
         return
 
 
+class _RateLimitedMarketService(_FakeMarketService):
+    def get_price_index(
+        self,
+        *,
+        region: MarketRegion,
+        item_ids: list[str],
+        locations: list[str],
+        qualities: list[int] | None = None,
+        ttl_seconds: float = 120.0,
+        allow_stale: bool = True,
+        allow_cache: bool = True,
+        allow_live: bool = True,
+    ) -> dict[tuple[str, str, int], MarketPriceRecord]:
+        _ = (region, item_ids, locations, qualities, ttl_seconds, allow_stale, allow_cache, allow_live)
+        self.calls += 1
+        raise RuntimeError("AO Data prices request failed after 5 attempts: HTTP Error 429: Too Many Requests")
+
+
 def _enable_all_plan_rows(state: MarketSetupState) -> None:
     model = state.craftPlanModel
     for idx in range(model.rowCount()):
@@ -196,6 +214,20 @@ def test_market_setup_state_skips_live_fetch_in_setup_tab_until_data_tabs() -> N
     state.setActiveMarketTab(1)
     assert service.calls >= 1
     assert state.pricesSource == "live"
+
+
+def test_market_setup_state_surfaces_rate_limit_cooldown_status() -> None:
+    service = _RateLimitedMarketService()
+    state = MarketSetupState(service=service, auto_refresh_prices=False)
+    state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
+
+    state.setActiveMarketTab(1)
+
+    assert service.calls >= 1
+    assert state.pricesSource == "cooldown"
+    assert "Cooling down" in state.pricesStatusText
+    assert state.refreshCooldownSeconds >= 89
 
 
 def test_market_setup_state_price_age_handles_aliases_and_invalid_dates() -> None:

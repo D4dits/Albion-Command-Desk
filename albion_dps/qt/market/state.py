@@ -3454,7 +3454,8 @@ class MarketSetupState(QObject):
             if now < self._next_live_fetch_not_before:
                 remaining = max(0.1, self._next_live_fetch_not_before - now)
                 self._schedule_deferred_price_refresh(remaining + 0.05)
-                self._set_fallback_status(
+                self._set_prices_status(
+                    "cooldown",
                     f"AO Data cooldown active ({remaining:.0f}s). Using cache/fallback prices."
                 )
                 fallback_index = self._build_fallback_price_index(setup)
@@ -3535,6 +3536,10 @@ class MarketSetupState(QObject):
                         "Stale cache shown first; scheduling background live refresh.",
                         level="INFO",
                     )
+                    self._set_prices_status(
+                        "refreshing_cache",
+                        f"Showing stale cache ({meta.record_count} rows); background live refresh queued.",
+                    )
                     self._schedule_deferred_price_refresh(0.15, force=True)
                 return self._price_index
             self._set_fallback_status("AO Data returned no price rows. Using bundled fallback prices.")
@@ -3549,7 +3554,8 @@ class MarketSetupState(QObject):
                 )
                 self._set_next_live_fetch_cooldown(cooldown)
                 self._schedule_deferred_price_refresh(cooldown + 0.1)
-                self._set_fallback_status(
+                self._set_prices_status(
+                    "cooldown",
                     f"AO Data rate limit (429). Cooling down for {cooldown:.0f}s; using fallback prices."
                 )
             else:
@@ -3572,10 +3578,13 @@ class MarketSetupState(QObject):
         except Exception:
             return
 
-    def _set_fallback_status(self, message: str) -> None:
-        self._prices_source = "fallback"
+    def _set_prices_status(self, source: str, message: str) -> None:
+        self._prices_source = str(source or "fallback")
         self._prices_status_text = message
         self.pricesChanged.emit()
+
+    def _set_fallback_status(self, message: str) -> None:
+        self._set_prices_status("fallback", message)
 
     def _append_diag(self, message: str, *, level: str = "INFO") -> None:
         now = datetime.now(timezone.utc).strftime("%H:%M:%S")
@@ -4496,6 +4505,11 @@ def _parse_iso_datetime(raw_value: str) -> datetime | None:
         parsed = datetime.fromisoformat(text)
     except ValueError:
         return None
+    if parsed.year <= 2001:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def _result_row_profit_and_margin(*, allocated_cost: float, net_value: float) -> tuple[float, float]:
@@ -4504,11 +4518,6 @@ def _result_row_profit_and_margin(*, allocated_cost: float, net_value: float) ->
     profit = normalized_net - normalized_cost
     margin = (profit / normalized_cost * 100.0) if normalized_cost > 0 else 0.0
     return float(profit), float(margin)
-    if parsed.year <= 2001:
-        return None
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
 
 
 def _format_age(updated_at: datetime) -> str:
