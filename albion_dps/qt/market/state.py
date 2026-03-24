@@ -38,7 +38,7 @@ from albion_dps.market.models import (
 from albion_dps.market.planner import build_selling_entries, build_shopping_entries
 from albion_dps.market.service import MarketDataService
 from albion_dps.market.setup import sanitized_setup, validate_setup
-from albion_dps.settings import AppSettings, load_app_settings, save_app_settings
+from albion_dps.settings import load_app_settings, update_app_settings
 
 _SHOPPING_SAFETY_BUFFER_PERCENT = 3.0
 _JOURNAL_NPC_EMPTY_PRICES: dict[int, int] = {
@@ -1501,12 +1501,10 @@ class MarketSetupState(QObject):
 
     def _persist_app_settings(self) -> None:
         try:
-            self._app_settings = AppSettings(
-                update_auto_check=bool(self._app_settings.update_auto_check),
+            self._app_settings = update_app_settings(
                 market_selected_preset=str(self._selected_preset_name or ""),
                 market_export_dir=str(self._default_export_dir or ""),
             )
-            save_app_settings(self._app_settings)
         except Exception as exc:
             self._log.warning("Market app settings save failed: %s", exc)
 

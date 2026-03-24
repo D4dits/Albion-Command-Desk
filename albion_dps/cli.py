@@ -5,17 +5,19 @@ import sys
 from importlib.metadata import PackageNotFoundError, version as package_version
 
 from albion_dps.logging_config import configure_logging
+from albion_dps.settings import load_app_settings
 from albion_dps.qt.runner import run_qt
 
 _COMMANDS = ("live", "replay", "core")
 
 
 def build_parser() -> argparse.ArgumentParser:
+    default_settings = load_app_settings()
     parser = argparse.ArgumentParser(
         prog="albion-command-desk",
         description="Albion Command Desk (Qt GUI only).",
     )
-    parser.add_argument("--log-level", default="INFO")
+    parser.add_argument("--log-level", default=default_settings.log_level or "INFO")
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--version", action="version", version=_resolve_cli_version())
 

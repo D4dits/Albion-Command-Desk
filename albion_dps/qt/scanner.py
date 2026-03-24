@@ -11,6 +11,7 @@ import webbrowser
 import logging
 from collections import deque
 from datetime import datetime
+from importlib.metadata import PackageNotFoundError, version as package_version
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
@@ -26,6 +27,7 @@ from albion_dps.capture.npcap_runtime import (
     detect_npcap_runtime,
 )
 from albion_dps.domain.item_db import ensure_game_databases, get_game_database_health
+from albion_dps.settings import load_app_settings, settings_dir, update_app_settings
 
 
 DEFAULT_REPO_URL = "https://github.com/ao-data/albiondata-client.git"
@@ -48,6 +50,7 @@ class ScannerState(QObject):
     runtimeChanged = Signal()
     gitChanged = Signal()
     gameDataChanged = Signal()
+    settingsChanged = Signal()
 
     _statusSignal = Signal(str)
     _updateSignal = Signal(str)
@@ -56,13 +59,19 @@ class ScannerState(QObject):
     _processExitSignal = Signal(int)
     _runtimeSignal = Signal(str, str, str, str)
     _gitSignal = Signal(bool, str, str, str)
-    _gameDataSignal = Signal(bool, str, str, str)
+    _gameDataSignal = Signal(bool, str, str, str, str)
 
     def __init__(self) -> None:
         super().__init__()
         self._repo_root = Path(__file__).resolve().parents[2]
-        self._client_dir = self._repo_root / "artifacts" / "albiondata-client"
-        self._repo_url = DEFAULT_REPO_URL
+        self._default_client_dir = self._repo_root / "artifacts" / "albiondata-client"
+        self._settings = load_app_settings()
+        configured_client_dir = str(self._settings.scanner_repo_dir or "").strip()
+        self._client_dir = Path(configured_client_dir).expanduser() if configured_client_dir else self._default_client_dir
+        self._repo_url = str(self._settings.scanner_repo_url or DEFAULT_REPO_URL).strip() or DEFAULT_REPO_URL
+        self._app_log_level = str(self._settings.log_level or "INFO").strip().upper() or "INFO"
+        self._config_dir = settings_dir()
+        self._app_version = _resolve_app_version()
         self._status_text = "idle"
         self._update_text = "not checked"
         self._log_lines: deque[str] = deque(maxlen=800)
@@ -76,6 +85,7 @@ class ScannerState(QObject):
         self._git_action_label = ""
         self._git_action_url = ""
         self._game_data_ready = False
+        self._game_data_root = ""
         self._game_data_detail = "Game data status not checked yet."
         self._game_data_hint = ""
         self._game_data_action_label = "Select game folder"
@@ -155,9 +165,29 @@ class ScannerState(QObject):
             return "Start-Process 'https://npcap.com/#download'"
         return ""
 
-    @Property(str, constant=True)
+    @Property(str, notify=settingsChanged)
     def clientDir(self) -> str:
         return str(self._client_dir)
+
+    @Property(str, notify=settingsChanged)
+    def scannerRepoDir(self) -> str:
+        return str(self._client_dir)
+
+    @Property(str, notify=settingsChanged)
+    def scannerRepoUrl(self) -> str:
+        return self._repo_url
+
+    @Property(str, notify=settingsChanged)
+    def appLogLevel(self) -> str:
+        return self._app_log_level
+
+    @Property(str, constant=True)
+    def configDir(self) -> str:
+        return str(self._config_dir)
+
+    @Property(str, constant=True)
+    def appVersion(self) -> str:
+        return self._app_version
 
     @Property(bool, notify=gitChanged)
     def gitAvailable(self) -> bool:
@@ -218,10 +248,50 @@ class ScannerState(QObject):
     def gameDataActionLabel(self) -> str:
         return self._game_data_action_label
 
+    @Property(str, notify=gameDataChanged)
+    def gameDataRoot(self) -> str:
+        return self._game_data_root
+
     @Slot()
     def clearLog(self) -> None:
         self._log_lines.clear()
         self.logChanged.emit()
+
+    @Slot(str)
+    def setScannerRepoDir(self, raw_path: str) -> None:
+        text = str(raw_path or "").strip()
+        new_path = Path(text).expanduser() if text else self._default_client_dir
+        if new_path == self._client_dir:
+            return
+        self._client_dir = new_path
+        self._persist_settings(scanner_repo_dir="" if new_path == self._default_client_dir else str(new_path))
+        self.settingsChanged.emit()
+        self.refreshGitStatus()
+
+    @Slot()
+    def resetScannerRepoDir(self) -> None:
+        self.setScannerRepoDir("")
+
+    @Slot(str)
+    def setScannerRepoUrl(self, raw_url: str) -> None:
+        text = str(raw_url or "").strip() or DEFAULT_REPO_URL
+        if text == self._repo_url:
+            return
+        self._repo_url = text
+        self._persist_settings(scanner_repo_url=text)
+        self.settingsChanged.emit()
+        self.refreshGitStatus()
+
+    @Slot(str)
+    def setAppLogLevel(self, raw_level: str) -> None:
+        level = str(raw_level or "INFO").strip().upper()
+        if level not in {"DEBUG", "INFO", "WARNING", "ERROR"}:
+            level = "INFO"
+        if level == self._app_log_level:
+            return
+        self._app_log_level = level
+        self._persist_settings(log_level=level)
+        self.settingsChanged.emit()
 
     @Slot()
     def checkForUpdates(self) -> None:
@@ -292,6 +362,7 @@ class ScannerState(QObject):
             str(health.get("detail", "")),
             str(health.get("hint", "")),
             str(health.get("action_label", "Select game folder")),
+            str(health.get("game_root", "") or ""),
         )
 
     @Slot()
@@ -828,9 +899,10 @@ class ScannerState(QObject):
         self._git_action_url = action_url
         self.gitChanged.emit()
 
-    def _set_game_data(self, ready: bool, detail: str, hint: str, action_label: str) -> None:
+    def _set_game_data(self, ready: bool, detail: str, hint: str, action_label: str, game_root: str) -> None:
         changed = (
             ready != self._game_data_ready
+            or game_root != self._game_data_root
             or detail != self._game_data_detail
             or hint != self._game_data_hint
             or action_label != self._game_data_action_label
@@ -838,10 +910,14 @@ class ScannerState(QObject):
         if not changed:
             return
         self._game_data_ready = ready
+        self._game_data_root = game_root
         self._game_data_detail = detail
         self._game_data_hint = hint
         self._game_data_action_label = action_label
         self.gameDataChanged.emit()
+
+    def _persist_settings(self, **changes) -> None:
+        self._settings = update_app_settings(**changes)
 
     def _detect_capture_runtime_status(self) -> tuple[str, str, str, str]:
         if _is_windows():
@@ -907,6 +983,13 @@ def _is_windows() -> bool:
     import os
 
     return os.name == "nt"
+
+
+def _resolve_app_version() -> str:
+    try:
+        return package_version("albion-command-desk")
+    except PackageNotFoundError:
+        return "local-dev"
 
 
 def _parse_rev_list_counts(output: str | None) -> tuple[int, int] | None:

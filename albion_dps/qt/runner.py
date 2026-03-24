@@ -25,7 +25,7 @@ from albion_dps.pipeline import live_snapshots, replay_snapshots
 from albion_dps.protocol.combat_mapper import CombatEventMapper
 from albion_dps.protocol.photon_decode import PhotonDecoder
 from albion_dps.protocol.registry import default_registry
-from albion_dps.settings import AppSettings, load_app_settings, save_app_settings
+from albion_dps.settings import load_app_settings, update_app_settings
 from albion_dps.update import check_for_updates
 
 
@@ -529,6 +529,6 @@ def _start_update_check(notifier) -> None:
 
 def _save_update_preference(enabled: bool) -> None:
     try:
-        save_app_settings(AppSettings(update_auto_check=bool(enabled)))
+        update_app_settings(update_auto_check=bool(enabled))
     except Exception:
         logging.getLogger(__name__).warning("Failed to persist update preference", exc_info=True)
