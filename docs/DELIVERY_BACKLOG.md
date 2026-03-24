@@ -278,6 +278,206 @@ Update status checkboxes and notes after each implemented ticket.
   5. `tools/release/manifest/set_last_known_good.ps1`
   6. `tools/release/manifest/rollback_manifest.ps1`
 
+## Active Milestone - Phase 5 (Meter reliability + operator UX)
+
+### PH5-MTR-050 - Tight local-context party filtering
+- [ ] Status: TODO
+- Goal: only show self + relevant local party members in meter snapshots and history.
+- Files:
+  1. `albion_dps/domain/party_registry.py`
+  2. `albion_dps/domain/name_registry.py`
+  3. `albion_dps/pipeline.py`
+  4. `albion_dps/qt/runner.py`
+  5. `tests/test_party_registry.py`
+  6. `tests/test_party_pcap*.py`
+- Done when:
+  - Party members from other maps / stale contexts no longer appear in meter.
+  - Self remains visible even during roster/bootstrap transitions.
+  - Zone/cluster transitions do not permanently break party filtering.
+
+### PH5-MTR-051 - Battle continuity hardening
+- [ ] Status: TODO
+- Goal: stop mid-fight resets/freezes and keep active battle state coherent.
+- Files:
+  1. `albion_dps/meter/session_meter.py`
+  2. `albion_dps/meter/aggregate.py`
+  3. `albion_dps/pipeline.py`
+  4. `tests/test_party_pcap49*.py`
+  5. `tests/test_party_pcap50*.py`
+  6. `tests/test_party_pcap52*.py`
+- Done when:
+  - Active fights do not reset while combat events continue.
+  - Frozen/stale live snapshots are detected and recovered.
+  - Portal/map changes end or split battles deterministically.
+
+### PH5-MTR-052 - History panel correctness
+- [ ] Status: TODO
+- Goal: make meter history stable, readable, and copyable at all window sizes.
+- Files:
+  1. `albion_dps/qt/ui/MeterHistoryPanel.qml`
+  2. `albion_dps/qt/ui/MeterTab.qml`
+  3. `albion_dps/qt/models.py`
+  4. `tests/test_qt_meter_history.py`
+- Done when:
+  - `Copy` action is consistently visible and clickable.
+  - History text never overflows card bounds.
+  - Scrolling history never snaps back to top after model refresh.
+
+### PH5-MTR-053 - Meter responsive layout pass
+- [ ] Status: TODO
+- Goal: make the meter readable across supported window sizes without broken tables.
+- Files:
+  1. `albion_dps/qt/ui/MeterTab.qml`
+  2. `albion_dps/qt/ui/MeterScoreboard.qml`
+  3. `albion_dps/qt/ui/Main.qml`
+  4. `docs/TROUBLESHOOTING.md`
+- Done when:
+  - Meter remains usable at the minimum supported width.
+  - History/session gains do not crush the scoreboard.
+  - Update CTA/header actions do not hide critical meter content.
+
+### PH5-MTR-054 - Session gains validation
+- [ ] Status: TODO
+- Goal: validate fame/silver/session-rate calculations against controlled PCAP samples.
+- Files:
+  1. `albion_dps/domain/fame_tracker.py`
+  2. `albion_dps/qt/models.py`
+  3. `tests/test_fame_tracker_pcap53.py`
+  4. `docs/qa/QA_REGRESSION_PASS.md`
+- Done when:
+  - Fame and silver totals match reference captures.
+  - Fame/h and silver/h are numerically stable and formatted cleanly.
+  - Session gains layout does not overflow with large values.
+
+## Active Milestone - Phase 6 (Market correctness + planning workflow)
+
+### PH6-MKT-060 - Resource requirement correctness
+- [ ] Status: TODO
+- Goal: ensure market planner computes required materials, artifacts, journals, and no-return items correctly.
+- Files:
+  1. `albion_dps/market/`
+  2. `albion_dps/qt/market/state.py`
+  3. `tests/test_market_*.py`
+  4. `mail.txt`
+- Done when:
+  - Enchant-aware ingredients use correct item IDs and prices.
+  - Royal sigils and similar no-return items ignore RRR.
+  - Journal quantities match expected craft outputs with consistent precision.
+
+### PH6-MKT-061 - Profit math audit
+- [ ] Status: TODO
+- Goal: make investment/revenue/fee/tax/profit/margin calculations defensible and internally consistent.
+- Files:
+  1. `albion_dps/qt/market/state.py`
+  2. `albion_dps/qt/ui/MarketTab.qml`
+  3. `tests/test_market_profit_math.py`
+  4. `docs/ARCHITECTURE.md`
+- Done when:
+  - Result rows and top KPIs use the same formulas.
+  - Margin is calculated from the intended base and documented.
+  - Journal P/L is decoupled from unrelated output price edits where appropriate.
+
+### PH6-MKT-062 - AO Data rate-limit strategy
+- [ ] Status: TODO
+- Goal: remove user-visible hangs and make large refreshes predictable under AO Data 429 limits.
+- Files:
+  1. `albion_dps/market/aod_client.py`
+  2. `albion_dps/qt/market/state.py`
+  3. `albion_dps/qt/ui/MarketTab.qml`
+  4. `tests/test_aod_client.py`
+- Done when:
+  - Large batches degrade gracefully under 429.
+  - UI shows visible loading/progress for long refreshes.
+  - Cache/live/stale fallback states are explicit and understandable.
+
+### PH6-MKT-063 - Saved plans, import/export, and presets
+- [ ] Status: TODO
+- Goal: turn the market tab into a reusable planning workspace.
+- Files:
+  1. `albion_dps/settings.py`
+  2. `albion_dps/qt/market/state.py`
+  3. `albion_dps/qt/ui/MarketTab.qml`
+  4. `README.md`
+- Done when:
+  - User can save/load craft plans and presets.
+  - Shopping/selling/results exports are available via clipboard and file.
+  - Default city/filter presets persist between runs.
+
+### PH6-MKT-064 - Market table UX hardening
+- [ ] Status: TODO
+- Goal: finish interaction polish for setup/inputs/outputs/results tables.
+- Files:
+  1. `albion_dps/qt/ui/MarketTab.qml`
+  2. `albion_dps/qt/ui/MarketCraftsTable.qml`
+  3. `albion_dps/qt/ui/MarketSetupPanel.qml`
+  4. `tests/test_market_qt_state.py`
+- Done when:
+  - Checkbox hit areas are stable.
+  - Search/filter/sort controls are visually and functionally consistent.
+  - Narrow-width behavior is usable without hidden columns becoming inaccessible.
+
+## Active Milestone - Phase 7 (Product surface + supportability)
+
+### PH7-PRD-070 - Settings tab
+- [ ] Status: TODO
+- Goal: centralize runtime, update, logging, and path controls in one place.
+- Files:
+  1. `albion_dps/settings.py`
+  2. `albion_dps/qt/ui/Main.qml`
+  3. `albion_dps/qt/ui/SettingsTab.qml`
+  4. `tests/test_settings.py`
+- Done when:
+  - User can manage update, capture, scanner, and logging settings from one tab.
+  - Critical paths (runtime/game data/scanner repo) are visible and editable.
+  - Start tab no longer acts as a pseudo-settings screen.
+
+### PH7-PRD-071 - Help/About tab
+- [ ] Status: TODO
+- Goal: provide in-app troubleshooting, versioning, and release-note visibility.
+- Files:
+  1. `albion_dps/qt/ui/HelpTab.qml`
+  2. `albion_dps/qt/ui/Main.qml`
+  3. `README.md`
+  4. `docs/TROUBLESHOOTING.md`
+- Done when:
+  - App version, release notes, support links, and setup help are easy to find.
+  - Common dependency errors (Npcap, Git, game data) have direct guidance.
+
+### PH7-PRD-072 - Diagnostics bundle export
+- [ ] Status: TODO
+- Goal: make support/debugging reproducible with one exported bundle.
+- Files:
+  1. `albion_dps/qt/runner.py`
+  2. `albion_dps/qt/ui/ScannerTab.qml`
+  3. `albion_dps/qt/ui/HelpTab.qml`
+  4. `tools/qa/`
+- Done when:
+  - User can export logs, version info, runtime state, and selected diagnostics in one zip/txt bundle.
+  - Support requests can be handled without manual log hunting.
+
+### PH7-PRD-073 - Session export and compare
+- [ ] Status: TODO
+- Goal: let users archive and compare combat sessions outside the live UI.
+- Files:
+  1. `albion_dps/meter/session_meter.py`
+  2. `albion_dps/qt/models.py`
+  3. `albion_dps/qt/ui/MeterTab.qml`
+  4. `tests/test_session_export.py`
+- Done when:
+  - History entries can be exported as txt/csv/json.
+  - Two sessions can be compared on core KPIs.
+
+### PH7-PRD-074 - Loot/session map history
+- [ ] Status: TODO
+- Goal: add safe post-analysis features inspired by reference projects without moving into overlay/radar territory.
+- Files:
+  1. `albion_dps/domain/`
+  2. `albion_dps/qt/ui/`
+  3. `docs/ARCHITECTURE.md`
+- Done when:
+  - Session map trail and passive loot/session history are available.
+  - No live overlay, radar, or auto-alert behavior is introduced.
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract
