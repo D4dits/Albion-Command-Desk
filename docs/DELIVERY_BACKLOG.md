@@ -465,7 +465,7 @@ Update status checkboxes and notes after each implemented ticket.
   - 2026-03-24: PH7-PRD-072 completed (Scanner and Help tabs can now export a diagnostics zip with summary metadata, scanner log, market diagnostics, and current settings, plus a QA helper verifies the bundle structure).
 
 ### PH7-PRD-073 - Session export and compare
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: let users archive and compare combat sessions outside the live UI.
 - Files:
   1. `albion_dps/meter/session_meter.py`
@@ -475,6 +475,9 @@ Update status checkboxes and notes after each implemented ticket.
 - Done when:
   - History entries can be exported as txt/csv/json.
   - Two sessions can be compared on core KPIs.
+
+- Progress:
+  - 2026-03-24: PH7-PRD-073 completed (Meter history now exports TXT/CSV/JSON archives, persists a dedicated meter export directory, and shows an in-app selected-session KPI compare panel with copy/export actions).
 
 ### PH7-PRD-074 - Loot/session map history
 - [ ] Status: TODO

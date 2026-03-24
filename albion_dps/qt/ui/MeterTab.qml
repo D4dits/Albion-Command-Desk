@@ -33,6 +33,9 @@ Item {
     property string captureRuntimeState: "unknown"
     property string captureRuntimeDetail: ""
     property string captureRuntimeActionLabel: ""
+    property bool sessionCompareAvailable: false
+    property string sessionCompareTitle: ""
+    property string sessionCompareText: ""
 
     // Models
     property var playersModel: null
@@ -49,6 +52,11 @@ Item {
     signal clearHistorySelection()
     signal selectHistory(int index)
     signal copyHistory(int index)
+    signal exportHistoryTxt()
+    signal exportHistoryCsv()
+    signal exportHistoryJson()
+    signal copySessionCompare()
+    signal exportSessionCompare()
     signal refreshCaptureRuntimeStatus()
     signal openCaptureRuntimeAction()
 
@@ -242,12 +250,20 @@ Item {
                     mutedColor: root.mutedColor
                     historyModel: root.historyModel
                     selectedHistoryIndex: root.selectedHistoryIndex
+                    sessionCompareAvailable: root.sessionCompareAvailable
+                    sessionCompareTitle: root.sessionCompareTitle
+                    sessionCompareText: root.sessionCompareText
                     sortKey: root.sortKey
                     tableRowColor: root.tableRowColor
 
                     onClearHistorySelection: root.clearHistorySelection()
                     onSelectHistory: function(index) { root.selectHistory(index) }
                     onCopyHistory: function(index) { root.copyHistory(index) }
+                    onExportHistoryTxt: root.exportHistoryTxt()
+                    onExportHistoryCsv: root.exportHistoryCsv()
+                    onExportHistoryJson: root.exportHistoryJson()
+                    onCopySessionCompare: root.copySessionCompare()
+                    onExportSessionCompare: root.exportSessionCompare()
                 }
 
                 // Session gains

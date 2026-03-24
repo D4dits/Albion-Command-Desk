@@ -11,6 +11,7 @@ class AppSettings:
     update_auto_check: bool = True
     market_selected_preset: str = ""
     market_export_dir: str = ""
+    meter_export_dir: str = ""
     scanner_repo_dir: str = ""
     scanner_repo_url: str = ""
     log_level: str = "INFO"
@@ -43,6 +44,7 @@ def load_app_settings() -> AppSettings:
             update_auto_check=bool(raw.get("update_auto_check", True)),
             market_selected_preset=str(raw.get("market_selected_preset", "") or ""),
             market_export_dir=str(raw.get("market_export_dir", "") or ""),
+            meter_export_dir=str(raw.get("meter_export_dir", "") or ""),
             scanner_repo_dir=str(raw.get("scanner_repo_dir", "") or ""),
             scanner_repo_url=str(raw.get("scanner_repo_url", "") or ""),
             log_level=_normalize_log_level(raw.get("log_level", "INFO")),
@@ -58,6 +60,7 @@ def save_app_settings(settings: AppSettings) -> None:
         "update_auto_check": bool(settings.update_auto_check),
         "market_selected_preset": str(settings.market_selected_preset or ""),
         "market_export_dir": str(settings.market_export_dir or ""),
+        "meter_export_dir": str(settings.meter_export_dir or ""),
         "scanner_repo_dir": str(settings.scanner_repo_dir or ""),
         "scanner_repo_url": str(settings.scanner_repo_url or ""),
         "log_level": _normalize_log_level(settings.log_level),

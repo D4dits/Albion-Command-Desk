@@ -21,6 +21,7 @@ and this project uses semantic versioning.
 - Name registry now tracks recent local entity observations from live/replay packets for safer UI-side party filtering.
 - Meter controls and scoreboard now degrade more predictably at smaller window widths: stacked meter layout engages earlier, controls reflow into a compact grid, and scoreboard columns remain reachable via horizontal overflow instead of silent clipping.
 - Fame and silver totals are regression-locked against `albion_combat_53_gold_fame.pcap`, and the session-gains card now collapses to a single-column stat grid at narrow widths instead of overflowing.
+- Meter history can now be exported as TXT/CSV/JSON, and selected archived fights expose an in-app KPI comparison against a neighboring session for quick review outside the live scoreboard.
 
 ## [0.1.19] - 2026-02-26
 

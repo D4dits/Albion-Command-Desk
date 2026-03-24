@@ -559,6 +559,9 @@ ApplicationWindow {
                     captureRuntimeState: scannerState.captureRuntimeState
                     captureRuntimeDetail: scannerState.captureRuntimeDetail
                     captureRuntimeActionLabel: scannerState.captureRuntimeActionLabel
+                    sessionCompareAvailable: uiState.sessionCompareAvailable
+                    sessionCompareTitle: uiState.sessionCompareTitle
+                    sessionCompareText: uiState.sessionCompareText
 
                     // Models
                     playersModel: uiState.playersModel
@@ -581,6 +584,35 @@ ApplicationWindow {
                     onCopyHistory: function(index) {
                         uiState.copyHistory(index)
                         toastManager.showSuccess("Copied to clipboard", "Battle data copied")
+                    }
+                    onExportHistoryTxt: function() {
+                        var path = uiState.exportHistoryTxtInteractive()
+                        if (path && path.length > 0) {
+                            toastManager.showSuccess("History exported", path)
+                        }
+                    }
+                    onExportHistoryCsv: function() {
+                        var path = uiState.exportHistoryCsvInteractive()
+                        if (path && path.length > 0) {
+                            toastManager.showSuccess("History exported", path)
+                        }
+                    }
+                    onExportHistoryJson: function() {
+                        var path = uiState.exportHistoryJsonInteractive()
+                        if (path && path.length > 0) {
+                            toastManager.showSuccess("History exported", path)
+                        }
+                    }
+                    onCopySessionCompare: function() {
+                        if (uiState.copySessionCompare()) {
+                            toastManager.showSuccess("Copied to clipboard", "Session compare copied")
+                        }
+                    }
+                    onExportSessionCompare: function() {
+                        var path = uiState.exportSessionCompareInteractive()
+                        if (path && path.length > 0) {
+                            toastManager.showSuccess("Compare exported", path)
+                        }
                     }
                     onRefreshCaptureRuntimeStatus: function() {
                         scannerState.refreshCaptureRuntimeStatus()

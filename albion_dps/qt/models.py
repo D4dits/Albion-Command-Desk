@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import csv
+import io
+import json
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Callable
 
 from PySide6.QtCore import (
@@ -15,6 +19,7 @@ from PySide6.QtCore import (
 )
 
 from albion_dps.meter.session_meter import SessionEntry, SessionSummary
+from albion_dps.settings import AppSettings, load_app_settings, save_app_settings
 from albion_dps.domain.weapon_colors import WEAPON_COLORS
 
 
@@ -212,6 +217,8 @@ class UiState(QObject):
     updateControlChanged = Signal()
     manualUpdateCheckRequested = Signal()
     updateAutoCheckToggled = Signal(bool)
+    sessionExported = Signal(str, str)
+    sessionCompareChanged = Signal()
 
     def __init__(
         self,
@@ -254,6 +261,10 @@ class UiState(QObject):
         self._latest_update_version = ""
         self._dismissed_update_version = ""
         self._allowed_player_names: set[str] | None = None
+        self._app_settings = load_app_settings()
+        self._meter_export_dir = str(self._app_settings.meter_export_dir or "").strip()
+        self._session_compare_title = ""
+        self._session_compare_text = ""
 
     @Property(str, notify=modeChanged)
     def mode(self) -> str:
@@ -327,6 +338,18 @@ class UiState(QObject):
     def updateCheckStatus(self) -> str:
         return self._update_check_status
 
+    @Property(bool, notify=sessionCompareChanged)
+    def sessionCompareAvailable(self) -> bool:
+        return bool(self._session_compare_text)
+
+    @Property(str, notify=sessionCompareChanged)
+    def sessionCompareTitle(self) -> str:
+        return self._session_compare_title
+
+    @Property(str, notify=sessionCompareChanged)
+    def sessionCompareText(self) -> str:
+        return self._session_compare_text
+
     @Slot(str)
     def setSortKey(self, key: str) -> None:
         if key not in SORT_KEY_MAP:
@@ -355,6 +378,69 @@ class UiState(QObject):
         clipboard = QGuiApplication.clipboard()
         if clipboard:
             clipboard.setText(text)
+
+    @Slot(result=str)
+    def exportHistoryTxtInteractive(self) -> str:
+        payload = _history_to_txt(self._last_history, names=self._last_names)
+        return self._export_meter_payload_interactive(
+            payload=payload,
+            label="History TXT",
+            suggested_name="acd-history.txt",
+            file_filter="Text Files (*.txt);;All Files (*)",
+        )
+
+    @Slot(result=str)
+    def exportHistoryCsvInteractive(self) -> str:
+        payload = _history_to_csv(self._last_history, names=self._last_names)
+        return self._export_meter_payload_interactive(
+            payload=payload,
+            label="History CSV",
+            suggested_name="acd-history.csv",
+            file_filter="CSV Files (*.csv);;All Files (*)",
+        )
+
+    @Slot(result=str)
+    def exportHistoryJsonInteractive(self) -> str:
+        payload = _history_to_json(self._last_history, names=self._last_names)
+        return self._export_meter_payload_interactive(
+            payload=payload,
+            label="History JSON",
+            suggested_name="acd-history.json",
+            file_filter="JSON Files (*.json);;All Files (*)",
+        )
+
+    @Slot(result=bool)
+    def copySessionCompare(self) -> bool:
+        if not self._session_compare_text:
+            return False
+        from PySide6.QtGui import QGuiApplication
+
+        clipboard = QGuiApplication.clipboard()
+        if clipboard is None:
+            return False
+        payload = self._session_compare_title
+        if payload and self._session_compare_text:
+            payload = f"{payload}\n{self._session_compare_text}"
+        else:
+            payload = self._session_compare_text
+        clipboard.setText(payload)
+        return True
+
+    @Slot(result=str)
+    def exportSessionCompareInteractive(self) -> str:
+        if not self._session_compare_text:
+            return ""
+        payload = self._session_compare_title
+        if payload:
+            payload = f"{payload}\n{self._session_compare_text}"
+        else:
+            payload = self._session_compare_text
+        return self._export_meter_payload_interactive(
+            payload=payload,
+            label="Session compare",
+            suggested_name="acd-session-compare.txt",
+            file_filter="Text Files (*.txt);;All Files (*)",
+        )
 
     @Slot(int)
     def selectHistory(self, index: int) -> None:
@@ -581,6 +667,98 @@ class UiState(QObject):
                 selected_index=self._selected_history_index,
             )
         )
+        self._refresh_session_compare()
+
+    def _refresh_session_compare(self) -> None:
+        title = ""
+        text = ""
+        if 0 <= self._selected_history_index < len(self._last_history):
+            summary = self._last_history[self._selected_history_index]
+            compare_index = self._selected_history_index + 1
+            if compare_index >= len(self._last_history) and self._selected_history_index > 0:
+                compare_index = self._selected_history_index - 1
+            if 0 <= compare_index < len(self._last_history) and compare_index != self._selected_history_index:
+                other = self._last_history[compare_index]
+                title, text = _build_session_compare_text(
+                    summary,
+                    other,
+                    names=self._last_names,
+                    current_index=self._selected_history_index,
+                    other_index=compare_index,
+                )
+        if title == self._session_compare_title and text == self._session_compare_text:
+            return
+        self._session_compare_title = title
+        self._session_compare_text = text
+        self.sessionCompareChanged.emit()
+
+    def _export_meter_payload_interactive(
+        self,
+        *,
+        payload: str,
+        label: str,
+        suggested_name: str,
+        file_filter: str,
+    ) -> str:
+        path = self._prompt_export_path(label=label, suggested_name=suggested_name, file_filter=file_filter)
+        if not path:
+            return ""
+        if not self._write_meter_export(raw_path=path, payload=payload):
+            return ""
+        self.sessionExported.emit(label, path)
+        return path
+
+    def _prompt_export_path(self, *, label: str, suggested_name: str, file_filter: str) -> str | None:
+        try:
+            from PySide6.QtWidgets import QFileDialog
+        except Exception:
+            return None
+        base_dir = Path(self._meter_export_dir).expanduser() if self._meter_export_dir else Path.home()
+        suggested_path = str((base_dir / suggested_name).resolve())
+        selected_path, _selected_filter = QFileDialog.getSaveFileName(
+            None,
+            f"Export {label}",
+            suggested_path,
+            file_filter,
+        )
+        selected = str(selected_path or "").strip()
+        if not selected:
+            return None
+        try:
+            self._meter_export_dir = str(Path(selected).expanduser().resolve().parent)
+            self._persist_app_settings()
+        except Exception:
+            pass
+        return selected
+
+    def _write_meter_export(self, *, raw_path: str, payload: str) -> bool:
+        path_text = raw_path.strip()
+        if not path_text or not payload:
+            return False
+        try:
+            path = Path(path_text)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(payload, encoding="utf-8")
+        except Exception:
+            return False
+        self._meter_export_dir = str(path.parent)
+        self._persist_app_settings()
+        return True
+
+    def _persist_app_settings(self) -> None:
+        try:
+            self._app_settings = AppSettings(
+                update_auto_check=self._update_auto_check,
+                market_selected_preset=self._app_settings.market_selected_preset,
+                market_export_dir=self._app_settings.market_export_dir,
+                meter_export_dir=self._meter_export_dir,
+                scanner_repo_dir=self._app_settings.scanner_repo_dir,
+                scanner_repo_url=self._app_settings.scanner_repo_url,
+                log_level=self._app_settings.log_level,
+            )
+            save_app_settings(self._app_settings)
+        except Exception:
+            pass
 
 
 def _build_player_rows(
@@ -787,6 +965,137 @@ def _format_history_copy(
             f"{idx:02d}. {resolved} | dmg {_format_int(entry.damage)} | heal {_format_int(entry.heal)} | dps {entry.dps:.1f} | hps {entry.hps:.1f}"
         )
     return "\n".join(lines)
+
+
+def _history_to_txt(history: list[SessionSummary], *, names: dict[int, str]) -> str:
+    blocks = [
+        _format_history_copy(summary, names=names, entries=_collapse_history_entries(summary.entries, names=names, duration=summary.duration))
+        for summary in history
+    ]
+    return "\n\n".join(blocks).strip()
+
+
+def _history_to_csv(history: list[SessionSummary], *, names: dict[int, str]) -> str:
+    buf = io.StringIO()
+    writer = csv.writer(buf, lineterminator="\n")
+    writer.writerow(
+        [
+            "session_index",
+            "mode",
+            "label",
+            "duration_seconds",
+            "total_damage",
+            "total_heal",
+            "player_count",
+            "player_rank",
+            "player_name",
+            "damage",
+            "heal",
+            "dps",
+            "hps",
+        ]
+    )
+    for index, summary in enumerate(history, start=1):
+        entries = _collapse_history_entries(summary.entries, names=names, duration=summary.duration)
+        session_label = summary.label or ""
+        for rank, entry in enumerate(entries, start=1):
+            writer.writerow(
+                [
+                    index,
+                    summary.mode,
+                    session_label,
+                    round(summary.duration, 2),
+                    _format_int(summary.total_damage),
+                    _format_int(summary.total_heal),
+                    len(entries),
+                    rank,
+                    _resolve_label(entry.label, names),
+                    _format_int(entry.damage),
+                    _format_int(entry.heal),
+                    f"{entry.dps:.1f}",
+                    f"{entry.hps:.1f}",
+                ]
+            )
+    return buf.getvalue()
+
+
+def _history_to_json(history: list[SessionSummary], *, names: dict[int, str]) -> str:
+    payload: list[dict[str, Any]] = []
+    for index, summary in enumerate(history, start=1):
+        entries = _collapse_history_entries(summary.entries, names=names, duration=summary.duration)
+        payload.append(
+            {
+                "session_index": index,
+                "mode": summary.mode,
+                "label": summary.label,
+                "start_ts": summary.start_ts,
+                "end_ts": summary.end_ts,
+                "duration_seconds": round(summary.duration, 2),
+                "total_damage": _format_int(summary.total_damage),
+                "total_heal": _format_int(summary.total_heal),
+                "reason": summary.reason,
+                "player_count": len(entries),
+                "entries": [
+                    {
+                        "player_name": _resolve_label(entry.label, names),
+                        "damage": _format_int(entry.damage),
+                        "heal": _format_int(entry.heal),
+                        "dps": round(entry.dps, 1),
+                        "hps": round(entry.hps, 1),
+                        "source_id": entry.source_id,
+                    }
+                    for entry in entries
+                ],
+            }
+        )
+    return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+def _build_session_compare_text(
+    current: SessionSummary,
+    other: SessionSummary,
+    *,
+    names: dict[int, str],
+    current_index: int,
+    other_index: int,
+) -> tuple[str, str]:
+    current_entries = _collapse_history_entries(current.entries, names=names, duration=current.duration)
+    other_entries = _collapse_history_entries(other.entries, names=names, duration=other.duration)
+    current_top = current_entries[0] if current_entries else None
+    other_top = other_entries[0] if other_entries else None
+    relation = "older" if other_index > current_index else "newer"
+    title = f"Compare history #{current_index + 1} vs {relation} #{other_index + 1}"
+    lines = [
+        _compare_metric_line("Duration", current.duration, other.duration, unit="s"),
+        _compare_metric_line("Total damage", current.total_damage, other.total_damage),
+        _compare_metric_line("Total heal", current.total_heal, other.total_heal),
+        _compare_metric_line("Players", len(current_entries), len(other_entries)),
+    ]
+    if current_top is not None or other_top is not None:
+        current_top_label = _resolve_label(current_top.label, names) if current_top is not None else "-"
+        other_top_label = _resolve_label(other_top.label, names) if other_top is not None else "-"
+        current_top_dps = current_top.dps if current_top is not None else 0.0
+        other_top_dps = other_top.dps if other_top is not None else 0.0
+        lines.append(
+            "Top DPS: "
+            f"{current_top_label} ({current_top_dps:.1f}) vs "
+            f"{other_top_label} ({other_top_dps:.1f})"
+        )
+    return title, "\n".join(lines)
+
+
+def _compare_metric_line(label: str, current: float, other: float, *, unit: str = "") -> str:
+    delta = current - other
+    delta_prefix = "+" if delta >= 0 else ""
+    current_text = f"{current:.1f}" if unit == "s" else str(_format_int(current))
+    other_text = f"{other:.1f}" if unit == "s" else str(_format_int(other))
+    delta_text = f"{delta_prefix}{delta:.1f}" if unit == "s" else f"{delta_prefix}{_format_int(delta)}"
+    suffix = unit if unit else ""
+    if suffix:
+        current_text = f"{current_text}{suffix}"
+        other_text = f"{other_text}{suffix}"
+        delta_text = f"{delta_text}{suffix}"
+    return f"{label}: {current_text} vs {other_text} ({delta_text})"
 
 
 def _format_int(value: float) -> int:

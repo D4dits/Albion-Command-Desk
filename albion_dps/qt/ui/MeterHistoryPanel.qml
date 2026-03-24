@@ -25,6 +25,14 @@ Item {
     signal clearHistorySelection()
     signal selectHistory(int index)
     signal copyHistory(int index)
+    signal exportHistoryTxt()
+    signal exportHistoryCsv()
+    signal exportHistoryJson()
+    signal copySessionCompare()
+    signal exportSessionCompare()
+    property bool sessionCompareAvailable: false
+    property string sessionCompareTitle: ""
+    property string sessionCompareText: ""
 
     // Access to theme and helpers (injected by parent)
     property var theme: null
@@ -47,6 +55,34 @@ Item {
             color: textColor
             font.pixelSize: 14
             font.bold: true
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 6
+
+            AppButton {
+                text: "TXT"
+                compact: true
+                implicitHeight: 28
+                onClicked: root.exportHistoryTxt()
+            }
+
+            AppButton {
+                text: "CSV"
+                compact: true
+                implicitHeight: 28
+                onClicked: root.exportHistoryCsv()
+            }
+
+            AppButton {
+                text: "JSON"
+                compact: true
+                implicitHeight: 28
+                onClicked: root.exportHistoryJson()
+            }
+
+            Item { Layout.fillWidth: true }
         }
 
         AppButton {
@@ -150,6 +186,56 @@ Item {
                 text: "No archived battles yet."
                 color: root.theme.textSecondary
                 font.pixelSize: 12
+            }
+        }
+
+        Rectangle {
+            visible: root.sessionCompareAvailable
+            Layout.fillWidth: true
+            radius: 6
+            color: root.theme.surfaceElevated
+            border.color: root.theme.tableDivider
+            border.width: 1
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 8
+                spacing: 6
+
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Text {
+                        text: root.sessionCompareTitle
+                        Layout.fillWidth: true
+                        color: textColor
+                        font.pixelSize: 12
+                        font.bold: true
+                        elide: Text.ElideRight
+                    }
+
+                    AppButton {
+                        text: "Copy"
+                        compact: true
+                        implicitHeight: 26
+                        onClicked: root.copySessionCompare()
+                    }
+
+                    AppButton {
+                        text: "Export"
+                        compact: true
+                        implicitHeight: 26
+                        onClicked: root.exportSessionCompare()
+                    }
+                }
+
+                Text {
+                    text: root.sessionCompareText
+                    Layout.fillWidth: true
+                    color: root.theme.tableTextPrimary
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                }
             }
         }
     }
