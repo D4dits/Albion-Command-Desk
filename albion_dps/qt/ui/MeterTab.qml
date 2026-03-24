@@ -40,7 +40,7 @@ Item {
 
     // UI flags
     property bool compactLayout: false
-    property bool stackedLayout: width < 1080
+    property bool stackedLayout: width < 1240
     property bool historyAvailable: historyModel && historyModel.count > 0
 
     // Signals to notify parent of actions
@@ -278,7 +278,7 @@ Item {
         }
 
         Loader {
-            Layout.preferredWidth: 360
+            Layout.preferredWidth: 340
             Layout.minimumWidth: 320
             Layout.maximumWidth: 420
             Layout.fillHeight: true

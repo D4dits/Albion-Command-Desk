@@ -13,7 +13,8 @@ import "." // for Theme and AppButton access
 TableSurface {
     id: root
     level: 1
-    implicitHeight: 88
+    property bool narrowLayout: width < 620
+    implicitHeight: controlsGrid.implicitHeight + 16
 
     // Properties to bind to parent state
     property string currentMode: "battle"
@@ -26,14 +27,18 @@ TableSurface {
     // Access to theme (injected by parent)
     property var theme: null
 
-    ColumnLayout {
+    GridLayout {
+        id: controlsGrid
         anchors.fill: parent
         anchors.margins: 6
-        spacing: 6
+        columns: root.narrowLayout ? 1 : 2
+        rowSpacing: 6
+        columnSpacing: 12
 
         RowLayout {
             spacing: 8
             Layout.fillWidth: true
+            Layout.alignment: Qt.AlignLeft | Qt.AlignTop
 
             Text {
                 text: "Mode:"
@@ -79,6 +84,7 @@ TableSurface {
         RowLayout {
             spacing: 8
             Layout.fillWidth: true
+            Layout.alignment: Qt.AlignLeft | Qt.AlignTop
 
             Text {
                 text: "Sort:"

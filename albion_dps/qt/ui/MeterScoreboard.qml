@@ -15,6 +15,14 @@ Item {
     id: root
     Layout.fillWidth: true
     Layout.fillHeight: true
+    property bool narrowLayout: width < 760
+    property int tableSpacing: narrowLayout ? 8 : 12
+    property int tablePadding: narrowLayout ? 4 : 6
+    property int nameColumnWidth: narrowLayout ? 120 : 140
+    property int weaponColumnWidth: narrowLayout ? 72 : 90
+    property int statColumnWidth: narrowLayout ? 52 : 60
+    property int barColumnWidth: narrowLayout ? 140 : 180
+    property int tableContentWidth: (tablePadding * 2) + nameColumnWidth + weaponColumnWidth + (statColumnWidth * 4) + barColumnWidth + (tableSpacing * 6)
 
     // Properties to bind to parent state
     property var playersModel: null
@@ -32,199 +40,219 @@ Item {
         return index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
     }
 
-    ColumnLayout {
+    Flickable {
+        id: tableFlick
         anchors.fill: parent
-        spacing: 0
+        clip: true
+        contentWidth: root.tableContentWidth
+        contentHeight: height
+        flickableDirection: Flickable.HorizontalFlick
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: contentWidth > width
 
-        // Table Header
-        TableSurface {
-            level: 1
-            Layout.fillWidth: true
-            height: 26
-            showTopRule: false
-
-            RowLayout {
-                anchors.fill: parent
-                anchors.margins: 6
-                spacing: 12
-
-                Text {
-                    text: "Name"
-                    color: root.theme.tableHeaderText
-                    font.pixelSize: 11
-                    Layout.preferredWidth: 140
-                }
-                Text {
-                    text: "Weapon"
-                    color: root.theme.tableHeaderText
-                    font.pixelSize: 11
-                    Layout.preferredWidth: 90
-                }
-                Text {
-                    text: "DMG"
-                    color: root.theme.tableHeaderText
-                    font.pixelSize: 11
-                    Layout.preferredWidth: 60
-                }
-                Text {
-                    text: "HEAL"
-                    color: root.theme.tableHeaderText
-                    font.pixelSize: 11
-                    Layout.preferredWidth: 60
-                }
-                Text {
-                    text: "DPS"
-                    color: root.theme.tableHeaderText
-                    font.pixelSize: 11
-                    Layout.preferredWidth: 60
-                }
-                Text {
-                    text: "HPS"
-                    color: root.theme.tableHeaderText
-                    font.pixelSize: 11
-                    Layout.preferredWidth: 60
-                }
-                Text {
-                    text: "BAR"
-                    color: root.theme.tableHeaderText
-                    font.pixelSize: 11
-                    Layout.fillWidth: true
-                }
-            }
+        ScrollBar.horizontal: ScrollBar {
+            policy: tableFlick.contentWidth > tableFlick.width ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
         }
 
-        // Player List
-        ListView {
-            id: meterPlayersList
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            clip: true
-            model: root.playersModel
-            spacing: 0
-            reuseItems: true
-            cacheBuffer: 300
-            property int hoverIndex: -1
+        Item {
+            id: tableContent
+            width: root.tableContentWidth
+            height: tableFlick.height
 
-            delegate: Rectangle {
-                id: meterRow
-                width: ListView.view.width
-                height: 34
-                property bool hovered: meterPlayersList.hoverIndex === index
-                color: hovered ? root.theme.tableRowHover : tableRowColor(index)
-                radius: 4
-                Behavior on color {
-                    ColorAnimation { duration: 120 }
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: 0
+
+                // Table Header
+                TableSurface {
+                    level: 1
+                    Layout.fillWidth: true
+                    height: 26
+                    showTopRule: false
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: root.tablePadding
+                        spacing: root.tableSpacing
+
+                        Text {
+                            text: "Name"
+                            color: root.theme.tableHeaderText
+                            font.pixelSize: 11
+                            Layout.preferredWidth: root.nameColumnWidth
+                        }
+                        Text {
+                            text: "Weapon"
+                            color: root.theme.tableHeaderText
+                            font.pixelSize: 11
+                            Layout.preferredWidth: root.weaponColumnWidth
+                        }
+                        Text {
+                            text: "DMG"
+                            color: root.theme.tableHeaderText
+                            font.pixelSize: 11
+                            Layout.preferredWidth: root.statColumnWidth
+                        }
+                        Text {
+                            text: "HEAL"
+                            color: root.theme.tableHeaderText
+                            font.pixelSize: 11
+                            Layout.preferredWidth: root.statColumnWidth
+                        }
+                        Text {
+                            text: "DPS"
+                            color: root.theme.tableHeaderText
+                            font.pixelSize: 11
+                            Layout.preferredWidth: root.statColumnWidth
+                        }
+                        Text {
+                            text: "HPS"
+                            color: root.theme.tableHeaderText
+                            font.pixelSize: 11
+                            Layout.preferredWidth: root.statColumnWidth
+                        }
+                        Text {
+                            text: "BAR"
+                            color: root.theme.tableHeaderText
+                            font.pixelSize: 11
+                            Layout.preferredWidth: root.barColumnWidth
+                        }
+                    }
                 }
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 4
-                    spacing: 12
+                // Player List
+                ListView {
+                    id: meterPlayersList
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    model: root.playersModel
+                    spacing: 0
+                    reuseItems: true
+                    cacheBuffer: 300
+                    property int hoverIndex: -1
 
-                    Text {
-                        text: name
-                        color: root.theme.tableTextPrimary
-                        font.pixelSize: 12
-                        elide: Text.ElideRight
-                        Layout.preferredWidth: 140
-                    }
-                    Item {
-                        Layout.preferredWidth: 90
-                        height: 24
+                    delegate: Rectangle {
+                        id: meterRow
+                        width: ListView.view.width
+                        height: 34
+                        property bool hovered: meterPlayersList.hoverIndex === index
+                        color: hovered ? root.theme.tableRowHover : tableRowColor(index)
+                        radius: 4
+                        Behavior on color {
+                            ColorAnimation { duration: 120 }
+                        }
+
                         RowLayout {
                             anchors.fill: parent
-                            spacing: 4
-                            Image {
-                                source: weaponIcon
-                                width: 20
-                                height: 20
-                                Layout.preferredWidth: 20
-                                Layout.preferredHeight: 20
-                                sourceSize.width: 20
-                                sourceSize.height: 20
-                                fillMode: Image.PreserveAspectFit
-                                visible: weaponIcon && weaponIcon.length > 0
+                            anchors.margins: root.tablePadding
+                            spacing: root.tableSpacing
+
+                            Text {
+                                text: name
+                                color: root.theme.tableTextPrimary
+                                font.pixelSize: 12
+                                elide: Text.ElideRight
+                                Layout.preferredWidth: root.nameColumnWidth
+                            }
+                            Item {
+                                Layout.preferredWidth: root.weaponColumnWidth
+                                height: 24
+                                RowLayout {
+                                    anchors.fill: parent
+                                    spacing: 4
+                                    Image {
+                                        source: weaponIcon
+                                        width: 20
+                                        height: 20
+                                        Layout.preferredWidth: 20
+                                        Layout.preferredHeight: 20
+                                        sourceSize.width: 20
+                                        sourceSize.height: 20
+                                        fillMode: Image.PreserveAspectFit
+                                        visible: weaponIcon && weaponIcon.length > 0
+                                    }
+                                    Text {
+                                        text: weaponTier && weaponTier.length > 0 ? weaponTier : "-"
+                                        color: root.theme.tableTextSecondary
+                                        font.pixelSize: 11
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                                ToolTip.visible: weaponHover.containsMouse && weaponName && weaponName.length > 0
+                                ToolTip.text: weaponName
+                                MouseArea {
+                                    id: weaponHover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                }
                             }
                             Text {
-                                text: weaponTier && weaponTier.length > 0 ? weaponTier : "-"
+                                text: damage
                                 color: root.theme.tableTextSecondary
-                                font.pixelSize: 11
-                                elide: Text.ElideRight
+                                font.pixelSize: 12
+                                Layout.preferredWidth: root.statColumnWidth
+                            }
+                            Text {
+                                text: heal
+                                color: root.theme.tableTextSecondary
+                                font.pixelSize: 12
+                                Layout.preferredWidth: root.statColumnWidth
+                            }
+                            Text {
+                                text: dps.toFixed(1)
+                                color: root.theme.tableTextSecondary
+                                font.pixelSize: 12
+                                Layout.preferredWidth: root.statColumnWidth
+                            }
+                            Text {
+                                text: hps.toFixed(1)
+                                color: root.theme.tableTextSecondary
+                                font.pixelSize: 12
+                                Layout.preferredWidth: root.statColumnWidth
+                            }
+
+                            Rectangle {
+                                Layout.preferredWidth: root.barColumnWidth
+                                height: 10
+                                radius: 4
+                                color: root.theme.surfaceInset
+                                border.color: root.theme.borderSubtle
+                                Rectangle {
+                                    height: parent.height
+                                    width: Math.max(4, parent.width * barRatio)
+                                    radius: 4
+                                    color: barColor
+                                }
                             }
                         }
-                        ToolTip.visible: weaponHover.containsMouse && weaponName && weaponName.length > 0
-                        ToolTip.text: weaponName
-                        MouseArea {
-                            id: weaponHover
-                            anchors.fill: parent
-                            hoverEnabled: true
-                        }
-                    }
-                    Text {
-                        text: damage
-                        color: root.theme.tableTextSecondary
-                        font.pixelSize: 12
-                        Layout.preferredWidth: 60
-                    }
-                    Text {
-                        text: heal
-                        color: root.theme.tableTextSecondary
-                        font.pixelSize: 12
-                        Layout.preferredWidth: 60
-                    }
-                    Text {
-                        text: dps.toFixed(1)
-                        color: root.theme.tableTextSecondary
-                        font.pixelSize: 12
-                        Layout.preferredWidth: 60
-                    }
-                    Text {
-                        text: hps.toFixed(1)
-                        color: root.theme.tableTextSecondary
-                        font.pixelSize: 12
-                        Layout.preferredWidth: 60
                     }
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 10
-                        radius: 4
-                        color: root.theme.surfaceInset
-                        border.color: root.theme.borderSubtle
-                        Rectangle {
-                            height: parent.height
-                            width: Math.max(4, parent.width * barRatio)
-                            radius: 4
-                            color: barColor
+                    // Empty state
+                    Text {
+                        anchors.centerIn: parent
+                        visible: meterPlayersList.count === 0
+                        text: root.selectedHistoryIndex >= 0
+                            ? "No players in selected history entry."
+                            : "No live combat data yet. Start fighting or switch replay."
+                        color: root.theme.textSecondary
+                        font.pixelSize: 12
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
+                        width: parent.width - 24
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        acceptedButtons: Qt.NoButton
+                        onPositionChanged: function(mouse) {
+                            var row = meterPlayersList.indexAt(mouse.x + meterPlayersList.contentX, mouse.y + meterPlayersList.contentY)
+                            meterPlayersList.hoverIndex = row
                         }
+                        onExited: meterPlayersList.hoverIndex = -1
                     }
                 }
-
-            }
-
-            // Empty state
-            Text {
-                anchors.centerIn: parent
-                visible: meterPlayersList.count === 0
-                text: root.selectedHistoryIndex >= 0
-                    ? "No players in selected history entry."
-                    : "No live combat data yet. Start fighting or switch replay."
-                color: root.theme.textSecondary
-                font.pixelSize: 12
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.WordWrap
-                width: parent.width - 24
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                acceptedButtons: Qt.NoButton
-                onPositionChanged: function(mouse) {
-                    var row = meterPlayersList.indexAt(mouse.x + meterPlayersList.contentX, mouse.y + meterPlayersList.contentY)
-                    meterPlayersList.hoverIndex = row
-                }
-                onExited: meterPlayersList.hoverIndex = -1
             }
         }
     }

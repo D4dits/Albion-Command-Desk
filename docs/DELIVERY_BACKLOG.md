@@ -311,7 +311,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Portal/map changes end or split battles deterministically.
 
 ### PH5-MTR-052 - History panel correctness
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: make meter history stable, readable, and copyable at all window sizes.
 - Files:
   1. `albion_dps/qt/ui/MeterHistoryPanel.qml`
@@ -324,7 +324,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Scrolling history never snaps back to top after model refresh.
 
 ### PH5-MTR-053 - Meter responsive layout pass
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: make the meter readable across supported window sizes without broken tables.
 - Files:
   1. `albion_dps/qt/ui/MeterTab.qml`
@@ -611,6 +611,8 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-03-24: PH5-MTR-053 completed (meter now switches to stacked layout earlier, compact control groups adapt to narrow widths, and scoreboard content uses controlled horizontal overflow instead of clipping columns).
+- 2026-03-24: PH5-MTR-052 completed (history rows now preserve scroll position across unchanged model refreshes, long summaries wrap inside card bounds, and `Copy` remains consistently visible).
 - 2026-03-24: PH5-MTR-050 started (added recent local-entity tracking in `NameRegistry`, runner-side display filtering for resolved party IDs, and safer history panel behavior while preserving bootstrap fallback before IDs resolve).
 - 2026-02-18: PH4-OPS-040 completed (added release runbook with hotfix path, introduced `last_known_good.json` pointer maintenance command, and shipped one-command manifest rollback script).
 - 2026-02-18: PH4-QA-040 completed (bootstrap-smoke now uploads per-job evidence bundles with logs/smoke JSON/update-flow traces + UX baselines; clean-machine verifier now blocks on missing/expired required evidence artifacts).
