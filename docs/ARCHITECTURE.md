@@ -66,6 +66,22 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
 - Clean-machine bootstrap validation:
   - CI workflow: `.github/workflows/bootstrap-smoke.yml`
 
+## Market profit math
+- Planner inputs are split into:
+  - raw materials / components input cost,
+  - journal empty input cost,
+  - output-side station fee,
+  - output-side market tax.
+- Session/top-level market KPIs use:
+  - `net_profit = output_value - input_cost - station_fee - market_tax`
+  - `margin_percent = net_profit / input_cost * 100`
+- Result rows use the same logic on a per-row allocated basis:
+  - `allocated_cost` is the row's proportional share of input cost,
+  - `net_value` is already post-fee/post-tax,
+  - `row_profit = net_value - allocated_cost`
+  - `row_margin = row_profit / allocated_cost * 100`
+- This keeps row math aligned with top-level KPIs while still showing fee/tax as separate columns.
+
 ## Module boundaries (intended)
 - Capture does not know parsing/UI.
 - Protocol parser does not know UI.

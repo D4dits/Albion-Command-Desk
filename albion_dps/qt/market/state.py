@@ -2951,8 +2951,10 @@ class MarketSetupState(QObject):
             fee_value = float(output["fee_value"])
             tax_value = float(output["tax_value"])
             net_value = float(output["net_value"])
-            profit = net_value - allocated_cost
-            margin = (profit / allocated_cost * 100.0) if allocated_cost > 0 else 0.0
+            profit, margin = _result_row_profit_and_margin(
+                allocated_cost=allocated_cost,
+                net_value=net_value,
+            )
             rows.append(
                 ResultItemRow(
                     item_id=str(output["item_id"]),
@@ -4494,6 +4496,14 @@ def _parse_iso_datetime(raw_value: str) -> datetime | None:
         parsed = datetime.fromisoformat(text)
     except ValueError:
         return None
+
+
+def _result_row_profit_and_margin(*, allocated_cost: float, net_value: float) -> tuple[float, float]:
+    normalized_cost = max(0.0, float(allocated_cost))
+    normalized_net = float(net_value)
+    profit = normalized_net - normalized_cost
+    margin = (profit / normalized_cost * 100.0) if normalized_cost > 0 else 0.0
+    return float(profit), float(margin)
     if parsed.year <= 2001:
         return None
     if parsed.tzinfo is None:
