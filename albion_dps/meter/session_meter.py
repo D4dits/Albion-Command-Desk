@@ -297,6 +297,11 @@ class SessionMeter:
                     totals_by_id,
                     summary.duration,
                     self.name_lookup,
+                    label_overrides={
+                        int(entry.source_id): entry.label
+                        for entry in summary.entries
+                        if entry.source_id is not None and entry.label
+                    },
                 )
                 total_damage = sum(entry.damage for entry in entries)
                 total_heal = sum(entry.heal for entry in entries)
@@ -355,6 +360,11 @@ class SessionMeter:
                     summary.totals_by_id,
                     summary.duration,
                     self.name_lookup,
+                    label_overrides={
+                        int(entry.source_id): entry.label
+                        for entry in summary.entries
+                        if entry.source_id is not None and entry.label
+                    },
                 )
                 total_damage = sum(entry.damage for entry in entries)
                 total_heal = sum(entry.heal for entry in entries)
@@ -536,12 +546,16 @@ def _build_entries_from_totals_by_id(
     totals: dict[int, dict[str, float]],
     duration: float,
     name_lookup: Callable[[int], str | None] | None,
+    *,
+    label_overrides: dict[int, str] | None = None,
 ) -> list[SessionEntry]:
     grouped: dict[str, dict[str, float | int | None]] = {}
     for source_id, stats in totals.items():
         damage = float(stats.get("damage", 0.0))
         heal = float(stats.get("heal", 0.0))
-        label = name_lookup(source_id) if name_lookup else None
+        label = (label_overrides or {}).get(source_id)
+        if not label and name_lookup:
+            label = name_lookup(source_id)
         if not label:
             label = str(source_id)
         existing = grouped.get(label)
