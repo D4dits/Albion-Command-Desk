@@ -170,6 +170,7 @@ def run_qt(args: argparse.Namespace) -> int:
             state,
             meter=meter,
             party=party,
+            name_registry=names,
             fame=fame,
             stop_event=stop_event,
         )
@@ -393,6 +394,7 @@ def _drain_snapshots(
     *,
     meter: SessionMeter,
     party: PartyRegistry,
+    name_registry: NameRegistry | None,
     fame: FameTracker,
     stop_event: threading.Event,
 ) -> None:
@@ -405,11 +407,12 @@ def _drain_snapshots(
             stop_event.set()
             return
         names = snapshot.names or {}
-        allowed_names = set(party.snapshot_names())
-        for self_id in party.snapshot_self_ids():
-            resolved = names.get(self_id)
-            if isinstance(resolved, str) and resolved:
-                allowed_names.add(resolved)
+        allowed_names = _allowed_display_names_for_snapshot(
+            snapshot=snapshot,
+            names=names,
+            party=party,
+            name_registry=name_registry,
+        )
         state.update(
             snapshot,
             names=names,
@@ -422,6 +425,51 @@ def _drain_snapshots(
             silver_per_hour=fame.silver_per_hour(),
             allowed_player_names=allowed_names or None,
         )
+
+
+LOCAL_PARTY_VISIBILITY_SECONDS = 20.0
+
+
+def _allowed_display_names_for_snapshot(
+    *,
+    snapshot: MeterSnapshot,
+    names: dict[int, str],
+    party: PartyRegistry,
+    name_registry: NameRegistry | None,
+) -> set[str]:
+    allowed_names: set[str] = set()
+    self_ids = party.snapshot_self_ids()
+    party_ids = party.snapshot_ids()
+    non_self_party_ids = party_ids.difference(self_ids)
+
+    for entity_id in self_ids:
+        resolved = names.get(entity_id)
+        if isinstance(resolved, str) and resolved:
+            allowed_names.add(resolved)
+
+    if not non_self_party_ids:
+        allowed_names.update(
+            {
+                name
+                for name in party.snapshot_names()
+                if isinstance(name, str) and name
+            }
+        )
+        return allowed_names
+
+    active_ids = set(snapshot.totals.keys())
+    recent_local_ids: set[int] = set()
+    if name_registry is not None:
+        recent_local_ids = name_registry.snapshot_recent_ids(
+            snapshot.timestamp,
+            LOCAL_PARTY_VISIBILITY_SECONDS,
+        )
+    display_party_ids = non_self_party_ids.intersection(active_ids.union(recent_local_ids))
+    for entity_id in display_party_ids:
+        resolved = names.get(entity_id)
+        if isinstance(resolved, str) and resolved:
+            allowed_names.add(resolved)
+    return allowed_names
 
 
 def _fallback_interface() -> str | None:

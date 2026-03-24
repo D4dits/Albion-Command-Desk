@@ -115,7 +115,7 @@ def stream_snapshots(
         messages = decoder.decode_all(packet)
         for message in messages:
             if name_registry is not None:
-                name_registry.observe(message)
+                name_registry.observe(message, packet)
             if party_registry is not None:
                 party_registry.observe(message, packet)
                 if name_registry is not None:

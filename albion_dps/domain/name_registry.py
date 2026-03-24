@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from albion_dps.models import PhotonMessage
+from albion_dps.models import PhotonMessage, RawPacket
 from albion_dps.protocol.protocol16 import Protocol16Error, decode_event_data
 
 NAME_EVENT_CODE = 1
@@ -41,8 +41,9 @@ class NameRegistry:
     _strong_id_names: dict[int, str] = field(default_factory=dict)
     _item_names: dict[int, set[str]] = field(default_factory=dict)
     _entity_items: dict[int, list[int]] = field(default_factory=dict)
+    _local_entity_ts: dict[int, float] = field(default_factory=dict)
 
-    def observe(self, message: PhotonMessage) -> None:
+    def observe(self, message: PhotonMessage, packet: RawPacket | None = None) -> None:
         if message.event_code is None:
             return
         if message.event_code != NAME_EVENT_CODE:
@@ -52,7 +53,7 @@ class NameRegistry:
         except Protocol16Error:
             return
 
-        self._apply_event(event.parameters)
+        self._apply_event(event.parameters, packet)
 
     def snapshot(self) -> dict[int, str]:
         merged = dict(self._names)
@@ -91,30 +92,47 @@ class NameRegistry:
             return []
         return list(items)
 
-    def _apply_event(self, parameters: dict[int, object]) -> None:
+    def snapshot_recent_ids(self, now: float, max_age: float) -> set[int]:
+        if max_age <= 0:
+            return set()
+        cutoff = now - max_age
+        return {
+            entity_id
+            for entity_id, ts in self._local_entity_ts.items()
+            if ts >= cutoff
+        }
+
+    def _apply_event(self, parameters: dict[int, object], packet: RawPacket | None) -> None:
         self._apply_party_roster(parameters)
         self._apply_guid_link(parameters)
         subtype = parameters.get(NAME_SUBTYPE_KEY)
+        timestamp = packet.timestamp if packet is not None else None
         if subtype == NAME_SUBTYPE_ENTITY_NAME:
             name = parameters.get(NAME_SUBTYPE_ENTITY_NAME_KEY)
             if isinstance(name, str) and name:
-                self._store(parameters.get(NAME_SUBTYPE_ENTITY_ID_KEY), name)
-                self._store(parameters.get(NAME_SUBTYPE_ENTITY_ALT_ID_KEY), name)
+                entity_id = parameters.get(NAME_SUBTYPE_ENTITY_ID_KEY)
+                alt_entity_id = parameters.get(NAME_SUBTYPE_ENTITY_ALT_ID_KEY)
+                self._store(entity_id, name)
+                self._store(alt_entity_id, name)
+                self._mark_local(entity_id, timestamp)
+                self._mark_local(alt_entity_id, timestamp)
         if subtype == NAME_SUBTYPE_UNIT_INFO:
             name = parameters.get(NAME_SUBTYPE_UNIT_NAME_KEY)
-            if isinstance(name, str) and name:
-                self._store(parameters.get(NAME_SUBTYPE_ENTITY_ID_KEY), name)
             entity_id = parameters.get(NAME_SUBTYPE_ENTITY_ID_KEY)
+            if isinstance(name, str) and name:
+                self._store(entity_id, name)
             items = parameters.get(NAME_UNIT_EQUIPMENT_LIST_KEY)
             if isinstance(entity_id, int) and isinstance(items, list):
                 filtered = [item for item in items if isinstance(item, int) and item > 0]
                 if filtered:
                     self._entity_items[entity_id] = filtered
+            self._mark_local(entity_id, timestamp)
         if subtype == NAME_SUBTYPE_CHARACTER_INFO:
             name = parameters.get(NAME_SUBTYPE_CHARACTER_NAME_KEY)
             if isinstance(name, str) and name:
                 entity_id = parameters.get(NAME_SUBTYPE_ENTITY_ID_KEY)
                 self._store(entity_id, name)
+                self._mark_local(entity_id, timestamp)
                 item_id = parameters.get(1)
                 if isinstance(item_id, int):
                     self._item_names.setdefault(item_id, set()).add(name)
@@ -132,6 +150,7 @@ class NameRegistry:
                 if filtered:
                     self._entity_items[entity_id] = filtered
                     self._infer_name_from_items(entity_id)
+            self._mark_local(entity_id, timestamp)
         if subtype == NAME_SUBTYPE_ID_NAME:
             self._store(parameters.get(NAME_ID_KEY), parameters.get(NAME_SUBTYPE_NAME_KEY), weak=True)
         raw_id = parameters.get(NAME_ID_KEY)
@@ -143,6 +162,12 @@ class NameRegistry:
             return
 
         self._store(raw_id, raw_name)
+
+    def _mark_local(self, entity_id: object, timestamp: float | None) -> None:
+        if timestamp is None:
+            return
+        if isinstance(entity_id, int) and entity_id > 0:
+            self._local_entity_ts[entity_id] = float(timestamp)
 
     def _store(self, entity_id: object, name: object, *, weak: bool = False) -> None:
         if isinstance(entity_id, int) and isinstance(name, str) and name:

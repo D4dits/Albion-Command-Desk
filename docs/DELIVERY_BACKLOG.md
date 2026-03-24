@@ -281,7 +281,7 @@ Update status checkboxes and notes after each implemented ticket.
 ## Active Milestone - Phase 5 (Meter reliability + operator UX)
 
 ### PH5-MTR-050 - Tight local-context party filtering
-- [ ] Status: TODO
+- [ ] Status: IN PROGRESS
 - Goal: only show self + relevant local party members in meter snapshots and history.
 - Files:
   1. `albion_dps/domain/party_registry.py`
@@ -611,6 +611,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-03-24: PH5-MTR-050 started (added recent local-entity tracking in `NameRegistry`, runner-side display filtering for resolved party IDs, and safer history panel behavior while preserving bootstrap fallback before IDs resolve).
 - 2026-02-18: PH4-OPS-040 completed (added release runbook with hotfix path, introduced `last_known_good.json` pointer maintenance command, and shipped one-command manifest rollback script).
 - 2026-02-18: PH4-QA-040 completed (bootstrap-smoke now uploads per-job evidence bundles with logs/smoke JSON/update-flow traces + UX baselines; clean-machine verifier now blocks on missing/expired required evidence artifacts).
 - 2026-02-18: PH4-REL-045 completed (update checker now resolves per-OS installer/bootstrap URL + notes URL, update banner exposes Install/Notes actions, and repeated alerts are suppressed once a version is dismissed).

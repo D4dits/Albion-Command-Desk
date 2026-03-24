@@ -7,6 +7,11 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+- Meter history list now preserves scroll position across history model refreshes, keeps `Copy` visible per row, and clips/wraps long history summaries inside the panel.
+- Live meter display now prefers self IDs and recently local party entity IDs once party member IDs are resolved, reducing false-positive party rows from stale/non-local name matches.
+- Name registry now tracks recent local entity observations from live/replay packets for safer UI-side party filtering.
+
 ## [0.1.19] - 2026-02-26
 
 ### Changed

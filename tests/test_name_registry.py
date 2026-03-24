@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from albion_dps.domain.name_registry import NameRegistry
-from albion_dps.models import PhotonMessage
+from albion_dps.models import PhotonMessage, RawPacket
 
 
 _PORTAL_PAYLOAD_HEX = (
@@ -68,3 +68,21 @@ def test_name_registry_id_name_mapping() -> None:
     names = registry.snapshot()
 
     assert names[84367] == "D4dits"
+
+
+def test_name_registry_tracks_recent_local_entity_ids() -> None:
+    registry = NameRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=bytes.fromhex(_PORTAL_PAYLOAD_HEX))
+    packet = RawPacket(
+        timestamp=42.0,
+        src_ip="193.169.238.17",
+        src_port=5056,
+        dst_ip="10.0.0.1",
+        dst_port=51000,
+        payload=message.payload,
+    )
+
+    registry.observe(message, packet)
+
+    assert 120171 in registry.snapshot_recent_ids(42.0, 5.0)
+    assert 120171 not in registry.snapshot_recent_ids(60.0, 5.0)
