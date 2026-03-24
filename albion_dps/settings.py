@@ -9,6 +9,8 @@ from pathlib import Path
 @dataclass(frozen=True)
 class AppSettings:
     update_auto_check: bool = True
+    market_selected_preset: str = ""
+    market_export_dir: str = ""
 
 
 def settings_dir() -> Path:
@@ -36,6 +38,8 @@ def load_app_settings() -> AppSettings:
             return AppSettings()
         return AppSettings(
             update_auto_check=bool(raw.get("update_auto_check", True)),
+            market_selected_preset=str(raw.get("market_selected_preset", "") or ""),
+            market_export_dir=str(raw.get("market_export_dir", "") or ""),
         )
     except Exception:
         return AppSettings()
@@ -46,6 +50,8 @@ def save_app_settings(settings: AppSettings) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "update_auto_check": bool(settings.update_auto_check),
+        "market_selected_preset": str(settings.market_selected_preset or ""),
+        "market_export_dir": str(settings.market_export_dir or ""),
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 

@@ -9,6 +9,7 @@ External Albion Online companion app (Qt desktop UI):
 - party-focused combat stats
 - scanner helper tab
 - market crafting workspace (setup, inputs, outputs, results)
+- market presets plus shopping/selling/results CSV export
 
 No client hooks, no overlays, no memory editing.
 

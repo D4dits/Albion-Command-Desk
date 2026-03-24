@@ -799,6 +799,21 @@ ApplicationWindow {
                 onSetOutputManualPrice: function(itemId, price) { marketSetupState.setOutputManualPrice(itemId, price) }
                 onSetResultsSortKey: function(key) { marketSetupState.setResultsSortKey(key) }
                 onCopyText: function(text) { root.copyText(text) }
+                onCopyShoppingCsv: function() {
+                    marketSetupState.copyShoppingCsv()
+                    toastManager.showInfo("Shopping CSV", "Copied to clipboard")
+                }
+                onCopySellingCsv: function() {
+                    marketSetupState.copySellingCsv()
+                    toastManager.showInfo("Selling CSV", "Copied to clipboard")
+                }
+                onCopyResultsCsv: function() {
+                    marketSetupState.copyResultsCsv()
+                    toastManager.showInfo("Results CSV", "Copied to clipboard")
+                }
+                onExportShoppingCsv: function() { marketSetupState.exportShoppingCsvInteractive() }
+                onExportSellingCsv: function() { marketSetupState.exportSellingCsvInteractive() }
+                onExportResultsCsv: function() { marketSetupState.exportResultsCsvInteractive() }
                 }
             }
         }

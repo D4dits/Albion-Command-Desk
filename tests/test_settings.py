@@ -5,9 +5,17 @@ from albion_dps.settings import AppSettings, load_app_settings, save_app_setting
 
 def test_settings_roundtrip_with_override(monkeypatch) -> None:
     monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_settings")
-    save_app_settings(AppSettings(update_auto_check=False))
+    save_app_settings(
+        AppSettings(
+            update_auto_check=False,
+            market_selected_preset="martlock_plate",
+            market_export_dir="artifacts/tmp/exports",
+        )
+    )
     loaded = load_app_settings()
     assert loaded.update_auto_check is False
+    assert loaded.market_selected_preset == "martlock_plate"
+    assert loaded.market_export_dir == "artifacts/tmp/exports"
     assert settings_path().name == "settings.json"
 
 

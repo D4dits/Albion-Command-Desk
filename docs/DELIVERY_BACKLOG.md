@@ -391,7 +391,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Cache/live/stale fallback states are explicit and understandable.
 
 ### PH6-MKT-063 - Saved plans, import/export, and presets
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: turn the market tab into a reusable planning workspace.
 - Files:
   1. `albion_dps/settings.py`
@@ -613,6 +613,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 - 2026-03-24: PH6-MKT-061 completed (market result-row formulas now use a shared helper aligned with top-level `ProfitBreakdown`, profit/margin regressions were added, and market math is documented in `docs/ARCHITECTURE.md`).
 - 2026-03-24: PH6-MKT-062 completed (AO Data price requests now default to smaller batches, large 429-limited batches split into predictable chunks, market UI exposes queued/loading/cooldown states more clearly, and regressions cover both client chunking and state cooldown messaging).
+- 2026-03-24: PH6-MKT-063 completed (selected market presets now persist between runs, shopping/selling/results CSV exports are available from the UI and file dialog flows, and export directory preferences are stored in app settings).
 - 2026-03-24: PH6-MKT-060 completed (journal mapping now falls back correctly for royal plate items, royal sigils/tokens stay non-returnable in planner regressions, and journal quantity expectations are locked for real dataset cases).
 - 2026-03-24: PH5-MTR-051 completed (battle sessions now ignore stale combat-stop markers while fresh combat events continue, short-gap merged summaries preserve `totals_by_id`, and continuity regressions are locked in `tests/test_session_meter.py`).
 - 2026-03-24: PH5-MTR-054 completed (pcap53 fame/silver totals are now regression-locked, session rate strings stay stable, and the session-gains panel falls back to a single-column grid at narrow widths).

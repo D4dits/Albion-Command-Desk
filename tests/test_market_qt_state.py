@@ -16,6 +16,7 @@ from albion_dps.market.models import MarketRegion
 from albion_dps.market.service import MarketFetchMeta
 from albion_dps.qt.market import MarketSetupState
 from albion_dps.qt.market import state as market_state
+from albion_dps.settings import AppSettings, save_app_settings
 
 
 class _FakeMarketService:
@@ -401,6 +402,83 @@ def test_market_setup_state_supports_setup_presets(monkeypatch: pytest.MonkeyPat
 
         state.deletePreset("martlock_42")
         assert "martlock_42" not in list(state.presetNames)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def test_market_setup_state_restores_selected_preset_from_app_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    tmp_dir = Path(f"tmp_market_settings_{uuid.uuid4().hex}")
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    preset_path = tmp_dir / "market_presets.json"
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", str(tmp_dir / "config"))
+    monkeypatch.setattr(market_state, "_default_preset_path", lambda: preset_path)
+
+    try:
+        preset_path.write_text(
+            market_state.json.dumps(
+                {
+                    "saved_fire": {
+                        "setup": {
+                            "region": "europe",
+                            "craft_city": "Fort Sterling",
+                            "default_buy_city": "Fort Sterling",
+                            "default_sell_city": "Caerleon",
+                            "premium": True,
+                            "focus_enabled": False,
+                            "station_fee_percent": 300.0,
+                            "market_tax_percent": 400.0,
+                            "daily_bonus_percent": 0.0,
+                            "return_rate_percent": 0.0,
+                            "hideout_power_percent": 0.0,
+                            "quality": 1,
+                        },
+                        "craft_runs": 12,
+                        "recipe_id": "T4_MAIN_SWORD",
+                        "recipe_search_query": "sword",
+                        "recipe_tier_filters": [4, 5],
+                        "recipe_enchant_filters": [0, 1],
+                        "hide_rows_without_fresh_prices": True,
+                        "craft_plan": [],
+                    }
+                },
+                indent=2,
+                sort_keys=True,
+            ),
+            encoding="utf-8",
+        )
+        save_app_settings(
+            AppSettings(
+                update_auto_check=True,
+                market_selected_preset="saved_fire",
+                market_export_dir=str(tmp_dir / "exports"),
+            )
+        )
+        state = MarketSetupState(auto_refresh_prices=False)
+
+        assert state.selectedPresetName == "saved_fire"
+        assert state.craftCity == "Fort Sterling"
+        assert state.defaultSellCity == "Caerleon"
+        assert state.recipeSearchQuery == "sword"
+        assert state.hideRowsWithoutFreshPrices is True
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def test_market_setup_state_can_export_results_csv(monkeypatch: pytest.MonkeyPatch) -> None:
+    tmp_dir = Path(f"tmp_market_results_export_{uuid.uuid4().hex}")
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", str(tmp_dir / "config"))
+    export_path = tmp_dir / "results.csv"
+
+    try:
+        state = MarketSetupState(auto_refresh_prices=False)
+        state.addCurrentRecipeToPlan()
+        _enable_all_plan_rows(state)
+        state.exportResultsCsv(str(export_path))
+
+        assert export_path.exists()
+        payload = export_path.read_text(encoding="utf-8")
+        assert "item_id,item_name,city,quantity,revenue,cost,fee,tax,profit,margin_percent,demand_proxy" in payload
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 

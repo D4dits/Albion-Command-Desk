@@ -177,6 +177,12 @@ CardPanel {
     signal setOutputManualPrice(var itemId, string price)
     signal setResultsSortKey(string key)
     signal copyText(string text)
+    signal copyShoppingCsv()
+    signal copySellingCsv()
+    signal copyResultsCsv()
+    signal exportShoppingCsv()
+    signal exportSellingCsv()
+    signal exportResultsCsv()
 
     // Helper functions
     property var priceSourceColor: function(source) {
@@ -647,6 +653,18 @@ CardPanel {
                             onToggled: root.inputsShowOnOnly = checked
                         }
                         Item { Layout.fillWidth: true }
+                        AppButton {
+                            text: "Copy CSV"
+                            compact: true
+                            implicitHeight: compactControlHeight
+                            onClicked: root.copyShoppingCsv()
+                        }
+                        AppButton {
+                            text: "Export CSV"
+                            compact: true
+                            implicitHeight: compactControlHeight
+                            onClicked: root.exportShoppingCsv()
+                        }
                     }
 
                     Rectangle {
@@ -809,6 +827,18 @@ CardPanel {
                             onToggled: root.outputsShowOnOnly = checked
                         }
                         Item { Layout.fillWidth: true }
+                        AppButton {
+                            text: "Copy CSV"
+                            compact: true
+                            implicitHeight: compactControlHeight
+                            onClicked: root.copySellingCsv()
+                        }
+                        AppButton {
+                            text: "Export CSV"
+                            compact: true
+                            implicitHeight: compactControlHeight
+                            onClicked: root.exportSellingCsv()
+                        }
                     }
 
                     Rectangle {
@@ -971,6 +1001,18 @@ CardPanel {
                             onTextChanged: root.resultsSearchQuery = text
                         }
                         Item { Layout.fillWidth: true }
+                        AppButton {
+                            text: "Copy CSV"
+                            compact: true
+                            implicitHeight: compactControlHeight
+                            onClicked: root.copyResultsCsv()
+                        }
+                        AppButton {
+                            text: "Export CSV"
+                            compact: true
+                            implicitHeight: compactControlHeight
+                            onClicked: root.exportResultsCsv()
+                        }
                     }
 
                     Rectangle {

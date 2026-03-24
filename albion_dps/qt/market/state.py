@@ -38,6 +38,7 @@ from albion_dps.market.models import (
 from albion_dps.market.planner import build_selling_entries, build_shopping_entries
 from albion_dps.market.service import MarketDataService
 from albion_dps.market.setup import sanitized_setup, validate_setup
+from albion_dps.settings import AppSettings, load_app_settings, save_app_settings
 
 _SHOPPING_SAFETY_BUFFER_PERCENT = 3.0
 _JOURNAL_NPC_EMPTY_PRICES: dict[int, int] = {
@@ -918,15 +919,18 @@ class MarketSetupState(QObject):
         self._results_sort_key = "profit"
         self._shopping_csv = ""
         self._selling_csv = ""
+        self._results_csv = ""
         self._list_action_text = ""
         self._diagnostics_lines: list[str] = []
         self._recipe_search_query = ""
         self._recipe_tier_filters: list[int] = []
         self._recipe_enchant_filters: list[int] = []
         self._hide_rows_without_fresh_prices = False
+        self._app_settings = load_app_settings()
+        self._default_export_dir = str(self._app_settings.market_export_dir or "").strip()
         self._preset_path = _default_preset_path()
         self._presets: dict[str, dict[str, object]] = self._load_presets()
-        self._selected_preset_name = ""
+        self._selected_preset_name = str(self._app_settings.market_selected_preset or "").strip()
         self._craft_plan_sort_key = "added"
         self._craft_plan_sort_desc = False
         self._active_market_tab_index = 0
@@ -942,6 +946,8 @@ class MarketSetupState(QObject):
         self._refresh_cooldown_tick_timer.setInterval(1000)
         self._refresh_cooldown_tick_timer.timeout.connect(self._on_refresh_cooldown_tick)
         self._deferred_force_price_refresh = False
+        if self._selected_preset_name and self._selected_preset_name in self._presets:
+            self._apply_preset_payload(self._selected_preset_name, self._presets[self._selected_preset_name])
         self._ensure_price_preferences_for_recipe(self._recipe)
         if auto_refresh_prices and self._service is not None:
             self._refresh_price_index(self.to_setup(), force=True)
@@ -1150,6 +1156,10 @@ class MarketSetupState(QObject):
     @Property(str, notify=listsChanged)
     def sellingCsv(self) -> str:
         return self._selling_csv
+
+    @Property(str, notify=resultsChanged)
+    def resultsCsv(self) -> str:
+        return self._results_csv
 
     @Property(str, notify=listsChanged)
     def listActionText(self) -> str:
@@ -1369,6 +1379,7 @@ class MarketSetupState(QObject):
         if name == self._selected_preset_name:
             return
         self._selected_preset_name = name
+        self._persist_app_settings()
         self.setupChanged.emit()
 
     @Slot(str)
@@ -1389,6 +1400,7 @@ class MarketSetupState(QObject):
         }
         if self._save_presets():
             self._selected_preset_name = name
+            self._persist_app_settings()
             self._set_list_action_text(f"Preset saved: {name}")
             self._append_diag(f"Preset saved: {name}", level="INFO")
             self.setupChanged.emit()
@@ -1403,10 +1415,41 @@ class MarketSetupState(QObject):
         if payload is None:
             self._set_list_action_text(f"Preset not found: {name}")
             return
-        setup_data = payload.get("setup")
-        if not isinstance(setup_data, dict):
+        if not self._apply_preset_payload(name, payload):
             self._set_list_action_text(f"Preset is invalid: {name}")
             return
+        self._persist_app_settings()
+        self._rebuild_preview(force_price_refresh=False)
+        self.setupChanged.emit()
+        self.validationChanged.emit()
+        self._set_list_action_text(f"Preset loaded: {name}")
+        self._append_diag(f"Preset loaded: {name}", level="INFO")
+
+    @Slot(str)
+    def deletePreset(self, raw_name: str) -> None:
+        name = _sanitize_preset_name(raw_name)
+        if not name:
+            self._set_list_action_text("Preset name is empty.")
+            return
+        if name not in self._presets:
+            self._set_list_action_text(f"Preset not found: {name}")
+            return
+        del self._presets[name]
+        if self._selected_preset_name == name:
+            self._selected_preset_name = ""
+        if self._save_presets():
+            self._persist_app_settings()
+            self._set_list_action_text(f"Preset deleted: {name}")
+            self._append_diag(f"Preset deleted: {name}", level="INFO")
+            self.setupChanged.emit()
+
+    def _apply_preset_payload(self, name: str, payload: object) -> bool:
+        if not isinstance(payload, dict):
+            return False
+        setup_data = payload.get("setup")
+        if not isinstance(setup_data, dict):
+            return False
+
         self._setup = sanitized_setup(_setup_from_dict(setup_data, fallback=self._setup))
         loaded_rows = _craft_plan_rows_from_payload(
             payload.get("craft_plan"),
@@ -1454,28 +1497,18 @@ class MarketSetupState(QObject):
         if active_row is not None:
             self._craft_runs = max(1, int(active_row.runs))
         self._selected_preset_name = name
-        self._rebuild_preview(force_price_refresh=False)
-        self.setupChanged.emit()
-        self.validationChanged.emit()
-        self._set_list_action_text(f"Preset loaded: {name}")
-        self._append_diag(f"Preset loaded: {name}", level="INFO")
+        return True
 
-    @Slot(str)
-    def deletePreset(self, raw_name: str) -> None:
-        name = _sanitize_preset_name(raw_name)
-        if not name:
-            self._set_list_action_text("Preset name is empty.")
-            return
-        if name not in self._presets:
-            self._set_list_action_text(f"Preset not found: {name}")
-            return
-        del self._presets[name]
-        if self._selected_preset_name == name:
-            self._selected_preset_name = ""
-        if self._save_presets():
-            self._set_list_action_text(f"Preset deleted: {name}")
-            self._append_diag(f"Preset deleted: {name}", level="INFO")
-            self.setupChanged.emit()
+    def _persist_app_settings(self) -> None:
+        try:
+            self._app_settings = AppSettings(
+                update_auto_check=bool(self._app_settings.update_auto_check),
+                market_selected_preset=str(self._selected_preset_name or ""),
+                market_export_dir=str(self._default_export_dir or ""),
+            )
+            save_app_settings(self._app_settings)
+        except Exception as exc:
+            self._log.warning("Market app settings save failed: %s", exc)
 
     @Slot()
     def selectFirstRecipeOption(self) -> None:
@@ -1849,28 +1882,14 @@ class MarketSetupState(QObject):
         if not self._shopping_csv:
             self._set_list_action_text("Shopping CSV is empty.")
             return
-        from PySide6.QtGui import QGuiApplication
-
-        clipboard = QGuiApplication.clipboard()
-        if clipboard is None:
-            self._set_list_action_text("Clipboard is not available.")
-            return
-        clipboard.setText(self._shopping_csv)
-        self._set_list_action_text("Shopping CSV copied to clipboard.")
+        self._copy_to_clipboard(self._shopping_csv, success_message="Shopping CSV copied to clipboard.")
 
     @Slot(str)
     def copyText(self, raw_value: str) -> None:
         value = str(raw_value or "").strip()
         if not value:
             return
-        from PySide6.QtGui import QGuiApplication
-
-        clipboard = QGuiApplication.clipboard()
-        if clipboard is None:
-            self._set_list_action_text("Clipboard is not available.")
-            return
-        clipboard.setText(value)
-        self._set_list_action_text("Copied value to clipboard.")
+        self._copy_to_clipboard(value, success_message="Copied value to clipboard.")
 
     @Slot()
     def clearDiagnostics(self) -> None:
@@ -1882,14 +1901,14 @@ class MarketSetupState(QObject):
         if not self._selling_csv:
             self._set_list_action_text("Selling CSV is empty.")
             return
-        from PySide6.QtGui import QGuiApplication
+        self._copy_to_clipboard(self._selling_csv, success_message="Selling CSV copied to clipboard.")
 
-        clipboard = QGuiApplication.clipboard()
-        if clipboard is None:
-            self._set_list_action_text("Clipboard is not available.")
+    @Slot()
+    def copyResultsCsv(self) -> None:
+        if not self._results_csv:
+            self._set_list_action_text("Results CSV is empty.")
             return
-        clipboard.setText(self._selling_csv)
-        self._set_list_action_text("Selling CSV copied to clipboard.")
+        self._copy_to_clipboard(self._results_csv, success_message="Results CSV copied to clipboard.")
 
     @Slot(str)
     def exportShoppingCsv(self, raw_path: str) -> None:
@@ -1898,6 +1917,22 @@ class MarketSetupState(QObject):
     @Slot(str)
     def exportSellingCsv(self, raw_path: str) -> None:
         self._export_csv(raw_path=raw_path, payload=self._selling_csv, label="Selling")
+
+    @Slot(str)
+    def exportResultsCsv(self, raw_path: str) -> None:
+        self._export_csv(raw_path=raw_path, payload=self._results_csv, label="Results")
+
+    @Slot()
+    def exportShoppingCsvInteractive(self) -> None:
+        self._export_csv_interactive(payload=self._shopping_csv, label="Shopping", suggested_name="acd-shopping.csv")
+
+    @Slot()
+    def exportSellingCsvInteractive(self) -> None:
+        self._export_csv_interactive(payload=self._selling_csv, label="Selling", suggested_name="acd-selling.csv")
+
+    @Slot()
+    def exportResultsCsvInteractive(self) -> None:
+        self._export_csv_interactive(payload=self._results_csv, label="Results", suggested_name="acd-results.csv")
 
     def to_setup(self) -> CraftSetup:
         return sanitized_setup(self._setup)
@@ -2258,6 +2293,7 @@ class MarketSetupState(QObject):
         self._set_plan_profit_map({}, fresh_component_prices={})
         self._shopping_csv = ""
         self._selling_csv = ""
+        self._results_csv = ""
         self._breakdown = ProfitBreakdown(notes=[note] if note else [])
         self._base_input_total_cost = 0.0
         self._journal_totals = _JournalTotals()
@@ -2885,6 +2921,25 @@ class MarketSetupState(QObject):
             input_total=selected_input_total,
         )
         self._results_items_model.set_items(results_rows)
+        self._results_csv = self._rows_to_csv(
+            header=["item_id", "item_name", "city", "quantity", "revenue", "cost", "fee", "tax", "profit", "margin_percent", "demand_proxy"],
+            rows=[
+                [
+                    row.item_id,
+                    row.item,
+                    row.city,
+                    f"{row.quantity:.4f}",
+                    f"{row.revenue:.2f}",
+                    f"{row.allocated_cost:.2f}",
+                    f"{row.fee_value:.2f}",
+                    f"{row.tax_value:.2f}",
+                    f"{row.profit:.2f}",
+                    f"{row.margin_percent:.2f}",
+                    f"{row.demand_proxy:.2f}",
+                ]
+                for row in results_rows
+            ],
+        )
         self._outputs_on_model.set_items(selected_output_rows)
         breakdown_rows = self._build_breakdown_rows()
         self._breakdown_model.set_items(breakdown_rows)
@@ -3372,6 +3427,46 @@ class MarketSetupState(QObject):
         joined_ids = ",".join(item_ids)
         return f"https://{host}/api/v2/stats/prices/{joined_ids}.json?{params}"
 
+    def _copy_to_clipboard(self, value: str, *, success_message: str) -> None:
+        from PySide6.QtGui import QGuiApplication
+
+        clipboard = QGuiApplication.clipboard()
+        if clipboard is None:
+            self._set_list_action_text("Clipboard is not available.")
+            return
+        clipboard.setText(value)
+        self._set_list_action_text(success_message)
+
+    def _export_csv_interactive(self, *, payload: str, label: str, suggested_name: str) -> None:
+        path = self._prompt_export_path(label=label, suggested_name=suggested_name)
+        if not path:
+            return
+        self._export_csv(raw_path=path, payload=payload, label=label)
+
+    def _prompt_export_path(self, *, label: str, suggested_name: str) -> str | None:
+        try:
+            from PySide6.QtWidgets import QFileDialog
+        except Exception as exc:
+            self._set_list_action_text(f"{label} export dialog unavailable: {exc}")
+            return None
+        base_dir = Path(self._default_export_dir).expanduser() if self._default_export_dir else Path.home()
+        suggested_path = str((base_dir / suggested_name).resolve())
+        selected_path, _selected_filter = QFileDialog.getSaveFileName(
+            None,
+            f"Export {label} CSV",
+            suggested_path,
+            "CSV Files (*.csv);;All Files (*)",
+        )
+        selected = str(selected_path or "").strip()
+        if not selected:
+            return None
+        try:
+            self._default_export_dir = str(Path(selected).expanduser().resolve().parent)
+            self._persist_app_settings()
+        except Exception:
+            pass
+        return selected
+
     def _export_csv(self, *, raw_path: str, payload: str, label: str) -> None:
         path_text = raw_path.strip()
         if not path_text:
@@ -3387,6 +3482,8 @@ class MarketSetupState(QObject):
         except Exception as exc:
             self._set_list_action_text(f"{label} export failed: {exc}")
             return
+        self._default_export_dir = str(path.parent)
+        self._persist_app_settings()
         self._set_list_action_text(f"{label} CSV exported to {path}.")
 
     @staticmethod
