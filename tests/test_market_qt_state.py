@@ -5,6 +5,7 @@ import shutil
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -450,6 +451,66 @@ def test_journal_rule_mapping_and_factor_for_crafting_item(monkeypatch: pytest.M
 def test_journal_display_name_uses_specific_kind_and_tier() -> None:
     assert market_state._journal_display_name("MAGE", 4) == "T4 Imbuer's Journal"
     assert market_state._journal_display_name("WARRIOR", 8) == "T8 Blacksmith's Journal"
+
+
+def test_journal_rule_falls_back_for_royal_plate_items() -> None:
+    rule = market_state._journal_rule_for_item("T6_ARMOR_PLATE_ROYAL")
+    assert rule is not None
+    assert rule.kind == "WARRIOR"
+    assert rule.tier == 6
+    assert rule.empty_item_id == "T6_JOURNAL_WARRIOR"
+
+
+def test_royal_sigil_component_stays_non_returnable_in_catalog() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    recipe = state._catalog.get("T6_ARMOR_PLATE_ROYAL")
+    sigils = [component for component in recipe.components if "_SIGIL" in component.item.unique_name or "_TOKEN_" in component.item.unique_name]
+    assert sigils
+    assert all(component.returnable is False for component in sigils)
+
+
+def test_estimate_journal_totals_supports_royal_plate_fallback_mapping() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    recipe = state._catalog.get("T6_ARMOR_PLATE_ROYAL")
+    run = SimpleNamespace(
+        recipe=recipe,
+        outputs=(SimpleNamespace(item=recipe.item, quantity=10.0),),
+    )
+    price_index = {
+        ("T6_JOURNAL_WARRIOR", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T6_JOURNAL_WARRIOR",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=1000,
+            buy_price_max=900,
+            sell_price_min_date="2026-03-24T10:00:00Z",
+            buy_price_max_date="2026-03-24T10:00:00Z",
+        ),
+        ("T6_JOURNAL_WARRIOR_FULL", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T6_JOURNAL_WARRIOR_FULL",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=6000,
+            buy_price_max=5000,
+            sell_price_min_date="2026-03-24T10:00:00Z",
+            buy_price_max_date="2026-03-24T10:00:00Z",
+        ),
+    }
+
+    totals = state._estimate_journal_totals(
+        runs=[run],
+        setup=state.to_setup(),
+        price_index=price_index,
+    )
+
+    assert totals.lines
+    line = totals.lines[0]
+    assert line.kind == "WARRIOR"
+    assert line.tier == 6
+    assert line.empty_item_id == "T6_JOURNAL_WARRIOR"
+    assert line.full_item_id == "T6_JOURNAL_WARRIOR_FULL"
+    assert line.empty_quantity == pytest.approx(4.0, rel=0.0, abs=0.01)
+    assert line.full_quantity == pytest.approx(3.0, rel=0.0, abs=0.01)
 
 
 def test_input_preview_sort_groups_artifacts_then_materials_then_journals() -> None:

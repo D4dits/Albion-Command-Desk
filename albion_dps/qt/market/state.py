@@ -4151,9 +4151,83 @@ def _journal_maps() -> tuple[dict[str, _JournalRule], dict[str, float]]:
     return journal_by_item, fame_factor_by_item
 
 
+@lru_cache(maxsize=1)
+def _journal_rule_templates() -> dict[tuple[int, str], _JournalRule]:
+    journal_by_item, _ = _journal_maps()
+    templates: dict[tuple[int, str], _JournalRule] = {}
+    for rule in journal_by_item.values():
+        templates[(int(rule.tier), str(rule.kind).upper())] = rule
+    return templates
+
+
+@lru_cache(maxsize=1)
+def _item_metadata_map() -> dict[str, dict[str, str]]:
+    items_path = Path(__file__).resolve().parents[3] / "data" / "items.json"
+    try:
+        payload = json.loads(items_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    raw_items = payload.get("items") if isinstance(payload, dict) else None
+    if not isinstance(raw_items, dict):
+        return {}
+
+    out: dict[str, dict[str, str]] = {}
+
+    def walk(node: object) -> None:
+        if isinstance(node, dict):
+            unique_name = node.get("@uniquename")
+            if isinstance(unique_name, str) and unique_name:
+                out[_base_item_id(unique_name)] = {
+                    "shopcategory": str(node.get("@shopcategory") or ""),
+                    "shopsubcategory1": str(node.get("@shopsubcategory1") or ""),
+                    "shopsubcategory2": str(node.get("@shopsubcategory2") or ""),
+                    "slottype": str(node.get("@slottype") or ""),
+                }
+            for value in node.values():
+                walk(value)
+            return
+        if isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(raw_items)
+    return out
+
+
+def _infer_journal_kind_for_item(item_id: str) -> str | None:
+    base_id = _base_item_id(item_id)
+    metadata = _item_metadata_map().get(base_id, {})
+    hints = [
+        str(metadata.get("shopcategory") or "").upper(),
+        str(metadata.get("shopsubcategory1") or "").upper(),
+        str(metadata.get("shopsubcategory2") or "").upper(),
+        str(metadata.get("slottype") or "").upper(),
+        base_id,
+    ]
+    combined = " ".join(hint for hint in hints if hint)
+    if "PLATE" in combined:
+        return "WARRIOR"
+    if "LEATHER" in combined:
+        return "HUNTER"
+    if "CLOTH" in combined:
+        return "MAGE"
+    return None
+
+
+def _journal_rule_fallback_for_item(item_id: str) -> _JournalRule | None:
+    tier = _tier_from_item_id(item_id)
+    kind = _infer_journal_kind_for_item(item_id)
+    if tier <= 0 or not kind:
+        return None
+    return _journal_rule_templates().get((tier, kind.upper()))
+
+
 def _journal_rule_for_item(item_id: str) -> _JournalRule | None:
     journal_by_item, _ = _journal_maps()
-    return journal_by_item.get(_base_item_id(item_id))
+    rule = journal_by_item.get(_base_item_id(item_id))
+    if rule is not None:
+        return rule
+    return _journal_rule_fallback_for_item(item_id)
 
 
 def _journal_fame_factor_for_item(item_id: str) -> float:
