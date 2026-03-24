@@ -27,6 +27,8 @@ Rectangle {
     property bool meterView: false
     property bool scannerView: false
     property bool marketView: false
+    property bool settingsView: false
+    property bool helpView: false
     property bool compactLayout: false
     property bool narrowLayout: false
     property bool veryNarrowLayout: width < 980
@@ -92,6 +94,11 @@ Rectangle {
                 + (root.gitAvailable ? "ready" : "missing")
         } else if (root.scannerView) {
             base = "Scanner status: " + root.scannerStatusText + "  |  Updates: " + root.scannerUpdateText
+        } else if (root.settingsView) {
+            base = "Settings  |  Runtime: " + root.captureRuntimeState + "  |  Git: "
+                + (root.gitAvailable ? "ready" : "missing")
+        } else if (root.helpView) {
+            base = "Help  |  Releases, troubleshooting, and diagnostics"
         } else {
             base = "Market setup  |  Region: " + root.marketRegion
                 + "  |  Crafts: " + root.marketCraftPlanEnabledCount + "/" + root.marketCraftPlanCount

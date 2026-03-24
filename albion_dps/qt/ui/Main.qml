@@ -81,6 +81,8 @@ ApplicationWindow {
     property bool meterView: viewTabs.currentIndex === 1
     property bool scannerView: viewTabs.currentIndex === 2
     property bool marketView: viewTabs.currentIndex === 3
+    property bool settingsView: viewTabs.currentIndex === 4
+    property bool helpView: viewTabs.currentIndex === 5
     property bool marketDiagnosticsVisible: false
     property bool marketStatusExpanded: false
     property bool marketBreakdownExpanded: false
@@ -317,6 +319,8 @@ ApplicationWindow {
             meterView: root.meterView
             scannerView: root.scannerView
             marketView: root.marketView
+            settingsView: root.settingsView
+            helpView: root.helpView
             compactLayout: root.compactLayout
             narrowLayout: root.narrowLayout
             meterMetaWidth: shellMeterMetaWidth
@@ -419,6 +423,28 @@ ApplicationWindow {
                 ShellTabButton {
                     id: marketTabButton
                     text: "Market"
+                    activeColor: accentColor
+                    inactiveColor: shellTabIdleBackground
+                    activeTextColor: shellTabActiveText
+                    inactiveTextColor: textColor
+                    borderColor: borderColor
+                    cornerRadius: shellTabRadius
+                    labelPixelSize: 13
+                }
+                ShellTabButton {
+                    id: settingsTabButton
+                    text: "Settings"
+                    activeColor: accentColor
+                    inactiveColor: shellTabIdleBackground
+                    activeTextColor: shellTabActiveText
+                    inactiveTextColor: textColor
+                    borderColor: borderColor
+                    cornerRadius: shellTabRadius
+                    labelPixelSize: 13
+                }
+                ShellTabButton {
+                    id: helpTabButton
+                    text: "Help"
                     activeColor: accentColor
                     inactiveColor: shellTabIdleBackground
                     activeTextColor: shellTabActiveText
@@ -814,6 +840,82 @@ ApplicationWindow {
                 onExportShoppingCsv: function() { marketSetupState.exportShoppingCsvInteractive() }
                 onExportSellingCsv: function() { marketSetupState.exportSellingCsvInteractive() }
                 onExportResultsCsv: function() { marketSetupState.exportResultsCsvInteractive() }
+                }
+            }
+
+            Item {
+                id: settingsTabContainer
+                opacity: viewTabs.currentIndex === 4 ? 1.0 : 0.0
+                visible: true
+                Layout.fillHeight: true
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Utils.AnimationUtils.durationNormal
+                        easing.type: Utils.AnimationUtils.easingOut
+                    }
+                }
+
+                SettingsTab {
+                    id: settingsTab
+                    anchors.fill: parent
+                    compactLayout: root.compactLayout
+                    updateCheckStatus: uiState.updateCheckStatus
+                    updateAutoCheck: uiState.updateAutoCheck
+                    scannerRepoDir: scannerState.scannerRepoDir
+                    scannerRepoUrl: scannerState.scannerRepoUrl
+                    appLogLevel: scannerState.appLogLevel
+                    configDir: scannerState.configDir
+                    captureRuntimeState: scannerState.captureRuntimeState
+                    captureRuntimeDetail: scannerState.captureRuntimeDetail
+                    captureRuntimeActionLabel: scannerState.captureRuntimeActionLabel
+                    captureRuntimeInstallHint: scannerState.captureRuntimeInstallHint
+                    gitAvailable: scannerState.gitAvailable
+                    gitDetail: scannerState.gitDetail
+                    gitActionLabel: scannerState.gitActionLabel
+                    gitInstallHint: scannerState.gitInstallHint
+                    gameDataReady: scannerState.gameDataReady
+                    gameDataDetail: scannerState.gameDataDetail
+                    gameDataHint: scannerState.gameDataHint
+                    gameDataRoot: scannerState.gameDataRoot
+                    gameDataActionLabel: scannerState.gameDataActionLabel
+                    theme: root.theme
+                    onSetUpdateAutoCheck: function(checked) {
+                        uiState.setUpdateAutoCheck(checked)
+                        toastManager.showInfo(checked ? "Auto-update enabled" : "Auto-update disabled", "")
+                    }
+                    onRequestManualUpdateCheck: {
+                        uiState.requestManualUpdateCheck()
+                        toastManager.showInfo("Checking for updates", "Looking for new version...")
+                    }
+                    onSetScannerRepoDir: function(pathText) {
+                        scannerState.setScannerRepoDir(pathText)
+                        toastManager.showInfo("Scanner repo path saved", scannerState.scannerRepoDir)
+                    }
+                    onResetScannerRepoDir: function() {
+                        scannerState.resetScannerRepoDir()
+                        toastManager.showInfo("Scanner repo path reset", scannerState.scannerRepoDir)
+                    }
+                    onSetScannerRepoUrl: function(urlText) {
+                        scannerState.setScannerRepoUrl(urlText)
+                        toastManager.showInfo("Scanner repo URL saved", scannerState.scannerRepoUrl)
+                    }
+                    onSetAppLogLevel: function(levelText) {
+                        scannerState.setAppLogLevel(levelText)
+                        toastManager.showInfo("Log level saved", "Applies on next launch: " + scannerState.appLogLevel)
+                    }
+                    onRefreshCaptureRuntimeStatus: scannerState.refreshCaptureRuntimeStatus()
+                    onOpenCaptureRuntimeAction: scannerState.openCaptureRuntimeAction()
+                    onRefreshGitStatus: scannerState.refreshGitStatus()
+                    onOpenGitInstallAction: scannerState.openGitInstallAction()
+                    onRefreshGameDataStatus: scannerState.refreshGameDataStatus()
+                    onSetupGameData: {
+                        scannerState.setupGameData()
+                        toastManager.showInfo("Game data", "Running game data setup...")
+                    }
+                    onCopyCommand: function(commandText) {
+                        scannerState.copyText(commandText)
+                        toastManager.showSuccess("Copied to clipboard", commandText)
+                    }
                 }
             }
         }

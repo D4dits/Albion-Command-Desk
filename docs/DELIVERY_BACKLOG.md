@@ -419,7 +419,7 @@ Update status checkboxes and notes after each implemented ticket.
 ## Active Milestone - Phase 7 (Product surface + supportability)
 
 ### PH7-PRD-070 - Settings tab
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: centralize runtime, update, logging, and path controls in one place.
 - Files:
   1. `albion_dps/settings.py`
@@ -430,6 +430,9 @@ Update status checkboxes and notes after each implemented ticket.
   - User can manage update, capture, scanner, and logging settings from one tab.
   - Critical paths (runtime/game data/scanner repo) are visible and editable.
   - Start tab no longer acts as a pseudo-settings screen.
+
+- Progress:
+  - 2026-03-24: PH7-PRD-070 completed (shared app settings now merge safely, scanner repo/logging settings persist, CLI picks up saved default log level, and a dedicated Settings tab centralizes update, scanner, game-data, runtime, and Git controls).
 
 ### PH7-PRD-071 - Help/About tab
 - [ ] Status: TODO

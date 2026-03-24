@@ -118,7 +118,7 @@ CardPanel {
                     }
                     Text {
                         Layout.fillWidth: true
-                        text: "Startup checklist: verify dependencies, then use Scanner or Market actions."
+                        text: "Startup checklist: verify dependencies here, then use Settings for paths/runtime control and continue with Scanner or Market."
                         color: mutedColor
                         font.pixelSize: 11
                         wrapMode: Text.WordWrap
