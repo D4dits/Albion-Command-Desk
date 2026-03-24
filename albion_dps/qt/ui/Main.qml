@@ -918,6 +918,32 @@ ApplicationWindow {
                     }
                 }
             }
+
+            Item {
+                id: helpTabContainer
+                opacity: viewTabs.currentIndex === 5 ? 1.0 : 0.0
+                visible: true
+                Layout.fillHeight: true
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Utils.AnimationUtils.durationNormal
+                        easing.type: Utils.AnimationUtils.easingOut
+                    }
+                }
+
+                HelpTab {
+                    id: helpTab
+                    anchors.fill: parent
+                    compactLayout: root.compactLayout
+                    appVersion: scannerState.appVersion
+                    updateCheckStatus: uiState.updateCheckStatus
+                    configDir: scannerState.configDir
+                    captureRuntimeState: scannerState.captureRuntimeState
+                    gitDetail: scannerState.gitDetail
+                    gameDataDetail: scannerState.gameDataDetail
+                    theme: root.theme
+                }
+            }
         }
 
     }

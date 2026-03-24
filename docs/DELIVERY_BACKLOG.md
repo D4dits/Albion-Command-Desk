@@ -435,7 +435,7 @@ Update status checkboxes and notes after each implemented ticket.
   - 2026-03-24: PH7-PRD-070 completed (shared app settings now merge safely, scanner repo/logging settings persist, CLI picks up saved default log level, and a dedicated Settings tab centralizes update, scanner, game-data, runtime, and Git controls).
 
 ### PH7-PRD-071 - Help/About tab
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: provide in-app troubleshooting, versioning, and release-note visibility.
 - Files:
   1. `albion_dps/qt/ui/HelpTab.qml`
@@ -445,6 +445,9 @@ Update status checkboxes and notes after each implemented ticket.
 - Done when:
   - App version, release notes, support links, and setup help are easy to find.
   - Common dependency errors (Npcap, Git, game data) have direct guidance.
+
+- Progress:
+  - 2026-03-24: PH7-PRD-071 completed (new Help tab exposes app version, website/release/changelog links, troubleshooting entry points, and direct dependency guidance for Npcap, Git, scanner repo, and game data).
 
 ### PH7-PRD-072 - Diagnostics bundle export
 - [ ] Status: TODO
