@@ -450,7 +450,7 @@ Update status checkboxes and notes after each implemented ticket.
   - 2026-03-24: PH7-PRD-071 completed (new Help tab exposes app version, website/release/changelog links, troubleshooting entry points, and direct dependency guidance for Npcap, Git, scanner repo, and game data).
 
 ### PH7-PRD-072 - Diagnostics bundle export
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: make support/debugging reproducible with one exported bundle.
 - Files:
   1. `albion_dps/qt/runner.py`
@@ -460,6 +460,9 @@ Update status checkboxes and notes after each implemented ticket.
 - Done when:
   - User can export logs, version info, runtime state, and selected diagnostics in one zip/txt bundle.
   - Support requests can be handled without manual log hunting.
+
+- Progress:
+  - 2026-03-24: PH7-PRD-072 completed (Scanner and Help tabs can now export a diagnostics zip with summary metadata, scanner log, market diagnostics, and current settings, plus a QA helper verifies the bundle structure).
 
 ### PH7-PRD-073 - Session export and compare
 - [ ] Status: TODO

@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 import signal
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import webbrowser
 import logging
+import zipfile
 from collections import deque
 from datetime import datetime
 from importlib.metadata import PackageNotFoundError, version as package_version
@@ -27,7 +30,7 @@ from albion_dps.capture.npcap_runtime import (
     detect_npcap_runtime,
 )
 from albion_dps.domain.item_db import ensure_game_databases, get_game_database_health
-from albion_dps.settings import load_app_settings, settings_dir, update_app_settings
+from albion_dps.settings import load_app_settings, settings_dir, settings_path, update_app_settings
 
 
 DEFAULT_REPO_URL = "https://github.com/ao-data/albiondata-client.git"
@@ -256,6 +259,61 @@ class ScannerState(QObject):
     def clearLog(self) -> None:
         self._log_lines.clear()
         self.logChanged.emit()
+
+    @Slot(str, str, str, result=str)
+    def exportDiagnosticsBundle(self, update_status: str, market_status: str, market_diagnostics: str) -> str:
+        target_dir = self._config_dir / "diagnostics"
+        try:
+            target_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            target_dir = Path(tempfile.gettempdir()) / "AlbionCommandDesk" / "diagnostics"
+            target_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        bundle_path = target_dir / f"acd-diagnostics-{timestamp}.zip"
+        summary = {
+            "app_version": self._app_version,
+            "platform": sys.platform,
+            "python": sys.version,
+            "config_dir": str(self._config_dir),
+            "settings_path": str(settings_path()),
+            "update_status": str(update_status or ""),
+            "scanner": {
+                "status": self._status_text,
+                "update": self._update_text,
+                "running": bool(self._running),
+                "client_dir": str(self._client_dir),
+                "repo_url": self._repo_url,
+            },
+            "capture_runtime": {
+                "state": self._runtime_state,
+                "detail": self._runtime_detail,
+                "hint": self.captureRuntimeInstallHint,
+            },
+            "git": {
+                "available": bool(self._git_available),
+                "detail": self._git_detail,
+                "hint": self.gitInstallHint,
+            },
+            "game_data": {
+                "ready": bool(self._game_data_ready),
+                "detail": self._game_data_detail,
+                "hint": self._game_data_hint,
+                "root": self._game_data_root,
+            },
+            "market": {
+                "status": str(market_status or ""),
+                "diagnostics_lines": len(str(market_diagnostics or "").splitlines()),
+            },
+        }
+        with zipfile.ZipFile(bundle_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("summary.json", json.dumps(summary, indent=2, sort_keys=True))
+            archive.writestr("scanner.log.txt", self.logText or "")
+            archive.writestr("market.diagnostics.txt", str(market_diagnostics or ""))
+            settings_file = settings_path()
+            if settings_file.exists():
+                archive.write(settings_file, arcname="settings.json")
+        self._append_log(f"Diagnostics bundle exported: {bundle_path}")
+        return str(bundle_path)
 
     @Slot(str)
     def setScannerRepoDir(self, raw_path: str) -> None:

@@ -658,6 +658,16 @@ ApplicationWindow {
                         scannerState.clearLog()
                         toastManager.showInfo("Log cleared", "Scanner log has been cleared")
                     }
+                    onExportDiagnosticsBundle: function() {
+                        var bundlePath = scannerState.exportDiagnosticsBundle(
+                            uiState.updateCheckStatus,
+                            marketSetupState.pricesStatusText,
+                            marketSetupState.diagnosticsText
+                        )
+                        if (bundlePath && bundlePath.length > 0) {
+                            toastManager.showSuccess("Diagnostics exported", bundlePath)
+                        }
+                    }
                     onRefreshCaptureRuntimeStatus: function() {
                         scannerState.refreshCaptureRuntimeStatus()
                         toastManager.showInfo("Runtime check", "Capture runtime status refreshed")
@@ -942,6 +952,16 @@ ApplicationWindow {
                     gitDetail: scannerState.gitDetail
                     gameDataDetail: scannerState.gameDataDetail
                     theme: root.theme
+                    onExportDiagnosticsBundle: function() {
+                        var bundlePath = scannerState.exportDiagnosticsBundle(
+                            uiState.updateCheckStatus,
+                            marketSetupState.pricesStatusText,
+                            marketSetupState.diagnosticsText
+                        )
+                        if (bundlePath && bundlePath.length > 0) {
+                            toastManager.showSuccess("Diagnostics exported", bundlePath)
+                        }
+                    }
                 }
             }
         }

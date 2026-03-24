@@ -1,6 +1,6 @@
 ﻿# Troubleshooting
 
-Before hunting logs manually, check the in-app `Help` tab for release links and dependency guidance, and the `Settings` tab for runtime/game-data/scanner-path status.
+Before hunting logs manually, check the in-app `Help` tab for release links and dependency guidance, the `Settings` tab for runtime/game-data/scanner-path status, and use `Export diagnostics` when you need a support bundle.
 
 ## Quick recover: rerun bootstrap installer
 From repository root, rerun one command:

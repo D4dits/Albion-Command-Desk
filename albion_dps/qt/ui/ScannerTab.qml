@@ -19,6 +19,7 @@ import "." // for CardPanel access
  * - startScannerSudo(): Fired when user clicks Start scanner (sudo)
  * - stopScanner(): Fired when user clicks Stop scanner
  * - clearLog(): Fired when user clicks Clear log
+ * - exportDiagnosticsBundle(): Fired when user exports support bundle
  * - refreshCaptureRuntimeStatus(): Fired when user refreshes runtime diagnostics
  * - openCaptureRuntimeAction(): Fired when user clicks runtime action button
  */
@@ -55,6 +56,7 @@ CardPanel {
     signal startScannerSudo()
     signal stopScanner()
     signal clearLog()
+    signal exportDiagnosticsBundle()
     signal refreshCaptureRuntimeStatus()
     signal openCaptureRuntimeAction()
     signal refreshGitStatus()
@@ -160,6 +162,24 @@ CardPanel {
             onStartScannerSudo: root.startScannerSudo()
             onStopScanner: root.stopScanner()
             onClearLog: root.clearLog()
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            Text {
+                Layout.fillWidth: true
+                text: "Need support data? Export one diagnostics bundle with scanner log, app status, and market diagnostics."
+                color: mutedColor
+                font.pixelSize: 11
+                wrapMode: Text.Wrap
+            }
+            AppButton {
+                text: "Export diagnostics"
+                compact: true
+                onClicked: root.exportDiagnosticsBundle()
+            }
         }
 
         // Log output area

@@ -21,6 +21,8 @@ CardPanel {
     property color textColor: theme.textPrimary
     property color mutedColor: theme.textMuted
 
+    signal exportDiagnosticsBundle()
+
     readonly property string websiteUrl: "https://d4dits.github.io/Albion-Command-Desk/"
     readonly property string releaseUrl: "https://github.com/D4dits/Albion-Command-Desk/releases/latest"
     readonly property string changelogUrl: "https://github.com/D4dits/Albion-Command-Desk/blob/main/CHANGELOG.md"
@@ -188,6 +190,17 @@ CardPanel {
                             color: mutedColor
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
+                        }
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+                            AppButton {
+                                text: "Export diagnostics"
+                                variant: "primary"
+                                compact: true
+                                onClicked: root.exportDiagnosticsBundle()
+                            }
+                            Item { Layout.fillWidth: true }
                         }
                     }
                 }

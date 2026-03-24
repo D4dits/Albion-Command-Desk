@@ -15,6 +15,7 @@ and this project uses semantic versioning.
 - Market workspace now remembers the selected preset between runs, stores the last export directory in app settings, and exposes shopping/selling/results CSV copy/export actions directly in the UI.
 - App settings now merge safely across update, market, scanner, and logging preferences; a new Settings tab centralizes update checks, scanner repo paths, game-data setup, capture runtime, Git status, and default log-level controls.
 - A new Help tab now exposes app version, latest release/changelog links, troubleshooting entry points, and direct dependency guidance for Npcap, Git, scanner repo, and game-data setup.
+- Scanner and Help tabs can now export a diagnostics bundle containing summary metadata, scanner logs, market diagnostics, and current settings for support/debug handoff.
 - Meter history list now preserves scroll position across history model refreshes, keeps `Copy` visible per row, and clips/wraps long history summaries inside the panel.
 - Live meter display now prefers self IDs and recently local party entity IDs once party member IDs are resolved, reducing false-positive party rows from stale/non-local name matches.
 - Name registry now tracks recent local entity observations from live/replay packets for safer UI-side party filtering.

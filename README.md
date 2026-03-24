@@ -11,6 +11,7 @@ External Albion Online companion app (Qt desktop UI):
 - market crafting workspace (setup, inputs, outputs, results)
 - market presets plus shopping/selling/results CSV export
 - dedicated Settings and Help tabs for runtime, paths, updates, and troubleshooting
+- one-click diagnostics bundle export for support/debug handoff
 
 No client hooks, no overlays, no memory editing.
 
