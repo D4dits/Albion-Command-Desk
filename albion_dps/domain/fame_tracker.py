@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from albion_dps.domain.session_activity import SessionActivityEvent
 from albion_dps.models import PhotonMessage, RawPacket
 from albion_dps.protocol.protocol16 import Protocol16Error, decode_event_data
 
@@ -34,6 +35,8 @@ class FameTracker:
     _silver_start_ts: float | None = None
     _silver_last_ts: float | None = None
     _self_source_ids: set[int] = field(default_factory=set)
+    _recent_events: list[SessionActivityEvent] = field(default_factory=list)
+    _recent_limit: int = 24
 
     def observe(self, message: PhotonMessage, packet: RawPacket) -> None:
         if message.event_code is None or message.event_code != FAME_EVENT_CODE:
@@ -67,6 +70,14 @@ class FameTracker:
         if self._start_ts is None:
             self._start_ts = timestamp
         self._last_ts = timestamp
+        self._append_event(
+            SessionActivityEvent(
+                kind="fame",
+                title=f"+{_format_amount(gained)} fame",
+                detail="Combat/session reward",
+                timestamp=timestamp,
+            )
+        )
 
     def _observe_silver(self, parameters: dict[int, object], timestamp: float) -> None:
         if not self._self_source_ids:
@@ -85,10 +96,19 @@ class FameTracker:
         if self._silver_start_ts is None:
             self._silver_start_ts = timestamp
         self._silver_last_ts = timestamp
+        self._append_event(
+            SessionActivityEvent(
+                kind="silver",
+                title=f"+{_format_amount(gained)} silver",
+                detail="Combat/session reward",
+                timestamp=timestamp,
+            )
+        )
 
     def reset(self) -> None:
         self._total_gained = 0
         self._silver_total = 0
+        self._recent_events = []
         if self._last_ts is None:
             self._start_ts = None
         else:
@@ -119,6 +139,16 @@ class FameTracker:
         if elapsed <= 0:
             return 0.0
         return self.silver_total() / (elapsed / 3600.0)
+
+    def recent_events(self, limit: int | None = None) -> list[SessionActivityEvent]:
+        if limit is None:
+            return list(reversed(self._recent_events))
+        return list(reversed(self._recent_events[-max(limit, 0) :]))
+
+    def _append_event(self, event: SessionActivityEvent) -> None:
+        self._recent_events.append(event)
+        if len(self._recent_events) > self._recent_limit:
+            self._recent_events = self._recent_events[-self._recent_limit :]
 
 
 def _compute_gained_fame(parameters: dict[int, object]) -> int | None:
@@ -164,4 +194,8 @@ def _coerce_bool(value: object) -> bool:
     if isinstance(value, float):
         return value != 0.0
     return False
+
+
+def _format_amount(value: int) -> str:
+    return f"{int(value):,}".replace(",", " ")
 

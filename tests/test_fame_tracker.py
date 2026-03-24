@@ -58,7 +58,13 @@ def test_fame_tracker_counts_update_fame() -> None:
     tracker.observe(_message(_SILVER_GAIN_TWO_HEX), _packet(122.0))
     assert tracker.silver_total() == 719
     assert tracker.silver_per_hour() > 0.0
+    recent = tracker.recent_events(limit=4)
+    assert recent[0].kind == "silver"
+    assert recent[0].title == "+159 silver"
+    assert recent[1].title == "+560 silver"
+    assert recent[2].kind == "fame"
 
     tracker.reset()
     assert tracker.total() == 0
     assert tracker.silver_total() == 0
+    assert tracker.recent_events() == []

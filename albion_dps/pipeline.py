@@ -11,6 +11,7 @@ from albion_dps.models import CombatEvent, MeterSnapshot, PhotonMessage, RawPack
 from albion_dps.domain.fame_tracker import FameTracker
 from albion_dps.domain.name_registry import NameRegistry
 from albion_dps.domain.party_registry import PartyRegistry
+from albion_dps.domain.session_activity import MapTrailTracker
 from albion_dps.protocol.combat_mapper import CombatEventMapper
 from albion_dps.protocol.photon_decode import PhotonDecoder
 from albion_dps.protocol.protocol16 import Protocol16Error, decode_event_data
@@ -33,6 +34,7 @@ def replay_snapshots(
     name_registry: NameRegistry | None = None,
     party_registry: PartyRegistry | None = None,
     fame_tracker: FameTracker | None = None,
+    activity_tracker: MapTrailTracker | None = None,
     event_mapper: EventMapper | None = None,
     snapshot_interval: float = 1.0,
 ) -> Iterator[MeterSnapshot]:
@@ -43,6 +45,7 @@ def replay_snapshots(
         name_registry=name_registry,
         party_registry=party_registry,
         fame_tracker=fame_tracker,
+        activity_tracker=activity_tracker,
         event_mapper=event_mapper,
         snapshot_interval=snapshot_interval,
     )
@@ -61,6 +64,7 @@ def live_snapshots(
     name_registry: NameRegistry | None = None,
     party_registry: PartyRegistry | None = None,
     fame_tracker: FameTracker | None = None,
+    activity_tracker: MapTrailTracker | None = None,
     event_mapper: EventMapper | None = None,
     snapshot_interval: float = 1.0,
 ) -> Iterator[MeterSnapshot]:
@@ -81,6 +85,7 @@ def live_snapshots(
         name_registry=name_registry,
         party_registry=party_registry,
         fame_tracker=fame_tracker,
+        activity_tracker=activity_tracker,
         event_mapper=event_mapper,
         snapshot_interval=snapshot_interval,
     )
@@ -94,6 +99,7 @@ def stream_snapshots(
     name_registry: NameRegistry | None = None,
     party_registry: PartyRegistry | None = None,
     fame_tracker: FameTracker | None = None,
+    activity_tracker: MapTrailTracker | None = None,
     event_mapper: EventMapper | None = None,
     snapshot_interval: float = 1.0,
 ) -> Iterator[MeterSnapshot]:
@@ -139,6 +145,8 @@ def stream_snapshots(
                 last_membership_version = membership_version
             if fame_tracker is not None:
                 fame_tracker.observe(message, packet)
+            if activity_tracker is not None:
+                activity_tracker.observe_message(message, packet)
             if hasattr(meter, "observe_message"):
                 try:
                     meter.observe_message(message, packet)

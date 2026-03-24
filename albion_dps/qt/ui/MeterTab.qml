@@ -40,6 +40,7 @@ Item {
     // Models
     property var playersModel: null
     property var historyModel: null
+    property var sessionActivityModel: null
 
     // UI flags
     property bool compactLayout: false
@@ -277,6 +278,15 @@ Item {
                     famePerHourText: root.famePerHourText
                     silverText: root.silverText
                     silverPerHourText: root.silverPerHourText
+                }
+
+                MeterSessionActivityPanel {
+                    id: meterSessionActivity
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: root.stackedLayout ? 160 : 190
+                    Layout.minimumHeight: 140
+                    theme: root.theme
+                    activityModel: root.sessionActivityModel
                 }
             }
         }

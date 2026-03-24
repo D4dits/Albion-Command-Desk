@@ -19,6 +19,7 @@ from PySide6.QtCore import (
 )
 
 from albion_dps.meter.session_meter import SessionEntry, SessionSummary
+from albion_dps.domain.session_activity import SessionActivityEvent
 from albion_dps.settings import AppSettings, load_app_settings, save_app_settings
 from albion_dps.domain.weapon_colors import WEAPON_COLORS
 
@@ -75,6 +76,13 @@ class HistoryRow:
     players: str
     copy_text: str
     selected: bool
+
+
+@dataclass(frozen=True)
+class ActivityRow:
+    title: str
+    meta: str
+    kind: str
 
 
 class PlayerModel(QAbstractListModel):
@@ -206,6 +214,48 @@ class HistoryModel(QAbstractListModel):
         return self._items[index].copy_text
 
 
+class ActivityModel(QAbstractListModel):
+    TitleRole = Qt.UserRole + 1
+    MetaRole = Qt.UserRole + 2
+    KindRole = Qt.UserRole + 3
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._items: list[ActivityRow] = []
+
+    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
+        return len(self._items)
+
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
+        if not index.isValid():
+            return None
+        row = index.row()
+        if row < 0 or row >= len(self._items):
+            return None
+        item = self._items[row]
+        if role == self.TitleRole:
+            return item.title
+        if role == self.MetaRole:
+            return item.meta
+        if role == self.KindRole:
+            return item.kind
+        return None
+
+    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
+        return {
+            self.TitleRole: b"title",
+            self.MetaRole: b"meta",
+            self.KindRole: b"kind",
+        }
+
+    def set_items(self, items: list[ActivityRow]) -> None:
+        if list(items) == self._items:
+            return
+        self.beginResetModel()
+        self._items = list(items)
+        self.endResetModel()
+
+
 class UiState(QObject):
     modeChanged = Signal()
     zoneChanged = Signal()
@@ -245,6 +295,7 @@ class UiState(QObject):
         self._set_mode_callback = set_mode_callback
         self._players = PlayerModel()
         self._history = HistoryModel()
+        self._activity = ActivityModel()
         self._last_snapshot = None
         self._last_names: dict[int, str] = {}
         self._last_history: list[SessionSummary] = []
@@ -305,6 +356,10 @@ class UiState(QObject):
     @Property(QObject, constant=True)
     def historyModel(self) -> QObject:
         return self._history
+
+    @Property(QObject, constant=True)
+    def sessionActivityModel(self) -> QObject:
+        return self._activity
 
     @Property(int, constant=True)
     def historyLimit(self) -> int:
@@ -534,6 +589,7 @@ class UiState(QObject):
         fame_per_hour: float,
         silver_total: int,
         silver_per_hour: float,
+        activity: list[SessionActivityEvent] | None = None,
         allowed_player_names: set[str] | None = None,
     ) -> None:
         self._last_snapshot = snapshot
@@ -553,6 +609,7 @@ class UiState(QObject):
             silver_total,
             silver_per_hour,
         )
+        self._activity.set_items(_build_activity_rows(activity or []))
         self._sync_selected_history_index()
         self._refresh_player_table()
         self._refresh_history_table()
@@ -1096,6 +1153,20 @@ def _compare_metric_line(label: str, current: float, other: float, *, unit: str 
         other_text = f"{other_text}{suffix}"
         delta_text = f"{delta_text}{suffix}"
     return f"{label}: {current_text} vs {other_text} ({delta_text})"
+
+
+def _build_activity_rows(events: list[SessionActivityEvent]) -> list[ActivityRow]:
+    rows: list[ActivityRow] = []
+    for event in events:
+        timestamp = datetime.fromtimestamp(event.timestamp).strftime("%H:%M:%S") if event.timestamp > 0 else "--:--:--"
+        rows.append(
+            ActivityRow(
+                title=event.title,
+                meta=f"{event.detail} | {timestamp}",
+                kind=event.kind,
+            )
+        )
+    return rows
 
 
 def _format_int(value: float) -> int:

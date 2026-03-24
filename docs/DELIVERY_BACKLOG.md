@@ -480,7 +480,7 @@ Update status checkboxes and notes after each implemented ticket.
   - 2026-03-24: PH7-PRD-073 completed (Meter history now exports TXT/CSV/JSON archives, persists a dedicated meter export directory, and shows an in-app selected-session KPI compare panel with copy/export actions).
 
 ### PH7-PRD-074 - Loot/session map history
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: add safe post-analysis features inspired by reference projects without moving into overlay/radar territory.
 - Files:
   1. `albion_dps/domain/`
@@ -489,6 +489,9 @@ Update status checkboxes and notes after each implemented ticket.
 - Done when:
   - Session map trail and passive loot/session history are available.
   - No live overlay, radar, or auto-alert behavior is introduced.
+
+- Progress:
+  - 2026-03-24: PH7-PRD-074 completed as a safe session-activity trail (map transitions plus passive fame/silver reward history) surfaced in the Meter sidebar, with no overlay/radar/auto-alert behavior added.
 
 ## Ticket Queue (Execution Order)
 

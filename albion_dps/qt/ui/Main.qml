@@ -566,6 +566,7 @@ ApplicationWindow {
                     // Models
                     playersModel: uiState.playersModel
                     historyModel: uiState.historyModel
+                    sessionActivityModel: uiState.sessionActivityModel
 
                     // UI flags
                     compactLayout: root.compactLayout

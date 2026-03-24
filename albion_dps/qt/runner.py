@@ -15,7 +15,14 @@ from albion_dps.capture.npcap_runtime import (
     detect_npcap_runtime,
 )
 from albion_dps.capture.startup_policy import decide_live_startup
-from albion_dps.domain import FameTracker, NameRegistry, PartyRegistry, load_item_resolver
+from albion_dps.domain import (
+    FameTracker,
+    MapTrailTracker,
+    NameRegistry,
+    PartyRegistry,
+    SessionActivityEvent,
+    load_item_resolver,
+)
 from albion_dps.domain.item_db import ensure_game_databases
 from albion_dps.domain.map_resolver import load_map_resolver
 from albion_dps.market.service import MarketDataService
@@ -53,11 +60,12 @@ def run_qt(args: argparse.Namespace) -> int:
     from albion_dps.qt.market import MarketSetupState
     from albion_dps.qt.scanner import ScannerState
 
-    names, party, fame, meter, decoder, mapper = _build_runtime(args)
+    names, party, fame, meter, map_trail, decoder, mapper = _build_runtime(args)
     ensure_game_databases(logger=logging.getLogger(__name__), interactive=False)
     item_resolver = load_item_resolver(logger=logging.getLogger(__name__))
     map_resolver = load_map_resolver(logger=logging.getLogger(__name__))
     meter.map_lookup = map_resolver.name_for_index
+    map_trail.map_lookup = map_resolver.name_for_index
 
     def role_lookup(entity_id: int) -> str | None:
         items = names.items_for(entity_id)
@@ -69,7 +77,7 @@ def run_qt(args: argparse.Namespace) -> int:
     def weapon_lookup(entity_id: int):
         items = names.items_for(entity_id)
         return item_resolver.weapon_info_for_items(items)
-    snapshots = _build_snapshot_stream(args, names, party, fame, meter, decoder, mapper)
+    snapshots = _build_snapshot_stream(args, names, party, fame, meter, map_trail, decoder, mapper)
     if snapshots is None:
         return 1
 
@@ -172,6 +180,7 @@ def run_qt(args: argparse.Namespace) -> int:
             party=party,
             name_registry=names,
             fame=fame,
+            map_trail=map_trail,
             stop_event=stop_event,
         )
 
@@ -203,6 +212,7 @@ def _build_snapshot_stream(
     party: PartyRegistry,
     fame: FameTracker,
     meter: SessionMeter,
+    map_trail: MapTrailTracker,
     decoder: PhotonDecoder,
     mapper: CombatEventMapper,
 ) -> Iterable[MeterSnapshot] | None:
@@ -220,6 +230,7 @@ def _build_snapshot_stream(
             name_registry=names,
             party_registry=party,
             fame_tracker=fame,
+            activity_tracker=map_trail,
             event_mapper=mapper.map,
             snapshot_interval=1.0,
         )
@@ -291,6 +302,7 @@ def _build_snapshot_stream(
             name_registry=names,
             party_registry=party,
             fame_tracker=fame,
+            activity_tracker=map_trail,
             event_mapper=mapper.map,
             snapshot_interval=1.0,
         )
@@ -348,6 +360,7 @@ def _build_runtime(
     PartyRegistry,
     FameTracker,
     SessionMeter,
+    MapTrailTracker,
     PhotonDecoder,
     CombatEventMapper,
 ]:
@@ -358,6 +371,7 @@ def _build_runtime(
     names = NameRegistry()
     party = PartyRegistry()
     fame = FameTracker()
+    map_trail = MapTrailTracker()
     meter = SessionMeter(
         window_seconds=10.0,
         battle_timeout_seconds=args.battle_timeout,
@@ -369,7 +383,7 @@ def _build_runtime(
         party.set_self_name(args.self_name, confirmed=True)
     if args.self_id is not None:
         party.seed_self_ids([args.self_id])
-    return names, party, fame, meter, decoder, mapper
+    return names, party, fame, meter, map_trail, decoder, mapper
 
 
 def _produce_snapshots(
@@ -396,6 +410,7 @@ def _drain_snapshots(
     party: PartyRegistry,
     name_registry: NameRegistry | None,
     fame: FameTracker,
+    map_trail: MapTrailTracker,
     stop_event: threading.Event,
 ) -> None:
     while True:
@@ -423,11 +438,29 @@ def _drain_snapshots(
             fame_per_hour=fame.per_hour(),
             silver_total=fame.silver_total(),
             silver_per_hour=fame.silver_per_hour(),
+            activity=_combine_session_activity(
+                reward_events=fame.recent_events(limit=10),
+                map_events=map_trail.events(limit=10),
+            ),
             allowed_player_names=allowed_names or None,
         )
 
 
 LOCAL_PARTY_VISIBILITY_SECONDS = 20.0
+
+
+def _combine_session_activity(
+    *,
+    reward_events: list[SessionActivityEvent],
+    map_events: list[SessionActivityEvent],
+    limit: int = 12,
+) -> list[SessionActivityEvent]:
+    merged = sorted(
+        [*reward_events, *map_events],
+        key=lambda item: item.timestamp,
+        reverse=True,
+    )
+    return merged[: max(limit, 0)]
 
 
 def _allowed_display_names_for_snapshot(
