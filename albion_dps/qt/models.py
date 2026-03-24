@@ -139,6 +139,8 @@ class PlayerModel(QAbstractListModel):
         }
 
     def set_items(self, items: list[PlayerRow]) -> None:
+        if list(items) == self._items:
+            return
         self.beginResetModel()
         self._items = list(items)
         self.endResetModel()
@@ -187,6 +189,8 @@ class HistoryModel(QAbstractListModel):
         }
 
     def set_items(self, items: list[HistoryRow]) -> None:
+        if list(items) == self._items:
+            return
         self.beginResetModel()
         self._items = list(items)
         self.endResetModel()

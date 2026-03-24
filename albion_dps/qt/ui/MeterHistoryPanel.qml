@@ -76,7 +76,7 @@ Item {
             delegate: Rectangle {
                 id: historyRow
                 width: Math.max(0, ListView.view.width - 6)
-                height: 98
+                height: Math.max(98, historyRowContent.implicitHeight + 16)
                 radius: 6
                 clip: true
                 property bool hovered: historyHover.containsMouse
@@ -93,6 +93,7 @@ Item {
                 }
 
                 ColumnLayout {
+                    id: historyRowContent
                     anchors.fill: parent
                     anchors.margins: 8
                     spacing: 4
@@ -129,8 +130,7 @@ Item {
                         color: root.theme.tableTextPrimary
                         font.pixelSize: 11
                         wrapMode: Text.WordWrap
-                        elide: Text.ElideRight
-                        maximumLineCount: 2
+                        maximumLineCount: 3
                         clip: true
                     }
                 }
