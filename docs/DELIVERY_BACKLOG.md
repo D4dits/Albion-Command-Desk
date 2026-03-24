@@ -296,7 +296,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Zone/cluster transitions do not permanently break party filtering.
 
 ### PH5-MTR-051 - Battle continuity hardening
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: stop mid-fight resets/freezes and keep active battle state coherent.
 - Files:
   1. `albion_dps/meter/session_meter.py`
@@ -611,6 +611,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-03-24: PH5-MTR-051 completed (battle sessions now ignore stale combat-stop markers while fresh combat events continue, short-gap merged summaries preserve `totals_by_id`, and continuity regressions are locked in `tests/test_session_meter.py`).
 - 2026-03-24: PH5-MTR-054 completed (pcap53 fame/silver totals are now regression-locked, session rate strings stay stable, and the session-gains panel falls back to a single-column grid at narrow widths).
 - 2026-03-24: PH5-MTR-053 completed (meter now switches to stacked layout earlier, compact control groups adapt to narrow widths, and scoreboard content uses controlled horizontal overflow instead of clipping columns).
 - 2026-03-24: PH5-MTR-052 completed (history rows now preserve scroll position across unchanged model refreshes, long summaries wrap inside card bounds, and `Copy` remains consistently visible).

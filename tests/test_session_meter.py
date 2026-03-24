@@ -129,6 +129,24 @@ def test_battle_mode_merges_short_gaps() -> None:
     assert history[0].total_damage == 15.0
 
 
+def test_battle_mode_does_not_end_on_combat_state_if_damage_continues() -> None:
+    meter = SessionMeter(history_limit=5, mode="battle")
+
+    meter.observe_combat_state(1, True, False, 0.0)
+    meter.push(CombatEvent(1.0, 1, 2, 10, "damage"))
+    meter.observe_combat_state(1, False, False, 2.0)
+
+    meter.push(CombatEvent(4.0, 1, 2, 7, "damage"))
+    meter.observe_packet(_packet(7.1))
+    assert meter.history() == []
+
+    meter.observe_packet(_packet(9.2))
+    history = meter.history()
+    assert len(history) == 1
+    assert history[0].reason == "combat_state"
+    assert history[0].total_damage == 17.0
+
+
 def test_history_preserves_source_ids_for_replay_view() -> None:
     meter = SessionMeter(history_limit=5, mode="battle")
     meter.push(CombatEvent(0.0, 111, 2, 100, "damage"))
@@ -164,3 +182,21 @@ def test_history_collapses_multiple_source_ids_with_same_label() -> None:
     assert summary.entries[0].label == "D4dits"
     assert summary.entries[0].damage == 140.0
     assert summary.entries[0].source_id is None
+
+
+def test_merged_history_preserves_totals_by_id_for_relabeling() -> None:
+    meter = SessionMeter(battle_timeout_seconds=1.0, history_limit=5, mode="battle")
+
+    meter.observe_packet(_packet(0.0))
+    meter.push(CombatEvent(0.0, 111, 2, 10, "damage"))
+    meter.observe_packet(_packet(2.0))
+
+    meter.push(CombatEvent(2.5, 222, 2, 5, "damage"))
+    meter.observe_packet(_packet(4.0))
+
+    history = meter.history()
+    assert len(history) == 1
+    summary = history[0]
+    assert 111 in summary.totals_by_id
+    assert 222 in summary.totals_by_id
+    assert sum(entry.damage for entry in summary.entries) == 15.0

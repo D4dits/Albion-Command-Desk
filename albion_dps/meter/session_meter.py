@@ -123,6 +123,18 @@ class SessionMeter:
                 return
         self._end_session(end_ts, "stream_end")
 
+    def _combat_end_ready(self, now_ts: float) -> bool:
+        if self._combat_end_ts is None:
+            return False
+        last_activity_ts = self._last_combat_event_ts
+        if last_activity_ts is None:
+            return now_ts - self._combat_end_ts >= COMBAT_END_GRACE_SECONDS
+        # Combat-state events can briefly drop while party damage/heal events
+        # continue to stream in. Only honor the combat-state stop once both the
+        # stop marker and the last observed combat activity are outside grace.
+        effective_end_ts = max(self._combat_end_ts, last_activity_ts)
+        return now_ts - effective_end_ts >= COMBAT_END_GRACE_SECONDS
+
     def observe_message(self, message: PhotonMessage, packet: RawPacket | None = None) -> None:
         map_index = extract_map_index(message)
         if not map_index:
@@ -166,7 +178,7 @@ class SessionMeter:
             self.mode == "battle"
             and self._active
             and self._combat_end_ts is not None
-            and packet.timestamp - self._combat_end_ts >= COMBAT_END_GRACE_SECONDS
+            and self._combat_end_ready(packet.timestamp)
         ):
             end_ts = self._combat_end_ts
             if self._last_event_ts is not None and self._last_event_ts > end_ts:
@@ -472,16 +484,36 @@ class SessionMeter:
             last = history[-1]
             gap = start_ts - last.end_ts
             if gap <= COMBAT_MERGE_GAP_SECONDS:
-                grouped: dict[str, tuple[float, float]] = {
-                    entry.label: (entry.damage, entry.heal) for entry in last.entries
-                }
-                for entry in summary.entries:
-                    damage, heal = grouped.get(entry.label, (0.0, 0.0))
-                    grouped[entry.label] = (damage + entry.damage, heal + entry.heal)
                 merged_start = last.start_ts
                 merged_end = summary.end_ts
                 merged_duration = max(merged_end - merged_start, 0.0)
-                merged_entries = _build_entries_from_grouped(grouped, merged_duration)
+                merged_totals_by_id = _merge_totals(last.totals_by_id, summary.totals_by_id)
+                if merged_totals_by_id:
+                    merged_entries = _build_entries_from_totals_by_id(
+                        merged_totals_by_id,
+                        merged_duration,
+                        self.name_lookup,
+                        label_overrides={
+                            **{
+                                int(entry.source_id): entry.label
+                                for entry in last.entries
+                                if entry.source_id is not None and entry.label
+                            },
+                            **{
+                                int(entry.source_id): entry.label
+                                for entry in summary.entries
+                                if entry.source_id is not None and entry.label
+                            },
+                        },
+                    )
+                else:
+                    grouped: dict[str, tuple[float, float]] = {
+                        entry.label: (entry.damage, entry.heal) for entry in last.entries
+                    }
+                    for entry in summary.entries:
+                        damage, heal = grouped.get(entry.label, (0.0, 0.0))
+                        grouped[entry.label] = (damage + entry.damage, heal + entry.heal)
+                    merged_entries = _build_entries_from_grouped(grouped, merged_duration)
                 merged_total_damage = sum(entry.damage for entry in merged_entries)
                 merged_total_heal = sum(entry.heal for entry in merged_entries)
                 history[-1] = SessionSummary(
@@ -494,6 +526,7 @@ class SessionMeter:
                     total_damage=merged_total_damage,
                     total_heal=merged_total_heal,
                     reason=last.reason,
+                    totals_by_id=merged_totals_by_id,
                 )
             else:
                 history.append(summary)
@@ -608,6 +641,25 @@ def _clone_totals(totals: dict[int, dict[str, float]]) -> dict[int, dict[str, fl
             "hps": float(stats.get("hps", 0.0)),
         }
     return cloned
+
+
+def _merge_totals(
+    left: dict[int, dict[str, float]],
+    right: dict[int, dict[str, float]],
+) -> dict[int, dict[str, float]]:
+    if not left and not right:
+        return {}
+    merged = _clone_totals(left)
+    for source_id, stats in right.items():
+        existing = merged.setdefault(
+            source_id,
+            {"damage": 0.0, "heal": 0.0, "dps": 0.0, "hps": 0.0},
+        )
+        existing["damage"] = float(existing.get("damage", 0.0)) + float(stats.get("damage", 0.0))
+        existing["heal"] = float(existing.get("heal", 0.0)) + float(stats.get("heal", 0.0))
+        existing["dps"] = 0.0
+        existing["hps"] = 0.0
+    return merged
 
 
 def _infer_zone_key(packet: RawPacket) -> str | None:
