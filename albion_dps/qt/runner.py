@@ -442,10 +442,17 @@ def _allowed_display_names_for_snapshot(
     party_ids = party.snapshot_ids()
     non_self_party_ids = party_ids.difference(self_ids)
 
-    for entity_id in self_ids:
+    def add_allowed_label(entity_id: int) -> None:
         resolved = names.get(entity_id)
+        if not resolved and name_registry is not None:
+            resolved = name_registry.lookup(entity_id)
         if isinstance(resolved, str) and resolved:
             allowed_names.add(resolved)
+            return
+        allowed_names.add(str(entity_id))
+
+    for entity_id in self_ids:
+        add_allowed_label(entity_id)
 
     if not non_self_party_ids:
         allowed_names.update(
@@ -466,9 +473,7 @@ def _allowed_display_names_for_snapshot(
         )
     display_party_ids = non_self_party_ids.intersection(active_ids.union(recent_local_ids))
     for entity_id in display_party_ids:
-        resolved = names.get(entity_id)
-        if isinstance(resolved, str) and resolved:
-            allowed_names.add(resolved)
+        add_allowed_label(entity_id)
     return allowed_names
 
 
