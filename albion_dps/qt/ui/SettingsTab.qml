@@ -32,7 +32,7 @@ CardPanel {
     property string gameDataActionLabel: "Select game folder"
 
     property bool compactLayout: false
-    property bool twoColumn: width >= 1220
+    property bool twoColumn: true
     property int contentPadding: compactLayout ? 8 : 12
     property int contentSpacing: compactLayout ? 8 : 10
 

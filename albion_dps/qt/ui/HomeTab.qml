@@ -38,9 +38,9 @@ CardPanel {
     property bool compactLayout: false
     property int contentPadding: compactLayout ? 8 : 12
     property int contentSpacing: compactLayout ? 8 : 10
-    property bool showBrandTile: width >= 1080
-    property bool statusTwoColumn: width >= 760
-    property bool dashboardTwoColumn: width >= 940
+    property bool showBrandTile: true
+    property bool statusTwoColumn: true
+    property bool dashboardTwoColumn: true
 
     // Theme
     property var theme: null

@@ -44,7 +44,7 @@ Item {
 
     // UI flags
     property bool compactLayout: false
-    property bool stackedLayout: width < 1400
+    property bool stackedLayout: width < 900
     property bool historyAvailable: historyModel && historyModel.count > 0
 
     // Signals to notify parent of actions
