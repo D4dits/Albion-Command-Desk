@@ -39,8 +39,8 @@ CardPanel {
     property int contentPadding: compactLayout ? 8 : 12
     property int contentSpacing: compactLayout ? 8 : 10
     property bool showBrandTile: width >= 1080
-    property bool statusTwoColumn: width >= 900
-    property bool dashboardTwoColumn: width >= 1040
+    property bool statusTwoColumn: width >= 760
+    property bool dashboardTwoColumn: width >= 940
 
     // Theme
     property var theme: null
@@ -118,7 +118,7 @@ CardPanel {
                     }
                     Text {
                         Layout.fillWidth: true
-                        text: "Startup checklist: verify dependencies here, then move to Scanner or Market. Settings holds paths and runtime controls."
+                        text: "Verify runtime dependencies here, then move to Scanner or Market. Settings keeps paths and runtime controls."
                         color: mutedColor
                         font.pixelSize: 11
                         wrapMode: Text.WordWrap

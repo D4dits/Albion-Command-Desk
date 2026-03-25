@@ -15,7 +15,10 @@ CardPanel {
     property string gitDetail: ""
     property string gameDataDetail: ""
     property bool compactLayout: false
-    property bool twoColumn: width >= 1180
+    property int contentPadding: compactLayout ? 8 : 12
+    property int contentSpacing: compactLayout ? 8 : 10
+    property bool showBrandTile: width >= 1080
+    property bool dashboardTwoColumn: width >= 940
 
     property var theme: null
     property color textColor: theme.textPrimary
@@ -39,42 +42,92 @@ CardPanel {
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
-            width: Math.max(helpScroll.availableWidth - 24, 360)
-            x: 12
-            y: 12
-            spacing: compactLayout ? 8 : 10
+            width: Math.max(helpScroll.availableWidth - (root.contentPadding * 2), 360)
+            x: root.contentPadding
+            y: root.contentPadding
+            spacing: root.contentSpacing
 
-            Text {
-                text: "Help"
-                color: textColor
-                font.pixelSize: 14
-                font.bold: true
-            }
-            Text {
+            RowLayout {
                 Layout.fillWidth: true
-                text: "Version, release notes, dependency guidance, and support entry points."
-                color: mutedColor
-                font.pixelSize: 11
-                wrapMode: Text.WordWrap
+                spacing: 12
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+
+                    Text {
+                        text: "Help"
+                        color: textColor
+                        font.pixelSize: 14
+                        font.bold: true
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Release links, dependency guidance, troubleshooting, and diagnostics export."
+                        color: mutedColor
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                TableSurface {
+                    visible: root.showBrandTile
+                    level: 1
+                    Layout.preferredWidth: 194
+                    Layout.minimumWidth: 194
+                    Layout.preferredHeight: 84
+                    Layout.minimumHeight: 84
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 10
+
+                        Image {
+                            source: "command_desk_icon.png"
+                            sourceSize.width: 40
+                            sourceSize.height: 40
+                            fillMode: Image.PreserveAspectFit
+                            Layout.preferredWidth: 40
+                            Layout.preferredHeight: 40
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+
+                            Text {
+                                text: "Command Desk"
+                                color: textColor
+                                font.pixelSize: 12
+                                font.bold: true
+                            }
+                            Text {
+                                text: "Operator handbook"
+                                color: mutedColor
+                                font.pixelSize: 10
+                            }
+                        }
+                    }
+                }
             }
 
             GridLayout {
                 Layout.fillWidth: true
-                columns: root.twoColumn ? 2 : 1
+                columns: root.dashboardTwoColumn ? 2 : 1
                 columnSpacing: 10
                 rowSpacing: 10
 
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
-                    implicitHeight: 164
+                    implicitHeight: 154
 
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 10
                         spacing: 8
 
-                        Text { text: "About Albion Command Desk"; color: textColor; font.pixelSize: 12; font.bold: true }
+                        Text { text: "Release center"; color: textColor; font.pixelSize: 12; font.bold: true }
                         Text { text: "Version: " + root.appVersion; color: textColor; font.pixelSize: 11; font.bold: true }
                         Text {
                             Layout.fillWidth: true
@@ -94,7 +147,7 @@ CardPanel {
                             Layout.fillWidth: true
                             spacing: 6
                             AppButton { text: "Website"; compact: true; onClicked: Qt.openUrlExternally(root.websiteUrl) }
-                            AppButton { text: "Latest release"; compact: true; onClicked: Qt.openUrlExternally(root.releaseUrl) }
+                            AppButton { text: "Release"; compact: true; onClicked: Qt.openUrlExternally(root.releaseUrl) }
                             AppButton { text: "Changelog"; compact: true; onClicked: Qt.openUrlExternally(root.changelogUrl) }
                         }
                     }
@@ -103,7 +156,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
-                    implicitHeight: 164
+                    implicitHeight: 154
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -145,14 +198,14 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
-                    implicitHeight: 150
+                    implicitHeight: 154
 
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 10
                         spacing: 8
 
-                        Text { text: "Common fixes"; color: textColor; font.pixelSize: 12; font.bold: true }
+                        Text { text: "Troubleshooting"; color: textColor; font.pixelSize: 12; font.bold: true }
                         Text {
                             Layout.fillWidth: true
                             text: "\u2022 Missing Npcap: install Npcap Runtime, then restart the app.\n\u2022 Missing Git: install Git, restart, then use Scanner sync/update.\n\u2022 Missing game data: run Game data setup from Settings.\n\u2022 Capture problems: try the correct interface and confirm live mode prerequisites."
@@ -171,24 +224,24 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
-                    implicitHeight: 150
+                    implicitHeight: 154
 
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 10
                         spacing: 8
 
-                        Text { text: "Support"; color: textColor; font.pixelSize: 12; font.bold: true }
+                        Text { text: "Diagnostics"; color: textColor; font.pixelSize: 12; font.bold: true }
                         Text {
                             Layout.fillWidth: true
-                            text: "Use this tab as the operator handbook: website, releases, changelog, troubleshooting, and dependency download pages are one click away."
+                            text: "Export diagnostics before reporting problems with capture, market, or scanner workflows."
                             color: mutedColor
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: "For bug reports, include version, current update status, scanner log excerpt, and market diagnostics when relevant."
+                            text: "Include version, update status, scanner log excerpt, and market diagnostics when relevant."
                             color: mutedColor
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
