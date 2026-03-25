@@ -496,6 +496,83 @@ Update status checkboxes and notes after each implemented ticket.
 - Progress:
   - 2026-03-24: PH7-PRD-074 completed as a safe session-activity trail (map transitions plus passive fame/silver reward history) surfaced in the Meter sidebar, with no overlay/radar/auto-alert behavior added.
 
+## Active Milestone - Phase 8 (Responsive shell + layout modernization)
+
+### PH8-UXR-080 - Supported window contract
+- [x] Status: DONE
+- Goal: stop unsupported window sizes from producing broken layouts and give every tab the same shell constraints.
+- Files:
+  1. `albion_dps/qt/ui/Theme.qml`
+  2. `albion_dps/qt/ui/Main.qml`
+  3. `docs/UX_RESPONSIVE_LAYOUT_PLAN.md`
+- Done when:
+  - Default and minimum window sizes are tokenized in `Theme.qml`.
+  - `Main.qml` consumes those tokens instead of hardcoded geometry.
+  - Responsive breakpoints are documented as the contract for subsequent UI tickets.
+
+### PH8-UXR-081 - Start tab compact redesign
+- [ ] Status: IN PROGRESS
+- Goal: remove wasted space and give Start a dense, readable system dashboard.
+- Files:
+  1. `albion_dps/qt/ui/HomeTab.qml`
+  2. `albion_dps/qt/ui/components/`
+  3. `tests/test_qml_home_tab.py`
+- Done when:
+  - Start uses space efficiently at the supported minimum size.
+  - Health cards, update checks, and shortcuts read as one coherent dashboard.
+  - No clipped or uneven sections remain.
+
+### PH8-UXR-082 - Meter adaptive layout redesign
+- [ ] Status: IN PROGRESS
+- Goal: make Meter readable and stable at the supported minimum size without layout collapse.
+- Files:
+  1. `albion_dps/qt/ui/MeterTab.qml`
+  2. `albion_dps/qt/ui/MeterScoreboard.qml`
+  3. `albion_dps/qt/ui/MeterHistoryPanel.qml`
+  4. `tests/test_qml_meter_tab.py`
+- Done when:
+  - Scoreboard, history, and session panels stay readable at minimum size.
+  - Update banner/header actions never obscure meter controls.
+  - Horizontal overflow is controlled, not accidental.
+
+### PH8-UXR-083 - Market layout containment pass
+- [ ] Status: TODO
+- Goal: keep setup/table/results readable without accidental clipping or dead space.
+- Files:
+  1. `albion_dps/qt/ui/MarketTab.qml`
+  2. `albion_dps/qt/ui/MarketSetupPanel.qml`
+  3. `albion_dps/qt/ui/MarketCraftsTable.qml`
+  4. `tests/test_qml_market_tab.py`
+- Done when:
+  - Setup panel width and scroll behavior remain stable.
+  - Table toolbars and content stay accessible at supported sizes.
+  - Results/header stats do not drift or collapse awkwardly.
+
+### PH8-UXR-084 - Scanner/Settings/Help consistency pass
+- [ ] Status: TODO
+- Goal: align non-meter tabs to the same card density, spacing, and responsive behavior.
+- Files:
+  1. `albion_dps/qt/ui/ScannerTab.qml`
+  2. `albion_dps/qt/ui/SettingsTab.qml`
+  3. `albion_dps/qt/ui/HelpTab.qml`
+  4. `tests/test_qt_smoke.py`
+- Done when:
+  - Utility tabs share the same visual density and breakpoint behavior.
+  - Primary actions remain visible without overlap or orphan gaps.
+
+### PH8-UXR-085 - Header and update CTA redesign
+- [ ] Status: TODO
+- Goal: modernize the header so updates/support actions remain compact, readable, and intentional.
+- Files:
+  1. `albion_dps/qt/ui/AppHeader.qml`
+  2. `albion_dps/qt/ui/UpdateBanner.qml`
+  3. `albion_dps/qt/ui/Main.qml`
+  4. `tests/test_qt_update_banner.py`
+- Done when:
+  - Update CTA never looks truncated or visually broken.
+  - Support actions scale gracefully across supported widths.
+  - Header metadata and actions feel balanced rather than crowded.
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract

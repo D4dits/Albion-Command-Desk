@@ -9,10 +9,10 @@ import "utils" 1.0 as HelperUtils
 ApplicationWindow {
     id: root
     visible: true
-    width: 1120
-    height: 720
-    minimumWidth: 1120
-    minimumHeight: 700
+    width: theme.windowDefaultWidth
+    height: theme.windowDefaultHeight
+    minimumWidth: theme.windowMinWidth
+    minimumHeight: theme.windowMinHeight
     title: "Albion Command Desk"
     color: Theme.surfaceApp
 
@@ -25,7 +25,7 @@ ApplicationWindow {
     property color borderColor: theme.borderSubtle
     property bool compactLayout: width < theme.breakpointCompact
     property bool narrowLayout: width < theme.breakpointNarrow
-    property bool veryNarrowLayout: width < 980
+    property bool veryNarrowLayout: width < theme.breakpointStacked
     property int compactControlHeight: theme.controlHeightCompact
     property int marketColumnSpacing: theme.marketColumnSpacing
     property int marketSetupPanelWidth: theme.marketSetupPanelWidth

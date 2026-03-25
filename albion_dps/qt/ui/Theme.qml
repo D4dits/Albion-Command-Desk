@@ -137,8 +137,13 @@ QtObject {
     readonly property int motionFastMs: 100
     readonly property int motionNormalMs: 140
     readonly property int motionSlowMs: 180
+    readonly property int windowDefaultWidth: 1240
+    readonly property int windowDefaultHeight: 820
+    readonly property int windowMinWidth: 1180
+    readonly property int windowMinHeight: 760
     readonly property int breakpointCompact: 1320
     readonly property int breakpointNarrow: 1160
+    readonly property int breakpointStacked: 980
 
     // Shell tokens
     readonly property int shellHeaderHeight: 72
