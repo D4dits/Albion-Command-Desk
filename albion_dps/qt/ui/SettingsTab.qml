@@ -32,7 +32,7 @@ CardPanel {
     property string gameDataActionLabel: "Select game folder"
 
     property bool compactLayout: false
-    property bool twoColumn: width >= 940
+    property bool twoColumn: width >= 1220
     property int contentPadding: compactLayout ? 8 : 12
     property int contentSpacing: compactLayout ? 8 : 10
 
@@ -104,7 +104,7 @@ CardPanel {
             }
             Text {
                 Layout.fillWidth: true
-                text: "Runtime, updates, paths, and logging live here. Start remains a health overview only."
+                text: "Runtime, repo path, updates, and logging configuration live here."
                 color: mutedColor
                 font.pixelSize: 11
                 wrapMode: Text.WordWrap
@@ -119,6 +119,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
+                    implicitHeight: 152
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -157,12 +158,12 @@ CardPanel {
                         }
                     }
 
-                    implicitHeight: 144
                 }
 
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
+                    implicitHeight: 152
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -199,11 +200,11 @@ CardPanel {
                         }
                     }
 
-                    implicitHeight: 144
                 }
 
                 TableSurface {
                     Layout.fillWidth: true
+                    Layout.columnSpan: root.twoColumn ? 2 : 1
                     level: 1
 
                     ColumnLayout {
@@ -226,15 +227,10 @@ CardPanel {
                             text: root.scannerRepoUrl
                             placeholderText: "https://github.com/ao-data/albiondata-client.git"
                         }
-                        RowLayout {
+                        Flow {
                             Layout.fillWidth: true
                             spacing: 6
-                            AppButton {
-                                text: "Save path"
-                                variant: "primary"
-                                compact: true
-                                onClicked: root.setScannerRepoDir(repoDirField.text)
-                            }
+                            AppButton { text: "Save path"; variant: "primary"; compact: true; onClicked: root.setScannerRepoDir(repoDirField.text) }
                             AppButton {
                                 text: "Reset path"
                                 compact: true
@@ -243,12 +239,7 @@ CardPanel {
                                     repoDirField.text = root.scannerRepoDir
                                 }
                             }
-                            AppButton {
-                                text: "Save URL"
-                                compact: true
-                                onClicked: root.setScannerRepoUrl(repoUrlField.text)
-                            }
-                            Item { Layout.fillWidth: true }
+                            AppButton { text: "Save URL"; compact: true; onClicked: root.setScannerRepoUrl(repoUrlField.text) }
                         }
                         Text {
                             Layout.fillWidth: true
@@ -263,6 +254,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
+                    implicitHeight: 182
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -287,21 +279,11 @@ CardPanel {
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
                         }
-                        RowLayout {
+                        Flow {
                             Layout.fillWidth: true
                             spacing: 6
-                            AppButton {
-                                text: root.gameDataActionLabel
-                                variant: "primary"
-                                compact: true
-                                onClicked: root.setupGameData()
-                            }
-                            AppButton {
-                                text: "Refresh"
-                                compact: true
-                                onClicked: root.refreshGameDataStatus()
-                            }
-                            Item { Layout.fillWidth: true }
+                            AppButton { text: root.gameDataActionLabel; variant: "primary"; compact: true; onClicked: root.setupGameData() }
+                            AppButton { text: "Refresh"; compact: true; onClicked: root.refreshGameDataStatus() }
                         }
                     }
                 }
@@ -309,6 +291,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
+                    implicitHeight: 182
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -326,22 +309,11 @@ CardPanel {
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
                         }
-                        RowLayout {
+                        Flow {
                             Layout.fillWidth: true
                             spacing: 6
-                            AppButton {
-                                visible: root.captureRuntimeActionLabel.length > 0
-                                text: root.captureRuntimeActionLabel
-                                variant: "primary"
-                                compact: true
-                                onClicked: root.openCaptureRuntimeAction()
-                            }
-                            AppButton {
-                                text: "Refresh"
-                                compact: true
-                                onClicked: root.refreshCaptureRuntimeStatus()
-                            }
-                            Item { Layout.fillWidth: true }
+                            AppButton { visible: root.captureRuntimeActionLabel.length > 0; text: root.captureRuntimeActionLabel; variant: "primary"; compact: true; onClicked: root.openCaptureRuntimeAction() }
+                            AppButton { text: "Refresh"; compact: true; onClicked: root.refreshCaptureRuntimeStatus() }
                         }
                     }
                 }
@@ -349,6 +321,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
+                    implicitHeight: 182
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -366,22 +339,11 @@ CardPanel {
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
                         }
-                        RowLayout {
+                        Flow {
                             Layout.fillWidth: true
                             spacing: 6
-                            AppButton {
-                                visible: root.gitActionLabel.length > 0
-                                text: root.gitActionLabel
-                                variant: "primary"
-                                compact: true
-                                onClicked: root.openGitInstallAction()
-                            }
-                            AppButton {
-                                text: "Refresh"
-                                compact: true
-                                onClicked: root.refreshGitStatus()
-                            }
-                            Item { Layout.fillWidth: true }
+                            AppButton { visible: root.gitActionLabel.length > 0; text: root.gitActionLabel; variant: "primary"; compact: true; onClicked: root.openGitInstallAction() }
+                            AppButton { text: "Refresh"; compact: true; onClicked: root.refreshGitStatus() }
                         }
                     }
                 }

@@ -44,7 +44,7 @@ Item {
 
     // UI flags
     property bool compactLayout: false
-    property bool stackedLayout: width < 1320
+    property bool stackedLayout: width < 1400
     property bool historyAvailable: historyModel && historyModel.count > 0
 
     // Signals to notify parent of actions
@@ -336,16 +336,16 @@ Item {
 
             Loader {
                 Layout.fillWidth: true
-                Layout.preferredHeight: Math.max(420, root.height * 0.54)
-                Layout.minimumHeight: 380
+                Layout.preferredHeight: Math.max(380, root.height * 0.5)
+                Layout.minimumHeight: 340
                 sourceComponent: leftPanelComponent
             }
 
             Loader {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 320
-                Layout.minimumHeight: 280
-                Layout.maximumHeight: 360
+                Layout.preferredHeight: 300
+                Layout.minimumHeight: 260
+                Layout.maximumHeight: 340
                 sourceComponent: rightPanelComponent
             }
         }

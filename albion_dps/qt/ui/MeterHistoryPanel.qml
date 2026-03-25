@@ -57,32 +57,13 @@ Item {
             font.bold: true
         }
 
-        RowLayout {
+        Flow {
             Layout.fillWidth: true
             spacing: 6
 
-            AppButton {
-                text: "TXT"
-                compact: true
-                implicitHeight: 28
-                onClicked: root.exportHistoryTxt()
-            }
-
-            AppButton {
-                text: "CSV"
-                compact: true
-                implicitHeight: 28
-                onClicked: root.exportHistoryCsv()
-            }
-
-            AppButton {
-                text: "JSON"
-                compact: true
-                implicitHeight: 28
-                onClicked: root.exportHistoryJson()
-            }
-
-            Item { Layout.fillWidth: true }
+            AppButton { text: "TXT"; compact: true; implicitHeight: 28; onClicked: root.exportHistoryTxt() }
+            AppButton { text: "CSV"; compact: true; implicitHeight: 28; onClicked: root.exportHistoryCsv() }
+            AppButton { text: "JSON"; compact: true; implicitHeight: 28; onClicked: root.exportHistoryJson() }
         }
 
         AppButton {

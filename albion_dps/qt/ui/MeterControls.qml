@@ -3,50 +3,40 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import "." // for Theme and AppButton access
 
-/**
- * MeterControls - Control bar for mode and sort selection
- *
- * Provides buttons for:
- * - Mode selection: Battle, Zone, Manual
- * - Sort key selection: DPS, DMG, HPS, HEAL
- */
 TableSurface {
     id: root
     level: 1
-    property bool narrowLayout: width < 620
-    implicitHeight: controlsGrid.implicitHeight + 16
 
-    // Properties to bind to parent state
     property string currentMode: "battle"
     property string currentSortKey: "dps"
+    property var theme: null
+    property bool veryCompact: width < 520
 
-    // Signals to notify parent of changes
     signal modeChanged(string mode)
     signal sortKeyChanged(string sortKey)
 
-    // Access to theme (injected by parent)
-    property var theme: null
+    implicitHeight: controlsColumn.implicitHeight + 16
 
-    GridLayout {
-        id: controlsGrid
+    ColumnLayout {
+        id: controlsColumn
         anchors.fill: parent
-        anchors.margins: 6
-        columns: root.narrowLayout ? 1 : 2
-        rowSpacing: 6
-        columnSpacing: 12
+        anchors.margins: 8
+        spacing: 8
 
-        RowLayout {
-            spacing: 8
+        Flow {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignLeft | Qt.AlignTop
+            spacing: 8
 
             Text {
+                width: root.veryCompact ? 40 : implicitWidth
+                height: 24
                 text: "Mode:"
                 color: root.theme.textMuted
                 font.pixelSize: 11
+                verticalAlignment: Text.AlignVCenter
             }
+
             AppButton {
-                id: battleButton
                 text: "Battle"
                 compact: true
                 implicitHeight: 24
@@ -57,7 +47,6 @@ TableSurface {
                 onClicked: root.modeChanged("battle")
             }
             AppButton {
-                id: zoneButton
                 text: "Zone"
                 compact: true
                 implicitHeight: 24
@@ -68,7 +57,6 @@ TableSurface {
                 onClicked: root.modeChanged("zone")
             }
             AppButton {
-                id: manualButton
                 text: "Manual"
                 compact: true
                 implicitHeight: 24
@@ -78,21 +66,22 @@ TableSurface {
                 checked: root.currentMode === "manual"
                 onClicked: root.modeChanged("manual")
             }
-            Item { Layout.fillWidth: true }
         }
 
-        RowLayout {
-            spacing: 8
+        Flow {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignLeft | Qt.AlignTop
+            spacing: 8
 
             Text {
+                width: root.veryCompact ? 40 : implicitWidth
+                height: 24
                 text: "Sort:"
                 color: root.theme.textMuted
                 font.pixelSize: 11
+                verticalAlignment: Text.AlignVCenter
             }
+
             AppButton {
-                id: sortDpsButton
                 text: "DPS"
                 compact: true
                 implicitHeight: 24
@@ -103,7 +92,6 @@ TableSurface {
                 onClicked: root.sortKeyChanged("dps")
             }
             AppButton {
-                id: sortDmgButton
                 text: "DMG"
                 compact: true
                 implicitHeight: 24
@@ -114,7 +102,6 @@ TableSurface {
                 onClicked: root.sortKeyChanged("dmg")
             }
             AppButton {
-                id: sortHpsButton
                 text: "HPS"
                 compact: true
                 implicitHeight: 24
@@ -125,7 +112,6 @@ TableSurface {
                 onClicked: root.sortKeyChanged("hps")
             }
             AppButton {
-                id: sortHealButton
                 text: "HEAL"
                 compact: true
                 implicitHeight: 24

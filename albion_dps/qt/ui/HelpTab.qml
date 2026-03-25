@@ -15,7 +15,7 @@ CardPanel {
     property string gitDetail: ""
     property string gameDataDetail: ""
     property bool compactLayout: false
-    property bool twoColumn: width >= 940
+    property bool twoColumn: width >= 1180
 
     property var theme: null
     property color textColor: theme.textPrimary
@@ -66,6 +66,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
+                    implicitHeight: 164
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -88,13 +89,12 @@ CardPanel {
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
                         }
-                        RowLayout {
+                        Flow {
                             Layout.fillWidth: true
                             spacing: 6
                             AppButton { text: "Website"; compact: true; onClicked: Qt.openUrlExternally(root.websiteUrl) }
                             AppButton { text: "Latest release"; compact: true; onClicked: Qt.openUrlExternally(root.releaseUrl) }
                             AppButton { text: "Changelog"; compact: true; onClicked: Qt.openUrlExternally(root.changelogUrl) }
-                            Item { Layout.fillWidth: true }
                         }
                     }
                 }
@@ -102,6 +102,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
+                    implicitHeight: 164
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -130,13 +131,12 @@ CardPanel {
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
                         }
-                        RowLayout {
+                        Flow {
                             Layout.fillWidth: true
                             spacing: 6
                             AppButton { text: "Npcap"; compact: true; onClicked: Qt.openUrlExternally(root.npcapUrl) }
                             AppButton { text: "Git"; compact: true; onClicked: Qt.openUrlExternally(root.gitUrl) }
                             AppButton { text: "Scanner repo"; compact: true; onClicked: Qt.openUrlExternally(root.scannerRepoUrl) }
-                            Item { Layout.fillWidth: true }
                         }
                     }
                 }
@@ -144,6 +144,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
+                    implicitHeight: 150
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -158,11 +159,10 @@ CardPanel {
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
                         }
-                        RowLayout {
+                        Flow {
                             Layout.fillWidth: true
                             spacing: 6
                             AppButton { text: "Troubleshooting"; variant: "primary"; compact: true; onClicked: Qt.openUrlExternally(root.troubleshootingUrl) }
-                            Item { Layout.fillWidth: true }
                         }
                     }
                 }
@@ -170,6 +170,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
+                    implicitHeight: 150
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -191,7 +192,7 @@ CardPanel {
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
                         }
-                        RowLayout {
+                        Flow {
                             Layout.fillWidth: true
                             spacing: 6
                             AppButton {
@@ -200,7 +201,6 @@ CardPanel {
                                 compact: true
                                 onClicked: root.exportDiagnosticsBundle()
                             }
-                            Item { Layout.fillWidth: true }
                         }
                     }
                 }

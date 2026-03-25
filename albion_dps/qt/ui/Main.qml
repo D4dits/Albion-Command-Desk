@@ -474,6 +474,7 @@ ApplicationWindow {
                 id: homeTabContainer
                 opacity: viewTabs.currentIndex === 0 ? 1.0 : 0.0
                 visible: true
+                Layout.fillWidth: true
                 Layout.fillHeight: true
                 Behavior on opacity {
                     NumberAnimation {
@@ -534,6 +535,7 @@ ApplicationWindow {
                 id: meterTabContainer
                 opacity: viewTabs.currentIndex === 1 ? 1.0 : 0.0
                 visible: true
+                Layout.fillWidth: true
                 Layout.fillHeight: true
                 Behavior on opacity {
                     NumberAnimation {
@@ -630,6 +632,7 @@ ApplicationWindow {
                 id: scannerTabContainer
                 opacity: viewTabs.currentIndex === 2 ? 1.0 : 0.0
                 visible: true
+                Layout.fillWidth: true
                 Layout.fillHeight: true
                 Behavior on opacity {
                     NumberAnimation {
@@ -730,6 +733,7 @@ ApplicationWindow {
                 id: marketTabContainer
                 opacity: viewTabs.currentIndex === 3 ? 1.0 : 0.0
                 visible: true
+                Layout.fillWidth: true
                 Layout.fillHeight: true
                 Behavior on opacity {
                     NumberAnimation {
@@ -891,6 +895,7 @@ ApplicationWindow {
                 id: settingsTabContainer
                 opacity: viewTabs.currentIndex === 4 ? 1.0 : 0.0
                 visible: true
+                Layout.fillWidth: true
                 Layout.fillHeight: true
                 Behavior on opacity {
                     NumberAnimation {
@@ -967,6 +972,7 @@ ApplicationWindow {
                 id: helpTabContainer
                 opacity: viewTabs.currentIndex === 5 ? 1.0 : 0.0
                 visible: true
+                Layout.fillWidth: true
                 Layout.fillHeight: true
                 Behavior on opacity {
                     NumberAnimation {
