@@ -8,6 +8,8 @@ and this project uses semantic versioning.
 ## [Unreleased]
 
 ### Changed
+- Release maintenance now has a one-shot local gate runner (`tools/qa/run_release_readiness.py`) that executes the documented pytest/update/smoke checks before tagging a new version.
+- Release docs now call out the new one-shot readiness command, post-release diagnostics-bundle verification, and the fact that the Windows bootstrap installer still requires Python preinstalled even though Git is not required.
 - Battle sessions no longer finalize from a stale combat-state stop marker while fresh damage/heal events are still arriving, which reduces mid-fight resets during target swaps and noisy combat-state transitions.
 - Market journal mapping now falls back for royal plate items that are missing explicit journal metadata, and planner regressions now lock royal sigils/tokens as non-returnable inputs.
 - Market result-row profit/margin math now uses the same documented basis as top-level KPIs: net output value is compared against allocated input cost, with fee/tax remaining explicit columns.

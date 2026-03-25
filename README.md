@@ -31,6 +31,8 @@ No client hooks, no overlays, no memory editing.
 ## Install
 
 ### Windows (recommended, no Git required)
+Requires Python 3.10+ installed first. Git is not required for the release installer path.
+
 1. Open latest release: `https://github.com/D4dits/Albion-Command-Desk/releases/latest`
 2. Download `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`
 3. Run installer

@@ -12,6 +12,8 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
 
 ## 2) Local validation
 
+- [ ] Run one-shot local release gate:
+  - `python .\tools\qa\run_release_readiness.py`
 - [ ] Run core tests:
   - `python -m pytest -q --ignore=tests/test_qt_smoke.py`
 - [ ] Run update/settings tests:
@@ -87,6 +89,8 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
 
 - [ ] Fresh install test (Windows/Linux/macOS script path).
 - [ ] Existing install update-check test (header banner + manual check).
+- [ ] Verify diagnostics bundle export from app and validate bundle:
+  - `python .\tools\qa\verify_diagnostics_bundle.py <bundle.zip>`
 - [ ] Validate docs are aligned (`README.md`, `docs/TROUBLESHOOTING.md`).
 
 ## 7) Rollback plan

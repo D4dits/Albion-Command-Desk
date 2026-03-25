@@ -6,9 +6,13 @@ This runbook defines the release, hotfix, and rollback path for Albion Command D
 
 1. Prepare code and changelog on `main`.
 2. Run local gates:
-   - `.\venv\Scripts\python -m pytest -q --ignore=tests/test_qt_smoke.py`
-   - `.\venv\Scripts\python -m pytest -q tests/test_update_checker.py tests/test_settings.py tests/test_release_manifest_contract.py tests/test_qt_update_banner.py tests/test_verify_clean_machine_matrix.py`
-   - `.\venv\Scripts\python tools\qa\verify_release_update_flow.py`
+   - preferred one-shot gate:
+     - `.\venv\Scripts\python .\tools\qa\run_release_readiness.py`
+   - or equivalent manual commands:
+     - `.\venv\Scripts\python -m pytest -q --ignore=tests/test_qt_smoke.py`
+     - `.\venv\Scripts\python -m pytest -q tests/test_update_checker.py tests/test_settings.py tests/test_release_manifest_contract.py tests/test_qt_update_banner.py tests/test_verify_clean_machine_matrix.py`
+     - `.\venv\Scripts\python tools\qa\verify_release_update_flow.py`
+     - `.\venv\Scripts\python tools\install\common\smoke_check.py --project-root . --profile core`
 3. Create and push tag:
    - `git tag vX.Y.Z`
    - `git push origin vX.Y.Z`
