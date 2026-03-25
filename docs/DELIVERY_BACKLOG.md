@@ -573,6 +573,10 @@ Update status checkboxes and notes after each implemented ticket.
   - Support actions scale gracefully across supported widths.
   - Header metadata and actions feel balanced rather than crowded.
 
+- Progress:
+  - 2026-03-25: PH8-UXR-080 completed by moving the window/default breakpoint contract into `Theme.qml`, wiring `Main.qml` to those tokens, and documenting the supported geometry in `docs/UX_RESPONSIVE_LAYOUT_PLAN.md`.
+  - 2026-03-25: PH8-UXR-081/082 started with a denser Start dashboard, shorter update CTA copy, and a stacked Meter layout that scrolls instead of clipping at smaller supported sizes.
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract

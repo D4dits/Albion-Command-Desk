@@ -44,7 +44,7 @@ Item {
 
     // UI flags
     property bool compactLayout: false
-    property bool stackedLayout: width < 1180
+    property bool stackedLayout: width < 1320
     property bool historyAvailable: historyModel && historyModel.count > 0
 
     // Signals to notify parent of actions
@@ -298,43 +298,56 @@ Item {
         }
     }
 
-    RowLayout {
+    Loader {
         anchors.fill: parent
-        spacing: 12
         visible: !root.stackedLayout
+        sourceComponent: Component {
+            RowLayout {
+                anchors.fill: parent
+                spacing: 12
 
-        Loader {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            sourceComponent: leftPanelComponent
-        }
+                Loader {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    sourceComponent: leftPanelComponent
+                }
 
-        Loader {
-            Layout.preferredWidth: 340
-            Layout.minimumWidth: 320
-            Layout.maximumWidth: 420
-            Layout.fillHeight: true
-            sourceComponent: rightPanelComponent
+                Loader {
+                    Layout.preferredWidth: 352
+                    Layout.minimumWidth: 336
+                    Layout.maximumWidth: 420
+                    Layout.fillHeight: true
+                    sourceComponent: rightPanelComponent
+                }
+            }
         }
     }
 
-    ColumnLayout {
+    ScrollView {
         anchors.fill: parent
-        spacing: 12
         visible: root.stackedLayout
+        clip: true
+        contentWidth: availableWidth
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-        Loader {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            sourceComponent: leftPanelComponent
-        }
+        ColumnLayout {
+            width: Math.max(parent.availableWidth, 320)
+            spacing: 12
 
-        Loader {
-            Layout.fillWidth: true
-            Layout.preferredHeight: root.width >= 900 ? 340 : 300
-            Layout.minimumHeight: 240
-            Layout.maximumHeight: 380
-            sourceComponent: rightPanelComponent
+            Loader {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.max(420, root.height * 0.54)
+                Layout.minimumHeight: 380
+                sourceComponent: leftPanelComponent
+            }
+
+            Loader {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 320
+                Layout.minimumHeight: 280
+                Layout.maximumHeight: 360
+                sourceComponent: rightPanelComponent
+            }
         }
     }
 }

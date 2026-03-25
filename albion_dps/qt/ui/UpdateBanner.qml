@@ -28,14 +28,14 @@ Rectangle {
     property int availableWidth: 0
     readonly property string shortBannerText: {
         var text = String(root.bannerText || "").trim()
-        if (text.length === 0) {
-            return "Update available"
-        }
         var versions = text.match(/v?\d+\.\d+\.\d+/g)
         if (versions && versions.length >= 2) {
             return versions[0] + " -> " + versions[versions.length - 1]
         }
-        return text.replace(/^Update available:\s*/i, "").replace(/^Update:\s*/i, "")
+        if (text.length === 0) {
+            return "Update ready"
+        }
+        return "Update ready"
     }
 
     // Signals
@@ -45,7 +45,7 @@ Rectangle {
     property var theme: null
 
     // Computed width
-    Layout.preferredWidth: Math.max(minWidth, Math.min(maxWidth, availableWidth * 0.38))
+    Layout.preferredWidth: Math.max(minWidth, Math.min(maxWidth, availableWidth * 0.42))
     Layout.preferredHeight: bannerHeight
     radius: theme.shellPillRadius
     color: theme.shellBannerBackground
@@ -69,6 +69,7 @@ Rectangle {
             text: root.shortBannerText
             color: theme.shellBannerText
             font.pixelSize: 12
+            font.bold: true
             elide: Text.ElideRight
             wrapMode: Text.NoWrap
         }
