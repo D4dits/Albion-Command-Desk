@@ -298,8 +298,10 @@ CardPanel {
                     Layout.fillWidth: true
                     Layout.columnSpan: root.dashboardTwoColumn ? 2 : 1
                     level: 1
+                    implicitHeight: checklistContent.implicitHeight + 20
 
                     ColumnLayout {
+                        id: checklistContent
                         anchors.fill: parent
                         anchors.margins: 10
                         spacing: 8

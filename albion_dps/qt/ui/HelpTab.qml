@@ -32,13 +32,14 @@ CardPanel {
     readonly property string gitUrl: "https://git-scm.com/downloads"
 
     ScrollView {
+        id: helpScroll
         anchors.fill: parent
         clip: true
         contentWidth: availableWidth
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
-            width: Math.max(parent.availableWidth - 24, 360)
+            width: Math.max(helpScroll.availableWidth - 24, 360)
             x: 12
             y: 12
             spacing: compactLayout ? 8 : 10

@@ -22,6 +22,7 @@ CardPanel {
         }
 
         ListView {
+            id: activityList
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
@@ -67,7 +68,7 @@ CardPanel {
 
             Text {
                 anchors.centerIn: parent
-                visible: count === 0
+                visible: activityList.count === 0
                 text: "No session activity yet."
                 color: root.theme.textSecondary
                 font.pixelSize: 12

@@ -174,7 +174,7 @@ Item {
             visible: root.sessionCompareAvailable
             Layout.fillWidth: true
             radius: 6
-            color: root.theme.surfaceElevated
+            color: root.theme.surfaceInteractive
             border.color: root.theme.tableDivider
             border.width: 1
 

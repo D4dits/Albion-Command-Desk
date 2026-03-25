@@ -85,13 +85,14 @@ CardPanel {
     }
 
     ScrollView {
+        id: settingsScroll
         anchors.fill: parent
         clip: true
         contentWidth: availableWidth
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
-            width: Math.max(parent.availableWidth - (root.contentPadding * 2), 360)
+            width: Math.max(settingsScroll.availableWidth - (root.contentPadding * 2), 360)
             x: root.contentPadding
             y: root.contentPadding
             spacing: root.contentSpacing

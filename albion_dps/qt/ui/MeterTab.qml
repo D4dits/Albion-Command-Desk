@@ -324,6 +324,7 @@ Item {
     }
 
     ScrollView {
+        id: stackedScroll
         anchors.fill: parent
         visible: root.stackedLayout
         clip: true
@@ -331,7 +332,7 @@ Item {
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
-            width: Math.max(parent.availableWidth, 320)
+            width: Math.max(stackedScroll.availableWidth, 320)
             spacing: 12
 
             Loader {

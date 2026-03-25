@@ -28,7 +28,6 @@ TableSurface {
             spacing: 8
 
             Text {
-                width: root.veryCompact ? 40 : implicitWidth
                 height: 24
                 text: "Mode:"
                 color: root.theme.textMuted
@@ -73,7 +72,6 @@ TableSurface {
             spacing: 8
 
             Text {
-                width: root.veryCompact ? 40 : implicitWidth
                 height: 24
                 text: "Sort:"
                 color: root.theme.textMuted
