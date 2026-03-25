@@ -57,11 +57,15 @@ _JOURNAL_NAME_BY_KIND: dict[str, str] = {
     "MAGE": "Imbuer's Journal",
     "TOOLMAKER": "Tinker's Journal",
 }
+_RECIPE_SEARCH_TOKEN_ALIASES: dict[str, str] = {
+    "siedge": "siege",
+}
 
 
 @dataclass(frozen=True)
 class InputPreviewRow:
     item_id: str
+    row_key: str
     item: str
     quantity: float
     stock_quantity: float
@@ -72,6 +76,7 @@ class InputPreviewRow:
     manual_price: int
     unit_price: float
     total_cost: float
+    completed: bool = False
 
 
 class MarketInputsModel(QAbstractListModel):
@@ -86,6 +91,8 @@ class MarketInputsModel(QAbstractListModel):
     TotalCostRole = Qt.UserRole + 9
     StockQuantityRole = Qt.UserRole + 10
     BuyQuantityRole = Qt.UserRole + 11
+    RowKeyRole = Qt.UserRole + 12
+    CompletedRole = Qt.UserRole + 13
 
     def __init__(self) -> None:
         super().__init__()
@@ -103,6 +110,8 @@ class MarketInputsModel(QAbstractListModel):
         item = self._items[row]
         if role == self.ItemIdRole:
             return item.item_id
+        if role == self.RowKeyRole:
+            return item.row_key
         if role == self.ItemRole:
             return item.item
         if role == self.QuantityRole:
@@ -123,11 +132,14 @@ class MarketInputsModel(QAbstractListModel):
             return item.unit_price
         if role == self.TotalCostRole:
             return item.total_cost
+        if role == self.CompletedRole:
+            return item.completed
         return None
 
     def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
         return {
             self.ItemIdRole: b"itemId",
+            self.RowKeyRole: b"rowKey",
             self.ItemRole: b"item",
             self.QuantityRole: b"quantity",
             self.CityRole: b"city",
@@ -138,12 +150,44 @@ class MarketInputsModel(QAbstractListModel):
             self.TotalCostRole: b"totalCost",
             self.StockQuantityRole: b"stockQuantity",
             self.BuyQuantityRole: b"buyQuantity",
+            self.CompletedRole: b"completed",
         }
 
     def set_items(self, rows: list[InputPreviewRow]) -> None:
         self.beginResetModel()
         self._items = list(rows)
         self.endResetModel()
+
+    def set_completed_by_item_id(self, item_id: str, completed: bool) -> None:
+        if not item_id:
+            return
+        changed_rows: list[int] = []
+        new_items = list(self._items)
+        for idx, row in enumerate(new_items):
+            if row.item_id != item_id or bool(row.completed) == bool(completed):
+                continue
+            new_items[idx] = InputPreviewRow(
+                item_id=row.item_id,
+                row_key=row.row_key,
+                item=row.item,
+                quantity=row.quantity,
+                stock_quantity=row.stock_quantity,
+                buy_quantity=row.buy_quantity,
+                city=row.city,
+                price_type=row.price_type,
+                price_age_text=row.price_age_text,
+                manual_price=row.manual_price,
+                unit_price=row.unit_price,
+                total_cost=row.total_cost,
+                completed=bool(completed),
+            )
+            changed_rows.append(idx)
+        if not changed_rows:
+            return
+        self._items = new_items
+        for row_idx in changed_rows:
+            model_index = self.index(row_idx, 0)
+            self.dataChanged.emit(model_index, model_index, [self.CompletedRole])
 
 
 @dataclass(frozen=True)
@@ -910,6 +954,7 @@ class MarketSetupState(QObject):
         self._output_price_types: dict[str, PriceType] = {}
         self._manual_input_prices: dict[str, int] = {}
         self._input_stock_quantities: dict[str, float] = {}
+        self._completed_input_item_ids: set[str] = set()
         self._manual_output_prices: dict[str, int] = {}
         self._output_cities: dict[str, str] = {}
         self._price_index: dict[tuple[str, str, int], MarketPriceRecord] = {}
@@ -1675,6 +1720,7 @@ class MarketSetupState(QObject):
     def clearCraftPlan(self) -> None:
         self._craft_plan_rows = []
         self._next_plan_row_id = 1
+        self._completed_input_item_ids.clear()
         self._sync_craft_plan_model()
         self._rebuild_preview(force_price_refresh=False)
         self.setupChanged.emit()
@@ -1827,6 +1873,23 @@ class MarketSetupState(QObject):
         else:
             self._input_stock_quantities[item_id] = quantity
         self._rebuild_preview(force_price_refresh=False)
+
+    @Slot(str, bool)
+    def setInputRowCompleted(self, item_id: str, completed: bool) -> None:
+        normalized_item_id = str(item_id or "").strip()
+        if not normalized_item_id:
+            return
+        if completed:
+            if normalized_item_id in self._completed_input_item_ids:
+                return
+            self._completed_input_item_ids.add(normalized_item_id)
+        else:
+            if normalized_item_id not in self._completed_input_item_ids:
+                return
+            self._completed_input_item_ids.discard(normalized_item_id)
+        self._inputs_model.set_completed_by_item_id(normalized_item_id, completed)
+        self._inputs_on_model.set_completed_by_item_id(normalized_item_id, completed)
+        self.inputsChanged.emit()
 
     @Slot(str, str)
     def setOutputManualPrice(self, item_id: str, raw_value: str) -> None:
@@ -2516,6 +2579,7 @@ class MarketSetupState(QObject):
             input_rows.append(
                 InputPreviewRow(
                     item_id=item_id,
+                    row_key=_input_preview_row_key(item_id, str(row["city"]), str(row["price_type"])),
                     item=str(row["item"]),
                     quantity=need_qty,
                     stock_quantity=stock_qty,
@@ -2526,6 +2590,7 @@ class MarketSetupState(QObject):
                     manual_price=self._manual_input_prices.get(item_id, 0),
                     unit_price=unit_price,
                     total_cost=total_cost,
+                    completed=item_id in self._completed_input_item_ids or buy_qty <= 0.0,
                 )
             )
             item_ref = row.get("item_ref")
@@ -2624,6 +2689,7 @@ class MarketSetupState(QObject):
             selected_input_rows.append(
                 InputPreviewRow(
                     item_id=item_id,
+                    row_key=_input_preview_row_key(item_id, str(row["city"]), str(row["price_type"])),
                     item=str(row["item"]),
                     quantity=need_qty,
                     stock_quantity=stock_qty,
@@ -2634,6 +2700,7 @@ class MarketSetupState(QObject):
                     manual_price=self._manual_input_prices.get(item_id, 0),
                     unit_price=unit_price,
                     total_cost=float(buy_qty * unit_price),
+                    completed=item_id in self._completed_input_item_ids or buy_qty <= 0.0,
                 )
             )
         selected_input_rows.sort(key=_input_preview_sort_key)
@@ -4653,6 +4720,17 @@ def _need_quantity_with_safety_buffer(quantity_raw: float, is_returnable: bool) 
     return int(math.ceil(base * multiplier))
 
 
+def _input_preview_row_key(item_id: str, city: str, price_type: str) -> str:
+    return f"{item_id}|{city}|{price_type}"
+
+
+def _normalize_recipe_search_token(token: str) -> str:
+    normalized = token.strip().lower()
+    if not normalized:
+        return ""
+    return _RECIPE_SEARCH_TOKEN_ALIASES.get(normalized, normalized)
+
+
 def _parse_recipe_filter(query: str) -> RecipeFilter:
     text = query.strip().lower()
     if not text:
@@ -4670,7 +4748,7 @@ def _parse_recipe_filter(query: str) -> RecipeFilter:
         remainder = (text[:start] + " " + text[end:]).strip()
 
     clean = "".join(ch if ch.isalnum() else " " for ch in remainder)
-    terms = tuple(part for part in clean.split() if part)
+    terms = tuple(_normalize_recipe_search_token(part) for part in clean.split() if _normalize_recipe_search_token(part))
     return RecipeFilter(terms=terms, tier=tier, enchant=enchant)
 
 

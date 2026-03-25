@@ -627,6 +627,7 @@ def test_input_preview_sort_groups_artifacts_then_materials_then_journals() -> N
     rows = [
         market_state.InputPreviewRow(
             item_id="T5_JOURNAL_WARRIOR",
+            row_key="T5_JOURNAL_WARRIOR|Bridgewatch|sell_order",
             item="T5 Blacksmith's Journal (empty)",
             quantity=10.0,
             stock_quantity=0.0,
@@ -640,6 +641,7 @@ def test_input_preview_sort_groups_artifacts_then_materials_then_journals() -> N
         ),
         market_state.InputPreviewRow(
             item_id="T5_METALBAR_LEVEL1",
+            row_key="T5_METALBAR_LEVEL1|Bridgewatch|sell_order",
             item="Metal Bar T5.1",
             quantity=24.0,
             stock_quantity=0.0,
@@ -653,6 +655,7 @@ def test_input_preview_sort_groups_artifacts_then_materials_then_journals() -> N
         ),
         market_state.InputPreviewRow(
             item_id="T5_ARTEFACT_2H_KEEPER_SWORD",
+            row_key="T5_ARTEFACT_2H_KEEPER_SWORD|Bridgewatch|sell_order",
             item="Adept's Remnants of the Old King T5",
             quantity=2.0,
             stock_quantity=0.0,
@@ -927,6 +930,48 @@ def test_market_setup_state_add_recipe_family_respects_multi_tier_and_enchant_fi
         model_index = model.index(idx, 0)
         assert int(model.data(model_index, model.TierRole) or 0) == 4
         assert int(model.data(model_index, model.EnchantRole) or 0) == 0
+
+
+def test_market_setup_state_recipe_search_supports_common_typo_aliases() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.setRecipeSearchQuery("siedge hammer")
+
+    model = state.recipeOptionsModel
+    assert model.rowCount() >= 1
+    names = []
+    for idx in range(min(model.rowCount(), 8)):
+        model_index = model.index(idx, 0)
+        names.append(str(model.data(model_index, model.DisplayNameRole) or "").lower())
+
+    assert any("siege hammer" in name for name in names)
+
+
+def test_market_setup_state_marks_completed_input_rows_and_clears_state() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
+    state.setActiveMarketTab(1)
+
+    model = state.inputsModel
+    assert model.rowCount() >= 1
+    index = model.index(0, 0)
+    item_id = str(model.data(index, model.ItemIdRole) or "")
+    assert item_id
+    assert model.data(index, model.CompletedRole) is False
+
+    state.setInputRowCompleted(item_id, True)
+    assert model.data(index, model.CompletedRole) is True
+
+    on_model = state.inputsOnModel
+    on_index = on_model.index(0, 0)
+    assert on_model.data(on_index, on_model.CompletedRole) is True
+
+    state.clearCraftPlan()
+    state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
+    state.setActiveMarketTab(1)
+    refreshed_index = state.inputsModel.index(0, 0)
+    assert state.inputsModel.data(refreshed_index, state.inputsModel.CompletedRole) is False
 
 
 def test_market_setup_state_craft_plan_exposes_fresh_component_price_role() -> None:

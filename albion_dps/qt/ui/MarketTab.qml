@@ -181,6 +181,7 @@ CardPanel {
     signal removePlanRow(var rowId)
     signal setHideRowsWithoutFreshPrices(bool enabled)
     signal setInputStockQuantity(var itemId, string qty)
+    signal setInputRowCompleted(var itemId, bool completed)
     signal setInputPriceType(var itemId, string type)
     signal setInputManualPrice(var itemId, string price)
     signal setOutputPriceType(var itemId, string type)
@@ -299,6 +300,10 @@ CardPanel {
     }
     property var copyCellText: function(value) {
         root.copyText(String(value === undefined || value === null ? "" : value))
+    }
+    property var copyInputItemText: function(value, itemId) {
+        root.copyCellText(value)
+        root.setInputRowCompleted(itemId, true)
     }
     property var matchesSearch: function(itemText, queryText) {
         var query = String(queryText || "").trim().toLowerCase()
@@ -721,7 +726,8 @@ CardPanel {
                                         Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth }
                                         Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth }
                                         Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth }
-                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketInputsTotalMinWidth }
+                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsTotalMinWidth }
+                                        Text { text: "Got"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter }
                                     }
                                 }
 
@@ -737,7 +743,7 @@ CardPanel {
                                         width: ListView.view.width
                                         height: searchMatches ? 30 : 0
                                         visible: searchMatches
-                                        color: tableRowColor(index)
+                                        color: completed ? Qt.darker(root.theme.stateSuccessBg, 1.08) : tableRowColor(index)
 
                                         RowLayout {
                                             anchors.fill: parent
@@ -746,17 +752,17 @@ CardPanel {
 
                                             Text {
                                                 text: itemLabelWithTier(item, itemId)
-                                                color: textColor
+                                                color: completed ? root.theme.stateSuccess : textColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: marketInputsItemWidth
                                                 elide: Text.ElideRight
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: root.copyCellText(parent.text)
+                                                    onDoubleClicked: root.copyInputItemText(parent.text, itemId)
                                                 }
                                             }
-                                            Text { text: formatIntRound(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
+                                            Text { text: formatIntRound(quantity); color: completed ? root.theme.stateSuccess : mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
 
                                             AppTextField {
                                                 Layout.preferredWidth: marketInputsStockWidth
@@ -767,7 +773,7 @@ CardPanel {
                                                 onEditingFinished: root.setInputStockQuantity(itemId, text)
                                             }
 
-                                            Text { text: formatIntRound(buyQuantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth }
+                                            Text { text: formatIntRound(buyQuantity); color: completed ? root.theme.stateSuccess : mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth }
                                             Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; elide: Text.ElideRight }
 
                                             AppComboBox {
@@ -797,7 +803,13 @@ CardPanel {
 
                                             Text { text: formatInt(unitPrice); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth }
                                             Text { text: priceAgeText; color: adpAgeColor(priceAgeText); font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth }
-                                            Text { text: formatInt(totalCost); color: textColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketInputsTotalMinWidth }
+                                            Text { text: formatInt(totalCost); color: completed ? root.theme.stateSuccess : textColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsTotalMinWidth }
+                                            AppCheckBox {
+                                                Layout.fillWidth: true
+                                                text: ""
+                                                checked: completed
+                                                onToggled: root.setInputRowCompleted(itemId, checked)
+                                            }
                                         }
                                     }
                                 }

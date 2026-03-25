@@ -862,6 +862,7 @@ ApplicationWindow {
                 onRemovePlanRow: function(rowId) { marketSetupState.removePlanRow(rowId) }
                 onSetHideRowsWithoutFreshPrices: function(enabled) { marketSetupState.setHideRowsWithoutFreshPrices(enabled) }
                 onSetInputStockQuantity: function(itemId, qty) { marketSetupState.setInputStockQuantity(itemId, qty) }
+                onSetInputRowCompleted: function(itemId, completed) { marketSetupState.setInputRowCompleted(itemId, completed) }
                 onSetInputPriceType: function(itemId, type) { marketSetupState.setInputPriceType(itemId, type) }
                 onSetInputManualPrice: function(itemId, price) { marketSetupState.setInputManualPrice(itemId, price) }
                 onSetOutputPriceType: function(itemId, type) { marketSetupState.setOutputPriceType(itemId, type) }
