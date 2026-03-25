@@ -13,6 +13,7 @@ ZONE_PORTS = {5056, 5058}
 # briefly drops during target swaps, movement, or packet jitter.
 COMBAT_END_GRACE_SECONDS = 5.0
 COMBAT_MERGE_GAP_SECONDS = 5.0
+NON_PLAYER_LABEL_PREFIXES = ("@", "MOB_", "NPC_")
 
 
 @dataclass(frozen=True)
@@ -66,6 +67,7 @@ class SessionMeter:
     _map_index: str | None = None
     _combatants: set[int] = field(default_factory=set)
     _seen_sources: set[int] = field(default_factory=set)
+    _source_labels: dict[int, str] = field(default_factory=dict)
     _combat_end_ts: float | None = None
     _last_combat_event_ts: float | None = None
     _saw_combat_state: bool = False
@@ -230,6 +232,7 @@ class SessionMeter:
             if event.timestamp - self._combat_end_ts > COMBAT_END_GRACE_SECONDS:
                 self._combat_end_ts = None
         self._seen_sources.add(event.source_id)
+        self._remember_source_label(event.source_id)
         if self._saw_combat_state:
             if event.kind == "damage" or (
                 event.kind == "heal" and event.source_id != event.target_id
@@ -427,6 +430,19 @@ class SessionMeter:
             )
         return changed
 
+    def _remember_source_label(self, source_id: int) -> None:
+        if self.name_lookup is None:
+            return
+        label = self.name_lookup(source_id)
+        if not label:
+            return
+        previous = self._source_labels.get(source_id)
+        if previous and not _is_non_player_label(previous):
+            return
+        if previous and _is_non_player_label(label):
+            return
+        self._source_labels[source_id] = label
+
     def manual_active(self) -> bool:
         return self._manual_active
 
@@ -441,6 +457,7 @@ class SessionMeter:
         self._combat_end_ts = None
         self._last_combat_event_ts = None
         self._seen_sources.clear()
+        self._source_labels.clear()
 
     def _end_session(
         self,
@@ -455,7 +472,12 @@ class SessionMeter:
         end_ts = timestamp
         duration = max(end_ts - start_ts, 0.0)
         snapshot = self._meter.snapshot(now=end_ts)
-        entries = _build_entries(snapshot, duration, self.name_lookup)
+        entries = _build_entries(
+            snapshot,
+            duration,
+            self.name_lookup,
+            label_overrides=dict(self._source_labels),
+        )
         totals_by_id = _clone_totals(snapshot.totals)
         if not entries:
             self._meter = RollingMeter(window_seconds=self.window_seconds, session_timeout_seconds=None)
@@ -538,6 +560,7 @@ class SessionMeter:
         self._active = False
         self._combat_end_ts = None
         self._combatants.clear()
+        self._source_labels.clear()
         self._last_combat_event_ts = None
         self._seen_sources.clear()
 
@@ -546,8 +569,15 @@ def _build_entries(
     snapshot: MeterSnapshot,
     duration: float,
     name_lookup: Callable[[int], str | None] | None,
+    *,
+    label_overrides: dict[int, str] | None = None,
 ) -> list[SessionEntry]:
-    return _build_entries_from_totals_by_id(snapshot.totals, duration, name_lookup)
+    return _build_entries_from_totals_by_id(
+        snapshot.totals,
+        duration,
+        name_lookup,
+        label_overrides=label_overrides,
+    )
 
 
 def _build_entries_from_grouped(
@@ -629,6 +659,10 @@ def _build_entries_from_totals_by_id(
         )
     entries.sort(key=lambda item: item.damage, reverse=True)
     return entries
+
+
+def _is_non_player_label(label: str) -> bool:
+    return label.startswith(NON_PLAYER_LABEL_PREFIXES)
 
 
 def _clone_totals(totals: dict[int, dict[str, float]]) -> dict[int, dict[str, float]]:

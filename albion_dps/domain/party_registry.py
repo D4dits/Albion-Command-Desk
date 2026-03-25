@@ -36,6 +36,7 @@ MATCH_ROSTER_SUBTYPE = 120
 MATCH_ROSTER_NAME_KEY = 2
 MATCH_ROSTER_MIN_SIZE = 5
 MATCH_ROSTER_TTL_SECONDS = 120.0
+LOCAL_PARTY_VISIBILITY_SECONDS = 20.0
 PARTY_FALLBACK_SUBTYPE_MIN = 200
 PARTY_FALLBACK_SUBTYPE_MAX = 260
 PARTY_FALLBACK_MAX_ROSTER_SIZE = 20
@@ -542,7 +543,13 @@ class PartyRegistry:
         if len(candidates) == 1:
             self.set_self_name(candidates[0], confirmed=True)
 
-    def allows(self, source_id: int, name_registry: NameRegistry | None = None) -> bool:
+    def allows(
+        self,
+        source_id: int,
+        name_registry: NameRegistry | None = None,
+        *,
+        timestamp: float | None = None,
+    ) -> bool:
         if not isinstance(source_id, int):
             return False
         self._combat_ids_seen.add(source_id)
@@ -559,7 +566,13 @@ class PartyRegistry:
                 if not _looks_like_player_name(name):
                     return False
                 if self._party_names:
-                    return name in self._party_names
+                    if name not in self._party_names:
+                        return False
+                    return self._allows_recent_local_party_id(
+                        source_id,
+                        name_registry,
+                        timestamp=timestamp,
+                    )
                 return True
             if not self._self_ids:
                 if name_registry is None:
@@ -590,6 +603,30 @@ class PartyRegistry:
             return True
         name = name_registry.lookup(source_id)
         return _looks_like_player_name(name) and name in self._party_names
+
+    def _allows_recent_local_party_id(
+        self,
+        source_id: int,
+        name_registry: NameRegistry,
+        *,
+        timestamp: float | None,
+    ) -> bool:
+        if timestamp is None or source_id in self._self_ids:
+            return True
+        non_self_party_ids = self._party_ids.difference(self._self_ids)
+        if not non_self_party_ids:
+            return True
+        recent_local_ids = name_registry.snapshot_recent_ids(
+            timestamp,
+            LOCAL_PARTY_VISIBILITY_SECONDS,
+        )
+        recent_local_party_ids = recent_local_ids.intersection(non_self_party_ids)
+        if not recent_local_party_ids:
+            # Keep bootstrap permissive until we have at least one local non-self
+            # observation in the current context. Once local party IDs are known,
+            # drop party IDs that are no longer observed nearby.
+            return True
+        return source_id in recent_local_ids
 
     def _allow_name_only_fallback(self) -> bool:
         if not self.strict:

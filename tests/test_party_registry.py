@@ -469,6 +469,32 @@ def test_party_registry_disallows_name_only_fallback_after_party_id_resolution()
     assert not registry.allows(300, names)
 
 
+def test_party_registry_disallows_non_local_party_id_once_local_party_is_observed() -> None:
+    registry = PartyRegistry()
+    registry.seed_self_ids([100])
+    registry.seed_names(["D4dits", "SocialFur3", "SocialFur4"])
+    registry.seed_ids([200, 300])
+    names = NameRegistry()
+    names.record(100, "D4dits")
+    names.record_local(200, "SocialFur3", 100.0)
+    names.record(300, "SocialFur4")
+
+    assert registry.allows(200, names, timestamp=105.0)
+    assert not registry.allows(300, names, timestamp=105.0)
+
+
+def test_party_registry_keeps_bootstrap_permissive_until_non_self_local_party_exists() -> None:
+    registry = PartyRegistry()
+    registry.seed_self_ids([100])
+    registry.seed_names(["D4dits", "SocialFur3"])
+    registry.seed_ids([200])
+    names = NameRegistry()
+    names.record(100, "D4dits")
+    names.record(200, "SocialFur3")
+
+    assert registry.allows(200, names, timestamp=105.0)
+
+
 def test_party_registry_has_ids_in_strict_mode_with_party_ids_only() -> None:
     registry = PartyRegistry(strict=True)
     assert not registry.has_ids()

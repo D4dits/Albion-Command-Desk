@@ -13,6 +13,8 @@ and this project uses semantic versioning.
 - Market result-row profit/margin math now uses the same documented basis as top-level KPIs: net output value is compared against allocated input cost, with fee/tax remaining explicit columns.
 - AO Data market refreshes now default to smaller batches, split oversized 429-limited requests into predictable sub-batches, and expose clearer queued/loading/cooldown states while falling back to cache or bundled prices.
 - Market workspace now remembers the selected preset between runs, stores the last export directory in app settings, and exposes shopping/selling/results CSV copy/export actions directly in the UI.
+- Meter pipeline now applies recent-local party filtering upstream for both combat events and combat-state markers, which drops stale/off-map party IDs once local party members have been observed while keeping bootstrap permissive on first contact.
+- Battle summaries now pin per-session player labels as events arrive, so old rows do not get relabeled as later mob names when Albion reuses entity IDs.
 - App settings now merge safely across update, market, scanner, and logging preferences; a new Settings tab centralizes update checks, scanner repo paths, game-data setup, capture runtime, Git status, and default log-level controls.
 - A new Help tab now exposes app version, latest release/changelog links, troubleshooting entry points, and direct dependency guidance for Npcap, Git, scanner repo, and game-data setup.
 - Scanner and Help tabs can now export a diagnostics bundle containing summary metadata, scanner logs, market diagnostics, and current settings for support/debug handoff.

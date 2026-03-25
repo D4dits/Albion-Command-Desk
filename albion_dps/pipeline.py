@@ -210,7 +210,10 @@ def stream_snapshots(
             if combat_state is None:
                 continue
             if hasattr(meter, "observe_combat_state") and _allow_combat_state(
-                combat_state[0], party_registry, name_registry
+                combat_state[0],
+                party_registry,
+                name_registry,
+                timestamp=packet.timestamp,
             ):
                 try:
                     meter.observe_combat_state(
@@ -286,17 +289,19 @@ def _allow_event(
 ) -> bool:
     if party_registry is None:
         return True
-    return party_registry.allows(event.source_id, name_registry)
+    return party_registry.allows(event.source_id, name_registry, timestamp=event.timestamp)
 
 
 def _allow_combat_state(
     entity_id: int,
     party_registry: PartyRegistry | None,
     name_registry: NameRegistry | None,
+    *,
+    timestamp: float | None = None,
 ) -> bool:
     if party_registry is None:
         return True
-    return party_registry.allows(entity_id, name_registry)
+    return party_registry.allows(entity_id, name_registry, timestamp=timestamp)
 
 
 def _decode_combat_state(
@@ -357,7 +362,12 @@ def _flush_or_trim_pending(
         if pending_combat_states and hasattr(meter, "observe_combat_state"):
             remaining_states: list[tuple[float, int, bool, bool]] = []
             for ts, entity_id, in_active, in_passive in sorted(pending_combat_states):
-                if _allow_combat_state(entity_id, party_registry, name_registry):
+                if _allow_combat_state(
+                    entity_id,
+                    party_registry,
+                    name_registry,
+                    timestamp=ts,
+                ):
                     try:
                         meter.observe_combat_state(entity_id, in_active, in_passive, ts)
                     except TypeError:

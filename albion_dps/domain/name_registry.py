@@ -77,6 +77,10 @@ class NameRegistry:
     def record(self, entity_id: int, name: str) -> None:
         self._store(entity_id, name)
 
+    def record_local(self, entity_id: int, name: str, timestamp: float) -> None:
+        self._store(entity_id, name)
+        self._mark_local(entity_id, timestamp)
+
     def record_weak(self, entity_id: int, name: str) -> None:
         self._store(entity_id, name, weak=True)
 

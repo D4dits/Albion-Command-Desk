@@ -190,3 +190,17 @@ def test_allow_combat_state_respects_party_scope_in_strict_mode() -> None:
     assert _allow_combat_state(1001, party, names)
     assert _allow_combat_state(1002, party, names)
     assert not _allow_combat_state(1003, party, names)
+
+
+def test_allow_combat_state_rejects_non_local_party_id_after_local_party_observation() -> None:
+    party = PartyRegistry(strict=True)
+    names = NameRegistry()
+    party.seed_self_ids([1001])
+    party.seed_names(["D4dits", "SocialFur10", "SocialFur11"])
+    party.seed_ids([1001, 1002, 1003])
+    names.record(1001, "D4dits")
+    names.record_local(1002, "SocialFur10", 50.0)
+    names.record(1003, "SocialFur11")
+
+    assert _allow_combat_state(1002, party, names, timestamp=55.0)
+    assert not _allow_combat_state(1003, party, names, timestamp=55.0)
