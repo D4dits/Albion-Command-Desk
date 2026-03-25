@@ -35,7 +35,7 @@ Rectangle {
         if (versions && versions.length >= 2) {
             return versions[0] + " -> " + versions[versions.length - 1]
         }
-        return text.replace(/^Update available:\s*/i, "Update: ")
+        return text.replace(/^Update available:\s*/i, "").replace(/^Update:\s*/i, "")
     }
 
     // Signals
@@ -45,7 +45,7 @@ Rectangle {
     property var theme: null
 
     // Computed width
-    Layout.preferredWidth: Math.max(minWidth, Math.min(maxWidth, availableWidth * 0.34))
+    Layout.preferredWidth: Math.max(minWidth, Math.min(maxWidth, availableWidth * 0.38))
     Layout.preferredHeight: bannerHeight
     radius: theme.shellPillRadius
     color: theme.shellBannerBackground

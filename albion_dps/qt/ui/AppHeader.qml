@@ -31,7 +31,7 @@ Rectangle {
     property bool helpView: false
     property bool compactLayout: false
     property bool narrowLayout: false
-    property bool veryNarrowLayout: width < 980
+    property bool veryNarrowLayout: width < 1120
 
     // Right zone widths
     property int meterMetaWidth: 180
@@ -197,7 +197,7 @@ Rectangle {
 
             AppButton {
                 visible: root.updateBannerVisible && root.veryNarrowLayout
-                text: "Update"
+                text: "Update " + shellUpdateBanner.shortBannerText
                 compact: true
                 onClicked: root.requestManualUpdateCheck()
             }

@@ -44,7 +44,7 @@ Item {
 
     // UI flags
     property bool compactLayout: false
-    property bool stackedLayout: width < 1240
+    property bool stackedLayout: width < 1180
     property bool historyAvailable: historyModel && historyModel.count > 0
 
     // Signals to notify parent of actions
@@ -244,8 +244,8 @@ Item {
                     id: meterHistoryPanel
                     Layout.fillWidth: true
                     Layout.fillHeight: !root.stackedLayout
-                    Layout.preferredHeight: root.stackedLayout ? (root.historyAvailable ? 180 : 130) : -1
-                    Layout.maximumHeight: root.stackedLayout ? 200 : 16777215
+                    Layout.preferredHeight: root.stackedLayout ? (root.historyAvailable ? 160 : 120) : -1
+                    Layout.maximumHeight: root.stackedLayout ? 190 : 16777215
                     theme: root.theme
                     textColor: root.textColor
                     mutedColor: root.mutedColor
@@ -267,26 +267,32 @@ Item {
                     onExportSessionCompare: root.exportSessionCompare()
                 }
 
-                // Session gains
-                MeterSessionStatsPanel {
-                    id: meterSessionStats
+                GridLayout {
                     Layout.fillWidth: true
-                    theme: root.theme
-                    textColor: root.textColor
-                    mutedColor: root.mutedColor
-                    fameText: root.fameText
-                    famePerHourText: root.famePerHourText
-                    silverText: root.silverText
-                    silverPerHourText: root.silverPerHourText
-                }
+                    columns: root.stackedLayout && width >= 760 ? 2 : 1
+                    rowSpacing: 8
+                    columnSpacing: 8
 
-                MeterSessionActivityPanel {
-                    id: meterSessionActivity
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: root.stackedLayout ? 160 : 190
-                    Layout.minimumHeight: 140
-                    theme: root.theme
-                    activityModel: root.sessionActivityModel
+                    MeterSessionStatsPanel {
+                        id: meterSessionStats
+                        Layout.fillWidth: true
+                        theme: root.theme
+                        textColor: root.textColor
+                        mutedColor: root.mutedColor
+                        fameText: root.fameText
+                        famePerHourText: root.famePerHourText
+                        silverText: root.silverText
+                        silverPerHourText: root.silverPerHourText
+                    }
+
+                    MeterSessionActivityPanel {
+                        id: meterSessionActivity
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: root.stackedLayout ? 136 : 190
+                        Layout.minimumHeight: root.stackedLayout ? 120 : 140
+                        theme: root.theme
+                        activityModel: root.sessionActivityModel
+                    }
                 }
             }
         }
@@ -325,9 +331,9 @@ Item {
 
         Loader {
             Layout.fillWidth: true
-            Layout.preferredHeight: root.historyAvailable ? 250 : 200
-            Layout.minimumHeight: 180
-            Layout.maximumHeight: 280
+            Layout.preferredHeight: root.width >= 900 ? 340 : 300
+            Layout.minimumHeight: 240
+            Layout.maximumHeight: 380
             sourceComponent: rightPanelComponent
         }
     }
