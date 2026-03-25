@@ -135,6 +135,16 @@ CardPanel {
     readonly property int marketOutputsContentMinWidth: marketOutputsItemWidth + marketOutputsQtyWidth + marketOutputsCityWidth + marketOutputsModeWidth + marketOutputsManualWidth + marketOutputsUnitWidth + marketOutputsAgeWidth + marketOutputsGrossWidth + marketOutputsFeeWidth + marketOutputsTaxWidth + marketOutputsNetMinWidth + marketColumnSpacing * 10 + 12
 
     readonly property int marketResultsItemWidth: Math.max(narrowLayout ? 180 : 220, Math.min(340, Math.round(width * (narrowLayout ? 0.24 : 0.28))))
+    readonly property int marketResultsCityWidth: 92
+    readonly property int marketResultsQtyWidth: 58
+    readonly property int marketResultsRevenueWidth: 84
+    readonly property int marketResultsCostWidth: 84
+    readonly property int marketResultsFeeWidth: 68
+    readonly property int marketResultsTaxWidth: 68
+    readonly property int marketResultsProfitWidth: 84
+    readonly property int marketResultsMarginWidth: 70
+    readonly property int marketResultsDemandMinWidth: 84
+    readonly property int marketResultsContentMinWidth: marketResultsItemWidth + marketResultsCityWidth + marketResultsQtyWidth + marketResultsRevenueWidth + marketResultsCostWidth + marketResultsFeeWidth + marketResultsTaxWidth + marketResultsProfitWidth + marketResultsMarginWidth + marketResultsDemandMinWidth + marketColumnSpacing * 9 + 12
 
     // Signals
     signal setRegion(string region)
@@ -631,16 +641,19 @@ CardPanel {
                         font.bold: true
                     }
 
-                    RowLayout {
+                    Flow {
                         Layout.fillWidth: true
                         spacing: 6
+
                         Text {
                             text: "Search"
                             color: mutedColor
                             font.pixelSize: 11
+                            height: compactControlHeight
+                            verticalAlignment: Text.AlignVCenter
                         }
                         AppTextField {
-                            Layout.preferredWidth: 240
+                            width: 240
                             implicitHeight: compactControlHeight
                             font.pixelSize: 11
                             placeholderText: "item name"
@@ -652,7 +665,6 @@ CardPanel {
                             checked: root.inputsShowOnOnly
                             onToggled: root.inputsShowOnOnly = checked
                         }
-                        Item { Layout.fillWidth: true }
                         AppButton {
                             text: "Copy CSV"
                             compact: true
@@ -667,120 +679,147 @@ CardPanel {
                         }
                     }
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 24
-                        radius: 4
-                        color: "#111b28"
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 4
-                            spacing: marketColumnSpacing
-                            Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; elide: Text.ElideRight }
-                            Text { text: "Need"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
-                            Text { text: "Stock"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsStockWidth }
-                            Text { text: "Buy"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth }
-                            Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; elide: Text.ElideRight }
-                            Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsModeWidth }
-                            Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth }
-                            Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth }
-                            Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth }
-                            Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketInputsTotalMinWidth }
-                        }
-                    }
-
-                    ListView {
+                    Flickable {
+                        id: inputsTableFlick
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.minimumHeight: 120
+                        Layout.minimumHeight: 160
                         clip: true
-                        model: root.inputsShowOnOnly ? root.inputsOnModel : root.inputsModel
+                        contentWidth: Math.max(width, root.marketInputsContentMinWidth)
+                        contentHeight: height
+                        flickableDirection: Flickable.HorizontalFlick
+                        boundsBehavior: Flickable.StopAtBounds
+                        interactive: contentWidth > width
 
-                        delegate: Rectangle {
-                            readonly property bool searchMatches: root.matchesSearch(item, root.inputsSearchQuery)
-                            width: ListView.view.width
-                            height: searchMatches ? 30 : 0
-                            visible: searchMatches
-                            color: tableRowColor(index)
+                        ScrollBar.horizontal: ScrollBar {
+                            policy: inputsTableFlick.contentWidth > inputsTableFlick.width ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                        }
 
-                            RowLayout {
+                        Item {
+                            width: inputsTableFlick.contentWidth
+                            height: inputsTableFlick.height
+
+                            ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 4
-                                spacing: marketColumnSpacing
+                                spacing: 0
 
-                                Text {
-                                    text: itemLabelWithTier(item, itemId)
-                                    color: textColor
-                                    font.pixelSize: 11
-                                    Layout.preferredWidth: marketInputsItemWidth
-                                    elide: Text.ElideRight
-                                    MouseArea {
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 24
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
                                         anchors.fill: parent
-                                        acceptedButtons: Qt.LeftButton
-                                        onDoubleClicked: root.copyCellText(parent.text)
+                                        anchors.margins: 4
+                                        spacing: marketColumnSpacing
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsItemWidth; elide: Text.ElideRight }
+                                        Text { text: "Need"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
+                                        Text { text: "Stock"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsStockWidth }
+                                        Text { text: "Buy"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth }
+                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; elide: Text.ElideRight }
+                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsModeWidth }
+                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth }
+                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth }
+                                        Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth }
+                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketInputsTotalMinWidth }
                                     }
                                 }
-                                Text { text: formatIntRound(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
 
-                                AppTextField {
-                                    Layout.preferredWidth: marketInputsStockWidth
-                                    implicitHeight: compactControlHeight
-                                    font.pixelSize: 11
-                                    text: stockQuantity > 0 ? formatFixed(stockQuantity, 2) : ""
-                                    placeholderText: "0"
-                                    onEditingFinished: root.setInputStockQuantity(itemId, text)
-                                }
+                                ListView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    Layout.minimumHeight: 120
+                                    clip: true
+                                    model: root.inputsShowOnOnly ? root.inputsOnModel : root.inputsModel
 
-                                Text { text: formatIntRound(buyQuantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth }
-                                Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; elide: Text.ElideRight }
+                                    delegate: Rectangle {
+                                        readonly property bool searchMatches: root.matchesSearch(item, root.inputsSearchQuery)
+                                        width: ListView.view.width
+                                        height: searchMatches ? 30 : 0
+                                        visible: searchMatches
+                                        color: tableRowColor(index)
 
-                                AppComboBox {
-                                    Layout.preferredWidth: marketInputsModeWidth
-                                    implicitHeight: compactControlHeight
-                                    font.pixelSize: 11
-                                    model: root.inputPriceModeOptions
-                                    textRole: "label"
-                                    currentIndex: root.priceModeIndex(root.inputPriceModeOptions, priceType)
-                                    onActivated: {
-                                        var option = model[currentIndex]
-                                        if (option && option.value) {
-                                            root.setInputPriceType(itemId, option.value)
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 4
+                                            spacing: marketColumnSpacing
+
+                                            Text {
+                                                text: itemLabelWithTier(item, itemId)
+                                                color: textColor
+                                                font.pixelSize: 11
+                                                Layout.preferredWidth: marketInputsItemWidth
+                                                elide: Text.ElideRight
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    acceptedButtons: Qt.LeftButton
+                                                    onDoubleClicked: root.copyCellText(parent.text)
+                                                }
+                                            }
+                                            Text { text: formatIntRound(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
+
+                                            AppTextField {
+                                                Layout.preferredWidth: marketInputsStockWidth
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
+                                                text: stockQuantity > 0 ? formatFixed(stockQuantity, 2) : ""
+                                                placeholderText: "0"
+                                                onEditingFinished: root.setInputStockQuantity(itemId, text)
+                                            }
+
+                                            Text { text: formatIntRound(buyQuantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsBuyWidth }
+                                            Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsCityWidth; elide: Text.ElideRight }
+
+                                            AppComboBox {
+                                                Layout.preferredWidth: marketInputsModeWidth
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
+                                                model: root.inputPriceModeOptions
+                                                textRole: "label"
+                                                currentIndex: root.priceModeIndex(root.inputPriceModeOptions, priceType)
+                                                onActivated: {
+                                                    var option = model[currentIndex]
+                                                    if (option && option.value) {
+                                                        root.setInputPriceType(itemId, option.value)
+                                                    }
+                                                }
+                                            }
+
+                                            AppTextField {
+                                                Layout.preferredWidth: marketInputsManualWidth
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
+                                                text: manualPrice > 0 ? String(manualPrice) : ""
+                                                placeholderText: "-"
+                                                inputMethodHints: Qt.ImhDigitsOnly
+                                                onEditingFinished: root.setInputManualPrice(itemId, text)
+                                            }
+
+                                            Text { text: formatInt(unitPrice); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth }
+                                            Text { text: priceAgeText; color: adpAgeColor(priceAgeText); font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth }
+                                            Text { text: formatInt(totalCost); color: textColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketInputsTotalMinWidth }
                                         }
                                     }
                                 }
 
-                                AppTextField {
-                                    Layout.preferredWidth: marketInputsManualWidth
-                                    implicitHeight: compactControlHeight
-                                    font.pixelSize: 11
-                                    text: manualPrice > 0 ? String(manualPrice) : ""
-                                    placeholderText: "-"
-                                    inputMethodHints: Qt.ImhDigitsOnly
-                                    onEditingFinished: root.setInputManualPrice(itemId, text)
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Total input cost"; color: mutedColor; font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
+                                        Text {
+                                            text: formatInt(root.inputsShowOnOnly ? root.resultsInputCost : root.inputsTotalCost)
+                                            color: textColor
+                                            font.pixelSize: 12
+                                            font.bold: true
+                                        }
+                                    }
                                 }
-
-                                Text { text: formatInt(unitPrice); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth }
-                                Text { text: priceAgeText; color: adpAgeColor(priceAgeText); font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth }
-                                Text { text: formatInt(totalCost); color: textColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketInputsTotalMinWidth }
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 28
-                        radius: 4
-                        color: "#111b28"
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 6
-                            Text { text: "Total input cost"; color: mutedColor; font.pixelSize: 11 }
-                            Item { Layout.fillWidth: true }
-                            Text {
-                                text: formatInt(root.inputsShowOnOnly ? root.resultsInputCost : root.inputsTotalCost)
-                                color: textColor
-                                font.pixelSize: 12
-                                font.bold: true
                             }
                         }
                     }
@@ -805,16 +844,18 @@ CardPanel {
                         font.bold: true
                     }
 
-                    RowLayout {
+                    Flow {
                         Layout.fillWidth: true
                         spacing: 6
                         Text {
                             text: "Search"
                             color: mutedColor
                             font.pixelSize: 11
+                            height: compactControlHeight
+                            verticalAlignment: Text.AlignVCenter
                         }
                         AppTextField {
-                            Layout.preferredWidth: 240
+                            width: 240
                             implicitHeight: compactControlHeight
                             font.pixelSize: 11
                             placeholderText: "item name"
@@ -826,7 +867,6 @@ CardPanel {
                             checked: root.outputsShowOnOnly
                             onToggled: root.outputsShowOnOnly = checked
                         }
-                        Item { Layout.fillWidth: true }
                         AppButton {
                             text: "Copy CSV"
                             compact: true
@@ -841,122 +881,149 @@ CardPanel {
                         }
                     }
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 24
-                        radius: 4
-                        color: "#111b28"
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 4
-                            spacing: marketColumnSpacing
-                            Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; elide: Text.ElideRight }
-                            Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
-                            Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; elide: Text.ElideRight }
-                            Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsModeWidth }
-                            Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsManualWidth }
-                            Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth }
-                            Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsAgeWidth }
-                            Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth }
-                            Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth }
-                            Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth }
-                            Text { text: "Net"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketOutputsNetMinWidth }
-                        }
-                    }
-
-                    ListView {
+                    Flickable {
+                        id: outputsTableFlick
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.minimumHeight: 120
+                        Layout.minimumHeight: 160
                         clip: true
-                        model: root.outputsShowOnOnly ? root.outputsOnModel : root.outputsModel
+                        contentWidth: Math.max(width, root.marketOutputsContentMinWidth)
+                        contentHeight: height
+                        flickableDirection: Flickable.HorizontalFlick
+                        boundsBehavior: Flickable.StopAtBounds
+                        interactive: contentWidth > width
 
-                        delegate: Rectangle {
-                            readonly property bool searchMatches: root.matchesSearch(item, root.outputsSearchQuery)
-                            width: ListView.view.width
-                            height: searchMatches ? 30 : 0
-                            visible: searchMatches
-                            color: tableRowColor(index)
+                        ScrollBar.horizontal: ScrollBar {
+                            policy: outputsTableFlick.contentWidth > outputsTableFlick.width ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                        }
 
-                            RowLayout {
+                        Item {
+                            width: outputsTableFlick.contentWidth
+                            height: outputsTableFlick.height
+
+                            ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 4
-                                spacing: marketColumnSpacing
+                                spacing: 0
 
-                                Text {
-                                    text: itemLabelWithTier(item, itemId)
-                                    color: textColor
-                                    font.pixelSize: 11
-                                    Layout.preferredWidth: marketOutputsItemWidth
-                                    elide: Text.ElideRight
-                                    MouseArea {
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 24
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
                                         anchors.fill: parent
-                                        acceptedButtons: Qt.LeftButton
-                                        onDoubleClicked: root.copyCellText(parent.text)
+                                        anchors.margins: 4
+                                        spacing: marketColumnSpacing
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsItemWidth; elide: Text.ElideRight }
+                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
+                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; elide: Text.ElideRight }
+                                        Text { text: "Mode"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsModeWidth }
+                                        Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsManualWidth }
+                                        Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth }
+                                        Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsAgeWidth }
+                                        Text { text: "Gross"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth }
+                                        Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth }
+                                        Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth }
+                                        Text { text: "Net"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketOutputsNetMinWidth }
                                     }
                                 }
-                                Text { text: formatIntFloor(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
-                                Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; elide: Text.ElideRight }
 
-                                AppComboBox {
-                                    Layout.preferredWidth: marketOutputsModeWidth
-                                    implicitHeight: compactControlHeight
-                                    font.pixelSize: 11
-                                    model: root.outputPriceModeOptions
-                                    textRole: "label"
-                                    currentIndex: root.priceModeIndex(root.outputPriceModeOptions, priceType)
-                                    onActivated: {
-                                        var option = model[currentIndex]
-                                        if (option && option.value) {
-                                            root.setOutputPriceType(itemId, option.value)
+                                ListView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    Layout.minimumHeight: 120
+                                    clip: true
+                                    model: root.outputsShowOnOnly ? root.outputsOnModel : root.outputsModel
+
+                                    delegate: Rectangle {
+                                        readonly property bool searchMatches: root.matchesSearch(item, root.outputsSearchQuery)
+                                        width: ListView.view.width
+                                        height: searchMatches ? 30 : 0
+                                        visible: searchMatches
+                                        color: tableRowColor(index)
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 4
+                                            spacing: marketColumnSpacing
+
+                                            Text {
+                                                text: itemLabelWithTier(item, itemId)
+                                                color: textColor
+                                                font.pixelSize: 11
+                                                Layout.preferredWidth: marketOutputsItemWidth
+                                                elide: Text.ElideRight
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    acceptedButtons: Qt.LeftButton
+                                                    onDoubleClicked: root.copyCellText(parent.text)
+                                                }
+                                            }
+                                            Text { text: formatIntFloor(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
+                                            Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; elide: Text.ElideRight }
+
+                                            AppComboBox {
+                                                Layout.preferredWidth: marketOutputsModeWidth
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
+                                                model: root.outputPriceModeOptions
+                                                textRole: "label"
+                                                currentIndex: root.priceModeIndex(root.outputPriceModeOptions, priceType)
+                                                onActivated: {
+                                                    var option = model[currentIndex]
+                                                    if (option && option.value) {
+                                                        root.setOutputPriceType(itemId, option.value)
+                                                    }
+                                                }
+                                            }
+
+                                            AppTextField {
+                                                Layout.preferredWidth: marketOutputsManualWidth
+                                                implicitHeight: compactControlHeight
+                                                font.pixelSize: 11
+                                                text: manualPrice > 0 ? String(manualPrice) : ""
+                                                placeholderText: "-"
+                                                inputMethodHints: Qt.ImhDigitsOnly
+                                                onEditingFinished: root.setOutputManualPrice(itemId, text)
+                                            }
+
+                                            Text { text: formatInt(unitPrice); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth }
+                                            Text { text: priceAgeText; color: adpAgeColor(priceAgeText); font.pixelSize: 11; Layout.preferredWidth: marketOutputsAgeWidth }
+                                            Text { text: formatInt(totalValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth }
+                                            Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth }
+                                            Text { text: formatInt(taxValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth }
+                                            Text { text: formatInt(netValue); color: textColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketOutputsNetMinWidth }
                                         }
                                     }
                                 }
 
-                                AppTextField {
-                                    Layout.preferredWidth: marketOutputsManualWidth
-                                    implicitHeight: compactControlHeight
-                                    font.pixelSize: 11
-                                    text: manualPrice > 0 ? String(manualPrice) : ""
-                                    placeholderText: "-"
-                                    inputMethodHints: Qt.ImhDigitsOnly
-                                    onEditingFinished: root.setOutputManualPrice(itemId, text)
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        Text { text: "Gross output"; color: mutedColor; font.pixelSize: 11 }
+                                        Text {
+                                            text: formatInt(root.outputsShowOnOnly ? root.resultsOutputValue : root.outputsTotalValue)
+                                            color: textColor
+                                            font.pixelSize: 12
+                                            font.bold: true
+                                        }
+                                        Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
+                                        Text { text: "Net output"; color: mutedColor; font.pixelSize: 11 }
+                                        Text {
+                                            text: formatInt(root.outputsShowOnOnly ? root.resultsOutputNetValue : root.outputsNetValue)
+                                            color: textColor
+                                            font.pixelSize: 12
+                                            font.bold: true
+                                        }
+                                        Item { Layout.fillWidth: true }
+                                    }
                                 }
-
-                                Text { text: formatInt(unitPrice); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth }
-                                Text { text: priceAgeText; color: adpAgeColor(priceAgeText); font.pixelSize: 11; Layout.preferredWidth: marketOutputsAgeWidth }
-                                Text { text: formatInt(totalValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth }
-                                Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth }
-                                Text { text: formatInt(taxValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth }
-                                Text { text: formatInt(netValue); color: textColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketOutputsNetMinWidth }
                             }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 28
-                        radius: 4
-                        color: "#111b28"
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 6
-                            Text { text: "Gross output"; color: mutedColor; font.pixelSize: 11 }
-                            Text {
-                                text: formatInt(root.outputsShowOnOnly ? root.resultsOutputValue : root.outputsTotalValue)
-                                color: textColor
-                                font.pixelSize: 12
-                                font.bold: true
-                            }
-                            Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
-                            Text { text: "Net output"; color: mutedColor; font.pixelSize: 11 }
-                            Text {
-                                text: formatInt(root.outputsShowOnOnly ? root.resultsOutputNetValue : root.outputsNetValue)
-                                color: textColor
-                                font.pixelSize: 12
-                                font.bold: true
-                            }
-                            Item { Layout.fillWidth: true }
                         }
                     }
                 }
@@ -973,34 +1040,40 @@ CardPanel {
                     anchors.margins: 10
                     spacing: 8
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Text { text: "Results"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Item { Layout.fillWidth: true }
-                        Text { text: "Sort"; color: mutedColor; font.pixelSize: 11 }
-                        AppComboBox {
-                            Layout.preferredWidth: 120
-                            implicitHeight: compactControlHeight
-                            font.pixelSize: 11
-                            model: ["profit", "margin", "revenue"]
-                            currentIndex: Math.max(0, model.indexOf(root.resultsSortKey))
-                            onActivated: root.setResultsSortKey(currentText)
-                        }
-                    }
-
-                    RowLayout {
+                    Flow {
                         Layout.fillWidth: true
                         spacing: 6
-                        Text { text: "Search"; color: mutedColor; font.pixelSize: 11 }
+
+                        Text {
+                            text: "Search"
+                            color: mutedColor
+                            font.pixelSize: 11
+                            height: compactControlHeight
+                            verticalAlignment: Text.AlignVCenter
+                        }
                         AppTextField {
-                            Layout.preferredWidth: 240
+                            width: 240
                             implicitHeight: compactControlHeight
                             font.pixelSize: 11
                             placeholderText: "item name"
                             text: root.resultsSearchQuery
                             onTextChanged: root.resultsSearchQuery = text
                         }
-                        Item { Layout.fillWidth: true }
+                        Text {
+                            text: "Sort"
+                            color: mutedColor
+                            font.pixelSize: 11
+                            height: compactControlHeight
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        AppComboBox {
+                            width: 120
+                            implicitHeight: compactControlHeight
+                            font.pixelSize: 11
+                            model: ["profit", "margin", "revenue"]
+                            currentIndex: Math.max(0, model.indexOf(root.resultsSortKey))
+                            onActivated: root.setResultsSortKey(currentText)
+                        }
                         AppButton {
                             text: "Copy CSV"
                             compact: true
@@ -1015,88 +1088,115 @@ CardPanel {
                         }
                     }
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 28
-                        radius: 4
-                        color: "#111b28"
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 6
-                            spacing: 12
-                            Text { text: "Investment: " + formatInt(root.resultsInputCost); color: mutedColor; font.pixelSize: 11 }
-                            Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
-                            Text { text: "Revenue: " + formatInt(root.resultsOutputValue); color: mutedColor; font.pixelSize: 11 }
-                            Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
-                            Text { text: "Net: " + formatInt(root.resultsNetValue); color: signedValueColor(root.resultsNetValue); font.pixelSize: 11 }
-                            Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
-                            Text { text: "Margin: " + formatFixed(root.resultsMarginPercent, 2) + "%"; color: signedValueColor(root.resultsMarginPercent); font.pixelSize: 11 }
-                            Item { Layout.fillWidth: true }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        height: 24
-                        radius: 4
-                        color: "#111b28"
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.margins: 4
-                            spacing: 6
-                            Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 200; elide: Text.ElideRight }
-                            Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 92 }
-                            Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 58 }
-                            Text { text: "Revenue"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84 }
-                            Text { text: "Cost"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84 }
-                            Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68 }
-                            Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68 }
-                            Text { text: "Profit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84 }
-                            Text { text: "Margin"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 70 }
-                            Text { text: "Demand"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true }
-                        }
-                    }
-
-                    ListView {
+                    Flickable {
+                        id: resultsTableFlick
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.minimumHeight: 120
+                        Layout.minimumHeight: 160
                         clip: true
-                        model: root.resultsItemsModel
+                        contentWidth: Math.max(width, root.marketResultsContentMinWidth)
+                        contentHeight: height
+                        flickableDirection: Flickable.HorizontalFlick
+                        boundsBehavior: Flickable.StopAtBounds
+                        interactive: contentWidth > width
 
-                        delegate: Rectangle {
-                            readonly property bool searchMatches: root.matchesSearch(item, root.resultsSearchQuery)
-                            width: ListView.view.width
-                            height: searchMatches ? 28 : 0
-                            visible: searchMatches
-                            color: tableRowColor(index)
+                        ScrollBar.horizontal: ScrollBar {
+                            policy: resultsTableFlick.contentWidth > resultsTableFlick.width ? ScrollBar.AsNeeded : ScrollBar.AlwaysOff
+                        }
 
-                            RowLayout {
+                        Item {
+                            width: resultsTableFlick.contentWidth
+                            height: resultsTableFlick.height
+
+                            ColumnLayout {
                                 anchors.fill: parent
-                                anchors.margins: 4
-                                spacing: 6
+                                spacing: 0
 
-                                Text {
-                                    text: itemLabelWithTier(item, itemId)
-                                    color: textColor
-                                    font.pixelSize: 11
-                                    Layout.preferredWidth: 200
-                                    elide: Text.ElideRight
-                                    MouseArea {
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 28
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
                                         anchors.fill: parent
-                                        acceptedButtons: Qt.LeftButton
-                                        onDoubleClicked: root.copyCellText(parent.text)
+                                        anchors.margins: 6
+                                        spacing: 12
+                                        Text { text: "Investment: " + formatInt(root.resultsInputCost); color: mutedColor; font.pixelSize: 11 }
+                                        Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
+                                        Text { text: "Revenue: " + formatInt(root.resultsOutputValue); color: mutedColor; font.pixelSize: 11 }
+                                        Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
+                                        Text { text: "Net: " + formatInt(root.resultsNetValue); color: signedValueColor(root.resultsNetValue); font.pixelSize: 11 }
+                                        Text { text: "|"; color: mutedColor; font.pixelSize: 11 }
+                                        Text { text: "Margin: " + formatFixed(root.resultsMarginPercent, 2) + "%"; color: signedValueColor(root.resultsMarginPercent); font.pixelSize: 11 }
+                                        Item { Layout.fillWidth: true }
                                     }
                                 }
-                                Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 92; elide: Text.ElideRight }
-                                Text { text: formatIntFloor(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 58; horizontalAlignment: Text.AlignLeft }
-                                Text { text: formatInt(revenue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignLeft }
-                                Text { text: formatInt(cost); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignLeft }
-                                Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68; horizontalAlignment: Text.AlignLeft }
-                                Text { text: formatInt(taxValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: 68; horizontalAlignment: Text.AlignLeft }
-                                Text { text: formatInt(profit); color: signedValueColor(profit); font.pixelSize: 11; Layout.preferredWidth: 84; horizontalAlignment: Text.AlignLeft }
-                                Text { text: formatFixed(marginPercent, 1) + "%"; color: signedValueColor(marginPercent); font.pixelSize: 11; Layout.preferredWidth: 70; horizontalAlignment: Text.AlignLeft }
-                                Text { text: formatFixed(demandProxy, 1) + "%"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; horizontalAlignment: Text.AlignLeft }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 24
+                                    radius: 4
+                                    color: "#111b28"
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 4
+                                        spacing: marketColumnSpacing
+                                        Text { text: "Item"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsItemWidth; elide: Text.ElideRight }
+                                        Text { text: "City"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsCityWidth }
+                                        Text { text: "Qty"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsQtyWidth }
+                                        Text { text: "Revenue"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsRevenueWidth }
+                                        Text { text: "Cost"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsCostWidth }
+                                        Text { text: "Fee"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsFeeWidth }
+                                        Text { text: "Tax"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsTaxWidth }
+                                        Text { text: "Profit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsProfitWidth }
+                                        Text { text: "Margin"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsMarginWidth }
+                                        Text { text: "Demand"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketResultsDemandMinWidth }
+                                    }
+                                }
+
+                                ListView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    Layout.minimumHeight: 120
+                                    clip: true
+                                    model: root.resultsItemsModel
+
+                                    delegate: Rectangle {
+                                        readonly property bool searchMatches: root.matchesSearch(item, root.resultsSearchQuery)
+                                        width: ListView.view.width
+                                        height: searchMatches ? 28 : 0
+                                        visible: searchMatches
+                                        color: tableRowColor(index)
+
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 4
+                                            spacing: marketColumnSpacing
+
+                                            Text {
+                                                text: itemLabelWithTier(item, itemId)
+                                                color: textColor
+                                                font.pixelSize: 11
+                                                Layout.preferredWidth: marketResultsItemWidth
+                                                elide: Text.ElideRight
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    acceptedButtons: Qt.LeftButton
+                                                    onDoubleClicked: root.copyCellText(parent.text)
+                                                }
+                                            }
+                                            Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsCityWidth; elide: Text.ElideRight }
+                                            Text { text: formatIntFloor(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsQtyWidth; horizontalAlignment: Text.AlignLeft }
+                                            Text { text: formatInt(revenue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsRevenueWidth; horizontalAlignment: Text.AlignLeft }
+                                            Text { text: formatInt(cost); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsCostWidth; horizontalAlignment: Text.AlignLeft }
+                                            Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsFeeWidth; horizontalAlignment: Text.AlignLeft }
+                                            Text { text: formatInt(taxValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketResultsTaxWidth; horizontalAlignment: Text.AlignLeft }
+                                            Text { text: formatInt(profit); color: signedValueColor(profit); font.pixelSize: 11; Layout.preferredWidth: marketResultsProfitWidth; horizontalAlignment: Text.AlignLeft }
+                                            Text { text: formatFixed(marginPercent, 1) + "%"; color: signedValueColor(marginPercent); font.pixelSize: 11; Layout.preferredWidth: marketResultsMarginWidth; horizontalAlignment: Text.AlignLeft }
+                                            Text { text: formatFixed(demandProxy, 1) + "%"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketResultsDemandMinWidth; horizontalAlignment: Text.AlignLeft }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

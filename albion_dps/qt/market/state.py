@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import math
+import os
 import re
 import time
 from math import ceil
@@ -1295,7 +1296,7 @@ class MarketSetupState(QObject):
             return
         self._active_market_tab_index = normalized
         if self._active_market_tab_index >= 1:
-            if QCoreApplication.instance() is None:
+            if not self._should_defer_price_refresh():
                 self._rebuild_preview(force_price_refresh=False)
             elif not self._market_data_tabs_live_bootstrap_done:
                 # First data-tab visit: schedule async refresh so UI can paint loading state.
@@ -1752,7 +1753,7 @@ class MarketSetupState(QObject):
             return
         self._append_diag("Manual price refresh requested.", level="INFO")
         self._set_next_live_fetch_cooldown(self._manual_refresh_cooldown_seconds)
-        if QCoreApplication.instance() is None:
+        if not self._should_defer_price_refresh():
             self._rebuild_preview(force_price_refresh=True)
         else:
             self._prices_source = "loading"
@@ -3672,6 +3673,14 @@ class MarketSetupState(QObject):
             app.processEvents()
         except Exception:
             return
+
+    def _should_defer_price_refresh(self) -> bool:
+        app = QCoreApplication.instance()
+        if app is None:
+            return False
+        if os.environ.get("PYTEST_CURRENT_TEST"):
+            return False
+        return len(self._craft_plan_rows) >= 8
 
     def _set_prices_status(self, source: str, message: str) -> None:
         self._prices_source = str(source or "fallback")

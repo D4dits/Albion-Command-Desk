@@ -24,6 +24,7 @@ and this project uses semantic versioning.
 - Meter history can now be exported as TXT/CSV/JSON, and selected archived fights expose an in-app KPI comparison against a neighboring session for quick review outside the live scoreboard.
 - Meter sidebar now includes a passive session-activity trail for map transitions and recent fame/silver reward gains, giving users a safe post-analysis breadcrumb without adding any overlay/radar behavior.
 - Start tab was rebuilt into a tighter 2x2 health grid (capture, Git, game data, updates), while the header now exposes a shorter version-only update pill and falls back to a compact `Update ...` action in narrower widths.
+- Market setup/inputs/outputs/results tables now keep all columns reachable at the enforced minimum window size via horizontal scrolling, and their search/sort/export controls use a consistent wrapped toolbar layout instead of clipping at smaller widths.
 
 ## [0.1.19] - 2026-02-26
 

@@ -404,7 +404,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Default city/filter presets persist between runs.
 
 ### PH6-MKT-064 - Market table UX hardening
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: finish interaction polish for setup/inputs/outputs/results tables.
 - Files:
   1. `albion_dps/qt/ui/MarketTab.qml`
@@ -415,6 +415,9 @@ Update status checkboxes and notes after each implemented ticket.
   - Checkbox hit areas are stable.
   - Search/filter/sort controls are visually and functionally consistent.
   - Narrow-width behavior is usable without hidden columns becoming inaccessible.
+
+- Progress:
+  - 2026-03-25: PH6-MKT-064 completed (market table toolbars now use consistent wrapped controls, setup/inputs/outputs/results tables expose horizontal scrolling instead of clipping columns, and market tab QML is regression-covered at the enforced minimum window width).
 
 ## Active Milestone - Phase 7 (Product surface + supportability)
 
