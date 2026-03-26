@@ -8,8 +8,10 @@ CardPanel {
 
     property var theme: null
     property var activityModel: null
+    implicitHeight: Math.max(124, activityContent.implicitHeight + 24)
 
     ColumnLayout {
+        id: activityContent
         anchors.fill: parent
         anchors.margins: 12
         spacing: 8
@@ -17,7 +19,7 @@ CardPanel {
         Text {
             text: "Session activity"
             color: root.theme.textPrimary
-            font.pixelSize: 14
+            font.pixelSize: 13
             font.bold: true
         }
 

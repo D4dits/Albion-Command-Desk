@@ -13,9 +13,9 @@ CardPanel {
     property string famePerHourText: "0.0"
     property string silverText: "0"
     property string silverPerHourText: "0.0"
-    property bool singleColumnLayout: width < 260
+    property bool singleColumnLayout: false
 
-    implicitHeight: Math.max(132, statsContent.implicitHeight + 24)
+    implicitHeight: Math.max(156, statsContent.implicitHeight + 24)
 
     function _formatInt(text) {
         var value = Number(text)
@@ -43,91 +43,131 @@ CardPanel {
 
         GridLayout {
             Layout.fillWidth: true
-            columns: root.singleColumnLayout ? 1 : 2
+            columns: 2
             columnSpacing: 12
-            rowSpacing: 8
+            rowSpacing: 10
 
-            ColumnLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                spacing: 2
-                Text {
-                    text: "Fame"
-                    color: root.mutedColor
-                    font.pixelSize: 11
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: root._formatInt(root.fameText)
-                    color: root.textColor
-                    font.bold: true
-                    font.pixelSize: 18
-                    minimumPixelSize: 11
-                    fontSizeMode: Text.Fit
-                    elide: Text.ElideRight
-                    horizontalAlignment: Text.AlignLeft
+                implicitHeight: 52
+                radius: 6
+                color: root.theme.surfaceInteractive
+                border.color: root.theme.borderSubtle
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 2
+
+                    Text {
+                        text: "Fame"
+                        color: root.mutedColor
+                        font.pixelSize: 11
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: root._formatInt(root.fameText)
+                        color: root.textColor
+                        font.bold: true
+                        font.pixelSize: 18
+                        minimumPixelSize: 11
+                        fontSizeMode: Text.Fit
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignLeft
+                    }
                 }
             }
 
-            ColumnLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                spacing: 2
-                Text {
-                    text: "Fame / h"
-                    color: root.mutedColor
-                    font.pixelSize: 11
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: root._formatInt(root.famePerHourText)
-                    color: root.textColor
-                    font.bold: true
-                    font.pixelSize: 18
-                    minimumPixelSize: 11
-                    fontSizeMode: Text.Fit
-                    elide: Text.ElideRight
-                    horizontalAlignment: Text.AlignLeft
+                implicitHeight: 52
+                radius: 6
+                color: root.theme.surfaceInteractive
+                border.color: root.theme.borderSubtle
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 2
+
+                    Text {
+                        text: "Fame / h"
+                        color: root.mutedColor
+                        font.pixelSize: 11
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: root._formatInt(root.famePerHourText)
+                        color: root.textColor
+                        font.bold: true
+                        font.pixelSize: 18
+                        minimumPixelSize: 11
+                        fontSizeMode: Text.Fit
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignLeft
+                    }
                 }
             }
 
-            ColumnLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                spacing: 2
-                Text {
-                    text: "Silver"
-                    color: root.mutedColor
-                    font.pixelSize: 11
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: root._formatInt(root.silverText)
-                    color: root.textColor
-                    font.bold: true
-                    font.pixelSize: 18
-                    minimumPixelSize: 11
-                    fontSizeMode: Text.Fit
-                    elide: Text.ElideRight
-                    horizontalAlignment: Text.AlignLeft
+                implicitHeight: 52
+                radius: 6
+                color: root.theme.surfaceInteractive
+                border.color: root.theme.borderSubtle
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 2
+
+                    Text {
+                        text: "Silver"
+                        color: root.mutedColor
+                        font.pixelSize: 11
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: root._formatInt(root.silverText)
+                        color: root.textColor
+                        font.bold: true
+                        font.pixelSize: 18
+                        minimumPixelSize: 11
+                        fontSizeMode: Text.Fit
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignLeft
+                    }
                 }
             }
 
-            ColumnLayout {
+            Rectangle {
                 Layout.fillWidth: true
-                spacing: 2
-                Text {
-                    text: "Silver / h"
-                    color: root.mutedColor
-                    font.pixelSize: 11
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: root._formatInt(root.silverPerHourText)
-                    color: root.textColor
-                    font.bold: true
-                    font.pixelSize: 18
-                    minimumPixelSize: 11
-                    fontSizeMode: Text.Fit
-                    elide: Text.ElideRight
-                    horizontalAlignment: Text.AlignLeft
+                implicitHeight: 52
+                radius: 6
+                color: root.theme.surfaceInteractive
+                border.color: root.theme.borderSubtle
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 8
+                    spacing: 2
+
+                    Text {
+                        text: "Silver / h"
+                        color: root.mutedColor
+                        font.pixelSize: 11
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: root._formatInt(root.silverPerHourText)
+                        color: root.textColor
+                        font.bold: true
+                        font.pixelSize: 18
+                        minimumPixelSize: 11
+                        fontSizeMode: Text.Fit
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignLeft
+                    }
                 }
             }
         }

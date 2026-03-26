@@ -50,20 +50,22 @@ Item {
         anchors.margins: 12
         spacing: 8
 
-        Text {
-            text: "History"
-            color: textColor
-            font.pixelSize: 14
-            font.bold: true
-        }
-
-        Flow {
+        RowLayout {
             Layout.fillWidth: true
-            spacing: 6
+            spacing: 8
 
-            AppButton { text: "TXT"; compact: true; implicitHeight: 28; onClicked: root.exportHistoryTxt() }
-            AppButton { text: "CSV"; compact: true; implicitHeight: 28; onClicked: root.exportHistoryCsv() }
-            AppButton { text: "JSON"; compact: true; implicitHeight: 28; onClicked: root.exportHistoryJson() }
+            Text {
+                text: "History"
+                color: textColor
+                font.pixelSize: 14
+                font.bold: true
+            }
+
+            Item { Layout.fillWidth: true }
+
+            AppButton { text: "TXT"; compact: true; implicitHeight: 26; implicitWidth: 48; onClicked: root.exportHistoryTxt() }
+            AppButton { text: "CSV"; compact: true; implicitHeight: 26; implicitWidth: 48; onClicked: root.exportHistoryCsv() }
+            AppButton { text: "JSON"; compact: true; implicitHeight: 26; implicitWidth: 54; onClicked: root.exportHistoryJson() }
         }
 
         AppButton {
@@ -174,8 +176,8 @@ Item {
             visible: root.sessionCompareAvailable
             Layout.fillWidth: true
             radius: 6
-            color: root.theme.surfaceInteractive
-            border.color: root.theme.tableDivider
+            color: root.theme.cardLevel2
+            border.color: root.theme.borderStrong
             border.width: 1
 
             ColumnLayout {
