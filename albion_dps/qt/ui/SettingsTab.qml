@@ -35,6 +35,7 @@ CardPanel {
     property bool twoColumn: true
     property int contentPadding: compactLayout ? 8 : 12
     property int contentSpacing: compactLayout ? 8 : 10
+    property bool showBrandTile: true
 
     property var theme: null
     property color textColor: theme.textPrimary
@@ -97,18 +98,68 @@ CardPanel {
             y: root.contentPadding
             spacing: root.contentSpacing
 
-            Text {
-                text: "Settings"
-                color: textColor
-                font.pixelSize: 14
-                font.bold: true
-            }
-            Text {
+            RowLayout {
                 Layout.fillWidth: true
-                text: "Runtime, repo path, updates, and logging configuration live here."
-                color: mutedColor
-                font.pixelSize: 11
-                wrapMode: Text.WordWrap
+                spacing: 12
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 4
+
+                    Text {
+                        text: "Settings"
+                        color: textColor
+                        font.pixelSize: 14
+                        font.bold: true
+                    }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Update behavior, logging, scanner repository, and game data paths."
+                        color: mutedColor
+                        font.pixelSize: 11
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                TableSurface {
+                    visible: root.showBrandTile
+                    level: 1
+                    Layout.preferredWidth: 194
+                    Layout.minimumWidth: 194
+                    Layout.preferredHeight: 84
+                    Layout.minimumHeight: 84
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 10
+
+                        Image {
+                            source: "command_desk_icon.png"
+                            sourceSize.width: 40
+                            sourceSize.height: 40
+                            fillMode: Image.PreserveAspectFit
+                            Layout.preferredWidth: 40
+                            Layout.preferredHeight: 40
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+
+                            Text {
+                                text: "Command Desk"
+                                color: textColor
+                                font.pixelSize: 12
+                                font.bold: true
+                            }
+                            Text {
+                                text: "Runtime config"
+                                color: mutedColor
+                                font.pixelSize: 10
+                            }
+                        }
+                    }
+                }
             }
 
             GridLayout {
@@ -120,7 +171,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
-                    implicitHeight: 152
+                    implicitHeight: 146
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -164,7 +215,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
-                    implicitHeight: 152
+                    implicitHeight: 146
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -207,6 +258,7 @@ CardPanel {
                     Layout.fillWidth: true
                     Layout.columnSpan: root.twoColumn ? 2 : 1
                     level: 1
+                    implicitHeight: 198
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -255,7 +307,7 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
-                    implicitHeight: 182
+                    implicitHeight: 166
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -292,59 +344,38 @@ CardPanel {
                 TableSurface {
                     Layout.fillWidth: true
                     level: 1
-                    implicitHeight: 182
+                    implicitHeight: 166
 
                     ColumnLayout {
                         anchors.fill: parent
                         anchors.margins: 10
                         spacing: 8
 
-                        Text { text: "Capture runtime"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Text { text: "Status: " + root.runtimeStateLabel(); color: root.runtimeStateColor(); font.pixelSize: 11; font.bold: true }
-                        Text { Layout.fillWidth: true; text: root.captureRuntimeDetail; color: mutedColor; font.pixelSize: 11; wrapMode: Text.WordWrap }
+                        Text { text: "Notes"; color: textColor; font.pixelSize: 12; font.bold: true }
                         Text {
-                            visible: root.captureRuntimeInstallHint.length > 0
                             Layout.fillWidth: true
-                            text: root.captureRuntimeInstallHint
+                            text: "Health checks stay on Start. Use this tab only for values you want to change."
+                            color: mutedColor
+                            font.pixelSize: 11
+                            wrapMode: Text.WordWrap
+                        }
+                        Text {
+                            Layout.fillWidth: true
+                            text: root.captureRuntimeState === "available"
+                                ? "Capture runtime is available."
+                                : "Capture runtime requires attention. Use Start or Help for the exact action."
                             color: textColor
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
                         }
-                        Flow {
-                            Layout.fillWidth: true
-                            spacing: 6
-                            AppButton { visible: root.captureRuntimeActionLabel.length > 0; text: root.captureRuntimeActionLabel; variant: "primary"; compact: true; onClicked: root.openCaptureRuntimeAction() }
-                            AppButton { text: "Refresh"; compact: true; onClicked: root.refreshCaptureRuntimeStatus() }
-                        }
-                    }
-                }
-
-                TableSurface {
-                    Layout.fillWidth: true
-                    level: 1
-                    implicitHeight: 182
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
-
-                        Text { text: "Git dependency"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Text { text: "Status: " + root.gitStateLabel(); color: root.gitStateColor(); font.pixelSize: 11; font.bold: true }
-                        Text { Layout.fillWidth: true; text: root.gitDetail; color: mutedColor; font.pixelSize: 11; wrapMode: Text.WordWrap }
                         Text {
-                            visible: root.gitInstallHint.length > 0
                             Layout.fillWidth: true
-                            text: root.gitInstallHint
-                            color: textColor
+                            text: root.gitAvailable
+                                ? "Git is available for Scanner workflows."
+                                : "Git is missing. Install it if you want Scanner sync/update/build."
+                            color: mutedColor
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
-                        }
-                        Flow {
-                            Layout.fillWidth: true
-                            spacing: 6
-                            AppButton { visible: root.gitActionLabel.length > 0; text: root.gitActionLabel; variant: "primary"; compact: true; onClicked: root.openGitInstallAction() }
-                            AppButton { text: "Refresh"; compact: true; onClicked: root.refreshGitStatus() }
                         }
                     }
                 }

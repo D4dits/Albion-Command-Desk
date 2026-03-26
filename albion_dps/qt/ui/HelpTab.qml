@@ -136,13 +136,6 @@ CardPanel {
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
                         }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Config directory: " + root.configDir
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
                         Flow {
                             Layout.fillWidth: true
                             spacing: 6
@@ -173,14 +166,14 @@ CardPanel {
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: root.gitDetail.length > 0 ? root.gitDetail : "Git status not checked."
+                            text: "Git download and scanner repository links are here. Status details stay on Start and Scanner."
                             color: mutedColor
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: root.gameDataDetail.length > 0 ? root.gameDataDetail : "Game data status not checked."
+                            text: "Game data setup and runtime checks stay in Settings and Start."
                             color: mutedColor
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap

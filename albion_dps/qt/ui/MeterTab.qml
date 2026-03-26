@@ -44,8 +44,9 @@ Item {
 
     // UI flags
     property bool compactLayout: false
-    property bool stackedLayout: width < 900
+    property bool stackedLayout: false
     property bool historyAvailable: historyModel && historyModel.count > 0
+    property bool activityAvailable: sessionActivityModel && sessionActivityModel.count > 0
 
     // Signals to notify parent of actions
     signal setMode(string mode)
@@ -243,9 +244,7 @@ Item {
                 MeterHistoryPanel {
                     id: meterHistoryPanel
                     Layout.fillWidth: true
-                    Layout.fillHeight: !root.stackedLayout
-                    Layout.preferredHeight: root.stackedLayout ? (root.historyAvailable ? 160 : 120) : -1
-                    Layout.maximumHeight: root.stackedLayout ? 190 : 16777215
+                    Layout.fillHeight: true
                     theme: root.theme
                     textColor: root.textColor
                     mutedColor: root.mutedColor
@@ -267,11 +266,9 @@ Item {
                     onExportSessionCompare: root.exportSessionCompare()
                 }
 
-                GridLayout {
+                ColumnLayout {
                     Layout.fillWidth: true
-                    columns: root.stackedLayout && width >= 760 ? 2 : 1
-                    rowSpacing: 8
-                    columnSpacing: 8
+                    spacing: 8
 
                     MeterSessionStatsPanel {
                         id: meterSessionStats
@@ -287,13 +284,14 @@ Item {
 
                     MeterSessionActivityPanel {
                         id: meterSessionActivity
+                        visible: root.activityAvailable
                         Layout.fillWidth: true
-                        Layout.preferredHeight: root.stackedLayout ? 136 : 190
-                        Layout.minimumHeight: root.stackedLayout ? 120 : 140
+                        Layout.preferredHeight: 140
+                        Layout.minimumHeight: 120
                         theme: root.theme
                         activityModel: root.sessionActivityModel
                     }
-                }
+                }                
             }
         }
     }
@@ -314,40 +312,11 @@ Item {
 
                 Loader {
                     Layout.preferredWidth: 352
-                    Layout.minimumWidth: 336
-                    Layout.maximumWidth: 420
+                    Layout.minimumWidth: 360
+                    Layout.maximumWidth: 430
                     Layout.fillHeight: true
                     sourceComponent: rightPanelComponent
                 }
-            }
-        }
-    }
-
-    ScrollView {
-        id: stackedScroll
-        anchors.fill: parent
-        visible: root.stackedLayout
-        clip: true
-        contentWidth: availableWidth
-        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
-        ColumnLayout {
-            width: Math.max(stackedScroll.availableWidth, 320)
-            spacing: 12
-
-            Loader {
-                Layout.fillWidth: true
-                Layout.preferredHeight: Math.max(380, root.height * 0.5)
-                Layout.minimumHeight: 340
-                sourceComponent: leftPanelComponent
-            }
-
-            Loader {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 300
-                Layout.minimumHeight: 260
-                Layout.maximumHeight: 340
-                sourceComponent: rightPanelComponent
             }
         }
     }
