@@ -25,11 +25,7 @@ Item {
     signal clearHistorySelection()
     signal selectHistory(int index)
     signal copyHistory(int index)
-    signal exportHistoryTxt()
-    signal exportHistoryCsv()
-    signal exportHistoryJson()
     signal copySessionCompare()
-    signal exportSessionCompare()
     property bool sessionCompareAvailable: false
     property string sessionCompareTitle: ""
     property string sessionCompareText: ""
@@ -50,22 +46,11 @@ Item {
         anchors.margins: 12
         spacing: 8
 
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 8
-
-            Text {
-                text: "History"
-                color: textColor
-                font.pixelSize: 14
-                font.bold: true
-            }
-
-            Item { Layout.fillWidth: true }
-
-            AppButton { text: "TXT"; compact: true; implicitHeight: 26; implicitWidth: 48; onClicked: root.exportHistoryTxt() }
-            AppButton { text: "CSV"; compact: true; implicitHeight: 26; implicitWidth: 48; onClicked: root.exportHistoryCsv() }
-            AppButton { text: "JSON"; compact: true; implicitHeight: 26; implicitWidth: 54; onClicked: root.exportHistoryJson() }
+        Text {
+            text: "History"
+            color: textColor
+            font.pixelSize: 14
+            font.bold: true
         }
 
         AppButton {
@@ -204,12 +189,6 @@ Item {
                         onClicked: root.copySessionCompare()
                     }
 
-                    AppButton {
-                        text: "Export"
-                        compact: true
-                        implicitHeight: 26
-                        onClicked: root.exportSessionCompare()
-                    }
                 }
 
                 Text {

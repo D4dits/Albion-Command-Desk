@@ -54,11 +54,7 @@ Item {
     signal clearHistorySelection()
     signal selectHistory(int index)
     signal copyHistory(int index)
-    signal exportHistoryTxt()
-    signal exportHistoryCsv()
-    signal exportHistoryJson()
     signal copySessionCompare()
-    signal exportSessionCompare()
     signal refreshCaptureRuntimeStatus()
     signal openCaptureRuntimeAction()
 
@@ -259,11 +255,7 @@ Item {
                     onClearHistorySelection: root.clearHistorySelection()
                     onSelectHistory: function(index) { root.selectHistory(index) }
                     onCopyHistory: function(index) { root.copyHistory(index) }
-                    onExportHistoryTxt: root.exportHistoryTxt()
-                    onExportHistoryCsv: root.exportHistoryCsv()
-                    onExportHistoryJson: root.exportHistoryJson()
                     onCopySessionCompare: root.copySessionCompare()
-                    onExportSessionCompare: root.exportSessionCompare()
                 }
 
                 ColumnLayout {
