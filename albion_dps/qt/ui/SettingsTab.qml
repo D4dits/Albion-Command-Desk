@@ -90,10 +90,13 @@ CardPanel {
         anchors.fill: parent
         clip: true
         contentWidth: availableWidth
+        contentHeight: settingsContent.implicitHeight + (root.contentPadding * 2)
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
+            id: settingsContent
             width: Math.max(settingsScroll.availableWidth - (root.contentPadding * 2), 360)
+            height: implicitHeight
             x: root.contentPadding
             y: root.contentPadding
             spacing: root.contentSpacing
@@ -162,101 +165,101 @@ CardPanel {
                 }
             }
 
-            GridLayout {
+            ColumnLayout {
                 Layout.fillWidth: true
-                columns: root.twoColumn ? 2 : 1
-                columnSpacing: 10
-                rowSpacing: 10
+                spacing: 10
 
-                TableSurface {
+                RowLayout {
                     Layout.fillWidth: true
-                    level: 1
-                    implicitHeight: 146
+                    spacing: 10
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
+                    TableSurface {
+                        Layout.fillWidth: true
+                        level: 1
+                        implicitHeight: 146
 
-                        Text { text: "Updates"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Text {
-                            Layout.fillWidth: true
-                            text: root.updateCheckStatus.length > 0 ? root.updateCheckStatus : "Not checked"
-                            color: textColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        RowLayout {
-                            Layout.fillWidth: true
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
                             spacing: 8
-                            AppCheckBox {
-                                text: compactLayout ? "Auto" : "Auto check updates"
-                                checked: root.updateAutoCheck
-                                onToggled: root.setUpdateAutoCheck(checked)
+
+                            Text { text: "Updates"; color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.updateCheckStatus.length > 0 ? root.updateCheckStatus : "Not checked"
+                                color: textColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
                             }
-                            AppButton {
-                                text: "Check now"
-                                compact: true
-                                onClicked: root.requestManualUpdateCheck()
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+                                AppCheckBox {
+                                    text: "Auto check updates"
+                                    checked: root.updateAutoCheck
+                                    onToggled: root.setUpdateAutoCheck(checked)
+                                }
+                                AppButton {
+                                    text: "Check now"
+                                    compact: true
+                                    onClicked: root.requestManualUpdateCheck()
+                                }
+                                Item { Layout.fillWidth: true }
                             }
-                            Item { Layout.fillWidth: true }
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Automatic checks run on startup when enabled."
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Automatic checks run on startup when enabled."
+                                color: mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
                         }
                     }
 
+                    TableSurface {
+                        Layout.fillWidth: true
+                        level: 1
+                        implicitHeight: 146
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 8
+
+                            Text { text: "Logging"; color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Default log level for the next app start."
+                                color: mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+                                Text { text: "Level"; color: mutedColor; font.pixelSize: 11 }
+                                AppComboBox {
+                                    id: logLevelCombo
+                                    Layout.preferredWidth: 140
+                                    model: ["DEBUG", "INFO", "WARNING", "ERROR"]
+                                    currentIndex: Math.max(0, model.indexOf(root.appLogLevel))
+                                    onActivated: root.setAppLogLevel(String(currentText))
+                                }
+                                Item { Layout.fillWidth: true }
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Use DEBUG when you need packet/runtime troubleshooting. Normal use should stay on INFO."
+                                color: mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                        }
+                    }
                 }
 
                 TableSurface {
                     Layout.fillWidth: true
-                    level: 1
-                    implicitHeight: 146
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
-
-                        Text { text: "Logging"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Default log level for the next app start."
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-                            Text { text: "Level"; color: mutedColor; font.pixelSize: 11 }
-                            AppComboBox {
-                                id: logLevelCombo
-                                Layout.preferredWidth: 140
-                                model: ["DEBUG", "INFO", "WARNING", "ERROR"]
-                                currentIndex: Math.max(0, model.indexOf(root.appLogLevel))
-                                onActivated: root.setAppLogLevel(String(currentText))
-                            }
-                            Item { Layout.fillWidth: true }
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Use DEBUG when you need packet/runtime troubleshooting. Normal use should stay on INFO."
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                    }
-
-                }
-
-                TableSurface {
-                    Layout.fillWidth: true
-                    Layout.columnSpan: root.twoColumn ? 2 : 1
                     level: 1
                     implicitHeight: 198
 
@@ -304,78 +307,83 @@ CardPanel {
                     }
                 }
 
-                TableSurface {
+                RowLayout {
                     Layout.fillWidth: true
-                    level: 1
-                    implicitHeight: 166
+                    spacing: 10
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
+                    TableSurface {
+                        Layout.fillWidth: true
+                        level: 1
+                        implicitHeight: 166
 
-                        Text { text: "Game data"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Text { text: "Status: " + root.gameDataStateLabel(); color: root.gameDataStateColor(); font.pixelSize: 11; font.bold: true }
-                        Text { Layout.fillWidth: true; text: root.gameDataDetail; color: mutedColor; font.pixelSize: 11; wrapMode: Text.WordWrap }
-                        Text {
-                            Layout.fillWidth: true
-                            text: root.gameDataRoot.length > 0 ? ("Game folder: " + root.gameDataRoot) : "Game folder not configured."
-                            color: textColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        Text {
-                            visible: root.gameDataHint.length > 0
-                            Layout.fillWidth: true
-                            text: root.gameDataHint
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        Flow {
-                            Layout.fillWidth: true
-                            spacing: 6
-                            AppButton { text: root.gameDataActionLabel; variant: "primary"; compact: true; onClicked: root.setupGameData() }
-                            AppButton { text: "Refresh"; compact: true; onClicked: root.refreshGameDataStatus() }
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 8
+
+                            Text { text: "Game data"; color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text { text: "Status: " + root.gameDataStateLabel(); color: root.gameDataStateColor(); font.pixelSize: 11; font.bold: true }
+                            Text { Layout.fillWidth: true; text: root.gameDataDetail; color: mutedColor; font.pixelSize: 11; wrapMode: Text.WordWrap }
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.gameDataRoot.length > 0 ? ("Game folder: " + root.gameDataRoot) : "Game folder not configured."
+                                color: textColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Text {
+                                visible: root.gameDataHint.length > 0
+                                Layout.fillWidth: true
+                                text: root.gameDataHint
+                                color: mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 6
+                                AppButton { text: root.gameDataActionLabel; variant: "primary"; compact: true; onClicked: root.setupGameData() }
+                                AppButton { text: "Refresh"; compact: true; onClicked: root.refreshGameDataStatus() }
+                            }
                         }
                     }
-                }
 
-                TableSurface {
-                    Layout.fillWidth: true
-                    level: 1
-                    implicitHeight: 166
+                    TableSurface {
+                        Layout.fillWidth: true
+                        level: 1
+                        implicitHeight: 166
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 8
 
-                        Text { text: "Notes"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Health checks stay on Start. Use this tab only for values you want to change."
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: root.captureRuntimeState === "available"
-                                ? "Capture runtime is available."
-                                : "Capture runtime requires attention. Use Start or Help for the exact action."
-                            color: textColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: root.gitAvailable
-                                ? "Git is available for Scanner workflows."
-                                : "Git is missing. Install it if you want Scanner sync/update/build."
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
+                            Text { text: "Notes"; color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Start is the status dashboard. Settings is only for values you want to change."
+                                color: mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.captureRuntimeState === "available"
+                                    ? "Capture runtime is available."
+                                    : "Capture runtime requires attention. Use Start or Help for the exact action."
+                                color: textColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.gitAvailable
+                                    ? "Git is available for Scanner workflows."
+                                    : "Git is missing. Install it if you want Scanner sync/update/build."
+                                color: mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
                         }
                     }
                 }

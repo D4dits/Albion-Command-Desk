@@ -98,20 +98,20 @@ Item {
         return mutedColor
     }
 
-    Component {
-        id: leftPanelComponent
+    RowLayout {
+        anchors.fill: parent
+        spacing: 12
 
-        // Left Panel - Scoreboard
         CardPanel {
             level: 1
             Layout.fillWidth: true
+            Layout.fillHeight: true
 
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 12
                 spacing: 8
 
-                // Header with title and help button
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 6
@@ -152,7 +152,6 @@ Item {
                     Item { Layout.fillWidth: true }
                 }
 
-                // Status text showing current mode/sort
                 Text {
                     text: root.selectedHistoryIndex >= 0
                         ? "Scoreboard (history #" + (root.selectedHistoryIndex + 1) + ", sorted by " + root.sortKey + ")"
@@ -189,24 +188,16 @@ Item {
                     }
                 }
 
-                // Mode and Sort controls
                 MeterControls {
                     id: meterControls
                     Layout.fillWidth: true
                     theme: root.theme
                     currentMode: root.mode
                     currentSortKey: root.sortKey
-
-                    onModeChanged: function(mode) {
-                        root.setMode(mode)
-                    }
-
-                    onSortKeyChanged: function(sortKey) {
-                        root.setSortKey(sortKey)
-                    }
+                    onModeChanged: function(mode) { root.setMode(mode) }
+                    onSortKeyChanged: function(sortKey) { root.setSortKey(sortKey) }
                 }
 
-                // Player scoreboard
                 MeterScoreboard {
                     id: meterScoreboard
                     Layout.fillWidth: true
@@ -222,21 +213,19 @@ Item {
                 }
             }
         }
-    }
-
-    Component {
-        id: rightPanelComponent
 
         CardPanel {
             level: 1
-            Layout.fillWidth: true
+            Layout.preferredWidth: 372
+            Layout.minimumWidth: 372
+            Layout.maximumWidth: 420
+            Layout.fillHeight: true
 
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: 12
                 spacing: 8
 
-                // History panel
                 MeterHistoryPanel {
                     id: meterHistoryPanel
                     Layout.fillWidth: true
@@ -258,56 +247,26 @@ Item {
                     onCopySessionCompare: root.copySessionCompare()
                 }
 
-                ColumnLayout {
+                MeterSessionStatsPanel {
+                    id: meterSessionStats
                     Layout.fillWidth: true
-                    spacing: 8
-
-                    MeterSessionStatsPanel {
-                        id: meterSessionStats
-                        Layout.fillWidth: true
-                        theme: root.theme
-                        textColor: root.textColor
-                        mutedColor: root.mutedColor
-                        fameText: root.fameText
-                        famePerHourText: root.famePerHourText
-                        silverText: root.silverText
-                        silverPerHourText: root.silverPerHourText
-                    }
-
-                    MeterSessionActivityPanel {
-                        id: meterSessionActivity
-                        visible: root.activityAvailable
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 140
-                        Layout.minimumHeight: 120
-                        theme: root.theme
-                        activityModel: root.sessionActivityModel
-                    }
-                }                
-            }
-        }
-    }
-
-    Loader {
-        anchors.fill: parent
-        visible: !root.stackedLayout
-        sourceComponent: Component {
-            RowLayout {
-                anchors.fill: parent
-                spacing: 12
-
-                Loader {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    sourceComponent: leftPanelComponent
+                    theme: root.theme
+                    textColor: root.textColor
+                    mutedColor: root.mutedColor
+                    fameText: root.fameText
+                    famePerHourText: root.famePerHourText
+                    silverText: root.silverText
+                    silverPerHourText: root.silverPerHourText
                 }
 
-                Loader {
-                    Layout.preferredWidth: 352
-                    Layout.minimumWidth: 360
-                    Layout.maximumWidth: 430
-                    Layout.fillHeight: true
-                    sourceComponent: rightPanelComponent
+                MeterSessionActivityPanel {
+                    id: meterSessionActivity
+                    visible: root.activityAvailable
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 140
+                    Layout.minimumHeight: 120
+                    theme: root.theme
+                    activityModel: root.sessionActivityModel
                 }
             }
         }

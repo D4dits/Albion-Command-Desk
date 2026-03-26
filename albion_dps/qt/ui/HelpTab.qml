@@ -39,10 +39,13 @@ CardPanel {
         anchors.fill: parent
         clip: true
         contentWidth: availableWidth
+        contentHeight: helpContent.implicitHeight + (root.contentPadding * 2)
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
+            id: helpContent
             width: Math.max(helpScroll.availableWidth - (root.contentPadding * 2), 360)
+            height: implicitHeight
             x: root.contentPadding
             y: root.contentPadding
             spacing: root.contentSpacing
@@ -111,142 +114,143 @@ CardPanel {
                 }
             }
 
-            GridLayout {
+            ColumnLayout {
                 Layout.fillWidth: true
-                columns: root.dashboardTwoColumn ? 2 : 1
-                columnSpacing: 10
-                rowSpacing: 10
+                spacing: 10
 
-                TableSurface {
+                RowLayout {
                     Layout.fillWidth: true
-                    level: 1
-                    implicitHeight: 154
+                    spacing: 10
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
+                    TableSurface {
+                        Layout.fillWidth: true
+                        level: 1
+                        implicitHeight: 154
 
-                        Text { text: "Release center"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Text { text: "Version: " + root.appVersion; color: textColor; font.pixelSize: 11; font.bold: true }
-                        Text {
-                            Layout.fillWidth: true
-                            text: root.updateCheckStatus.length > 0 ? ("Update status: " + root.updateCheckStatus) : "Update status: not checked"
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 8
+
+                            Text { text: "Release center"; color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text { text: "Version: " + root.appVersion; color: textColor; font.pixelSize: 11; font.bold: true }
+                            Text {
+                                Layout.fillWidth: true
+                                text: root.updateCheckStatus.length > 0 ? ("Update status: " + root.updateCheckStatus) : "Update status: not checked"
+                                color: mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 6
+                                AppButton { text: "Website"; compact: true; onClicked: Qt.openUrlExternally(root.websiteUrl) }
+                                AppButton { text: "Release"; compact: true; onClicked: Qt.openUrlExternally(root.releaseUrl) }
+                                AppButton { text: "Changelog"; compact: true; onClicked: Qt.openUrlExternally(root.changelogUrl) }
+                            }
                         }
-                        Flow {
-                            Layout.fillWidth: true
-                            spacing: 6
-                            AppButton { text: "Website"; compact: true; onClicked: Qt.openUrlExternally(root.websiteUrl) }
-                            AppButton { text: "Release"; compact: true; onClicked: Qt.openUrlExternally(root.releaseUrl) }
-                            AppButton { text: "Changelog"; compact: true; onClicked: Qt.openUrlExternally(root.changelogUrl) }
+                    }
+
+                    TableSurface {
+                        Layout.fillWidth: true
+                        level: 1
+                        implicitHeight: 154
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 8
+
+                            Text { text: "Dependencies"; color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Capture runtime: " + root.captureRuntimeState
+                                color: textColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Get runtime and tooling here. Current live status stays on Start and Scanner."
+                                color: mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 6
+                                AppButton { text: "Npcap"; compact: true; onClicked: Qt.openUrlExternally(root.npcapUrl) }
+                                AppButton { text: "Git"; compact: true; onClicked: Qt.openUrlExternally(root.gitUrl) }
+                                AppButton { text: "Scanner repo"; compact: true; onClicked: Qt.openUrlExternally(root.scannerRepoUrl) }
+                            }
                         }
                     }
                 }
 
-                TableSurface {
+                RowLayout {
                     Layout.fillWidth: true
-                    level: 1
-                    implicitHeight: 154
+                    spacing: 10
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
+                    TableSurface {
+                        Layout.fillWidth: true
+                        level: 1
+                        implicitHeight: 154
 
-                        Text { text: "Dependencies"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Capture runtime: " + root.captureRuntimeState
-                            color: textColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Git download and scanner repository links live here. Live status details stay on Start and Scanner."
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Game data setup and runtime checks stay in Settings and Start."
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        Flow {
-                            Layout.fillWidth: true
-                            spacing: 6
-                            AppButton { text: "Npcap"; compact: true; onClicked: Qt.openUrlExternally(root.npcapUrl) }
-                            AppButton { text: "Git"; compact: true; onClicked: Qt.openUrlExternally(root.gitUrl) }
-                            AppButton { text: "Scanner repo"; compact: true; onClicked: Qt.openUrlExternally(root.scannerRepoUrl) }
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 8
+
+                            Text { text: "Troubleshooting"; color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text {
+                                Layout.fillWidth: true
+                                text: "\u2022 Missing Npcap: install Npcap Runtime, then restart the app.\n\u2022 Missing Git: install Git, restart, then use Scanner sync/update.\n\u2022 Missing game data: run Game data setup from Settings.\n\u2022 Capture problems: verify the correct interface and live mode prerequisites."
+                                color: mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 6
+                                AppButton { text: "Troubleshooting"; variant: "primary"; compact: true; onClicked: Qt.openUrlExternally(root.troubleshootingUrl) }
+                            }
                         }
                     }
-                }
 
-                TableSurface {
-                    Layout.fillWidth: true
-                    level: 1
-                    implicitHeight: 154
+                    TableSurface {
+                        Layout.fillWidth: true
+                        level: 1
+                        implicitHeight: 154
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 8
 
-                        Text { text: "Troubleshooting"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "\u2022 Missing Npcap: install Npcap Runtime, then restart the app.\n\u2022 Missing Git: install Git, restart, then use Scanner sync/update.\n\u2022 Missing game data: run Game data setup from Settings.\n\u2022 Capture problems: try the correct interface and confirm live mode prerequisites."
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        Flow {
-                            Layout.fillWidth: true
-                            spacing: 6
-                            AppButton { text: "Troubleshooting"; variant: "primary"; compact: true; onClicked: Qt.openUrlExternally(root.troubleshootingUrl) }
-                        }
-                    }
-                }
-
-                TableSurface {
-                    Layout.fillWidth: true
-                    level: 1
-                    implicitHeight: 154
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 8
-
-                        Text { text: "Diagnostics"; color: textColor; font.pixelSize: 12; font.bold: true }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Export diagnostics before reporting problems with capture, market, or scanner workflows."
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Include version, update status, scanner log excerpt, and market diagnostics when relevant."
-                            color: mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
-                        }
-                        Flow {
-                            Layout.fillWidth: true
-                            spacing: 6
-                            AppButton {
-                                text: "Export diagnostics"
-                                variant: "primary"
-                                compact: true
-                                onClicked: root.exportDiagnosticsBundle()
+                            Text { text: "Diagnostics"; color: textColor; font.pixelSize: 12; font.bold: true }
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Export diagnostics before reporting problems with capture, market, or scanner workflows."
+                                color: mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                text: "Include version, update status, scanner log excerpt, and market diagnostics when relevant."
+                                color: mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 6
+                                AppButton {
+                                    text: "Export diagnostics"
+                                    variant: "primary"
+                                    compact: true
+                                    onClicked: root.exportDiagnosticsBundle()
+                                }
                             }
                         }
                     }
