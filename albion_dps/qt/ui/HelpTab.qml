@@ -166,7 +166,7 @@ CardPanel {
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: "Git download and scanner repository links are here. Status details stay on Start and Scanner."
+                            text: "Git download and scanner repository links live here. Live status details stay on Start and Scanner."
                             color: mutedColor
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap

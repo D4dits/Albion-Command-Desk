@@ -279,7 +279,7 @@ CardPanel {
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: "Scanner: " + root.scannerStatusText + "  |  Repo: " + root.scannerUpdateText
+                            text: "Use this card only for app update checks. Scanner repo sync/update stays in Scanner."
                             color: mutedColor
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap

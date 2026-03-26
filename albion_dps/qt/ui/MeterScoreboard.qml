@@ -56,7 +56,7 @@ Item {
 
         Item {
             id: tableContent
-            width: root.tableContentWidth
+            width: Math.max(tableFlick.width, root.tableContentWidth)
             height: tableFlick.height
 
             ColumnLayout {
@@ -116,6 +116,7 @@ Item {
                             color: root.theme.tableHeaderText
                             font.pixelSize: 11
                             Layout.preferredWidth: root.barColumnWidth
+                            Layout.fillWidth: true
                         }
                     }
                 }
@@ -214,6 +215,7 @@ Item {
 
                             Rectangle {
                                 Layout.preferredWidth: root.barColumnWidth
+                                Layout.fillWidth: true
                                 height: 10
                                 radius: 4
                                 color: root.theme.surfaceInset
