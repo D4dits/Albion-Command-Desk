@@ -845,6 +845,7 @@ ApplicationWindow {
                 onSetInputRowCompleted: function(itemId, completed) { marketSetupState.setInputRowCompleted(itemId, completed) }
                 onSetInputPriceType: function(itemId, type) { marketSetupState.setInputPriceType(itemId, type) }
                 onSetInputManualPrice: function(itemId, price) { marketSetupState.setInputManualPrice(itemId, price) }
+                onSetOutputRowCompleted: function(itemId, completed) { marketSetupState.setOutputRowCompleted(itemId, completed) }
                 onSetOutputPriceType: function(itemId, type) { marketSetupState.setOutputPriceType(itemId, type) }
                 onSetOutputManualPrice: function(itemId, price) { marketSetupState.setOutputManualPrice(itemId, price) }
                 onSetResultsSortKey: function(key) { marketSetupState.setResultsSortKey(key) }

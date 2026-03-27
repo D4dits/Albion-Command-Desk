@@ -204,6 +204,7 @@ class OutputPreviewRow:
     fee_value: float
     tax_value: float
     net_value: float
+    completed: bool = False
 
 
 class MarketOutputsModel(QAbstractListModel):
@@ -219,6 +220,7 @@ class MarketOutputsModel(QAbstractListModel):
     FeeValueRole = Qt.UserRole + 10
     TaxValueRole = Qt.UserRole + 11
     NetValueRole = Qt.UserRole + 12
+    CompletedRole = Qt.UserRole + 13
 
     def __init__(self) -> None:
         super().__init__()
@@ -258,6 +260,8 @@ class MarketOutputsModel(QAbstractListModel):
             return item.tax_value
         if role == self.NetValueRole:
             return item.net_value
+        if role == self.CompletedRole:
+            return item.completed
         return None
 
     def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
@@ -274,12 +278,44 @@ class MarketOutputsModel(QAbstractListModel):
             self.FeeValueRole: b"feeValue",
             self.TaxValueRole: b"taxValue",
             self.NetValueRole: b"netValue",
+            self.CompletedRole: b"completed",
         }
 
     def set_items(self, rows: list[OutputPreviewRow]) -> None:
         self.beginResetModel()
         self._items = list(rows)
         self.endResetModel()
+
+    def set_completed_by_item_id(self, item_id: str, completed: bool) -> None:
+        if not item_id:
+            return
+        changed_rows: list[int] = []
+        new_items = list(self._items)
+        for idx, row in enumerate(new_items):
+            if row.item_id != item_id or bool(row.completed) == bool(completed):
+                continue
+            new_items[idx] = OutputPreviewRow(
+                item_id=row.item_id,
+                item=row.item,
+                quantity=row.quantity,
+                city=row.city,
+                price_type=row.price_type,
+                price_age_text=row.price_age_text,
+                manual_price=row.manual_price,
+                unit_price=row.unit_price,
+                total_value=row.total_value,
+                fee_value=row.fee_value,
+                tax_value=row.tax_value,
+                net_value=row.net_value,
+                completed=bool(completed),
+            )
+            changed_rows.append(idx)
+        if not changed_rows:
+            return
+        self._items = new_items
+        for row_idx in changed_rows:
+            model_index = self.index(row_idx, 0)
+            self.dataChanged.emit(model_index, model_index, [self.CompletedRole])
 
 
 @dataclass(frozen=True)
@@ -956,6 +992,7 @@ class MarketSetupState(QObject):
         self._input_stock_quantities: dict[str, float] = {}
         self._completed_input_item_ids: set[str] = set()
         self._manual_output_prices: dict[str, int] = {}
+        self._completed_output_item_ids: set[str] = set()
         self._output_cities: dict[str, str] = {}
         self._price_index: dict[tuple[str, str, int], MarketPriceRecord] = {}
         self._price_context_key: tuple[str, int, tuple[str, ...], tuple[str, ...]] | None = None
@@ -1721,6 +1758,7 @@ class MarketSetupState(QObject):
         self._craft_plan_rows = []
         self._next_plan_row_id = 1
         self._completed_input_item_ids.clear()
+        self._completed_output_item_ids.clear()
         self._sync_craft_plan_model()
         self._rebuild_preview(force_price_refresh=False)
         self.setupChanged.emit()
@@ -1890,6 +1928,23 @@ class MarketSetupState(QObject):
         self._inputs_model.set_completed_by_item_id(normalized_item_id, completed)
         self._inputs_on_model.set_completed_by_item_id(normalized_item_id, completed)
         self.inputsChanged.emit()
+
+    @Slot(str, bool)
+    def setOutputRowCompleted(self, item_id: str, completed: bool) -> None:
+        normalized_item_id = str(item_id or "").strip()
+        if not normalized_item_id:
+            return
+        if completed:
+            if normalized_item_id in self._completed_output_item_ids:
+                return
+            self._completed_output_item_ids.add(normalized_item_id)
+        else:
+            if normalized_item_id not in self._completed_output_item_ids:
+                return
+            self._completed_output_item_ids.discard(normalized_item_id)
+        self._outputs_model.set_completed_by_item_id(normalized_item_id, completed)
+        self._outputs_on_model.set_completed_by_item_id(normalized_item_id, completed)
+        self.outputsChanged.emit()
 
     @Slot(str, str)
     def setOutputManualPrice(self, item_id: str, raw_value: str) -> None:
@@ -2799,6 +2854,7 @@ class MarketSetupState(QObject):
                 fee_value=float(row["fee_value"]),
                 tax_value=float(row["tax_value"]),
                 net_value=float(row["net_value"]),
+                completed=str(row["item_id"]) in self._completed_output_item_ids,
             )
             for row in output_acc.values()
         ]
@@ -2956,6 +3012,7 @@ class MarketSetupState(QObject):
                 fee_value=float(row["fee_value"]),
                 tax_value=float(row["tax_value"]),
                 net_value=float(row["net_value"]),
+                completed=str(row["item_id"]) in self._completed_output_item_ids,
             )
             for row in selected_output_acc.values()
         ]

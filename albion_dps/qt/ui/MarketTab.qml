@@ -184,6 +184,7 @@ CardPanel {
     signal setInputRowCompleted(var itemId, bool completed)
     signal setInputPriceType(var itemId, string type)
     signal setInputManualPrice(var itemId, string price)
+    signal setOutputRowCompleted(var itemId, bool completed)
     signal setOutputPriceType(var itemId, string type)
     signal setOutputManualPrice(var itemId, string price)
     signal setResultsSortKey(string key)
@@ -301,9 +302,11 @@ CardPanel {
     property var copyCellText: function(value) {
         root.copyText(String(value === undefined || value === null ? "" : value))
     }
-    property var copyInputItemText: function(value, itemId) {
-        root.copyCellText(value)
-        root.setInputRowCompleted(itemId, true)
+    property var toggleInputItemCompleted: function(itemId, completed) {
+        root.setInputRowCompleted(itemId, !Boolean(completed))
+    }
+    property var toggleOutputItemCompleted: function(itemId, completed) {
+        root.setOutputRowCompleted(itemId, !Boolean(completed))
     }
     property var matchesSearch: function(itemText, queryText) {
         var query = String(queryText || "").trim().toLowerCase()
@@ -726,8 +729,7 @@ CardPanel {
                                         Text { text: "Manual"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsManualWidth }
                                         Text { text: "Unit"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth }
                                         Text { text: "ADP age"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth }
-                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsTotalMinWidth }
-                                        Text { text: "Got"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; horizontalAlignment: Text.AlignHCenter }
+                                        Text { text: "Total"; color: mutedColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketInputsTotalMinWidth }
                                     }
                                 }
 
@@ -759,7 +761,7 @@ CardPanel {
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: root.copyInputItemText(parent.text, itemId)
+                                                    onDoubleClicked: root.toggleInputItemCompleted(itemId, completed)
                                                 }
                                             }
                                             Text { text: formatIntRound(quantity); color: completed ? root.theme.stateSuccess : mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
@@ -803,13 +805,7 @@ CardPanel {
 
                                             Text { text: formatInt(unitPrice); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsUnitWidth }
                                             Text { text: priceAgeText; color: adpAgeColor(priceAgeText); font.pixelSize: 11; Layout.preferredWidth: marketInputsAgeWidth }
-                                            Text { text: formatInt(totalCost); color: completed ? root.theme.stateSuccess : textColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsTotalMinWidth }
-                                            AppCheckBox {
-                                                Layout.fillWidth: true
-                                                text: ""
-                                                checked: completed
-                                                onToggled: root.setInputRowCompleted(itemId, checked)
-                                            }
+                                            Text { text: formatInt(totalCost); color: completed ? root.theme.stateSuccess : textColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketInputsTotalMinWidth }
                                         }
                                     }
                                 }
@@ -952,7 +948,7 @@ CardPanel {
                                         width: ListView.view.width
                                         height: searchMatches ? 30 : 0
                                         visible: searchMatches
-                                        color: tableRowColor(index)
+                                        color: completed ? Qt.darker(root.theme.stateSuccessBg, 1.08) : tableRowColor(index)
 
                                         RowLayout {
                                             anchors.fill: parent
@@ -961,18 +957,18 @@ CardPanel {
 
                                             Text {
                                                 text: itemLabelWithTier(item, itemId)
-                                                color: textColor
+                                                color: completed ? root.theme.stateSuccess : textColor
                                                 font.pixelSize: 11
                                                 Layout.preferredWidth: marketOutputsItemWidth
                                                 elide: Text.ElideRight
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: root.copyCellText(parent.text)
+                                                    onDoubleClicked: root.toggleOutputItemCompleted(itemId, completed)
                                                 }
                                             }
-                                            Text { text: formatIntFloor(quantity); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
-                                            Text { text: city; color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; elide: Text.ElideRight }
+                                            Text { text: formatIntFloor(quantity); color: completed ? root.theme.stateSuccess : mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
+                                            Text { text: city; color: completed ? root.theme.stateSuccess : mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsCityWidth; elide: Text.ElideRight }
 
                                             AppComboBox {
                                                 Layout.preferredWidth: marketOutputsModeWidth
@@ -999,12 +995,12 @@ CardPanel {
                                                 onEditingFinished: root.setOutputManualPrice(itemId, text)
                                             }
 
-                                            Text { text: formatInt(unitPrice); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth }
+                                            Text { text: formatInt(unitPrice); color: completed ? root.theme.stateSuccess : mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsUnitWidth }
                                             Text { text: priceAgeText; color: adpAgeColor(priceAgeText); font.pixelSize: 11; Layout.preferredWidth: marketOutputsAgeWidth }
-                                            Text { text: formatInt(totalValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth }
-                                            Text { text: formatInt(feeValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth }
-                                            Text { text: formatInt(taxValue); color: mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth }
-                                            Text { text: formatInt(netValue); color: textColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketOutputsNetMinWidth }
+                                            Text { text: formatInt(totalValue); color: completed ? root.theme.stateSuccess : mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsGrossWidth }
+                                            Text { text: formatInt(feeValue); color: completed ? root.theme.stateSuccess : mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsFeeWidth }
+                                            Text { text: formatInt(taxValue); color: completed ? root.theme.stateSuccess : mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsTaxWidth }
+                                            Text { text: formatInt(netValue); color: completed ? root.theme.stateSuccess : textColor; font.pixelSize: 11; Layout.fillWidth: true; Layout.minimumWidth: marketOutputsNetMinWidth }
                                         }
                                     }
                                 }

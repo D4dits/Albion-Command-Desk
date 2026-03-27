@@ -974,6 +974,34 @@ def test_market_setup_state_marks_completed_input_rows_and_clears_state() -> Non
     assert state.inputsModel.data(refreshed_index, state.inputsModel.CompletedRole) is False
 
 
+def test_market_setup_state_marks_completed_output_rows_and_clears_state() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
+    state.setActiveMarketTab(2)
+
+    model = state.outputsModel
+    assert model.rowCount() >= 1
+    index = model.index(0, 0)
+    item_id = str(model.data(index, model.ItemIdRole) or "")
+    assert item_id
+    assert model.data(index, model.CompletedRole) is False
+
+    state.setOutputRowCompleted(item_id, True)
+    assert model.data(index, model.CompletedRole) is True
+
+    on_model = state.outputsOnModel
+    on_index = on_model.index(0, 0)
+    assert on_model.data(on_index, on_model.CompletedRole) is True
+
+    state.clearCraftPlan()
+    state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
+    state.setActiveMarketTab(2)
+    refreshed_index = state.outputsModel.index(0, 0)
+    assert state.outputsModel.data(refreshed_index, state.outputsModel.CompletedRole) is False
+
+
 def test_market_setup_state_craft_plan_exposes_fresh_component_price_role() -> None:
     state = MarketSetupState(auto_refresh_prices=False)
     state.addCurrentRecipeToPlan()
