@@ -28,6 +28,7 @@ from albion_dps.market.engine import (
     effective_return_fraction,
 )
 from albion_dps.market.models import (
+    CraftRun,
     CraftSetup,
     InputLine,
     ItemRef,
@@ -41,7 +42,6 @@ from albion_dps.market.service import MarketDataService
 from albion_dps.market.setup import sanitized_setup, validate_setup
 from albion_dps.settings import load_app_settings, update_app_settings
 
-_SHOPPING_SAFETY_BUFFER_PERCENT = 3.0
 _JOURNAL_NPC_EMPTY_PRICES: dict[int, int] = {
     2: 500,
     3: 1000,
@@ -2536,37 +2536,10 @@ class MarketSetupState(QObject):
         all_inputs = [line for run in visible_runs for line in run.inputs]
         all_outputs = [line for run in visible_runs for line in run.outputs]
         self._journal_totals = self._estimate_journal_totals(runs=visible_runs, setup=setup, price_index=price_index)
-        returnable_by_item: dict[str, bool] = {}
-        for _, recipe in visible_prepared_recipes:
-            for component in recipe.components:
-                item_id = str(component.item.unique_name)
-                returnable_by_item[item_id] = bool(returnable_by_item.get(item_id, False) or component.returnable)
-
-        input_acc: dict[tuple[str, str, str, float], dict[str, object]] = {}
-        for line in all_inputs:
-            key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
-            row = input_acc.get(key)
-            if row is None:
-                input_acc[key] = {
-                    "item_id": line.item.unique_name,
-                    "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
-                    "item_ref": line.item,
-                    "city": line.city,
-                    "price_type": line.price_type.value,
-                    "price_age_text": self._price_age_text(
-                        item_id=line.item.unique_name,
-                        city=line.city,
-                        quality=self._setup.quality,
-                        price_type=line.price_type.value,
-                    ),
-                    "unit_price": float(line.unit_price),
-                    "quantity": float(line.quantity),
-                    "total_cost": float(line.total_cost),
-                    "returnable": bool(returnable_by_item.get(line.item.unique_name, False)),
-                }
-            else:
-                row["quantity"] = float(row["quantity"]) + float(line.quantity)
-                row["total_cost"] = float(row["total_cost"]) + float(line.total_cost)
+        input_acc = self._accumulate_input_preview_rows(
+            prepared_recipes=visible_prepared_recipes,
+            runs=visible_runs,
+        )
 
         journal_buy_city = (setup.default_buy_city or setup.craft_city or "").strip()
         journal_sell_city = (setup.default_sell_city or setup.craft_city or "").strip()
@@ -2661,35 +2634,10 @@ class MarketSetupState(QObject):
                 )
         input_rows.sort(key=_input_preview_sort_key)
 
-        selected_returnable_by_item: dict[str, bool] = {}
-        for _, recipe in selected_visible_prepared_recipes:
-            for component in recipe.components:
-                item_id = str(component.item.unique_name)
-                selected_returnable_by_item[item_id] = bool(
-                    selected_returnable_by_item.get(item_id, False) or component.returnable
-                )
-        selected_input_acc: dict[tuple[str, str, str, float], dict[str, object]] = {}
-        for line in selected_inputs:
-            key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
-            row = selected_input_acc.get(key)
-            if row is None:
-                selected_input_acc[key] = {
-                    "item_id": line.item.unique_name,
-                    "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
-                    "city": line.city,
-                    "price_type": line.price_type.value,
-                    "price_age_text": self._price_age_text(
-                        item_id=line.item.unique_name,
-                        city=line.city,
-                        quality=self._setup.quality,
-                        price_type=line.price_type.value,
-                    ),
-                    "unit_price": float(line.unit_price),
-                    "quantity": float(line.quantity),
-                    "returnable": bool(selected_returnable_by_item.get(line.item.unique_name, False)),
-                }
-            else:
-                row["quantity"] = float(row["quantity"]) + float(line.quantity)
+        selected_input_acc = self._accumulate_input_preview_rows(
+            prepared_recipes=selected_visible_prepared_recipes,
+            runs=selected_visible_runs,
+        )
 
         for journal_line in selected_journal_totals.lines:
             if journal_line.empty_quantity <= 0:
@@ -3163,6 +3111,46 @@ class MarketSetupState(QObject):
         else:
             rows.sort(key=lambda x: x.profit, reverse=True)
         return rows
+
+    def _accumulate_input_preview_rows(
+        self,
+        *,
+        prepared_recipes: list[tuple[CraftPlanRow, Recipe]],
+        runs: list[CraftRun],
+    ) -> dict[tuple[str, str, str, float], dict[str, object]]:
+        input_acc: dict[tuple[str, str, str, float], dict[str, object]] = {}
+        for (_, recipe), run in zip(prepared_recipes, runs):
+            for component, line in zip(recipe.components, run.inputs):
+                key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
+                preview_quantity = (
+                    float(component.quantity) * float(run.quantity)
+                    if component.returnable
+                    else float(line.quantity)
+                )
+                row = input_acc.get(key)
+                if row is None:
+                    input_acc[key] = {
+                        "item_id": line.item.unique_name,
+                        "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
+                        "item_ref": line.item,
+                        "city": line.city,
+                        "price_type": line.price_type.value,
+                        "price_age_text": self._price_age_text(
+                            item_id=line.item.unique_name,
+                            city=line.city,
+                            quality=self._setup.quality,
+                            price_type=line.price_type.value,
+                        ),
+                        "unit_price": float(line.unit_price),
+                        "quantity": float(preview_quantity),
+                        "total_cost": float(preview_quantity * float(line.unit_price)),
+                        "returnable": bool(component.returnable),
+                    }
+                else:
+                    row["quantity"] = float(row["quantity"]) + float(preview_quantity)
+                    row["total_cost"] = float(row["total_cost"]) + float(preview_quantity * float(line.unit_price))
+                    row["returnable"] = bool(row.get("returnable", False) or component.returnable)
+        return input_acc
 
     def _build_breakdown_rows(self) -> list[BreakdownRow]:
         rows: list[BreakdownRow] = [
@@ -4771,10 +4759,7 @@ def _format_age(updated_at: datetime) -> str:
 
 def _need_quantity_with_safety_buffer(quantity_raw: float, is_returnable: bool) -> int:
     base = max(0.0, float(quantity_raw))
-    if not is_returnable:
-        return int(math.ceil(base))
-    multiplier = 1.0 + (_SHOPPING_SAFETY_BUFFER_PERCENT / 100.0)
-    return int(math.ceil(base * multiplier))
+    return int(math.ceil(base))
 
 
 def _input_preview_row_key(item_id: str, city: str, price_type: str) -> str:

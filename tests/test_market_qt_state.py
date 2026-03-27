@@ -12,7 +12,8 @@ import pytest
 pytest.importorskip("PySide6")
 
 from albion_dps.market.aod_client import MarketPriceRecord
-from albion_dps.market.models import MarketRegion
+from albion_dps.market.engine import build_craft_run
+from albion_dps.market.models import CraftSetup, ItemRef, MarketRegion, Recipe, RecipeComponent, RecipeOutput
 from albion_dps.market.service import MarketFetchMeta
 from albion_dps.qt.market import MarketSetupState
 from albion_dps.qt.market import state as market_state
@@ -524,9 +525,74 @@ def test_market_setup_state_applies_input_stock_to_buy_costs() -> None:
 
 
 def test_need_quantity_with_safety_buffer_for_returnable_resources() -> None:
-    assert market_state._need_quantity_with_safety_buffer(125.0, True) == 129
-    assert market_state._need_quantity_with_safety_buffer(63.0, True) == 65
+    assert market_state._need_quantity_with_safety_buffer(125.0, True) == 125
+    assert market_state._need_quantity_with_safety_buffer(63.0, True) == 63
     assert market_state._need_quantity_with_safety_buffer(10.0, False) == 10
+
+
+def test_market_setup_state_input_preview_uses_full_upfront_returnable_quantity() -> None:
+    sword = ItemRef(
+        unique_name="T4_MAIN_SWORD",
+        display_name="Broadsword",
+        tier=4,
+        enchantment=0,
+        item_value=1200,
+    )
+    bars = ItemRef(
+        unique_name="T4_METALBAR",
+        display_name="Metal Bar",
+        tier=4,
+        enchantment=0,
+        item_value=300,
+    )
+    recipe = Recipe(
+        item=sword,
+        station="Warrior Forge",
+        city_bonus="Bridgewatch",
+        components=(RecipeComponent(item=bars, quantity=16.0, returnable=True),),
+        outputs=(RecipeOutput(item=sword, quantity=1.0),),
+        focus_per_craft=200,
+    )
+    setup = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Bridgewatch",
+        default_buy_city="Bridgewatch",
+        default_sell_city="Bridgewatch",
+        return_rate_percent=20.0,
+        quality=1,
+    )
+    price_index = {
+        ("T4_METALBAR", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_METALBAR",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=1000,
+            buy_price_max=900,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+        ("T4_MAIN_SWORD", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_MAIN_SWORD",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=16000,
+            buy_price_max=15000,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+    }
+    state = MarketSetupState(auto_refresh_prices=False)
+    run = build_craft_run(recipe=recipe, quantity=2, setup=setup, price_index=price_index)
+
+    preview_rows = state._accumulate_input_preview_rows(
+        prepared_recipes=[(SimpleNamespace(row_id=1), recipe)],
+        runs=[run],
+    )
+    row = next(iter(preview_rows.values()))
+
+    assert row["item_id"] == "T4_METALBAR"
+    assert float(row["quantity"]) == 32.0
+    assert float(row["total_cost"]) == 28800.0
 
 
 def test_journal_rule_mapping_and_factor_for_crafting_item(monkeypatch: pytest.MonkeyPatch) -> None:

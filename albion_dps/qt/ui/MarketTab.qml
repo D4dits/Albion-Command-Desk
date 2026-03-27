@@ -302,10 +302,12 @@ CardPanel {
     property var copyCellText: function(value) {
         root.copyText(String(value === undefined || value === null ? "" : value))
     }
-    property var toggleInputItemCompleted: function(itemId, completed) {
+    property var toggleInputItemCompleted: function(value, itemId, completed) {
+        root.copyCellText(value)
         root.setInputRowCompleted(itemId, !Boolean(completed))
     }
-    property var toggleOutputItemCompleted: function(itemId, completed) {
+    property var toggleOutputItemCompleted: function(value, itemId, completed) {
+        root.copyCellText(value)
         root.setOutputRowCompleted(itemId, !Boolean(completed))
     }
     property var matchesSearch: function(itemText, queryText) {
@@ -761,7 +763,7 @@ CardPanel {
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: root.toggleInputItemCompleted(itemId, completed)
+                                                    onDoubleClicked: root.toggleInputItemCompleted(parent.text, itemId, completed)
                                                 }
                                             }
                                             Text { text: formatIntRound(quantity); color: completed ? root.theme.stateSuccess : mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketInputsQtyWidth }
@@ -964,7 +966,7 @@ CardPanel {
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     acceptedButtons: Qt.LeftButton
-                                                    onDoubleClicked: root.toggleOutputItemCompleted(itemId, completed)
+                                                    onDoubleClicked: root.toggleOutputItemCompleted(parent.text, itemId, completed)
                                                 }
                                             }
                                             Text { text: formatIntFloor(quantity); color: completed ? root.theme.stateSuccess : mutedColor; font.pixelSize: 11; Layout.preferredWidth: marketOutputsQtyWidth }
