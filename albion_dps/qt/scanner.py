@@ -353,10 +353,16 @@ class ScannerState(QObject):
 
     @Slot()
     def checkForUpdates(self) -> None:
+        if self._scanner_process_active():
+            self._append_warn("Stop scanner before checking repository updates.")
+            return
         self._run_async(self._check_for_updates_impl, "check updates")
 
     @Slot()
     def syncClientRepo(self) -> None:
+        if self._scanner_process_active():
+            self._append_warn("Stop scanner before syncing the repository.")
+            return
         self._run_async(self._sync_client_repo_impl, "sync repository")
 
     @Slot()
@@ -372,10 +378,15 @@ class ScannerState(QObject):
         process: subprocess.Popen[str] | None
         with self._process_lock:
             process = self._process
+            stop_requested = self._stop_requested
         if process is None:
             self._append_warn("Scanner is not running.")
             return
+        if stop_requested:
+            self._append_warn("Scanner stop is already in progress.")
+            return
         self._append_log("Stopping scanner...")
+        self._statusSignal.emit("stopping scanner")
         self._stop_process(process)
 
     @Slot()
@@ -477,6 +488,9 @@ class ScannerState(QObject):
         threading.Thread(target=worker, daemon=True).start()
 
     def _check_for_updates_impl(self) -> None:
+        if self._scanner_process_active():
+            self._append_warn("Stop scanner before checking repository updates.")
+            return
         self.refreshGitStatus()
         git_path = shutil.which("git")
         if not git_path:
@@ -512,6 +526,9 @@ class ScannerState(QObject):
             self._append_log(f"Update available: local {short_local}, remote {short_remote}")
 
     def _sync_client_repo_impl(self) -> None:
+        if self._scanner_process_active():
+            self._append_warn("Stop scanner before syncing the repository.")
+            return
         self.refreshGitStatus()
         git_path = shutil.which("git")
         if not git_path:
@@ -547,6 +564,7 @@ class ScannerState(QObject):
                 [git_path, "-C", str(self._client_dir), "rev-list", "--left-right", "--count", "HEAD...FETCH_HEAD"],
                 cwd=self._repo_root,
                 timeout=30,
+                log_stdout=False,
             )
             relation = _parse_rev_list_counts(relation_raw)
             if relation is None:
@@ -690,10 +708,16 @@ class ScannerState(QObject):
         return None
 
     def _start_scanner(self, *, use_sudo: bool) -> None:
+        if self._op_lock.locked():
+            self._append_warn("Wait for the current scanner operation to finish before starting the scanner.")
+            return
         self.refreshCaptureRuntimeStatus()
         with self._process_lock:
             if self._process is not None:
-                self._append_warn("Scanner already running.")
+                if self._stop_requested:
+                    self._append_warn("Scanner is still stopping. Wait a moment and try again.")
+                else:
+                    self._append_warn("Scanner already running.")
                 return
 
         command = self._resolve_start_command()
@@ -817,6 +841,7 @@ class ScannerState(QObject):
             [git_path, "-C", str(self._client_dir), "rev-parse", "HEAD"],
             cwd=self._repo_root,
             timeout=20,
+            log_stdout=False,
         )
         if not result:
             return None
@@ -830,12 +855,21 @@ class ScannerState(QObject):
             [git_path, "ls-remote", self._repo_url, "HEAD"],
             cwd=self._repo_root,
             timeout=30,
+            log_stdout=False,
         )
         if not result:
             return None
         return result.split()[0].strip()
 
-    def _run_command(self, command: list[str], *, cwd: Path, timeout: int) -> str | None:
+    def _run_command(
+        self,
+        command: list[str],
+        *,
+        cwd: Path,
+        timeout: int,
+        log_stdout: bool = True,
+        log_stderr: bool = True,
+    ) -> str | None:
         try:
             result = subprocess.run(
                 command,
@@ -854,10 +888,10 @@ class ScannerState(QObject):
 
         stdout = (result.stdout or "").strip()
         stderr = (result.stderr or "").strip()
-        if stdout:
+        if stdout and log_stdout:
             for line in stdout.splitlines():
                 self._append_log(line)
-        if stderr:
+        if stderr and log_stderr:
             for line in stderr.splitlines():
                 self._append_warn(line)
         if result.returncode != 0:
@@ -866,6 +900,10 @@ class ScannerState(QObject):
             )
             return None
         return stdout
+
+    def _scanner_process_active(self) -> bool:
+        with self._process_lock:
+            return self._process is not None
 
     def _append_log(self, message: str) -> None:
         self._logSignal.emit(self._format_line("INFO", message))

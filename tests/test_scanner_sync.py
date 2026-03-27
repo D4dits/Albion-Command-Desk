@@ -47,3 +47,25 @@ def test_scanner_state_exports_diagnostics_bundle(monkeypatch) -> None:
         assert summary["update_status"] == "Up to date"
         assert summary["market"]["status"] == "Prices live"
         assert summary["market"]["diagnostics_lines"] == 2
+
+
+def test_scanner_sync_is_blocked_while_running(monkeypatch) -> None:
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_scanner_blocked_sync")
+    state = ScannerState()
+    state.clearLog()
+    state._process = object()  # type: ignore[assignment]
+
+    state.syncClientRepo()
+
+    assert "Stop scanner before syncing the repository." in state.logText
+
+
+def test_scanner_update_check_is_blocked_while_running(monkeypatch) -> None:
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_scanner_blocked_update")
+    state = ScannerState()
+    state.clearLog()
+    state._process = object()  # type: ignore[assignment]
+
+    state.checkForUpdates()
+
+    assert "Stop scanner before checking repository updates." in state.logText
