@@ -7,6 +7,8 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.1.20] - 2026-03-28
+
 ### Changed
 - Release maintenance now has a one-shot local gate runner (`tools/qa/run_release_readiness.py`) that executes the documented pytest/update/smoke checks before tagging a new version.
 - Release docs now call out the new one-shot readiness command, post-release diagnostics-bundle verification, and the fact that the Windows bootstrap installer still requires Python preinstalled even though Git is not required.
@@ -29,6 +31,11 @@ and this project uses semantic versioning.
 - Meter sidebar now includes a passive session-activity trail for map transitions and recent fame/silver reward gains, giving users a safe post-analysis breadcrumb without adding any overlay/radar behavior.
 - Start tab was rebuilt into a tighter 2x2 health grid (capture, Git, game data, updates), while the header now exposes a shorter version-only update pill and falls back to a compact `Update ...` action in narrower widths.
 - Market setup/inputs/outputs/results tables now keep all columns reachable at the enforced minimum window size via horizontal scrolling, and their search/sort/export controls use a consistent wrapped toolbar layout instead of clipping at smaller widths.
+- Meter history exports were removed from the live UI; history stays copy-first and no longer attempts QWidget-based export actions from the Qt Quick surface.
+- Scanner repo actions now block cleanly while the Albion Data Client process is running, which removes start/stop/sync race conditions and noisy sync logs.
+- Start, Meter, Settings, and Help received another desktop-only layout pass to reduce duplicated content, stabilize card widths, and keep the main shell in multi-column mode.
+- Market input/output rows now keep clipboard copy on double-click while also toggling a green completion marker directly from the item cell.
+- Market shopping quantities now use full upfront material requirements for returnable crafting resources instead of subtracting expected RRR before purchase, which prevents underbuying on multi-craft batches such as Boltcasters.
 
 ## [0.1.19] - 2026-02-26
 

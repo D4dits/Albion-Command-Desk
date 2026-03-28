@@ -529,7 +529,12 @@ def _current_app_version() -> str:
     try:
         return importlib.metadata.version("albion-command-desk")
     except Exception:
-        return "0.1.0"
+        try:
+            from albion_dps import __version__ as fallback_version
+
+            return str(fallback_version or "local-dev")
+        except Exception:
+            return "local-dev"
 
 
 def _start_update_check(notifier) -> None:
