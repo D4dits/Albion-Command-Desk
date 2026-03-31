@@ -292,10 +292,11 @@ CardPanel {
 
             TableSurface {
                 width: parent.width
-                height: 110
+                height: checklistColumn.implicitHeight + 20
                 level: 1
 
                 Column {
+                    id: checklistColumn
                     anchors.fill: parent
                     anchors.margins: 10
                     spacing: 8
