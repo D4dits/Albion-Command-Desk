@@ -100,9 +100,9 @@ CardPanel {
     // Layout flags
     property int marketColumnSpacing: 6
     property int marketSetupPanelWidth: 296
-    property int marketSetupTwoColumnMinWidth: 820
-    property bool marketSetupStackedLayout: width < marketSetupTwoColumnMinWidth
-    property int marketSetupPanelActiveWidth: marketSetupStackedLayout ? -1 : marketSetupPanelWidth
+    property int marketSetupTwoColumnMinWidth: 0
+    property bool marketSetupStackedLayout: false
+    property int marketSetupPanelActiveWidth: marketSetupPanelWidth
     property int compactControlHeight: 24
     property bool narrowLayout: width < 1160
     property double priceFetchStartedAtMs: 0
@@ -528,21 +528,17 @@ CardPanel {
             currentIndex: marketTabs.currentIndex
 
             // Setup Tab
-            GridLayout {
+            RowLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                columns: root.marketSetupStackedLayout ? 1 : 2
-                columnSpacing: 12
-                rowSpacing: 12
+                spacing: 12
 
                 MarketSetupPanel {
-                    Layout.column: 0
-                    Layout.row: 0
                     Layout.fillHeight: true
-                    Layout.fillWidth: root.marketSetupStackedLayout
-                    Layout.preferredWidth: root.marketSetupStackedLayout ? -1 : root.marketSetupPanelActiveWidth
-                    Layout.minimumWidth: root.marketSetupStackedLayout ? 260 : root.marketSetupPanelActiveWidth
-                    Layout.maximumWidth: root.marketSetupStackedLayout ? 16777215 : root.marketSetupPanelActiveWidth
+                    Layout.fillWidth: false
+                    Layout.preferredWidth: root.marketSetupPanelActiveWidth
+                    Layout.minimumWidth: root.marketSetupPanelActiveWidth
+                    Layout.maximumWidth: root.marketSetupPanelActiveWidth
                     marketSetupStackedLayout: root.marketSetupStackedLayout
                     marketSetupPanelActiveWidth: root.marketSetupPanelActiveWidth
                     compactControlHeight: root.compactControlHeight
@@ -599,8 +595,6 @@ CardPanel {
                 }
 
                 MarketCraftsTable {
-                    Layout.column: root.marketSetupStackedLayout ? 0 : 1
-                    Layout.row: root.marketSetupStackedLayout ? 1 : 0
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Layout.minimumWidth: 0

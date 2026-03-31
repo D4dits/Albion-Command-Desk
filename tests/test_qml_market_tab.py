@@ -98,3 +98,6 @@ MarketTab {
     app.processEvents()
 
     assert engine.rootObjects(), "; ".join(msg.toString() for msg in warnings) or "MarketTab QML load failed"
+    root = engine.rootObjects()[0]
+    assert root.property("marketSetupStackedLayout") is False
+    assert int(root.property("marketSetupPanelActiveWidth")) == int(root.property("marketSetupPanelWidth"))

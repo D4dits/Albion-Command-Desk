@@ -632,7 +632,7 @@ Update status checkboxes and notes after each implemented ticket.
   - 2026-03-31: Added explicit regression coverage for multi-component weapon crafts so Inputs keeps full upfront counts for mixed returnable/non-returnable recipes (Boltcasters-style case).
 
 ### PH9-UXR-093 - Market containment and desktop UX pass
-- [ ] Status: TODO
+- [ ] Status: IN PROGRESS
 - Goal: keep supported desktop layouts stable while removing clipping, overlap, and dead space.
 - Files:
   1. `albion_dps/qt/ui/Main.qml`
@@ -645,6 +645,8 @@ Update status checkboxes and notes after each implemented ticket.
   - Supported desktop sizes do not trigger clipped controls or overlapping cards.
   - Inputs/Outputs/Results remain usable without losing key actions.
   - Start, Meter, Settings, and Help share the same desktop layout contract.
+- Progress:
+  - 2026-03-31: Market setup now stays in a fixed desktop two-pane layout (setup panel + crafts table) and is regression-checked at the enforced minimum width.
 
 ### PH9-REL-094 - Installer and release smoke lock
 - [ ] Status: TODO

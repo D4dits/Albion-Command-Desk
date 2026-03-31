@@ -17,10 +17,10 @@ TableSurface {
     id: root
     level: 1
     Layout.fillHeight: true
-    Layout.fillWidth: marketSetupStackedLayout
-    Layout.preferredWidth: marketSetupStackedLayout ? -1 : marketSetupPanelActiveWidth
-    Layout.minimumWidth: marketSetupStackedLayout ? 260 : marketSetupPanelActiveWidth
-    Layout.maximumWidth: marketSetupStackedLayout ? 16777215 : marketSetupPanelActiveWidth
+    Layout.fillWidth: false
+    Layout.preferredWidth: marketSetupPanelActiveWidth
+    Layout.minimumWidth: marketSetupPanelActiveWidth
+    Layout.maximumWidth: marketSetupPanelActiveWidth
 
     // Layout flags
     property bool marketSetupStackedLayout: false
