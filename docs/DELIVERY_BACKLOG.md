@@ -511,7 +511,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Responsive breakpoints are documented as the contract for subsequent UI tickets.
 
 ### PH8-UXR-081 - Start tab compact redesign
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Goal: remove wasted space and give Start a dense, readable system dashboard.
 - Files:
   1. `albion_dps/qt/ui/HomeTab.qml`
@@ -523,7 +523,7 @@ Update status checkboxes and notes after each implemented ticket.
   - No clipped or uneven sections remain.
 
 ### PH8-UXR-082 - Meter adaptive layout redesign
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Goal: make Meter readable and stable at the supported minimum size without layout collapse.
 - Files:
   1. `albion_dps/qt/ui/MeterTab.qml`
@@ -536,7 +536,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Horizontal overflow is controlled, not accidental.
 
 ### PH8-UXR-083 - Market layout containment pass
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: keep setup/table/results readable without accidental clipping or dead space.
 - Files:
   1. `albion_dps/qt/ui/MarketTab.qml`
@@ -549,7 +549,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Results/header stats do not drift or collapse awkwardly.
 
 ### PH8-UXR-084 - Scanner/Settings/Help consistency pass
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: align non-meter tabs to the same card density, spacing, and responsive behavior.
 - Files:
   1. `albion_dps/qt/ui/ScannerTab.qml`
@@ -561,7 +561,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Primary actions remain visible without overlap or orphan gaps.
 
 ### PH8-UXR-085 - Header and update CTA redesign
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: modernize the header so updates/support actions remain compact, readable, and intentional.
 - Files:
   1. `albion_dps/qt/ui/AppHeader.qml`
@@ -576,6 +576,8 @@ Update status checkboxes and notes after each implemented ticket.
 - Progress:
   - 2026-03-25: PH8-UXR-080 completed by moving the window/default breakpoint contract into `Theme.qml`, wiring `Main.qml` to those tokens, and documenting the supported geometry in `docs/UX_RESPONSIVE_LAYOUT_PLAN.md`.
   - 2026-03-25: PH8-UXR-081/082 started with a denser Start dashboard, shorter update CTA copy, and a stacked Meter layout that scrolls instead of clipping at smaller supported sizes.
+  - 2026-03-31: PH8-UXR-081/082/084/085 completed by rewriting Start, Meter, Scanner, Settings, and Help around one desktop-only multi-column shell contract, compacting update CTAs, and stabilizing shell card widths at the supported minimum size.
+  - 2026-03-31: PH8-UXR-083 completed by locking Market into a stable two-pane desktop layout, keeping toolbar actions on one row, and regression-checking containment at supported widths.
 
 ## Next Milestone - Phase 9 (Reliability lock for meter, market, and release)
 
@@ -596,7 +598,7 @@ Update status checkboxes and notes after each implemented ticket.
   - 2026-03-31: Added `tests/test_meter_pcap49_party_flow.py` and refreshed the 50/51/52/53 replay pack to lock portal/map-change bootstrap, live row visibility, self-row visibility, stable history labels, and fame/silver totals.
 
 ### PH9-MTR-091 - Live meter sanity hardening
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Goal: make live meter behavior deterministic when party state, local context, or snapshots are noisy.
 - Files:
   1. `albion_dps/pipeline.py`
@@ -612,9 +614,10 @@ Update status checkboxes and notes after each implemented ticket.
 
 - Progress:
   - 2026-03-31: Tightened `_allowed_display_names_for_snapshot()` so once a local non-self party member exists, non-local active party IDs stop leaking into the live meter view.
+  - 2026-03-31: Live meter sanity was regression-locked across party seed/registry and replay packs (`pcap49`-`pcap53`), covering bootstrap visibility, local-only party filtering, stable history labels, and fame/silver totals.
 
 ### PH9-MKT-092 - Market correctness lock
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Goal: freeze the current market math into deterministic regressions and close remaining quantity/profit gaps.
 - Files:
   1. `albion_dps/market/engine.py`
@@ -630,9 +633,10 @@ Update status checkboxes and notes after each implemented ticket.
 - Progress:
   - 2026-03-31: Locked a regression where selected material cost could still inherit shopping-style safety rounding; top KPI material cost now uses exact expected economic quantities while Inputs keeps full upfront purchase counts.
   - 2026-03-31: Added explicit regression coverage for multi-component weapon crafts so Inputs keeps full upfront counts for mixed returnable/non-returnable recipes (Boltcasters-style case).
+  - 2026-03-31: Market correctness was locked with engine/state/profit regressions covering journals, non-returnables, mixed recipes, and consistent upfront-vs-economic quantity handling across Inputs/Outputs/Results.
 
 ### PH9-UXR-093 - Market containment and desktop UX pass
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Goal: keep supported desktop layouts stable while removing clipping, overlap, and dead space.
 - Files:
   1. `albion_dps/qt/ui/Main.qml`
@@ -648,6 +652,7 @@ Update status checkboxes and notes after each implemented ticket.
 - Progress:
   - 2026-03-31: Market setup now stays in a fixed desktop two-pane layout (setup panel + crafts table) and is regression-checked at the enforced minimum width.
   - 2026-03-31: Crafts/Inputs/Outputs/Results toolbars now use a stable desktop row layout instead of wrapping Flow controls, keeping primary actions visible at supported widths.
+  - 2026-03-31: Desktop shell tabs now share one non-stacking layout contract, Scanner gained the same shell framing as the other utility tabs, and Meter/Market controls were aligned to full-width desktop rows.
 
 ### PH9-REL-094 - Installer and release smoke lock
 - [x] Status: DONE

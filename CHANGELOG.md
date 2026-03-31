@@ -10,10 +10,15 @@ and this project uses semantic versioning.
 ### Changed
 - Market selected-material cost now uses exact expected economic quantities instead of reusing shopping safety rounding, which keeps top KPIs aligned with per-result cost allocation while Inputs still shows full upfront purchase counts.
 - Market regressions now explicitly lock mixed-component weapon crafts so Inputs keeps full upfront shopping counts for returnable mats even when the recipe also contains non-returnable artifacts.
+- Market journals, non-returnables, mixed recipes, and top-level profit math are now covered by deterministic engine/state/profit regressions, which locks the current Inputs/Outputs/Results behavior before further planner changes.
 - CLI, Qt runner, and scanner diagnostics now resolve the app version from one shared helper, reducing mismatches between `--version`, in-app update checks, diagnostics bundles, and local-dev fallback reporting.
 - Market setup now stays in a fixed desktop two-pane layout (setup panel + crafts table) at supported window widths, reducing layout drift and keeping the crafts table from collapsing under the setup panel.
 - Market crafts/inputs/outputs/results toolbars now stay on a single desktop row at supported widths, which keeps search, filters, and CSV actions from wrapping into uneven stacks.
+- Start, Scanner, Settings, and Help now share the same desktop-only shell framing and two-column card density, which removes the previous one-column collapse and keeps utility-tab actions visible at supported sizes.
+- Meter now uses the same desktop shell contract: controls stay in one row group, the scoreboard header fills the panel width cleanly, and the history/session sidebars remain aligned instead of drifting at supported sizes.
+- Header update/support actions were compacted so the update CTA no longer looks truncated at supported desktop widths while PayPal/Coffee buttons stay readable without forcing stacked layouts.
 - Local release-readiness checks now validate the manifest artifact matrix for Windows/Linux/macOS from the checked-in contract file, so missing or misclassified release assets fail before tagging without relying on GitHub reachability.
+- Live meter sanity is now regression-locked across the current replay pack (`pcap49`-`pcap53`), covering bootstrap visibility, local-context party filtering, stable history labels, and fame/silver totals.
 
 ## [0.1.20] - 2026-03-28
 
