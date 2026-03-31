@@ -1,26 +1,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import "." // for Theme, AppButton, CardPanel, TableSurface access
+import "."
 
-/**
- * MeterTab - Main meter tab container
- *
- * Contains the complete meter view with:
- * - Left panel: Title, status text, controls, and scoreboard
- * - Right panel: History list and legend
- *
- * Signals:
- * - modeChanged(string): Fired when meter mode changes
- * - sortKeyChanged(string): Fired when sort key changes
- * - clearHistorySelection(): Fired when user returns to live view
- * - selectHistory(int): Fired when user selects a history entry
- * - copyHistory(int): Fired when user copies a history entry
- */
 Item {
     id: root
+    anchors.fill: parent
 
-    // State properties (bound to parent's uiState)
     property string mode: "battle"
     property string zone: ""
     property string sortKey: "dps"
@@ -37,18 +23,14 @@ Item {
     property string sessionCompareTitle: ""
     property string sessionCompareText: ""
 
-    // Models
     property var playersModel: null
     property var historyModel: null
     property var sessionActivityModel: null
 
-    // UI flags
     property bool compactLayout: false
-    property bool stackedLayout: false
     property bool historyAvailable: historyModel && historyModel.count > 0
     property bool activityAvailable: sessionActivityModel && sessionActivityModel.count > 0
 
-    // Signals to notify parent of actions
     signal setMode(string mode)
     signal setSortKey(string sortKey)
     signal clearHistorySelection()
@@ -58,19 +40,16 @@ Item {
     signal refreshCaptureRuntimeStatus()
     signal openCaptureRuntimeAction()
 
-    // Access to theme (injected by parent)
     property var theme: null
     property color textColor: theme.textPrimary
     property color mutedColor: theme.textMuted
     property color accentColor: theme.brandPrimary
+    property int panelSpacing: 12
+    property int rightPanelWidth: 372
+    property int leftPanelWidth: Math.max(0, width - rightPanelWidth - panelSpacing)
 
-    // Helper functions (injected by parent or defined here)
     property var tableRowColor: function(index) {
         return index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
-    }
-
-    function tableRowStrongColor(index) {
-        return index % 2 === 0 ? theme.surfaceInteractive : theme.tableRowEven
     }
 
     function runtimeHintText() {
@@ -82,192 +61,173 @@ Item {
                 return "Live mode is unavailable. Install Npcap Runtime (Npcap installer). Npcap SDK is not required for normal users."
             }
             if (root.captureRuntimeState === "blocked") {
-                return "Live mode is unavailable. Runtime is installed, but capture backend is missing. Reinstall with capture profile (SDK + C++ tools only for this build step)."
+                return "Live mode is unavailable. Runtime is installed, but capture backend is missing. Reinstall with capture profile."
             }
         }
         return root.captureRuntimeDetail
     }
 
     function runtimeHintColor() {
-        if (root.captureRuntimeState === "missing") {
-            return theme.stateWarning
-        }
-        if (root.captureRuntimeState === "blocked") {
-            return theme.stateDanger
-        }
+        if (root.captureRuntimeState === "missing") return theme.stateWarning
+        if (root.captureRuntimeState === "blocked") return theme.stateDanger
         return mutedColor
     }
 
-    RowLayout {
-        anchors.fill: parent
-        spacing: 12
+    CardPanel {
+        id: leftPanel
+        level: 1
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: root.leftPanelWidth
 
-        CardPanel {
-            level: 1
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 8
 
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 12
-                spacing: 8
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 6
-
-                    Text {
-                        text: "Meter"
-                        color: textColor
-                        font.pixelSize: 14
-                        font.bold: true
-                    }
-
-                    ToolButton {
-                        text: "?"
-                        hoverEnabled: true
-                        implicitWidth: 24
-                        implicitHeight: 24
-                        font.pixelSize: 13
-
-                        background: Rectangle {
-                            radius: 12
-                            color: accentColor
-                            border.color: "#79c0ff"
-                        }
-
-                        contentItem: Text {
-                            text: "?"
-                            color: "#081018"
-                            font.pixelSize: 13
-                            font.bold: true
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-
-                        ToolTip.visible: hovered
-                        ToolTip.text: "Live combat meter.\nTracks DMG/HEAL/DPS/HPS, supports Battle/Zone/Manual mode,\nand lets you open fight snapshots from History."
-                    }
-
-                    Item { Layout.fillWidth: true }
-                }
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 6
 
                 Text {
-                    text: root.selectedHistoryIndex >= 0
-                        ? "Scoreboard (history #" + (root.selectedHistoryIndex + 1) + ", sorted by " + root.sortKey + ")"
-                        : "Scoreboard (live, sorted by " + root.sortKey + ")"
-                    color: textColor
+                    text: "Meter"
+                    color: root.textColor
                     font.pixelSize: 14
                     font.bold: true
                 }
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
-                    visible: runtimeHintText().length > 0
-
-                    Text {
-                        Layout.fillWidth: true
-                        text: runtimeHintText()
-                        color: runtimeHintColor()
-                        font.pixelSize: 11
-                        wrapMode: Text.Wrap
+                ToolButton {
+                    text: "?"
+                    hoverEnabled: true
+                    implicitWidth: 24
+                    implicitHeight: 24
+                    font.pixelSize: 13
+                    background: Rectangle {
+                        radius: 12
+                        color: root.accentColor
+                        border.color: "#79c0ff"
                     }
-
-                    AppButton {
-                        text: "Refresh"
-                        compact: true
-                        onClicked: root.refreshCaptureRuntimeStatus()
+                    contentItem: Text {
+                        text: "?"
+                        color: "#081018"
+                        font.pixelSize: 13
+                        font.bold: true
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
                     }
-
-                    AppButton {
-                        visible: root.captureRuntimeActionLabel.length > 0
-                        text: root.captureRuntimeActionLabel
-                        compact: true
-                        onClicked: root.openCaptureRuntimeAction()
-                    }
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Live combat meter. Tracks DMG/HEAL/DPS/HPS and opens fight snapshots from History."
                 }
 
-                MeterControls {
-                    id: meterControls
+                Item { Layout.fillWidth: true }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: root.selectedHistoryIndex >= 0
+                    ? "Scoreboard (history #" + (root.selectedHistoryIndex + 1) + ", sorted by " + root.sortKey + ")"
+                    : "Scoreboard (live, sorted by " + root.sortKey + ")"
+                color: root.textColor
+                font.pixelSize: 14
+                font.bold: true
+                wrapMode: Text.WordWrap
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+                visible: runtimeHintText().length > 0
+
+                Text {
                     Layout.fillWidth: true
-                    theme: root.theme
-                    currentMode: root.mode
-                    currentSortKey: root.sortKey
-                    onModeChanged: function(mode) { root.setMode(mode) }
-                    onSortKeyChanged: function(sortKey) { root.setSortKey(sortKey) }
+                    text: runtimeHintText()
+                    color: runtimeHintColor()
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
                 }
 
-                MeterScoreboard {
-                    id: meterScoreboard
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    theme: root.theme
-                    textColor: root.textColor
-                    mutedColor: root.mutedColor
-                    playersModel: root.playersModel
-                    showHistory: root.selectedHistoryIndex >= 0
-                    selectedHistoryIndex: root.selectedHistoryIndex
-                    sortKey: root.sortKey
-                    tableRowColor: root.tableRowColor
-                }
+                AppButton { text: "Refresh"; compact: true; onClicked: root.refreshCaptureRuntimeStatus() }
+                AppButton { visible: root.captureRuntimeActionLabel.length > 0; text: root.captureRuntimeActionLabel; compact: true; onClicked: root.openCaptureRuntimeAction() }
+            }
+
+            MeterControls {
+                id: meterControls
+                Layout.fillWidth: true
+                theme: root.theme
+                currentMode: root.mode
+                currentSortKey: root.sortKey
+                onModeChanged: function(mode) { root.setMode(mode) }
+                onSortKeyChanged: function(sortKey) { root.setSortKey(sortKey) }
+            }
+
+            MeterScoreboard {
+                id: meterScoreboard
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                theme: root.theme
+                textColor: root.textColor
+                mutedColor: root.mutedColor
+                playersModel: root.playersModel
+                showHistory: root.selectedHistoryIndex >= 0
+                selectedHistoryIndex: root.selectedHistoryIndex
+                sortKey: root.sortKey
+                tableRowColor: root.tableRowColor
             }
         }
+    }
 
-        CardPanel {
-            level: 1
-            Layout.preferredWidth: 372
-            Layout.minimumWidth: 372
-            Layout.maximumWidth: 420
-            Layout.fillHeight: true
+    CardPanel {
+        id: rightPanel
+        level: 1
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: root.rightPanelWidth
 
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 12
-                spacing: 8
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 8
 
-                MeterHistoryPanel {
-                    id: meterHistoryPanel
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    theme: root.theme
-                    textColor: root.textColor
-                    mutedColor: root.mutedColor
-                    historyModel: root.historyModel
-                    selectedHistoryIndex: root.selectedHistoryIndex
-                    sessionCompareAvailable: root.sessionCompareAvailable
-                    sessionCompareTitle: root.sessionCompareTitle
-                    sessionCompareText: root.sessionCompareText
-                    sortKey: root.sortKey
-                    tableRowColor: root.tableRowColor
+            MeterHistoryPanel {
+                id: meterHistoryPanel
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                theme: root.theme
+                textColor: root.textColor
+                mutedColor: root.mutedColor
+                historyModel: root.historyModel
+                selectedHistoryIndex: root.selectedHistoryIndex
+                sessionCompareAvailable: root.sessionCompareAvailable
+                sessionCompareTitle: root.sessionCompareTitle
+                sessionCompareText: root.sessionCompareText
+                sortKey: root.sortKey
+                tableRowColor: root.tableRowColor
+                onClearHistorySelection: root.clearHistorySelection()
+                onSelectHistory: function(index) { root.selectHistory(index) }
+                onCopyHistory: function(index) { root.copyHistory(index) }
+                onCopySessionCompare: root.copySessionCompare()
+            }
 
-                    onClearHistorySelection: root.clearHistorySelection()
-                    onSelectHistory: function(index) { root.selectHistory(index) }
-                    onCopyHistory: function(index) { root.copyHistory(index) }
-                    onCopySessionCompare: root.copySessionCompare()
-                }
+            MeterSessionStatsPanel {
+                Layout.fillWidth: true
+                theme: root.theme
+                textColor: root.textColor
+                mutedColor: root.mutedColor
+                fameText: root.fameText
+                famePerHourText: root.famePerHourText
+                silverText: root.silverText
+                silverPerHourText: root.silverPerHourText
+            }
 
-                MeterSessionStatsPanel {
-                    id: meterSessionStats
-                    Layout.fillWidth: true
-                    theme: root.theme
-                    textColor: root.textColor
-                    mutedColor: root.mutedColor
-                    fameText: root.fameText
-                    famePerHourText: root.famePerHourText
-                    silverText: root.silverText
-                    silverPerHourText: root.silverPerHourText
-                }
-
-                MeterSessionActivityPanel {
-                    id: meterSessionActivity
-                    visible: root.activityAvailable
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 140
-                    Layout.minimumHeight: 120
-                    theme: root.theme
-                    activityModel: root.sessionActivityModel
-                }
+            MeterSessionActivityPanel {
+                visible: root.activityAvailable
+                Layout.fillWidth: true
+                Layout.preferredHeight: 140
+                Layout.minimumHeight: 120
+                theme: root.theme
+                activityModel: root.sessionActivityModel
             }
         }
     }
