@@ -14,7 +14,6 @@ import logging
 import zipfile
 from collections import deque
 from datetime import datetime
-from importlib.metadata import PackageNotFoundError, version as package_version
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
@@ -31,6 +30,7 @@ from albion_dps.capture.npcap_runtime import (
 )
 from albion_dps.domain.item_db import ensure_game_databases, get_game_database_health
 from albion_dps.settings import load_app_settings, settings_dir, settings_path, update_app_settings
+from albion_dps.versioning import resolve_app_version
 
 
 DEFAULT_REPO_URL = "https://github.com/ao-data/albiondata-client.git"
@@ -74,7 +74,7 @@ class ScannerState(QObject):
         self._repo_url = str(self._settings.scanner_repo_url or DEFAULT_REPO_URL).strip() or DEFAULT_REPO_URL
         self._app_log_level = str(self._settings.log_level or "INFO").strip().upper() or "INFO"
         self._config_dir = settings_dir()
-        self._app_version = _resolve_app_version()
+        self._app_version = resolve_app_version()
         self._status_text = "idle"
         self._update_text = "not checked"
         self._log_lines: deque[str] = deque(maxlen=800)
@@ -1079,15 +1079,6 @@ def _is_windows() -> bool:
     import os
 
     return os.name == "nt"
-
-
-def _resolve_app_version() -> str:
-    try:
-        return package_version("albion-command-desk")
-    except PackageNotFoundError:
-        return "local-dev"
-
-
 def _parse_rev_list_counts(output: str | None) -> tuple[int, int] | None:
     if not output:
         return None

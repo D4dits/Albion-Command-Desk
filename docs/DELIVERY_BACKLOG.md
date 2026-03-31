@@ -669,6 +669,9 @@ Update status checkboxes and notes after each implemented ticket.
 - Done when:
   - App version, manifest version, update banner, and diagnostics bundle agree on the active release.
   - No view falls back to stale hardcoded version strings.
+- Progress:
+  - CLI, Qt runner, and scanner diagnostics now resolve app version from the shared helper.
+  - Local release gate validates version surfaces explicitly before tagging.
 
 - Progress:
   - 2026-03-31: centralized version resolution in `albion_dps.versioning`, rewired CLI and Qt runner to the shared helper, and added regression tests so package-metadata fallback stays consistent across CLI/app/update surfaces.
