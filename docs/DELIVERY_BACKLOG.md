@@ -614,7 +614,7 @@ Update status checkboxes and notes after each implemented ticket.
   - 2026-03-31: Tightened `_allowed_display_names_for_snapshot()` so once a local non-self party member exists, non-local active party IDs stop leaking into the live meter view.
 
 ### PH9-MKT-092 - Market correctness lock
-- [ ] Status: TODO
+- [ ] Status: IN PROGRESS
 - Goal: freeze the current market math into deterministic regressions and close remaining quantity/profit gaps.
 - Files:
   1. `albion_dps/market/engine.py`
@@ -626,6 +626,9 @@ Update status checkboxes and notes after each implemented ticket.
   - Inputs show upfront purchase requirements that are sufficient to complete planned crafts.
   - Journals, non-returnable components, and profit math stay consistent across inputs/outputs/results.
   - Known regressions (boltcasters, royal/sigil handling, journal coupling) are blocked by tests.
+
+- Progress:
+  - 2026-03-31: Locked a regression where selected material cost could still inherit shopping-style safety rounding; top KPI material cost now uses exact expected economic quantities while Inputs keeps full upfront purchase counts.
 
 ### PH9-UXR-093 - Market containment and desktop UX pass
 - [ ] Status: TODO

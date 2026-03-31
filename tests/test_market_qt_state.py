@@ -595,6 +595,68 @@ def test_market_setup_state_input_preview_uses_full_upfront_returnable_quantity(
     assert float(row["total_cost"]) == 28800.0
 
 
+def test_market_setup_state_selected_input_total_uses_exact_expected_quantity() -> None:
+    sword = ItemRef(
+        unique_name="T4_MAIN_SWORD",
+        display_name="Broadsword",
+        tier=4,
+        enchantment=0,
+        item_value=1200,
+    )
+    bars = ItemRef(
+        unique_name="T4_METALBAR",
+        display_name="Metal Bar",
+        tier=4,
+        enchantment=0,
+        item_value=300,
+    )
+    recipe = Recipe(
+        item=sword,
+        station="Warrior Forge",
+        city_bonus="Bridgewatch",
+        components=(RecipeComponent(item=bars, quantity=16.0, returnable=True),),
+        outputs=(RecipeOutput(item=sword, quantity=1.0),),
+        focus_per_craft=200,
+    )
+    setup = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Bridgewatch",
+        default_buy_city="Bridgewatch",
+        default_sell_city="Bridgewatch",
+        return_rate_percent=20.0,
+        quality=1,
+    )
+    price_index = {
+        ("T4_METALBAR", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_METALBAR",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=1000,
+            buy_price_max=900,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+        ("T4_MAIN_SWORD", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_MAIN_SWORD",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=16000,
+            buy_price_max=15000,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+    }
+    state = MarketSetupState(auto_refresh_prices=False)
+    run = build_craft_run(recipe=recipe, quantity=2, setup=setup, price_index=price_index)
+
+    total_cost = state._compute_input_total_from_lines(
+        input_lines=run.inputs,
+        prepared_recipes=[(SimpleNamespace(row_id=1), recipe)],
+    )
+
+    assert total_cost == pytest.approx(32.0 * 0.8 * 900.0, rel=0.0, abs=0.01)
+
+
 def test_journal_rule_mapping_and_factor_for_crafting_item(monkeypatch: pytest.MonkeyPatch) -> None:
     expected_rule = market_state._JournalRule(
         kind="WARRIOR",

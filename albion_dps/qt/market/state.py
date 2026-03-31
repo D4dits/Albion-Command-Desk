@@ -3171,12 +3171,6 @@ class MarketSetupState(QObject):
         input_lines: list[InputLine] | tuple[InputLine, ...],
         prepared_recipes: list[tuple[CraftPlanRow, Recipe]],
     ) -> float:
-        returnable_by_item: dict[str, bool] = {}
-        for _, recipe in prepared_recipes:
-            for component in recipe.components:
-                item_id = str(component.item.unique_name)
-                returnable_by_item[item_id] = bool(returnable_by_item.get(item_id, False) or component.returnable)
-
         input_acc: dict[tuple[str, str, str, float], dict[str, float | str]] = {}
         for line in input_lines:
             key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
@@ -3196,11 +3190,9 @@ class MarketSetupState(QObject):
         for row in input_acc.values():
             item_id = str(row["item_id"])
             quantity_raw = float(row["quantity"])
-            is_returnable = bool(returnable_by_item.get(item_id, False))
-            need_qty = float(max(0, _need_quantity_with_safety_buffer(quantity_raw, is_returnable)))
             stock_qty = float(max(0.0, self._input_stock_quantities.get(item_id, 0.0)))
-            stock_qty = min(stock_qty, need_qty)
-            buy_qty = max(0.0, need_qty - stock_qty)
+            stock_qty = min(stock_qty, quantity_raw)
+            buy_qty = max(0.0, quantity_raw - stock_qty)
             unit_price = float(row["unit_price"])
             total_cost += float(buy_qty * unit_price)
 
