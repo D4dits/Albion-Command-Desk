@@ -86,3 +86,32 @@ def test_allowed_display_names_keeps_recently_local_party_member() -> None:
     )
 
     assert allowed == {"D4dits", "kroxigorz"}
+
+
+def test_allowed_display_names_drops_nonlocal_active_party_id_once_local_party_exists() -> None:
+    party = PartyRegistry()
+    party.seed_self_ids([100])
+    party.seed_names(["D4dits", "SocialFur3", "SocialFur4"])
+    party.seed_ids([200, 300])
+    names = NameRegistry()
+    names.record(100, "D4dits")
+    names.record_local(200, "SocialFur3", 100.0)
+    names.record(300, "SocialFur4")
+    snapshot = MeterSnapshot(
+        timestamp=105.0,
+        totals={
+            100: {"damage": 50.0},
+            200: {"damage": 25.0},
+            300: {"damage": 10.0},
+        },
+        names={100: "D4dits", 200: "SocialFur3", 300: "SocialFur4"},
+    )
+
+    allowed = _allowed_display_names_for_snapshot(
+        snapshot=snapshot,
+        names=snapshot.names or {},
+        party=party,
+        name_registry=names,
+    )
+
+    assert allowed == {"D4dits", "SocialFur3"}

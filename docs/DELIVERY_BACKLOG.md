@@ -596,7 +596,7 @@ Update status checkboxes and notes after each implemented ticket.
   - 2026-03-31: Added `tests/test_meter_pcap49_party_flow.py` and refreshed the 50/51/52/53 replay pack to lock portal/map-change bootstrap, live row visibility, self-row visibility, stable history labels, and fame/silver totals.
 
 ### PH9-MTR-091 - Live meter sanity hardening
-- [ ] Status: TODO
+- [ ] Status: IN PROGRESS
 - Goal: make live meter behavior deterministic when party state, local context, or snapshots are noisy.
 - Files:
   1. `albion_dps/pipeline.py`
@@ -609,6 +609,9 @@ Update status checkboxes and notes after each implemented ticket.
   - Live rows do not disappear during bootstrap or local-context transitions.
   - Party filtering remains local enough to exclude stale/off-map ghosts.
   - Battle history and active snapshots stay stable through party changes.
+
+- Progress:
+  - 2026-03-31: Tightened `_allowed_display_names_for_snapshot()` so once a local non-self party member exists, non-local active party IDs stop leaking into the live meter view.
 
 ### PH9-MKT-092 - Market correctness lock
 - [ ] Status: TODO

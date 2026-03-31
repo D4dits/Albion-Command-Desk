@@ -504,7 +504,11 @@ def _allowed_display_names_for_snapshot(
             snapshot.timestamp,
             LOCAL_PARTY_VISIBILITY_SECONDS,
         )
-    display_party_ids = non_self_party_ids.intersection(active_ids.union(recent_local_ids))
+    recent_local_party_ids = non_self_party_ids.intersection(recent_local_ids)
+    if recent_local_party_ids:
+        display_party_ids = recent_local_party_ids.intersection(active_ids.union(recent_local_ids))
+    else:
+        display_party_ids = non_self_party_ids.intersection(active_ids.union(recent_local_ids))
     for entity_id in display_party_ids:
         add_allowed_label(entity_id)
     return allowed_names
