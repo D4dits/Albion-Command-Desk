@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import importlib.metadata
 import logging
 import os
 import queue
@@ -34,6 +33,7 @@ from albion_dps.protocol.photon_decode import PhotonDecoder
 from albion_dps.protocol.registry import default_registry
 from albion_dps.settings import load_app_settings, update_app_settings
 from albion_dps.update import check_for_updates
+from albion_dps.versioning import resolve_app_version
 
 
 SnapshotQueue = queue.Queue[MeterSnapshot | None]
@@ -530,15 +530,7 @@ def _fallback_interface() -> str | None:
 
 
 def _current_app_version() -> str:
-    try:
-        return importlib.metadata.version("albion-command-desk")
-    except Exception:
-        try:
-            from albion_dps import __version__ as fallback_version
-
-            return str(fallback_version or "local-dev")
-        except Exception:
-            return "local-dev"
+    return resolve_app_version()
 
 
 def _start_update_check(notifier) -> None:

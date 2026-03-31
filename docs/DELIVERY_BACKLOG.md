@@ -658,7 +658,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Windows bootstrap/install/update smoke remains green on the current release contract.
 
 ### PH9-REL-095 - Version and reporting consistency
-- [ ] Status: TODO
+- [ ] Status: IN PROGRESS
 - Goal: ensure every user-facing version, diagnostic, and update surface reports the same release state.
 - Files:
   1. `albion_dps/__init__.py`
@@ -669,6 +669,9 @@ Update status checkboxes and notes after each implemented ticket.
 - Done when:
   - App version, manifest version, update banner, and diagnostics bundle agree on the active release.
   - No view falls back to stale hardcoded version strings.
+
+- Progress:
+  - 2026-03-31: centralized version resolution in `albion_dps.versioning`, rewired CLI and Qt runner to the shared helper, and added regression tests so package-metadata fallback stays consistent across CLI/app/update surfaces.
 
 ## Ticket Queue (Execution Order)
 

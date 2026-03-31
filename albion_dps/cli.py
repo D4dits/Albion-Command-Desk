@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import argparse
 import sys
-from importlib.metadata import PackageNotFoundError, version as package_version
 
 from albion_dps.logging_config import configure_logging
 from albion_dps.settings import load_app_settings
 from albion_dps.qt.runner import run_qt
+from albion_dps.versioning import resolve_app_version
 
 _COMMANDS = ("live", "replay", "core")
 
@@ -107,7 +107,4 @@ def _find_command_insert_index(argv: list[str]) -> int:
 
 
 def _resolve_cli_version() -> str:
-    try:
-        return package_version("albion-command-desk")
-    except PackageNotFoundError:
-        return "local-dev"
+    return resolve_app_version()

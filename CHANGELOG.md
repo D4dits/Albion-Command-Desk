@@ -9,6 +9,7 @@ and this project uses semantic versioning.
 
 ### Changed
 - Market selected-material cost now uses exact expected economic quantities instead of reusing shopping safety rounding, which keeps top KPIs aligned with per-result cost allocation while Inputs still shows full upfront purchase counts.
+- CLI and Qt runner now resolve the app version from one shared helper, reducing mismatches between `--version`, in-app update checks, and local-dev fallback reporting.
 
 ## [0.1.20] - 2026-03-28
 

@@ -1,8 +1,5 @@
-from importlib.metadata import PackageNotFoundError, version as package_version
+from albion_dps.versioning import resolve_app_version
 
 __all__ = ["__version__"]
 
-try:
-    __version__ = package_version("albion-command-desk")
-except PackageNotFoundError:
-    __version__ = "local-dev"
+__version__ = resolve_app_version()
