@@ -629,6 +629,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 - Progress:
   - 2026-03-31: Locked a regression where selected material cost could still inherit shopping-style safety rounding; top KPI material cost now uses exact expected economic quantities while Inputs keeps full upfront purchase counts.
+  - 2026-03-31: Added explicit regression coverage for multi-component weapon crafts so Inputs keeps full upfront counts for mixed returnable/non-returnable recipes (Boltcasters-style case).
 
 ### PH9-UXR-093 - Market containment and desktop UX pass
 - [ ] Status: TODO

@@ -595,6 +595,97 @@ def test_market_setup_state_input_preview_uses_full_upfront_returnable_quantity(
     assert float(row["total_cost"]) == 28800.0
 
 
+def test_market_setup_state_input_preview_keeps_full_upfront_counts_for_two_component_weapon() -> None:
+    weapon = ItemRef(
+        unique_name="T4_2H_CROSSBOW_CANNON",
+        display_name="Boltcasters",
+        tier=4,
+        enchantment=0,
+        item_value=1200,
+    )
+    planks = ItemRef(
+        unique_name="T4_PLANKS",
+        display_name="Pine Planks",
+        tier=4,
+        enchantment=0,
+        item_value=300,
+    )
+    bars = ItemRef(
+        unique_name="T4_METALBAR",
+        display_name="Steel Bar",
+        tier=4,
+        enchantment=0,
+        item_value=300,
+    )
+    bolts = ItemRef(
+        unique_name="T4_ARTEFACT_2H_DEMONIC_CROSSBOW",
+        display_name="Hellish Bolts",
+        tier=4,
+        enchantment=0,
+        item_value=800,
+    )
+    recipe = Recipe(
+        item=weapon,
+        station="Hunter Lodge",
+        city_bonus="Bridgewatch",
+        components=(
+            RecipeComponent(item=planks, quantity=20.0, returnable=True),
+            RecipeComponent(item=bars, quantity=12.0, returnable=True),
+            RecipeComponent(item=bolts, quantity=1.0, returnable=False),
+        ),
+        outputs=(RecipeOutput(item=weapon, quantity=1.0),),
+        focus_per_craft=200,
+    )
+    setup = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Bridgewatch",
+        default_buy_city="Bridgewatch",
+        default_sell_city="Bridgewatch",
+        return_rate_percent=15.3,
+        quality=1,
+    )
+    price_index = {
+        ("T4_PLANKS", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_PLANKS",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=300,
+            buy_price_max=280,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+        ("T4_METALBAR", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_METALBAR",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=400,
+            buy_price_max=380,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+        ("T4_ARTEFACT_2H_DEMONIC_CROSSBOW", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_ARTEFACT_2H_DEMONIC_CROSSBOW",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=9000,
+            buy_price_max=8500,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+    }
+    state = MarketSetupState(auto_refresh_prices=False)
+    run = build_craft_run(recipe=recipe, quantity=2, setup=setup, price_index=price_index)
+
+    preview_rows = state._accumulate_input_preview_rows(
+        prepared_recipes=[(SimpleNamespace(row_id=1), recipe)],
+        runs=[run],
+    )
+
+    assert float(preview_rows[("T4_PLANKS", "Bridgewatch", "buy_order", 280.0)]["quantity"]) == 40.0
+    assert float(preview_rows[("T4_METALBAR", "Bridgewatch", "buy_order", 380.0)]["quantity"]) == 24.0
+    assert float(preview_rows[("T4_ARTEFACT_2H_DEMONIC_CROSSBOW", "Bridgewatch", "buy_order", 8500.0)]["quantity"]) == 2.0
+
+
 def test_market_setup_state_selected_input_total_uses_exact_expected_quantity() -> None:
     sword = ItemRef(
         unique_name="T4_MAIN_SWORD",
