@@ -32,6 +32,7 @@ Rectangle {
     property bool compactLayout: false
     property bool narrowLayout: false
     property bool veryNarrowLayout: width < 1040
+    property bool compactActionsLayout: width < 1320
 
     // Right zone widths
     property int meterMetaWidth: 180
@@ -187,17 +188,17 @@ Rectangle {
                 bannerText: root.updateBannerText
                 bannerUrl: root.updateBannerUrl
                 bannerNotesUrl: root.updateBannerNotesUrl
-                minWidth: root.narrowLayout ? 180 : 270
-                maxWidth: root.narrowLayout ? 280 : 420
+                minWidth: root.compactActionsLayout ? 220 : 270
+                maxWidth: root.compactActionsLayout ? 340 : 420
                 bannerHeight: theme.shellActionHeight + 4
-                availableWidth: root.width
+                availableWidth: Math.max(240, root.width - 740)
                 theme: root.theme
                 onDismissBanner: root.dismissUpdateBanner()
             }
 
             AppButton {
                 visible: root.updateBannerVisible && root.veryNarrowLayout
-                text: "Update"
+                text: "Check update"
                 compact: true
                 onClicked: root.requestManualUpdateCheck()
             }
@@ -207,9 +208,9 @@ Rectangle {
                 id: shellSupportZone
                 spacingOverride: root.narrowLayout ? 6 : 8
                 payPalLabel: root.payPalLabel
-                coffeeLabel: root.coffeeLabel
+                coffeeLabel: root.compactActionsLayout ? "Buy Coffee" : root.coffeeLabel
                 payPalWidth: root.supportPayPalWidth
-                coffeeWidth: root.supportCoffeeWidth
+                coffeeWidth: root.compactActionsLayout ? 124 : root.supportCoffeeWidth
                 buttonHeight: theme.shellActionHeight
                 theme: root.theme
             }

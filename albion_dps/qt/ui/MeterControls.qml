@@ -10,8 +10,6 @@ TableSurface {
     property string currentMode: "battle"
     property string currentSortKey: "dps"
     property var theme: null
-    property bool veryCompact: width < 520
-
     signal modeChanged(string mode)
     signal sortKeyChanged(string sortKey)
 
@@ -23,12 +21,12 @@ TableSurface {
         anchors.margins: 8
         spacing: 8
 
-        Flow {
+        RowLayout {
             Layout.fillWidth: true
             spacing: 8
 
             Text {
-                height: 24
+                Layout.preferredWidth: 38
                 text: "Mode:"
                 color: root.theme.textMuted
                 font.pixelSize: 11
@@ -67,12 +65,12 @@ TableSurface {
             }
         }
 
-        Flow {
+        RowLayout {
             Layout.fillWidth: true
             spacing: 8
 
             Text {
-                height: 24
+                Layout.preferredWidth: 38
                 text: "Sort:"
                 color: root.theme.textMuted
                 font.pixelSize: 11

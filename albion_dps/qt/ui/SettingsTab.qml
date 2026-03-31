@@ -35,7 +35,7 @@ CardPanel {
     property int contentPadding: compactLayout ? 8 : 12
     property int cardSpacing: compactLayout ? 8 : 10
     property int brandTileWidth: 194
-    property int bodyWidth: Math.max(920, settingsScroll.availableWidth - (contentPadding * 2))
+    property int bodyWidth: Math.max(920, width - (contentPadding * 2))
     property int gridColumnWidth: Math.floor((bodyWidth - cardSpacing) / 2)
     property bool showBrandTile: true
 
@@ -69,7 +69,7 @@ CardPanel {
         id: settingsScroll
         anchors.fill: parent
         clip: true
-        contentWidth: bodyWidth + (root.contentPadding * 2)
+        contentWidth: root.width
         contentHeight: settingsColumn.height + (root.contentPadding * 2)
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
@@ -134,12 +134,14 @@ CardPanel {
                 }
             }
 
-            Row {
+            GridLayout {
                 width: parent.width
-                spacing: root.cardSpacing
+                columns: 2
+                columnSpacing: root.cardSpacing
+                rowSpacing: root.cardSpacing
 
                 TableSurface {
-                    width: root.gridColumnWidth
+                    Layout.fillWidth: true
                     height: 154
                     level: 1
 
@@ -173,7 +175,7 @@ CardPanel {
                 }
 
                 TableSurface {
-                    width: root.gridColumnWidth
+                    Layout.fillWidth: true
                     height: 154
                     level: 1
 
@@ -205,14 +207,9 @@ CardPanel {
                         }
                     }
                 }
-            }
-
-            Row {
-                width: parent.width
-                spacing: root.cardSpacing
 
                 TableSurface {
-                    width: root.gridColumnWidth
+                    Layout.fillWidth: true
                     height: 216
                     level: 1
 
@@ -247,7 +244,7 @@ CardPanel {
                 }
 
                 TableSurface {
-                    width: root.gridColumnWidth
+                    Layout.fillWidth: true
                     height: 216
                     level: 1
 
