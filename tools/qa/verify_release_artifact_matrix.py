@@ -45,6 +45,11 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Never fail the process; report issues as warnings.",
     )
+    parser.add_argument(
+        "--skip-url-probe",
+        action="store_true",
+        help="Validate manifest asset presence/kind only and skip remote asset reachability checks.",
+    )
     return parser.parse_args()
 
 
@@ -133,12 +138,15 @@ def main() -> int:
             )
         return 1
 
-    reachable = False
+    reachable = bool(args.skip_url_probe)
     for asset in matched:
         name = str(asset.get("name", "<unknown>"))
         url = str(asset.get("url", "")).strip()
         if not url:
             print(f"[qa] FAIL: asset {name} is missing url")
+            continue
+        if args.skip_url_probe:
+            print(f"[qa] OK: {name} -> skipped URL probe")
             continue
         ok, detail = _probe_asset_url(url, args.timeout_seconds)
         status = "OK" if ok else "FAIL"

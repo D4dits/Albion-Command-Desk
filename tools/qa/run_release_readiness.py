@@ -156,6 +156,24 @@ def main() -> int:
         )
     )
 
+    manifest_example_uri = (root / "tools" / "release" / "manifest" / "manifest.example.json").resolve().as_uri()
+    for target_os in ("windows", "linux", "macos"):
+        results.append(
+            _run_check(
+                f"verify-artifact-matrix-{target_os}",
+                [
+                    python,
+                    "tools/qa/verify_release_artifact_matrix.py",
+                    "--manifest-url",
+                    manifest_example_uri,
+                    "--target-os",
+                    target_os,
+                    "--skip-url-probe",
+                ],
+                cwd=root,
+            )
+        )
+
     if not args.skip_smoke:
         results.append(
             _run_check(

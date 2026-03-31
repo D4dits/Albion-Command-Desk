@@ -13,6 +13,7 @@ and this project uses semantic versioning.
 - CLI, Qt runner, and scanner diagnostics now resolve the app version from one shared helper, reducing mismatches between `--version`, in-app update checks, diagnostics bundles, and local-dev fallback reporting.
 - Market setup now stays in a fixed desktop two-pane layout (setup panel + crafts table) at supported window widths, reducing layout drift and keeping the crafts table from collapsing under the setup panel.
 - Market crafts/inputs/outputs/results toolbars now stay on a single desktop row at supported widths, which keeps search, filters, and CSV actions from wrapping into uneven stacks.
+- Local release-readiness checks now validate the manifest artifact matrix for Windows/Linux/macOS from the checked-in contract file, so missing or misclassified release assets fail before tagging without relying on GitHub reachability.
 
 ## [0.1.20] - 2026-03-28
 

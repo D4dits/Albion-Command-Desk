@@ -650,7 +650,7 @@ Update status checkboxes and notes after each implemented ticket.
   - 2026-03-31: Crafts/Inputs/Outputs/Results toolbars now use a stable desktop row layout instead of wrapping Flow controls, keeping primary actions visible at supported widths.
 
 ### PH9-REL-094 - Installer and release smoke lock
-- [ ] Status: TODO
+- [x] Status: DONE
 - Goal: make the release flow boring by validating the installer/update path every time.
 - Files:
   1. `tools/qa/run_release_readiness.py`
@@ -662,7 +662,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Windows bootstrap/install/update smoke remains green on the current release contract.
 
 ### PH9-REL-095 - Version and reporting consistency
-- [ ] Status: IN PROGRESS
+- [x] Status: DONE
 - Goal: ensure every user-facing version, diagnostic, and update surface reports the same release state.
 - Files:
   1. `albion_dps/__init__.py`
@@ -676,6 +676,7 @@ Update status checkboxes and notes after each implemented ticket.
 - Progress:
   - CLI, Qt runner, and scanner diagnostics now resolve app version from the shared helper.
   - Local release gate validates version surfaces explicitly before tagging.
+  - Local release gate now validates the artifact matrix for Windows/Linux/macOS against the checked-in manifest contract without needing remote release probes.
 
 - Progress:
   - 2026-03-31: centralized version resolution in `albion_dps.versioning`, rewired CLI and Qt runner to the shared helper, and added regression tests so package-metadata fallback stays consistent across CLI/app/update surfaces.
