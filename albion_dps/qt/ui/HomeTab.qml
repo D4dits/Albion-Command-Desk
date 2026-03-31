@@ -297,30 +297,33 @@ CardPanel {
 
                 Column {
                     id: checklistColumn
-                    anchors.fill: parent
-                    anchors.margins: 10
+                    x: 10
+                    y: 10
+                    width: parent.width - 20
                     spacing: 8
 
                     Text { text: "Startup checklist"; color: root.textColor; font.pixelSize: 12; font.bold: true }
 
-                    Row {
+                    GridLayout {
                         width: parent.width
-                        spacing: 18
+                        columns: 2
+                        columnSpacing: 18
+                        rowSpacing: 6
 
                         Column {
-                            width: Math.floor((parent.width - 18) / 2)
+                            Layout.fillWidth: true
                             spacing: 6
                             Text { width: parent.width; text: "1) Capture runtime: " + root.runtimeStateLabel(); color: root.runtimeStateColor(); font.pixelSize: 11; font.bold: true; wrapMode: Text.WordWrap }
                             Text { width: parent.width; text: "3) Game data: " + root.gameDataStateLabel(); color: root.gameDataStateColor(); font.pixelSize: 11; font.bold: true; wrapMode: Text.WordWrap }
                         }
 
                         Column {
-                            width: Math.floor((parent.width - 18) / 2)
+                            Layout.fillWidth: true
                             spacing: 6
                             Text { width: parent.width; text: "2) Git dependency: " + root.gitStateLabel(); color: root.gitStateColor(); font.pixelSize: 11; font.bold: true; wrapMode: Text.WordWrap }
                             Text { width: parent.width; text: "4) Scanner status: " + root.scannerStatusText; color: root.mutedColor; font.pixelSize: 11; wrapMode: Text.WordWrap }
                         }
-                    }
+                    } 
 
                     Text {
                         width: parent.width
