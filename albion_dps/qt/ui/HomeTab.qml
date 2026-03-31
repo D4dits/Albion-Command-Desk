@@ -292,46 +292,71 @@ CardPanel {
 
             TableSurface {
                 width: parent.width
-                height: checklistLayout.implicitHeight + 20
+                height: checklistColumn.childrenRect.height + 20
                 level: 1
 
-                ColumnLayout {
-                    id: checklistLayout
-                    anchors.fill: parent
-                    anchors.margins: 10
+                Column {
+                    id: checklistColumn
+                    x: 10
+                    y: 10
+                    width: parent.width - 20
                     spacing: 8
 
                     Text {
-                        Layout.fillWidth: true
+                        width: parent.width
                         text: "Startup checklist"
                         color: root.textColor
                         font.pixelSize: 12
                         font.bold: true
                     }
 
-                    GridLayout {
-                        Layout.fillWidth: true
-                        columns: 2
-                        columnSpacing: 18
-                        rowSpacing: 6
+                    Row {
+                        width: parent.width
+                        spacing: 18
 
-                        Column {
-                            Layout.fillWidth: true
-                            spacing: 6
-                            Text { width: parent.width; text: "1) Capture runtime: " + root.runtimeStateLabel(); color: root.runtimeStateColor(); font.pixelSize: 11; font.bold: true; wrapMode: Text.WordWrap }
-                            Text { width: parent.width; text: "3) Game data: " + root.gameDataStateLabel(); color: root.gameDataStateColor(); font.pixelSize: 11; font.bold: true; wrapMode: Text.WordWrap }
+                        Text {
+                            width: Math.floor((parent.width - 18) / 2)
+                            text: "1) Capture runtime: " + root.runtimeStateLabel()
+                            color: root.runtimeStateColor()
+                            font.pixelSize: 11
+                            font.bold: true
+                            wrapMode: Text.WordWrap
                         }
 
-                        Column {
-                            Layout.fillWidth: true
-                            spacing: 6
-                            Text { width: parent.width; text: "2) Git dependency: " + root.gitStateLabel(); color: root.gitStateColor(); font.pixelSize: 11; font.bold: true; wrapMode: Text.WordWrap }
-                            Text { width: parent.width; text: "4) Scanner status: " + root.scannerStatusText; color: root.mutedColor; font.pixelSize: 11; wrapMode: Text.WordWrap }
+                        Text {
+                            width: Math.floor((parent.width - 18) / 2)
+                            text: "2) Git dependency: " + root.gitStateLabel()
+                            color: root.gitStateColor()
+                            font.pixelSize: 11
+                            font.bold: true
+                            wrapMode: Text.WordWrap
                         }
-                    } 
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: 18
+
+                        Text {
+                            width: Math.floor((parent.width - 18) / 2)
+                            text: "3) Game data: " + root.gameDataStateLabel()
+                            color: root.gameDataStateColor()
+                            font.pixelSize: 11
+                            font.bold: true
+                            wrapMode: Text.WordWrap
+                        }
+
+                        Text {
+                            width: Math.floor((parent.width - 18) / 2)
+                            text: "4) Scanner status: " + root.scannerStatusText
+                            color: root.mutedColor
+                            font.pixelSize: 11
+                            wrapMode: Text.WordWrap
+                        }
+                    }
 
                     Text {
-                        Layout.fillWidth: true
+                        width: parent.width
                         text: "Next step: when the first three checks are ready, move to Scanner for repo/build tasks or Market for planning."
                         color: root.mutedColor
                         font.pixelSize: 10
