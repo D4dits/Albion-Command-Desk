@@ -51,6 +51,7 @@ CardPanel {
     signal setAppLogLevel(string value)
     signal refreshGameDataStatus()
     signal setupGameData()
+    signal copyCommand(string commandText)
 
     function gameDataStateColor() {
         return gameDataReady ? theme.stateSuccess : theme.stateWarning
