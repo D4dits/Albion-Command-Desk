@@ -12,6 +12,7 @@ and this project uses semantic versioning.
 - Market regressions now explicitly lock mixed-component weapon crafts so Inputs keeps full upfront shopping counts for returnable mats even when the recipe also contains non-returnable artifacts.
 - CLI, Qt runner, and scanner diagnostics now resolve the app version from one shared helper, reducing mismatches between `--version`, in-app update checks, diagnostics bundles, and local-dev fallback reporting.
 - Market setup now stays in a fixed desktop two-pane layout (setup panel + crafts table) at supported window widths, reducing layout drift and keeping the crafts table from collapsing under the setup panel.
+- Market crafts/inputs/outputs/results toolbars now stay on a single desktop row at supported widths, which keeps search, filters, and CSV actions from wrapping into uneven stacks.
 
 ## [0.1.20] - 2026-03-28
 

@@ -645,7 +645,7 @@ CardPanel {
                         font.bold: true
                     }
 
-                    Flow {
+                    RowLayout {
                         Layout.fillWidth: true
                         spacing: 6
 
@@ -669,6 +669,7 @@ CardPanel {
                             checked: root.inputsShowOnOnly
                             onToggled: root.inputsShowOnOnly = checked
                         }
+                        Item { Layout.fillWidth: true }
                         AppButton {
                             text: "Copy CSV"
                             compact: true
@@ -848,7 +849,7 @@ CardPanel {
                         font.bold: true
                     }
 
-                    Flow {
+                    RowLayout {
                         Layout.fillWidth: true
                         spacing: 6
                         Text {
@@ -871,6 +872,7 @@ CardPanel {
                             checked: root.outputsShowOnOnly
                             onToggled: root.outputsShowOnOnly = checked
                         }
+                        Item { Layout.fillWidth: true }
                         AppButton {
                             text: "Copy CSV"
                             compact: true
@@ -1044,7 +1046,7 @@ CardPanel {
                     anchors.margins: 10
                     spacing: 8
 
-                    Flow {
+                    RowLayout {
                         Layout.fillWidth: true
                         spacing: 6
 
@@ -1078,6 +1080,7 @@ CardPanel {
                             currentIndex: Math.max(0, model.indexOf(root.resultsSortKey))
                             onActivated: root.setResultsSortKey(currentText)
                         }
+                        Item { Layout.fillWidth: true }
                         AppButton {
                             text: "Copy CSV"
                             compact: true

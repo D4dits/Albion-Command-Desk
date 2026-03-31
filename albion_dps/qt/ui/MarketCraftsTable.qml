@@ -113,7 +113,7 @@ TableSurface {
                 Item { Layout.fillWidth: true }
             }
 
-            Flow {
+            RowLayout {
                 Layout.fillWidth: true
                 spacing: 6
 
@@ -161,6 +161,7 @@ TableSurface {
                     fontPixelSize: 10
                     onClicked: root.clearCraftPlan()
                 }
+                Item { Layout.fillWidth: true }
                 AppCheckBox {
                     text: "Show On only"
                     checked: root.showEnabledOnly

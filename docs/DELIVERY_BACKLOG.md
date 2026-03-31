@@ -647,6 +647,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Start, Meter, Settings, and Help share the same desktop layout contract.
 - Progress:
   - 2026-03-31: Market setup now stays in a fixed desktop two-pane layout (setup panel + crafts table) and is regression-checked at the enforced minimum width.
+  - 2026-03-31: Crafts/Inputs/Outputs/Results toolbars now use a stable desktop row layout instead of wrapping Flow controls, keeping primary actions visible at supported widths.
 
 ### PH9-REL-094 - Installer and release smoke lock
 - [ ] Status: TODO
