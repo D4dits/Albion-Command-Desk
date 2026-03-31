@@ -577,6 +577,93 @@ Update status checkboxes and notes after each implemented ticket.
   - 2026-03-25: PH8-UXR-080 completed by moving the window/default breakpoint contract into `Theme.qml`, wiring `Main.qml` to those tokens, and documenting the supported geometry in `docs/UX_RESPONSIVE_LAYOUT_PLAN.md`.
   - 2026-03-25: PH8-UXR-081/082 started with a denser Start dashboard, shorter update CTA copy, and a stacked Meter layout that scrolls instead of clipping at smaller supported sizes.
 
+## Next Milestone - Phase 9 (Reliability lock for meter, market, and release)
+
+### PH9-MTR-090 - Meter replay regression pack
+- [x] Status: DONE
+- Goal: lock replay correctness on the latest high-value pcaps before adding more meter features.
+- Files:
+  1. `tests/test_meter_pcap49_party_flow.py` (new)
+  2. `tests/test_meter_pcap50_rows_visible.py`
+  3. `tests/test_meter_pcap51_self_visible.py`
+  4. `tests/test_party_pcap52_history_keeps_player_labels.py`
+  5. `tests/test_fame_tracker_pcap53.py`
+- Done when:
+  - Replay regressions cover party bootstrap, portal/map changes, history label stability, and fame/silver totals.
+  - Known bad outputs (`@MOB_*` relabels, empty live rows, missing self row) are blocked by tests.
+
+- Progress:
+  - 2026-03-31: Added `tests/test_meter_pcap49_party_flow.py` and refreshed the 50/51/52/53 replay pack to lock portal/map-change bootstrap, live row visibility, self-row visibility, stable history labels, and fame/silver totals.
+
+### PH9-MTR-091 - Live meter sanity hardening
+- [ ] Status: TODO
+- Goal: make live meter behavior deterministic when party state, local context, or snapshots are noisy.
+- Files:
+  1. `albion_dps/pipeline.py`
+  2. `albion_dps/domain/party_registry.py`
+  3. `albion_dps/meter/session_meter.py`
+  4. `albion_dps/qt/models.py`
+  5. `tests/test_pipeline_party_seed.py`
+  6. `tests/test_party_registry.py`
+- Done when:
+  - Live rows do not disappear during bootstrap or local-context transitions.
+  - Party filtering remains local enough to exclude stale/off-map ghosts.
+  - Battle history and active snapshots stay stable through party changes.
+
+### PH9-MKT-092 - Market correctness lock
+- [ ] Status: TODO
+- Goal: freeze the current market math into deterministic regressions and close remaining quantity/profit gaps.
+- Files:
+  1. `albion_dps/market/engine.py`
+  2. `albion_dps/qt/market/state.py`
+  3. `tests/test_market_engine.py`
+  4. `tests/test_market_qt_state.py`
+  5. `tests/test_market_profit_math.py`
+- Done when:
+  - Inputs show upfront purchase requirements that are sufficient to complete planned crafts.
+  - Journals, non-returnable components, and profit math stay consistent across inputs/outputs/results.
+  - Known regressions (boltcasters, royal/sigil handling, journal coupling) are blocked by tests.
+
+### PH9-UXR-093 - Market containment and desktop UX pass
+- [ ] Status: TODO
+- Goal: keep supported desktop layouts stable while removing clipping, overlap, and dead space.
+- Files:
+  1. `albion_dps/qt/ui/Main.qml`
+  2. `albion_dps/qt/ui/MarketTab.qml`
+  3. `albion_dps/qt/ui/HomeTab.qml`
+  4. `albion_dps/qt/ui/MeterTab.qml`
+  5. `albion_dps/qt/ui/SettingsTab.qml`
+  6. `albion_dps/qt/ui/HelpTab.qml`
+- Done when:
+  - Supported desktop sizes do not trigger clipped controls or overlapping cards.
+  - Inputs/Outputs/Results remain usable without losing key actions.
+  - Start, Meter, Settings, and Help share the same desktop layout contract.
+
+### PH9-REL-094 - Installer and release smoke lock
+- [ ] Status: TODO
+- Goal: make the release flow boring by validating the installer/update path every time.
+- Files:
+  1. `tools/qa/run_release_readiness.py`
+  2. `tools/qa/verify_release_update_flow.py`
+  3. `tools/qa/verify_release_artifact_matrix.py`
+  4. `docs/release/RELEASE_CHECKLIST.md`
+- Done when:
+  - Release readiness catches missing assets, broken update flow, and installer regressions before tagging.
+  - Windows bootstrap/install/update smoke remains green on the current release contract.
+
+### PH9-REL-095 - Version and reporting consistency
+- [ ] Status: TODO
+- Goal: ensure every user-facing version, diagnostic, and update surface reports the same release state.
+- Files:
+  1. `albion_dps/__init__.py`
+  2. `albion_dps/qt/runner.py`
+  3. `albion_dps/update/checker.py`
+  4. `tools/release/manifest/build_manifest.py`
+  5. `tests/test_update_checker.py`
+- Done when:
+  - App version, manifest version, update banner, and diagnostics bundle agree on the active release.
+  - No view falls back to stale hardcoded version strings.
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract
