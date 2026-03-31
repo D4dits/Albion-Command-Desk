@@ -18,6 +18,9 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
   - `python -m pytest -q --ignore=tests/test_qt_smoke.py`
 - [ ] Run update/settings tests:
   - `python -m pytest -q tests/test_update_checker.py tests/test_settings.py`
+- [ ] Verify version surfaces stay aligned:
+  - `python -m pytest -q tests/test_versioning.py`
+  - `python .\tools\qa\verify_version_surfaces.py`
 - [ ] Validate install scripts syntax:
   - Windows parser check (`install.ps1`)
   - Linux/macOS shell syntax on native shell
@@ -62,8 +65,9 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
   - Manifest strategy validation requires Windows installer asset (**BLOCKER**).
   - Missing Linux/macOS assets is warning-only in workflow logs.
   - Run local contract checks:
-    - `python -m pytest -q tests/test_update_checker.py tests/test_release_manifest_contract.py tests/test_qt_update_banner.py`
+    - `python -m pytest -q tests/test_update_checker.py tests/test_versioning.py tests/test_release_manifest_contract.py tests/test_qt_update_banner.py`
     - `python .\tools\qa\verify_release_update_flow.py`
+    - `python .\tools\qa\verify_version_surfaces.py`
 - [ ] `release-asset-smoke.yml`:
   - `windows-asset-smoke` must pass (**BLOCKER**).
   - `linux-asset-smoke` and `macos-asset-smoke` are advisory until native release packaging is fully locked.

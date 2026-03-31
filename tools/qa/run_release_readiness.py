@@ -130,6 +130,7 @@ def main() -> int:
                 "-q",
                 "tests/test_update_checker.py",
                 "tests/test_settings.py",
+                "tests/test_versioning.py",
                 "tests/test_release_manifest_contract.py",
                 "tests/test_qt_update_banner.py",
                 "tests/test_verify_clean_machine_matrix.py",
@@ -143,6 +144,14 @@ def main() -> int:
         _run_check(
             "verify-release-update-flow",
             [python, "tools/qa/verify_release_update_flow.py"],
+            cwd=root,
+        )
+    )
+
+    results.append(
+        _run_check(
+            "verify-version-surfaces",
+            [python, "tools/qa/verify_version_surfaces.py"],
             cwd=root,
         )
     )
