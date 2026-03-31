@@ -292,20 +292,25 @@ CardPanel {
 
             TableSurface {
                 width: parent.width
-                height: checklistColumn.implicitHeight + 20
+                height: checklistLayout.implicitHeight + 20
                 level: 1
 
-                Column {
-                    id: checklistColumn
-                    x: 10
-                    y: 10
-                    width: parent.width - 20
+                ColumnLayout {
+                    id: checklistLayout
+                    anchors.fill: parent
+                    anchors.margins: 10
                     spacing: 8
 
-                    Text { text: "Startup checklist"; color: root.textColor; font.pixelSize: 12; font.bold: true }
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Startup checklist"
+                        color: root.textColor
+                        font.pixelSize: 12
+                        font.bold: true
+                    }
 
                     GridLayout {
-                        width: parent.width
+                        Layout.fillWidth: true
                         columns: 2
                         columnSpacing: 18
                         rowSpacing: 6
@@ -326,7 +331,7 @@ CardPanel {
                     } 
 
                     Text {
-                        width: parent.width
+                        Layout.fillWidth: true
                         text: "Next step: when the first three checks are ready, move to Scanner for repo/build tasks or Market for planning."
                         color: root.mutedColor
                         font.pixelSize: 10
