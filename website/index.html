@@ -194,18 +194,43 @@
 
       <section id="screenshots" class="container section">
         <h2>Current interface preview</h2>
-        <div class="grid three shots">
-          <figure class="card shot">
-            <img src="assets/start-tab.png" alt="Albion Command Desk start tab with dependency dashboard" loading="lazy" />
+        <p class="section-copy">Click any screenshot to open a larger preview. The gallery reflects the current desktop layout: Start, Meter, Scanner, Market, Settings, and Help.</p>
+        <div class="grid three shots gallery-grid">
+          <figure class="card shot gallery-item">
+            <button class="shot-trigger" type="button" data-full="assets/start-dashboard-current.png" data-alt="Albion Command Desk start dashboard">
+              <img src="assets/start-dashboard-current.png" alt="Albion Command Desk start dashboard" loading="lazy" />
+            </button>
             <figcaption>Start dashboard</figcaption>
           </figure>
-          <figure class="card shot">
-            <img src="assets/meter-tab-current.png" alt="Albion Command Desk meter tab with live scoreboard and session gains" loading="lazy" />
+          <figure class="card shot gallery-item">
+            <button class="shot-trigger" type="button" data-full="assets/meter-current.png" data-alt="Albion Command Desk meter tab with live scoreboard and session gains">
+              <img src="assets/meter-current.png" alt="Albion Command Desk meter tab with live scoreboard and session gains" loading="lazy" />
+            </button>
             <figcaption>Meter workspace</figcaption>
           </figure>
-          <figure class="card shot">
-            <img src="assets/settings-tab.png" alt="Albion Command Desk settings tab with runtime and repository controls" loading="lazy" />
-            <figcaption>Settings and runtime controls</figcaption>
+          <figure class="card shot gallery-item">
+            <button class="shot-trigger" type="button" data-full="assets/scanner-current.png" data-alt="Albion Command Desk scanner tab with sync and runtime controls">
+              <img src="assets/scanner-current.png" alt="Albion Command Desk scanner tab with sync and runtime controls" loading="lazy" />
+            </button>
+            <figcaption>Scanner control</figcaption>
+          </figure>
+          <figure class="card shot gallery-item">
+            <button class="shot-trigger" type="button" data-full="assets/market-current.png" data-alt="Albion Command Desk market tab with setup and crafts table">
+              <img src="assets/market-current.png" alt="Albion Command Desk market tab with setup and crafts table" loading="lazy" />
+            </button>
+            <figcaption>Market planner</figcaption>
+          </figure>
+          <figure class="card shot gallery-item">
+            <button class="shot-trigger" type="button" data-full="assets/settings-current.png" data-alt="Albion Command Desk settings tab">
+              <img src="assets/settings-current.png" alt="Albion Command Desk settings tab" loading="lazy" />
+            </button>
+            <figcaption>Settings</figcaption>
+          </figure>
+          <figure class="card shot gallery-item">
+            <button class="shot-trigger" type="button" data-full="assets/help-current.png" data-alt="Albion Command Desk help tab">
+              <img src="assets/help-current.png" alt="Albion Command Desk help tab" loading="lazy" />
+            </button>
+            <figcaption>Help</figcaption>
           </figure>
         </div>
       </section>
@@ -243,5 +268,37 @@
         </p>
       </div>
     </footer>
+
+    <dialog class="lightbox" id="shot-lightbox" aria-label="Screenshot preview">
+      <button class="lightbox-close" type="button" aria-label="Close screenshot preview">Close</button>
+      <img id="shot-lightbox-image" src="" alt="" />
+    </dialog>
+
+    <script>
+      (function () {
+        const dialog = document.getElementById("shot-lightbox");
+        const image = document.getElementById("shot-lightbox-image");
+        const closeButton = dialog ? dialog.querySelector(".lightbox-close") : null;
+        const triggers = document.querySelectorAll(".shot-trigger");
+
+        if (!dialog || !image || !closeButton || !triggers.length) return;
+
+        triggers.forEach((trigger) => {
+          trigger.addEventListener("click", () => {
+            image.src = trigger.dataset.full;
+            image.alt = trigger.dataset.alt || "";
+            dialog.showModal();
+          });
+        });
+
+        closeButton.addEventListener("click", () => dialog.close());
+        dialog.addEventListener("click", (event) => {
+          if (event.target === dialog) dialog.close();
+        });
+        window.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && dialog.open) dialog.close();
+        });
+      })();
+    </script>
   </body>
 </html>

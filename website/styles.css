@@ -251,6 +251,12 @@ h1 {
   margin-bottom: 1.1rem;
 }
 
+.section-copy {
+  margin: -0.35rem 0 1.15rem;
+  max-width: 70ch;
+  color: var(--muted);
+}
+
 .grid {
   display: grid;
   gap: 1rem;
@@ -308,6 +314,19 @@ code {
   overflow: hidden;
 }
 
+.gallery-item {
+  position: relative;
+}
+
+.shot-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
 .shot img {
   width: 100%;
   display: block;
@@ -321,6 +340,46 @@ figcaption {
   padding: 0.75rem 0.9rem;
   color: #d7e8fb;
   font-weight: 600;
+}
+
+.lightbox {
+  width: min(1400px, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(5, 13, 25, 0.96);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+.lightbox::backdrop {
+  background: rgba(2, 7, 15, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.lightbox img {
+  display: block;
+  width: 100%;
+  max-height: calc(100vh - 7rem);
+  object-fit: contain;
+  border-radius: 16px;
+  border: 1px solid rgba(69, 111, 158, 0.35);
+  background: #0a1424;
+}
+
+.lightbox-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 0.85rem auto;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(13, 31, 56, 0.75);
+  color: var(--text);
+  padding: 0.55rem 0.9rem;
+  font-family: "Sora", sans-serif;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .faq-list {
