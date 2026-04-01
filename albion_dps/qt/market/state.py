@@ -4370,7 +4370,6 @@ def _journal_maps() -> tuple[dict[str, _JournalRule], dict[str, float]]:
     return journal_by_item, fame_factor_by_item
 
 
-@lru_cache(maxsize=1)
 def _journal_rule_templates() -> dict[tuple[int, str], _JournalRule]:
     journal_by_item, _ = _journal_maps()
     templates: dict[tuple[int, str], _JournalRule] = {}
