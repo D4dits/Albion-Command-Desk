@@ -7,6 +7,8 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.1.21] - 2026-04-01
+
 ### Changed
 - Market selected-material cost now uses exact expected economic quantities instead of reusing shopping safety rounding, which keeps top KPIs aligned with per-result cost allocation while Inputs still shows full upfront purchase counts.
 - Market regressions now explicitly lock mixed-component weapon crafts so Inputs keeps full upfront shopping counts for returnable mats even when the recipe also contains non-returnable artifacts.
@@ -19,6 +21,8 @@ and this project uses semantic versioning.
 - Header update/support actions were compacted so the update CTA no longer looks truncated at supported desktop widths while PayPal/Coffee buttons stay readable without forcing stacked layouts.
 - Local release-readiness checks now validate the manifest artifact matrix for Windows/Linux/macOS from the checked-in contract file, so missing or misclassified release assets fail before tagging without relying on GitHub reachability.
 - Live meter sanity is now regression-locked across the current replay pack (`pcap49`-`pcap53`), covering bootstrap visibility, local-context party filtering, stable history labels, and fame/silver totals.
+- Windows release tooling now supports a bundled live-capture sidecar asset (`AlbionCommandDesk-WindowsCapture-vX.Y.Z.zip`) so installers can stage a prebuilt Windows capture backend instead of requiring local SDK/build-tool setup.
+- Release QA now validates the Windows capture-bundle path in bootstrap smoke and keeps the release manifest/update-flow contract aware of the new `capture-backend` asset kind.
 
 ## [0.1.20] - 2026-03-28
 
