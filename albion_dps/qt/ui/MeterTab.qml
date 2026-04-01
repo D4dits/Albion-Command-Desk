@@ -61,7 +61,7 @@ Item {
                 return "Live mode is unavailable. Install Npcap Runtime (Npcap installer). Npcap SDK is not required for normal users."
             }
             if (root.captureRuntimeState === "blocked") {
-                return "Live mode is unavailable. Runtime is installed, but capture backend is missing. Reinstall with capture profile."
+                return "Live mode is unavailable. Runtime is installed, but this build does not include the Windows live capture component."
             }
         }
         return root.captureRuntimeDetail

@@ -3,6 +3,7 @@ param(
     [string]$ProjectRoot = "",
     [string]$VenvPath = "",
     [string]$Python = "",
+    [string]$CaptureWheelPath = "",
     [ValidateSet("core", "capture")]
     [string]$Profile = "capture",
     [string]$ReleaseVersion = "local-dev",
@@ -76,13 +77,54 @@ function Test-NpcapSdk {
     }
 }
 
+function Resolve-WindowsCaptureBackendWheel {
+    param(
+        [string]$ProjectRootPath,
+        [string]$RequestedWheelPath = ""
+    )
+    $candidatePaths = @()
+    if (-not [string]::IsNullOrWhiteSpace($RequestedWheelPath)) {
+        $candidatePaths += $RequestedWheelPath
+    }
+    $envWheel = [Environment]::GetEnvironmentVariable("ACD_WINDOWS_CAPTURE_WHEEL")
+    if (-not [string]::IsNullOrWhiteSpace($envWheel)) {
+        $candidatePaths += $envWheel
+    }
+
+    foreach ($candidate in $candidatePaths) {
+        if (Test-Path $candidate) {
+            return (Resolve-Path $candidate).Path
+        }
+    }
+
+    $searchRoots = @(
+        (Join-Path $ProjectRootPath "artifacts\windows-capture"),
+        (Join-Path $ProjectRootPath "artifacts\capture-backend"),
+        (Join-Path $ProjectRootPath "dist\windows-capture"),
+        (Join-Path $ProjectRootPath "dist\capture-backend")
+    )
+    foreach ($root in $searchRoots) {
+        if (-not (Test-Path $root)) {
+            continue
+        }
+        $wheel = Get-ChildItem -Path $root -Filter "*.whl" -File -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 1
+        if ($wheel) {
+            return $wheel.FullName
+        }
+    }
+    return $null
+}
+
 function Show-InstallDiagnostics {
     param(
         [string]$ProjectRootPath,
         [string]$VirtualEnvPath,
         [string]$InstallProfile,
         [hashtable]$LauncherInfo,
-        [string]$PrimaryArtifactName
+        [string]$PrimaryArtifactName,
+        [string]$CaptureWheelResolved = ""
     )
     Write-InstallInfo "Diagnostic summary:"
     Write-InstallInfo "  project_root: $ProjectRootPath"
@@ -98,6 +140,12 @@ function Show-InstallDiagnostics {
         Write-InstallHint "For core mode this is expected and safe."
     }
     if ($InstallProfile -eq "capture") {
+        if (-not [string]::IsNullOrWhiteSpace($CaptureWheelResolved)) {
+            Write-InstallInfo "  windows_capture_backend: prebuilt wheel available ($CaptureWheelResolved)"
+        } else {
+            Write-InstallWarn "  windows_capture_backend: prebuilt wheel not found (will use local build path)"
+            Write-InstallHint "Ship a Windows capture wheel to avoid requiring Npcap SDK + C/C++ build tools on user machines."
+        }
         $npcap = Test-NpcapRuntime
         if ($npcap.Available) {
             Write-InstallInfo "  npcap_runtime: available ($($npcap.Detail))"
@@ -442,9 +490,13 @@ if ($Profile -eq "core") {
     Write-InstallInfo "Install profile: capture (includes live capture backend)"
 }
 $primaryArtifact = Get-WindowsPrimaryArtifactName -Version $ReleaseVersion
-Show-InstallDiagnostics -ProjectRootPath $ProjectRoot -VirtualEnvPath $VenvPath -InstallProfile $Profile -LauncherInfo $launcher -PrimaryArtifactName $primaryArtifact
-$captureSdkStatus = $null
+$captureWheelResolved = $null
 if ($Profile -eq "capture") {
+    $captureWheelResolved = Resolve-WindowsCaptureBackendWheel -ProjectRootPath $ProjectRoot -RequestedWheelPath $CaptureWheelPath
+}
+Show-InstallDiagnostics -ProjectRootPath $ProjectRoot -VirtualEnvPath $VenvPath -InstallProfile $Profile -LauncherInfo $launcher -PrimaryArtifactName $primaryArtifact -CaptureWheelResolved $captureWheelResolved
+$captureSdkStatus = $null
+if ($Profile -eq "capture" -and -not $captureWheelResolved) {
     $captureSdkStatus = Test-NpcapSdk
     if (-not $captureSdkStatus.Available) {
         if ($StrictCapture) {
@@ -455,7 +507,7 @@ if ($Profile -eq "capture") {
         $Profile = "core"
     }
 }
-$installTarget = if ($Profile -eq "capture") { ".[capture]" } else { "." }
+$installTarget = if ($Profile -eq "capture" -and -not $captureWheelResolved) { ".[capture]" } else { "." }
 Write-InstallInfo "Installing Albion Command Desk ($installTarget)"
 Push-Location $ProjectRoot
 try {
@@ -474,6 +526,19 @@ try {
         & $venvPython -m pip install -e $installTarget
         if ($LASTEXITCODE -ne 0) {
             Throw-InstallError "Core profile fallback install failed."
+        }
+    }
+    if ($Profile -eq "capture" -and $captureWheelResolved) {
+        Write-InstallInfo "Installing prebuilt Windows live capture backend ($captureWheelResolved)"
+        & $venvPython -m pip install $captureWheelResolved
+        if ($LASTEXITCODE -ne 0) {
+            if ($StrictCapture) {
+                Throw-InstallError "Prebuilt Windows live capture backend installation failed in strict mode."
+            }
+            Write-InstallWarn "Windows live capture backend installation failed; keeping core-compatible app install."
+            Write-InstallHint "Use a release that bundles the Windows live capture component or provide -CaptureWheelPath <wheel>."
+            $Profile = "core"
+            $captureWheelResolved = $null
         }
     }
 } finally {
@@ -510,7 +575,7 @@ if ($SkipRun) {
         Write-Host "  $venvCli core   # fallback mode if runtime is not available"
     } else {
         Write-Host "  $venvCli core"
-        Write-Host "  $venvCli live   # after reinstall with capture extras"
+        Write-Host "  $venvCli live   # requires Npcap Runtime and a bundled Windows live capture component"
     }
     exit 0
 }

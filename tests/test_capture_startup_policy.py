@@ -15,6 +15,7 @@ def test_decide_live_startup_posix_backend_missing_falls_back_to_core() -> None:
     decision = decide_live_startup(os_name="posix", backend_available=False, runtime_status=None)
     assert decision.mode == "core"
     assert "Falling back to core mode" in decision.message
+    assert "missing from this installation" in decision.message
     assert decision.action_url is None
 
 
@@ -59,8 +60,8 @@ def test_decide_live_startup_windows_backend_missing_falls_back_to_core() -> Non
         ),
     )
     assert decision.mode == "core"
-    assert "backend is missing" in decision.message
-    assert decision.action_url == NPCAP_DOWNLOAD_URL
+    assert "Windows live capture component is missing from this installation" in decision.message
+    assert decision.action_url is None
 
 
 def test_decide_live_startup_windows_unknown_state_falls_back_to_core() -> None:

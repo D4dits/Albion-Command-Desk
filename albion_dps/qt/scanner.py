@@ -154,12 +154,12 @@ class ScannerState(QObject):
             if self._runtime_state == RUNTIME_STATE_MISSING:
                 return "Install Npcap Runtime (Npcap installer). Npcap SDK is not required for regular users."
             if self._runtime_state == RUNTIME_STATE_BLOCKED:
-                return "Runtime found, but Python capture backend is missing. Reinstall with capture profile."
+                return "Runtime found, but this installation does not include the Windows live capture component."
             if self._runtime_state == RUNTIME_STATE_UNKNOWN:
                 return "Runtime status is unknown. Re-run runtime check or open help page."
             return "Capture runtime is ready."
         if self._runtime_state == RUNTIME_STATE_MISSING:
-            return "Capture backend is missing. Reinstall with capture profile."
+            return "Capture backend is missing from this installation."
         return "Capture runtime is ready."
 
     @Property(str, notify=runtimeChanged)
@@ -1025,10 +1025,10 @@ class ScannerState(QObject):
             if state == RUNTIME_STATE_AVAILABLE and not capture_backend_available():
                 state = RUNTIME_STATE_BLOCKED
                 detail = (
-                    "Npcap Runtime detected, but Python capture backend is missing. "
-                    "Reinstall with capture profile. Npcap SDK + C++ build tools are only needed for this optional build step."
+                    "Npcap Runtime detected, but this installation does not include the Windows live capture component. "
+                    "Use a release that bundles the Windows capture backend."
                 )
-                action_url = NPCAP_DOWNLOAD_URL
+                action_url = ""
 
             if state == RUNTIME_STATE_MISSING:
                 detail = (
@@ -1049,7 +1049,7 @@ class ScannerState(QObject):
             )
         return (
             RUNTIME_STATE_MISSING,
-            "Capture backend module is missing. Reinstall with capture profile.",
+            "Capture backend module is missing from this installation.",
             "",
             "",
         )

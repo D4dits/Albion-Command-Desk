@@ -31,8 +31,7 @@ def decide_live_startup(
         return LiveStartupDecision(
             mode="core",
             message=(
-                "Live capture backend is missing. Falling back to core mode. "
-                "Reinstall with capture profile: pip install -e \".[capture]\""
+                "Live capture backend is missing from this installation. Falling back to core mode."
             ),
         )
 
@@ -66,10 +65,10 @@ def decide_live_startup(
         return LiveStartupDecision(
             mode="core",
             message=(
-                "Npcap Runtime detected, but Python capture backend is missing. "
-                "Falling back to core mode. Reinstall with capture profile: pip install -e \".[capture]\""
+                "Npcap Runtime detected, but the Windows live capture component is missing from this installation. "
+                "Falling back to core mode."
             ),
-            action_url=status.action_url or NPCAP_DOWNLOAD_URL,
+            action_url=None,
         )
     return LiveStartupDecision(
         mode="core",
