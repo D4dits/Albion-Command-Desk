@@ -145,7 +145,7 @@ def run_qt(args: argparse.Namespace) -> int:
     update_notifier.updateStatus.connect(state.setUpdateCheckStatus)
     state.updateAutoCheckToggled.connect(_save_update_preference)
     state.manualUpdateCheckRequested.connect(lambda: _start_update_check(update_notifier))
-    scanner_state = ScannerState()
+    scanner_state = ScannerState(app_mode=args.qt_command)
     market_cache_path = Path("data") / "market_cache.sqlite3"
     market_cache_path.parent.mkdir(parents=True, exist_ok=True)
     market_service = MarketDataService.with_default_cache(cache_path=market_cache_path)

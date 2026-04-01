@@ -59,11 +59,11 @@ class ScannerState(QObject):
     _logSignal = Signal(str)
     _runningSignal = Signal(bool)
     _processExitSignal = Signal(int)
-    _runtimeSignal = Signal(str, str, str, str)
+    _runtimeSignal = Signal(str, str, str, str, str)
     _gitSignal = Signal(bool, str, str, str)
     _gameDataSignal = Signal(bool, str, str, str, str)
 
-    def __init__(self) -> None:
+    def __init__(self, app_mode: str = "core") -> None:
         super().__init__()
         self._repo_root = Path(__file__).resolve().parents[2]
         self._default_client_dir = self._repo_root / "artifacts" / "albiondata-client"
@@ -74,6 +74,7 @@ class ScannerState(QObject):
         self._app_log_level = str(self._settings.log_level or "INFO").strip().upper() or "INFO"
         self._config_dir = settings_dir()
         self._app_version = resolve_app_version()
+        self._app_mode = str(app_mode or "core").strip().lower() or "core"
         self._status_text = "idle"
         self._update_text = "not checked"
         self._log_lines: deque[str] = deque(maxlen=800)
@@ -82,6 +83,7 @@ class ScannerState(QObject):
         self._runtime_detail = "Runtime status not checked yet."
         self._runtime_action_label = ""
         self._runtime_action_url = ""
+        self._runtime_action_kind = ""
         self._git_available = False
         self._git_detail = "Git status not checked yet."
         self._git_action_label = ""
@@ -150,6 +152,11 @@ class ScannerState(QObject):
     @Property(str, notify=runtimeChanged)
     def captureRuntimeInstallHint(self) -> str:
         if _is_windows():
+            if self._runtime_action_kind == "repair-shortcuts":
+                return (
+                    "Capture runtime is ready. This session is still running in core mode. "
+                    "Switch shortcuts to live or restart with the live command below."
+                )
             if self._runtime_state == RUNTIME_STATE_MISSING:
                 return "Install Npcap Runtime (Npcap installer). Npcap SDK is not required for regular users."
             if self._runtime_state == RUNTIME_STATE_BLOCKED:
@@ -163,8 +170,11 @@ class ScannerState(QObject):
 
     @Property(str, notify=runtimeChanged)
     def captureRuntimeInstallCommand(self) -> str:
-        if _is_windows() and self._runtime_state in {RUNTIME_STATE_MISSING, RUNTIME_STATE_BLOCKED, RUNTIME_STATE_UNKNOWN}:
-            return "Start-Process 'https://npcap.com/#download'"
+        if _is_windows():
+            if self._runtime_action_kind == "repair-shortcuts":
+                return self._build_live_launch_command()
+            if self._runtime_state in {RUNTIME_STATE_MISSING, RUNTIME_STATE_BLOCKED, RUNTIME_STATE_UNKNOWN}:
+                return "Start-Process 'https://npcap.com/#download'"
         return ""
 
     @Property(str, notify=settingsChanged)
@@ -390,11 +400,14 @@ class ScannerState(QObject):
 
     @Slot()
     def refreshCaptureRuntimeStatus(self) -> None:
-        state, detail, action_label, action_url = self._detect_capture_runtime_status()
-        self._runtimeSignal.emit(state, detail, action_label, action_url)
+        state, detail, action_label, action_url, action_kind = self._detect_capture_runtime_status()
+        self._runtimeSignal.emit(state, detail, action_label, action_url, action_kind)
 
     @Slot()
     def openCaptureRuntimeAction(self) -> None:
+        if self._runtime_action_kind == "repair-shortcuts":
+            self._repair_live_shortcuts()
+            return
         url = (self._runtime_action_url or "").strip()
         if not url:
             self._append_warn("No runtime action URL available.")
@@ -966,12 +979,13 @@ class ScannerState(QObject):
         self._running = running
         self.runningChanged.emit()
 
-    def _set_runtime(self, state: str, detail: str, action_label: str, action_url: str) -> None:
+    def _set_runtime(self, state: str, detail: str, action_label: str, action_url: str, action_kind: str) -> None:
         changed = (
             state != self._runtime_state
             or detail != self._runtime_detail
             or action_label != self._runtime_action_label
             or action_url != self._runtime_action_url
+            or action_kind != self._runtime_action_kind
         )
         if not changed:
             return
@@ -979,6 +993,7 @@ class ScannerState(QObject):
         self._runtime_detail = detail
         self._runtime_action_label = action_label
         self._runtime_action_url = action_url
+        self._runtime_action_kind = action_kind
         self.runtimeChanged.emit()
 
     def _set_git(self, available: bool, detail: str, action_label: str, action_url: str) -> None:
@@ -1016,7 +1031,7 @@ class ScannerState(QObject):
     def _persist_settings(self, **changes) -> None:
         self._settings = update_app_settings(**changes)
 
-    def _detect_capture_runtime_status(self) -> tuple[str, str, str, str]:
+    def _detect_capture_runtime_status(self) -> tuple[str, str, str, str, str]:
         if _is_windows():
             runtime = detect_npcap_runtime()
             state = runtime.state
@@ -1036,15 +1051,21 @@ class ScannerState(QObject):
                     "Npcap Runtime is missing. Install Npcap Runtime (Npcap installer) to enable live mode. "
                     "Npcap SDK is not required for normal users."
                 )
-                return state, detail, "Install runtime", action_url or NPCAP_DOWNLOAD_URL
+                return state, detail, "Install runtime", action_url or NPCAP_DOWNLOAD_URL, "url"
             if state in (RUNTIME_STATE_BLOCKED, RUNTIME_STATE_UNKNOWN):
-                return state, detail, "Open runtime page", action_url or NPCAP_DOWNLOAD_URL
-            return state, detail, "", ""
+                return state, detail, "Open runtime page", action_url or NPCAP_DOWNLOAD_URL, "url"
+            if self._app_mode != "live" and self._resolve_cli_executable() is not None:
+                detail = (
+                    f"{detail} Live capture backend is installed, but this session is running in core mode."
+                )
+                return state, detail, "Switch shortcuts to live", "", "repair-shortcuts"
+            return state, detail, "", "", ""
 
         if capture_backend_available():
             return (
                 RUNTIME_STATE_AVAILABLE,
                 "Capture backend is available.",
+                "",
                 "",
                 "",
             )
@@ -1053,7 +1074,91 @@ class ScannerState(QObject):
             "Capture backend module is missing from this installation.",
             "",
             "",
+            "",
         )
+
+    def _resolve_cli_executable(self) -> Path | None:
+        current_python = Path(sys.executable).resolve()
+        candidates = [
+            current_python.with_name("albion-command-desk.exe"),
+            current_python.parent / "albion-command-desk.exe",
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        return None
+
+    def _build_live_launch_command(self) -> str:
+        cli_path = self._resolve_cli_executable()
+        if cli_path is None:
+            return ""
+        return f'"{cli_path}" live'
+
+    def _repair_live_shortcuts(self) -> None:
+        if not _is_windows():
+            self._append_warn("Shortcut repair is only available on Windows.")
+            return
+        cli_path = self._resolve_cli_executable()
+        if cli_path is None:
+            self._append_error("Could not locate Albion Command Desk CLI executable.")
+            return
+        try:
+            repaired = self._create_windows_shortcuts(cli_path, "live")
+        except Exception as exc:
+            self._append_error(f"Failed to update live shortcuts: {exc}")
+            return
+        if repaired:
+            self._append_log("Updated Albion Command Desk shortcuts to launch live mode.")
+        self.refreshCaptureRuntimeStatus()
+
+    def _create_windows_shortcuts(self, cli_path: Path, launch_mode: str) -> list[Path]:
+        desktop_link = Path.home() / "Desktop" / "Albion Command Desk.lnk"
+        start_menu_link = (
+            Path(os.environ.get("APPDATA", ""))
+            / "Microsoft"
+            / "Windows"
+            / "Start Menu"
+            / "Programs"
+            / "Albion Command Desk"
+            / "Albion Command Desk.lnk"
+        )
+        start_menu_link.parent.mkdir(parents=True, exist_ok=True)
+        icon_path = self._repo_root / "albion_dps" / "qt" / "ui" / "command_desk_icon.ico"
+        work_dir = cli_path.parent
+        for shortcut_path in (desktop_link, start_menu_link):
+            command = (
+                "$ws=New-Object -ComObject WScript.Shell; "
+                + f"$lnk=$ws.CreateShortcut('{_escape_for_single_quoted_powershell(str(shortcut_path))}'); "
+                + f"$lnk.TargetPath='{_escape_for_single_quoted_powershell(str(cli_path))}'; "
+                + f"$lnk.Arguments='{_escape_for_single_quoted_powershell(launch_mode)}'; "
+                + f"$lnk.WorkingDirectory='{_escape_for_single_quoted_powershell(str(work_dir))}'; "
+                + f"if (Test-Path '{_escape_for_single_quoted_powershell(str(icon_path))}') "
+                + "{ "
+                + f"$lnk.IconLocation='{_escape_for_single_quoted_powershell(str(icon_path))}' "
+                + "}; "
+                + "$lnk.Save()"
+            )
+            result = subprocess.run(
+                [
+                    "powershell.exe",
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    command,
+                ],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=20,
+                check=False,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"shortcut command failed for {shortcut_path}: {(result.stderr or result.stdout or '').strip()}"
+                )
+        return [desktop_link, start_menu_link]
 
     def _detect_git_status(self) -> tuple[bool, str, str, str]:
         git_path = shutil.which("git")
@@ -1080,6 +1185,12 @@ def _is_windows() -> bool:
     import os
 
     return os.name == "nt"
+
+
+def _escape_for_single_quoted_powershell(value: str) -> str:
+    return str(value or "").replace("'", "''")
+
+
 def _parse_rev_list_counts(output: str | None) -> tuple[int, int] | None:
     if not output:
         return None

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import zipfile
+from pathlib import Path
 
+from albion_dps.capture.npcap_runtime import NpcapRuntimeStatus, RUNTIME_STATE_AVAILABLE
 from albion_dps.qt.scanner import ScannerState, _parse_rev_list_counts
 from albion_dps.settings import AppSettings, save_app_settings
 
@@ -69,3 +71,76 @@ def test_scanner_update_check_is_blocked_while_running(monkeypatch) -> None:
     state.checkForUpdates()
 
     assert "Stop scanner before checking repository updates." in state.logText
+
+
+def test_scanner_runtime_reconciliation_when_runtime_added_late(monkeypatch) -> None:
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_scanner_runtime_reconcile")
+    monkeypatch.setattr("albion_dps.qt.scanner._is_windows", lambda: True)
+    monkeypatch.setattr(
+        "albion_dps.qt.scanner.detect_npcap_runtime",
+        lambda: NpcapRuntimeStatus(
+            state=RUNTIME_STATE_AVAILABLE,
+            available=True,
+            detail="Found wpcap.dll",
+        ),
+    )
+    monkeypatch.setattr("albion_dps.qt.scanner.capture_backend_available", lambda: True)
+    monkeypatch.setattr(ScannerState, "_resolve_cli_executable", lambda self: Path("C:/tmp/albion-command-desk.exe"))
+
+    state = ScannerState(app_mode="core")
+
+    assert state.captureRuntimeState == "available"
+    assert state.captureRuntimeActionLabel == "Switch shortcuts to live"
+    assert "core mode" in state.captureRuntimeInstallHint.lower()
+    assert state.captureRuntimeInstallCommand.endswith('" live')
+
+
+def test_scanner_runtime_reconciliation_not_offered_in_live_mode(monkeypatch) -> None:
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_scanner_runtime_live_mode")
+    monkeypatch.setattr("albion_dps.qt.scanner._is_windows", lambda: True)
+    monkeypatch.setattr(
+        "albion_dps.qt.scanner.detect_npcap_runtime",
+        lambda: NpcapRuntimeStatus(
+            state=RUNTIME_STATE_AVAILABLE,
+            available=True,
+            detail="Found wpcap.dll",
+        ),
+    )
+    monkeypatch.setattr("albion_dps.qt.scanner.capture_backend_available", lambda: True)
+    monkeypatch.setattr(ScannerState, "_resolve_cli_executable", lambda self: Path("C:/tmp/albion-command-desk.exe"))
+
+    state = ScannerState(app_mode="live")
+
+    assert state.captureRuntimeState == "available"
+    assert state.captureRuntimeActionLabel == ""
+    assert state.captureRuntimeInstallCommand == ""
+
+
+def test_open_capture_runtime_action_repairs_shortcuts_when_reconcile_available(monkeypatch) -> None:
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_scanner_runtime_repair_action")
+    monkeypatch.setattr("albion_dps.qt.scanner._is_windows", lambda: True)
+    monkeypatch.setattr(
+        "albion_dps.qt.scanner.detect_npcap_runtime",
+        lambda: NpcapRuntimeStatus(
+            state=RUNTIME_STATE_AVAILABLE,
+            available=True,
+            detail="Found wpcap.dll",
+        ),
+    )
+    monkeypatch.setattr("albion_dps.qt.scanner.capture_backend_available", lambda: True)
+    monkeypatch.setattr(ScannerState, "_resolve_cli_executable", lambda self: Path("C:/tmp/albion-command-desk.exe"))
+    repaired: list[tuple[str, str]] = []
+
+    def _fake_create(self, cli_path: Path, launch_mode: str) -> list[Path]:
+        repaired.append((str(cli_path), launch_mode))
+        return [Path("C:/Users/Test/Desktop/Albion Command Desk.lnk")]
+
+    monkeypatch.setattr(ScannerState, "_create_windows_shortcuts", _fake_create)
+
+    state = ScannerState(app_mode="core")
+    state.clearLog()
+
+    state.openCaptureRuntimeAction()
+
+    assert repaired == [("C:\\tmp\\albion-command-desk.exe", "live")]
+    assert "Updated Albion Command Desk shortcuts to launch live mode." in state.logText
