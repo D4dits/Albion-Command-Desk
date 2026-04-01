@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Albion Command Desk - Albion Online DPS Meter, Scanner and Crafting Profit Tool</title>
-    <meta name="description" content="Albion Command Desk is a passive Albion Online companion app with DPS/HPS meter, packet scanner controls, replay analysis, and crafting profit tools." />
+    <title>Albion Command Desk - Albion Online DPS Meter, Scanner, and Craft Planner</title>
+    <meta name="description" content="Albion Command Desk is a passive Albion Online desktop companion with a DPS/HPS meter, scanner workflow, settings/help dashboards, and a practical crafting profit planner." />
     <meta name="keywords" content="Albion Online DPS meter, Albion Online combat parser, Albion crafting calculator, Albion market tool, Albion Command Desk" />
     <meta name="author" content="Albion Command Desk" />
     <meta name="robots" content="index,follow,max-image-preview:large" />
@@ -14,7 +14,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Albion Command Desk" />
     <meta property="og:title" content="Albion Command Desk - Passive Albion Online Companion" />
-    <meta property="og:description" content="Track DPS/HPS, review fights, and optimize crafting profit in Albion Online with a fast, desktop-first companion app." />
+    <meta property="og:description" content="Track DPS/HPS, review fights, manage scanner prerequisites, and optimize crafting profit in Albion Online with one desktop-first workspace." />
     <meta property="og:url" content="https://d4dits.github.io/Albion-Command-Desk/" />
     <meta property="og:image" content="https://d4dits.github.io/Albion-Command-Desk/assets/logo.png" />
 
@@ -38,10 +38,10 @@
         "name": "Albion Command Desk",
         "applicationCategory": "GameApplication",
         "operatingSystem": "Windows, Linux, macOS",
-        "description": "Passive Albion Online companion app with DPS/HPS meter, replay analysis, scanner controls, and market crafting profitability workspace.",
+        "description": "Passive Albion Online companion app with DPS/HPS meter, replay analysis, scanner controls, settings/help dashboards, and market crafting profitability workspace.",
         "url": "https://d4dits.github.io/Albion-Command-Desk/",
         "downloadUrl": "https://github.com/D4dits/Albion-Command-Desk/releases/latest",
-        "softwareVersion": "0.1.16",
+        "softwareVersion": "0.1.20",
         "author": {
           "@type": "Person",
           "name": "D4dits"
@@ -94,6 +94,7 @@
         <nav class="nav-links" aria-label="Main navigation">
           <a href="#features">Features</a>
           <a href="#install">Install</a>
+          <a href="#workflow">Workflow</a>
           <a href="#screenshots">Screenshots</a>
           <a href="#faq">FAQ</a>
         </nav>
@@ -105,19 +106,20 @@
       <section class="hero container">
         <div class="hero-copy">
           <p class="eyebrow">Albion Online Companion App</p>
-          <h1>Track DPS, analyze fights, and plan profitable crafting in one desktop workspace.</h1>
+          <h1>Track fights, control scanner setup, and plan profitable crafting in one desktop workspace.</h1>
           <p class="lead">
-            Albion Command Desk is a passive analyzer focused on combat clarity and market decisions.
-            Built for players who need fast post-fight stats and clean crafting economics without UI clutter.
+            Albion Command Desk is a passive Albion Online desktop companion. It combines a live/replay combat meter,
+            scanner and runtime checks, and a market workspace for recipe planning, shopping, and profitability review.
           </p>
           <div class="hero-cta">
             <a class="btn btn-primary" href="https://github.com/D4dits/Albion-Command-Desk/releases/latest" target="_blank" rel="noopener">Get Latest Release</a>
             <a class="btn btn-ghost" href="https://github.com/D4dits/Albion-Command-Desk" target="_blank" rel="noopener">View GitHub Repo</a>
           </div>
           <ul class="meta-list">
-            <li>Windows, Linux, macOS</li>
+            <li>Windows bootstrap installer</li>
             <li>Qt desktop UI</li>
-            <li>Live + replay workflow</li>
+            <li>Live + replay meter</li>
+            <li>Craft planner + market diagnostics</li>
           </ul>
         </div>
         <div class="hero-visual card">
@@ -126,19 +128,41 @@
       </section>
 
       <section id="features" class="container section">
-        <h2>Why players use Albion Command Desk</h2>
-        <div class="grid three">
+        <h2>What is in the app right now</h2>
+        <div class="grid four">
+          <article class="card feature">
+            <h3>Start dashboard</h3>
+            <p>One place to verify capture runtime, Git, game data, and update status before touching Scanner or Market.</p>
+          </article>
           <article class="card feature">
             <h3>DPS/HPS Meter</h3>
-            <p>Live scoreboard with battle, zone, and manual modes. Sort by DPS, DMG, HPS, or HEAL for fast review.</p>
+            <p>Live and replay scoreboard with battle, zone, and manual modes plus history, session gains, and party-aware filtering.</p>
           </article>
           <article class="card feature">
             <h3>Scanner Control</h3>
-            <p>Repository sync, update checks, runtime diagnostics, and logs in one place. Clear visibility for Git and capture prerequisites.</p>
+            <p>Repository sync, update checks, runtime diagnostics, and logs in one place, with clearer guards around scanner/process actions.</p>
           </article>
           <article class="card feature">
             <h3>Market Workspace</h3>
-            <p>Recipe setup, craft plan table, inputs/outputs/results, and profitability snapshots tuned for practical decisions.</p>
+            <p>Recipe setup, inputs/outputs/results, shopping workflow, journal handling, and profitability snapshots tuned for real crafting decisions.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="workflow" class="container section">
+        <h2>Recommended workflow</h2>
+        <div class="grid three">
+          <article class="card install-card">
+            <h3>1. Start</h3>
+            <p>Open Start first. Confirm runtime, Git, game data, and app update status before running live scanner actions.</p>
+          </article>
+          <article class="card install-card">
+            <h3>2. Meter / Scanner</h3>
+            <p>Use Meter for live or replay combat review. Use Scanner for repo sync, build, and Albion Data Client control when needed.</p>
+          </article>
+          <article class="card install-card">
+            <h3>3. Market</h3>
+            <p>Build a craft plan, inspect upfront shopping requirements, review outputs and results, and work through the shopping list directly in the app.</p>
           </article>
         </div>
       </section>
@@ -152,35 +176,36 @@
               <li>Open the latest release page.</li>
               <li>Download <code>AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe</code>.</li>
               <li>Run installer and follow console prompts.</li>
+              <li>Launch from desktop shortcut or Start Menu entry.</li>
             </ol>
-            <p class="small">Live mode on Windows requires <strong>Npcap Runtime</strong>. Npcap SDK is optional and only needed for advanced capture-profile build scenarios.</p>
+            <p class="small">Live mode on Windows requires <strong>Npcap Runtime</strong>. Git is only needed for Scanner repository actions. The installer falls back cleanly when capture prerequisites are missing.</p>
           </article>
           <article class="card install-card">
             <h3>Linux / macOS</h3>
             <ol>
               <li>Download the release install script for your OS.</li>
               <li>Run script from terminal.</li>
-              <li>Launch with <code>albion-command-desk core</code>.</li>
+              <li>Launch with <code>albion-command-desk core</code> or <code>live</code>.</li>
             </ol>
-            <p class="small">For live capture, install system packet-capture dependencies (<code>libpcap</code> stack) as documented in the repository.</p>
+            <p class="small">For live capture, install the packet-capture prerequisites for your OS. The repository README and in-app Help tab document what is required.</p>
           </article>
         </div>
       </section>
 
       <section id="screenshots" class="container section">
-        <h2>Interface preview</h2>
+        <h2>Current interface preview</h2>
         <div class="grid three shots">
           <figure class="card shot">
-            <img src="assets/meter.png" alt="Albion Command Desk meter tab with scoreboard" loading="lazy" />
-            <figcaption>Meter tab</figcaption>
+            <img src="assets/start-tab.png" alt="Albion Command Desk start tab with dependency dashboard" loading="lazy" />
+            <figcaption>Start dashboard</figcaption>
           </figure>
           <figure class="card shot">
-            <img src="assets/scanner.png" alt="Albion Command Desk scanner tab with runtime diagnostics" loading="lazy" />
-            <figcaption>Scanner tab</figcaption>
+            <img src="assets/meter-tab-current.png" alt="Albion Command Desk meter tab with live scoreboard and session gains" loading="lazy" />
+            <figcaption>Meter workspace</figcaption>
           </figure>
           <figure class="card shot">
-            <img src="assets/market.png" alt="Albion Command Desk market tab with crafting setup" loading="lazy" />
-            <figcaption>Market tab</figcaption>
+            <img src="assets/settings-tab.png" alt="Albion Command Desk settings tab with runtime and repository controls" loading="lazy" />
+            <figcaption>Settings and runtime controls</figcaption>
           </figure>
         </div>
       </section>
@@ -199,6 +224,10 @@
           <article class="card faq-item">
             <h3>Where are updates published?</h3>
             <p>All updates are published on GitHub Releases and exposed via a stable manifest endpoint.</p>
+          </article>
+          <article class="card faq-item">
+            <h3>Do I need every dependency to use the app?</h3>
+            <p>No. Core UI features work without live-capture extras. Missing runtime/build dependencies are surfaced in Start, Scanner, Settings, and Help.</p>
           </article>
         </div>
       </section>

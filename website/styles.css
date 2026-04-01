@@ -260,6 +260,10 @@ h1 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.grid.four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .grid.two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -307,6 +311,9 @@ code {
 .shot img {
   width: 100%;
   display: block;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top;
   border-bottom: 1px solid rgba(69, 111, 158, 0.35);
 }
 
@@ -355,6 +362,10 @@ figcaption {
     grid-template-columns: 1fr;
   }
 
+  .grid.four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .grid.two {
     grid-template-columns: 1fr;
   }
@@ -375,6 +386,10 @@ figcaption {
 
   .hero {
     padding-top: 3.5rem;
+  }
+
+  .grid.four {
+    grid-template-columns: 1fr;
   }
 
   .footer-wrap {
