@@ -67,3 +67,13 @@ def test_manifest_example_orders_preferred_asset_first_per_os() -> None:
     assert first_kind("windows") == "installer"
     assert first_kind("linux") == "archive"
     assert first_kind("macos") == "archive"
+
+
+def test_manifest_example_includes_windows_capture_backend_asset() -> None:
+    path = Path("tools/release/manifest/manifest.example.json")
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    assets = manifest.get("assets", [])
+    assert any(
+        asset.get("os") == "windows" and asset.get("kind") == "capture-backend"
+        for asset in assets
+    )

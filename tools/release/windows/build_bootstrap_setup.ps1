@@ -86,6 +86,7 @@ namespace AlbionCommandDeskBootstrap
                 }
                 Directory.CreateDirectory(Path.GetDirectoryName(installRoot));
                 CopyDirectory(repoRoot, installRoot);
+                TryStageWindowsCaptureBundle(owner, repo, releaseTag, installRoot, tempRoot);
 
                 string installScript = Path.Combine(installRoot, "tools", "install", "windows", "install.ps1");
                 if (!File.Exists(installScript))
@@ -141,6 +142,15 @@ namespace AlbionCommandDeskBootstrap
             return "https://github.com/" + owner + "/" + repo + "/archive/refs/heads/" + releaseTag + ".zip";
         }
 
+        private static string BuildWindowsCaptureBundleUrl(string owner, string repo, string releaseTag)
+        {
+            if (string.IsNullOrWhiteSpace(releaseTag) || !releaseTag.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+            {
+                return "";
+            }
+            return "https://github.com/" + owner + "/" + repo + "/releases/download/" + releaseTag + "/AlbionCommandDesk-WindowsCapture-" + releaseTag + ".zip";
+        }
+
         private static void ConfigureSecurityProtocols()
         {
             const SecurityProtocolType Tls11 = (SecurityProtocolType)768;
@@ -181,6 +191,40 @@ namespace AlbionCommandDeskBootstrap
             if (fallbackCode != 0 || !File.Exists(destinationPath))
             {
                 throw new InvalidOperationException("Source download failed via WebClient and PowerShell fallback.");
+            }
+        }
+
+        private static void TryStageWindowsCaptureBundle(string owner, string repo, string releaseTag, string installRoot, string tempRoot)
+        {
+            string bundleUrl = BuildWindowsCaptureBundleUrl(owner, repo, releaseTag);
+            if (string.IsNullOrWhiteSpace(bundleUrl))
+            {
+                return;
+            }
+
+            string bundleZip = Path.Combine(tempRoot, "acd-windows-capture.zip");
+            try
+            {
+                Console.WriteLine("[ACD bootstrap] Checking optional Windows live capture bundle...");
+                DownloadSource(bundleUrl, bundleZip);
+                if (!File.Exists(bundleZip))
+                {
+                    Console.WriteLine("[ACD bootstrap] Optional Windows capture bundle was not downloaded.");
+                    return;
+                }
+
+                string extractTarget = Path.Combine(installRoot, "artifacts", "windows-capture");
+                if (Directory.Exists(extractTarget))
+                {
+                    Directory.Delete(extractTarget, true);
+                }
+                Directory.CreateDirectory(extractTarget);
+                ZipFile.ExtractToDirectory(bundleZip, extractTarget);
+                Console.WriteLine("[ACD bootstrap] Windows live capture bundle staged: " + extractTarget);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[ACD bootstrap] Optional Windows capture bundle unavailable: " + ex.Message);
             }
         }
 

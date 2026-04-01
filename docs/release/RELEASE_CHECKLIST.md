@@ -35,10 +35,13 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
 - [ ] Build artifacts using the frozen matrix and naming contract:
 - [ ] Build Windows bootstrap installer EXE:
   - `powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap_setup.ps1 -ReleaseTag vX.Y.Z`
+- [ ] If Windows live capture is part of the release, build and attach:
+  - `AlbionCommandDesk-WindowsCapture-vX.Y.Z.zip`
 
 | OS | Priority | Kind | Canonical name pattern | Gate |
 |---|---|---|---|---|
 | Windows x86_64 | Primary | installer | `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe` | **BLOCKER** |
+| Windows x86_64 | Secondary | capture-backend | `AlbionCommandDesk-WindowsCapture-vX.Y.Z.zip` | warning until Phase 11 lock |
 | Linux x86_64 | Primary | archive | `AlbionCommandDesk-vX.Y.Z-x86_64.AppImage` | warning (until Linux packaging lock) |
 | Linux x86_64 | Secondary | bootstrap-script | `acd-install-linux-vX.Y.Z.sh` | warning |
 | macOS universal | Primary | archive | `AlbionCommandDesk-vX.Y.Z-universal.dmg` | warning (until macOS packaging lock) |
@@ -86,6 +89,7 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
   - release URL,
   - changelog URL,
   - checksums (`sha256`) for assets.
+- [ ] If a Windows capture bundle is attached, verify manifest marks it as `kind=capture-backend`.
 - [ ] Verify manifest asset order lists preferred installer/archive first per OS.
 - [ ] Verify every listed asset has non-empty checksum and byte size > 0.
 

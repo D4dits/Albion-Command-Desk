@@ -24,6 +24,15 @@ def _write_temp_manifest() -> Path:
             "url": "https://example.com/acd/download/windows-setup.exe",
             "sha256": "f3fe4ad3c1f596b0df6ec75f7f5d9ce25f11a1f7ebc8de4a7fca0178c8cdb4ac",
             "size": 123,
+        },
+        {
+            "os": "windows",
+            "arch": "x86_64",
+            "kind": "capture-backend",
+            "name": "AlbionCommandDesk-WindowsCapture-v9.9.9.zip",
+            "url": "https://example.com/acd/download/windows-capture.zip",
+            "sha256": "2c181e6590d7665d5fdbda95a68327252d4be7b5239f3e97864d9aa8f5546f90",
+            "size": 456,
         }
     ]
     base = Path("artifacts") / "tmp" / "qa_release_update" / str(uuid.uuid4())

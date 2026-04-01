@@ -714,7 +714,7 @@ Update status checkboxes and notes after each implemented ticket.
   - Docs stop implying SDK/build tools are normal end-user prerequisites.
 
 ### PH11-CAP-112 - CI build for Windows capture wheel
-- [ ] Status: TODO
+- [ ] Status: IN PROGRESS
 - Goal: produce a Windows capture backend wheel in CI instead of building locally on user machines.
 - Files:
   1. `.github/workflows/`
@@ -904,6 +904,7 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-04-01: Phase 11 implementation moved into artifact flow. The Windows bootstrap builder now knows the `AlbionCommandDesk-WindowsCapture-vX.Y.Z.zip` sidecar contract, manifest tooling recognizes `capture-backend` assets, and release QA fixtures include the optional Windows capture bundle shape.
 - 2026-04-01: Phase 11 started. Added `docs/release/WINDOWS_CAPTURE_AUDIT.md`, locked the prebuilt Windows capture-backend strategy, taught the Windows installer to detect/install a prebuilt capture wheel, and updated Windows live-capture fallback messaging to stop pointing end users at SDK/build-tool recovery steps.
 
 - 2026-03-24: PH6-MKT-061 completed (market result-row formulas now use a shared helper aligned with top-level `ProfitBreakdown`, profit/margin regressions were added, and market math is documented in `docs/ARCHITECTURE.md`).

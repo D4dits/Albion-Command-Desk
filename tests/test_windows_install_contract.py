@@ -15,3 +15,9 @@ def test_windows_capture_audit_records_prebuilt_strategy() -> None:
     audit = Path("docs/release/WINDOWS_CAPTURE_AUDIT.md").read_text(encoding="utf-8")
     assert "Recommended strategy: **prebuilt Windows capture backend artifact**" in audit
     assert "Windows installer must prefer a bundled/prebuilt backend wheel" in audit
+
+
+def test_windows_bootstrap_knows_capture_bundle_contract() -> None:
+    script = Path("tools/release/windows/build_bootstrap_setup.ps1").read_text(encoding="utf-8")
+    assert "AlbionCommandDesk-WindowsCapture-" in script
+    assert "TryStageWindowsCaptureBundle" in script

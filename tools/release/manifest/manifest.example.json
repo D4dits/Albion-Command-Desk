@@ -20,6 +20,15 @@
       "size": 36713339
     },
     {
+      "os": "windows",
+      "arch": "x86_64",
+      "kind": "capture-backend",
+      "name": "AlbionCommandDesk-WindowsCapture-v0.1.1.zip",
+      "url": "https://github.com/D4dits/Albion-Command-Desk/releases/download/v0.1.1/AlbionCommandDesk-WindowsCapture-v0.1.1.zip",
+      "sha256": "da9d3195f1b8a01819d9df89bf0c8c6f6d5d6b7b5ce3a0dc3d7725a5ad8d8d7e",
+      "size": 4567890
+    },
+    {
       "os": "linux",
       "arch": "x86_64",
       "kind": "archive",

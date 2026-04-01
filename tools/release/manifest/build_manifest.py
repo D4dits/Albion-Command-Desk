@@ -22,7 +22,8 @@ _PREFERRED_KIND_BY_OS = {
 _KIND_FALLBACK_ORDER = {
     "installer": 0,
     "archive": 1,
-    "bootstrap-script": 2,
+    "capture-backend": 2,
+    "bootstrap-script": 3,
     "asset": 9,
 }
 
@@ -86,6 +87,8 @@ def _asset_arch(name: str) -> str:
 
 def _asset_kind(name: str) -> str:
     lower = name.lower()
+    if "windowscapture" in lower and (lower.endswith(".zip") or lower.endswith(".whl")):
+        return "capture-backend"
     if lower.endswith(".exe") or lower.endswith(".msi") or lower.endswith(".pkg"):
         return "installer"
     if lower.endswith(".ps1") or lower.endswith(".sh"):

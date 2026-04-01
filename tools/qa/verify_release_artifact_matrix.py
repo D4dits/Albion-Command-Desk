@@ -13,7 +13,7 @@ DEFAULT_MANIFEST_URL = (
 )
 
 EXPECTED_KINDS: dict[str, set[str]] = {
-    "windows": {"installer"},
+    "windows": {"installer", "capture-backend"},
     "linux": {"archive", "bootstrap-script"},
     "macos": {"archive", "bootstrap-script"},
 }
