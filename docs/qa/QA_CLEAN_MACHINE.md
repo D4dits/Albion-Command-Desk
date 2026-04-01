@@ -10,6 +10,7 @@ Goal: validate that bootstrap install path works on clean Windows/Linux/macOS en
   - `linux-core`
   - `macos-core`
 - Advisory jobs:
+  - `windows-capture-bundle-advisory`
   - `linux-capture-advisory`
   - `macos-capture-advisory`
 - Required evidence artifacts:
@@ -46,6 +47,10 @@ Each required job uploads a clean-machine evidence bundle containing:
 - `update-flow.log` (manifest/update banner contract probe),
 - `assets/ux-baseline/*.png` references for release-candidate review.
 
+Advisory Windows capture-bundle evidence (`bootstrap-smoke-windows-capture-bundle`) should include:
+- `bootstrap.log` proving the installer used `Installing prebuilt Windows live capture backend`,
+- `smoke-report.json` from the capture-profile install path.
+
 ## Manual local sanity (Windows default profile)
 
 Use only as supplemental check; CI matrix is the release gate:
@@ -69,3 +74,13 @@ Use on a clean VM to validate real user path (no repo required):
    - install completes without auto-start failure,
    - runtime path exists: `%LOCALAPPDATA%\AlbionCommandDesk\runtime\vX.Y.Z`,
    - CLI path exists: `%LOCALAPPDATA%\AlbionCommandDesk\venv\Scripts\albion-command-desk.exe`.
+
+## Manual local sanity (Windows live capture bundle)
+
+Use on a clean VM after installing `Npcap Runtime`:
+1. Confirm the release also ships `AlbionCommandDesk-WindowsCapture-vX.Y.Z.zip`.
+2. Run the bootstrap installer EXE.
+3. Expected result:
+   - bootstrap stages the optional Windows capture bundle,
+   - `Start` shows `Capture runtime: ready`,
+   - `live` is available without installing `Npcap SDK` or Visual C++ build tools.

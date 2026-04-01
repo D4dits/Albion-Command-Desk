@@ -46,3 +46,7 @@ def test_main_fails_when_required_artifact_missing(monkeypatch) -> None:
     monkeypatch.setattr(matrix, "_load_artifacts", lambda run_id: artifacts)
 
     assert matrix.main() == 1
+
+
+def test_windows_capture_bundle_job_is_advisory() -> None:
+    assert "windows-capture-bundle-advisory" in matrix.ADVISORY_JOBS

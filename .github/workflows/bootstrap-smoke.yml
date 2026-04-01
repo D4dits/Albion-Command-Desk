@@ -7,6 +7,7 @@ on:
   pull_request:
     paths:
       - "tools/install/**"
+      - "tools/release/windows/**"
       - "tools/release/manifest/**"
       - "tools/qa/**"
       - "albion_dps/update/**"
@@ -15,6 +16,7 @@ on:
     branches: ["main"]
     paths:
       - "tools/install/**"
+      - "tools/release/windows/**"
       - "tools/release/manifest/**"
       - "tools/qa/**"
       - "albion_dps/update/**"
@@ -63,6 +65,70 @@ jobs:
         with:
           name: bootstrap-smoke-windows-core
           path: artifacts/ci/windows-core
+          if-no-files-found: warn
+
+  windows-capture-bundle-advisory:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download and stage Npcap SDK
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $sdkZip = Join-Path $env:RUNNER_TEMP "npcap-sdk.zip"
+          Invoke-WebRequest -UseBasicParsing -Uri "https://npcap.com/dist/npcap-sdk-1.13.zip" -OutFile $sdkZip
+          if (Test-Path "C:\WpdPack") {
+            Remove-Item -Recurse -Force "C:\WpdPack"
+          }
+          Expand-Archive -Path $sdkZip -DestinationPath "C:\WpdPack" -Force
+      - name: Build Windows capture wheel
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $wheelDir = Join-Path $PWD "artifacts\ci\windows-capture-bundle\wheels"
+          New-Item -ItemType Directory -Force -Path $wheelDir | Out-Null
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip wheel --wheel-dir $wheelDir "pcapy-ng>=1.0.0"
+      - name: Run Windows capture-bundle bootstrap smoke (advisory)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $logDir = Join-Path $PWD "artifacts\ci\windows-capture-bundle"
+          New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+          $bootstrapLog = Join-Path $logDir "bootstrap.log"
+          $wheel = Get-ChildItem -Path (Join-Path $logDir "wheels") -Filter "*.whl" | Select-Object -First 1
+          if (-not $wheel) {
+            throw "Windows capture wheel was not produced."
+          }
+
+          .\tools\install\windows\install.ps1 `
+            -ProjectRoot "$PWD" `
+            -VenvPath "$PWD\.venv-smoke-capture" `
+            -Python "$env:pythonLocation\python.exe" `
+            -Profile capture `
+            -CaptureWheelPath "$($wheel.FullName)" `
+            -ForceRecreateVenv `
+            -SkipRun *>&1 | Tee-Object -FilePath $bootstrapLog
+
+          Select-String -Path $bootstrapLog -Pattern "Installing prebuilt Windows live capture backend" | Out-Null
+
+          & "$PWD\.venv-smoke-capture\Scripts\python.exe" `
+            tools\install\common\smoke_check.py `
+            --project-root "$PWD" `
+            --profile capture `
+            --artifact-name "AlbionCommandDesk-WindowsCapture-vX.Y.Z.zip" `
+            --report-path "$logDir\smoke-report.json" *>&1 | Tee-Object -FilePath $bootstrapLog -Append
+      - name: Upload advisory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-smoke-windows-capture-bundle
+          path: artifacts/ci/windows-capture-bundle
           if-no-files-found: warn
 
   linux-core:

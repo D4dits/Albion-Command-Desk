@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 
 REQUIRED_JOBS = ("windows-core", "linux-core", "macos-core")
-ADVISORY_JOBS = ("linux-capture-advisory", "macos-capture-advisory")
+ADVISORY_JOBS = ("windows-capture-bundle-advisory", "linux-capture-advisory", "macos-capture-advisory")
 REQUIRED_EVIDENCE_ARTIFACTS = (
     "bootstrap-smoke-windows-core",
     "bootstrap-smoke-linux-core",
