@@ -17,7 +17,6 @@ from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Property, Signal, Slot
-from PySide6.QtGui import QGuiApplication
 
 from albion_dps.capture import capture_backend_available
 from albion_dps.capture.npcap_runtime import (
@@ -458,6 +457,8 @@ class ScannerState(QObject):
             self._append_warn("Nothing to copy.")
             return
         try:
+            from PySide6.QtGui import QGuiApplication
+
             clipboard = QGuiApplication.clipboard()
             clipboard.setText(value)
             self._append_log("Copied command to clipboard.")
