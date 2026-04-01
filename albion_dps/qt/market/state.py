@@ -4466,6 +4466,12 @@ def _item_metadata_map() -> dict[str, dict[str, str]]:
 
 def _infer_journal_kind_for_item(item_id: str) -> str | None:
     base_id = _base_item_id(item_id)
+    if "_PLATE_" in base_id:
+        return "WARRIOR"
+    if "_LEATHER_" in base_id:
+        return "HUNTER"
+    if "_CLOTH_" in base_id:
+        return "MAGE"
     metadata = _item_metadata_map().get(base_id, {})
     hints = [
         str(metadata.get("shopcategory") or "").upper(),
