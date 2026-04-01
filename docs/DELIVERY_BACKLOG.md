@@ -686,6 +686,91 @@ Update status checkboxes and notes after each implemented ticket.
 - Progress:
   - 2026-03-31: centralized version resolution in `albion_dps.versioning`, rewired CLI and Qt runner to the shared helper, and added regression tests so package-metadata fallback stays consistent across CLI/app/update surfaces.
 
+## Next Milestone - Phase 11 (Windows live capture de-block)
+
+### PH11-CAP-110 - Windows capture audit
+- [x] Status: DONE
+- Goal: document exactly why Windows live capture still falls back to `core` on a clean machine.
+- Files:
+  1. `pyproject.toml`
+  2. `tools/install/windows/install.ps1`
+  3. `albion_dps/capture/startup_policy.py`
+  4. `albion_dps/capture/live_capture.py`
+  5. `docs/release/WINDOWS_CAPTURE_AUDIT.md` (new)
+- Done when:
+  - Build-time and runtime dependencies are listed separately.
+  - Current fallback points are mapped end-to-end.
+  - The chosen removal strategy for local Windows builds is explicit.
+
+### PH11-CAP-111 - Strategy lock: prebuilt Windows capture backend
+- [ ] Status: IN PROGRESS
+- Goal: freeze the delivery strategy so end users never need SDK/build tools for `live`.
+- Files:
+  1. `docs/release/WINDOWS_CAPTURE_AUDIT.md`
+  2. `docs/release/RELEASE_CHECKLIST.md`
+  3. `README.md`
+- Done when:
+  - The project explicitly targets a prebuilt Windows capture backend artifact.
+  - Docs stop implying SDK/build tools are normal end-user prerequisites.
+
+### PH11-CAP-112 - CI build for Windows capture wheel
+- [ ] Status: TODO
+- Goal: produce a Windows capture backend wheel in CI instead of building locally on user machines.
+- Files:
+  1. `.github/workflows/`
+  2. `tools/release/windows/`
+  3. `tools/qa/run_release_readiness.py`
+- Done when:
+  - CI emits a Windows capture wheel artifact for supported Python versions.
+  - Release readiness can validate the wheel contract locally.
+
+### PH11-CAP-113 - Windows installer consumes prebuilt capture backend
+- [ ] Status: IN PROGRESS
+- Goal: teach the Windows installer to prefer a bundled/prebuilt backend over local source builds.
+- Files:
+  1. `tools/install/windows/install.ps1`
+  2. `tools/release/windows/build_bootstrap_setup.ps1`
+  3. `tools/qa/verify_release_update_flow.py`
+- Done when:
+  - Installer checks for a prebuilt Windows capture backend first.
+  - Missing SDK/build tools no longer force a local compile path for normal users.
+
+### PH11-CAP-114 - Runtime status model cleanup
+- [ ] Status: IN PROGRESS
+- Goal: separate missing runtime from missing Windows release component in all user-facing messages.
+- Files:
+  1. `albion_dps/capture/startup_policy.py`
+  2. `albion_dps/qt/scanner.py`
+  3. `albion_dps/qt/ui/HomeTab.qml`
+  4. `albion_dps/qt/ui/MeterTab.qml`
+  5. `albion_dps/qt/ui/HelpTab.qml`
+- Done when:
+  - UI can distinguish `runtime missing`, `runtime available but backend missing`, and `live ready`.
+  - User messaging no longer tells regular users to install SDK/build tools.
+
+### PH11-CAP-115 - Clean-machine Windows validation matrix
+- [ ] Status: TODO
+- Goal: lock Windows live capture behavior with realistic clean-machine scenarios.
+- Files:
+  1. `tools/qa/verify_clean_machine_matrix.py`
+  2. `docs/qa/QA_CLEAN_MACHINE.md`
+  3. `.github/workflows/bootstrap-smoke.yml`
+- Done when:
+  - Clean Windows scenarios cover `core-only`, `Npcap Runtime only`, and post-upgrade checks.
+  - Expected outcomes for `live` vs `core` are explicitly documented.
+
+### PH11-CAP-116 - Docs and release contract update
+- [ ] Status: TODO
+- Goal: align docs and release notes with the Windows live-capture delivery contract.
+- Files:
+  1. `README.md`
+  2. `docs/TROUBLESHOOTING.md`
+  3. `docs/release/RELEASE_CHECKLIST.md`
+  4. `website/index.html`
+- Done when:
+  - Release/install docs describe only real end-user prerequisites.
+  - Windows `live` guidance matches the shipped implementation.
+
 ## Ticket Queue (Execution Order)
 
 ### ACD-REL-001 - Release metadata contract
@@ -818,6 +903,8 @@ Update status checkboxes and notes after each implemented ticket.
   - `README.md`
 
 ## Progress Log
+
+- 2026-04-01: Phase 11 started. Added `docs/release/WINDOWS_CAPTURE_AUDIT.md`, locked the prebuilt Windows capture-backend strategy, taught the Windows installer to detect/install a prebuilt capture wheel, and updated Windows live-capture fallback messaging to stop pointing end users at SDK/build-tool recovery steps.
 
 - 2026-03-24: PH6-MKT-061 completed (market result-row formulas now use a shared helper aligned with top-level `ProfitBreakdown`, profit/margin regressions were added, and market math is documented in `docs/ARCHITECTURE.md`).
 - 2026-03-24: PH6-MKT-062 completed (AO Data price requests now default to smaller batches, large 429-limited batches split into predictable chunks, market UI exposes queued/loading/cooldown states more clearly, and regressions cover both client chunking and state cooldown messaging).
