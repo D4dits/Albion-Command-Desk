@@ -7,6 +7,11 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.1.23] - 2026-04-01
+
+### Changed
+- Windows installs now reconcile late `Npcap Runtime` setup after the app is already installed: Start/runtime status explains that live capture is ready, offers a one-click `Switch shortcuts to live` action, and exposes the exact `...exe live` command without requiring reinstall.
+
 ## [0.1.22] - 2026-04-01
 
 ### Changed
