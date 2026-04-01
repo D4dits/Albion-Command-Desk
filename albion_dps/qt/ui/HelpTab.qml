@@ -176,7 +176,7 @@ CardPanel {
 
                 TableSurface {
                     Layout.fillWidth: true
-                    height: 154
+                    height: 182
                     level: 1
 
                     Column {
@@ -184,12 +184,37 @@ CardPanel {
                         anchors.margins: 10
                         spacing: 8
                         Text { text: "Troubleshooting"; color: root.textColor; font.pixelSize: 12; font.bold: true }
-                        Text {
+                        Column {
                             width: parent.width
-                            text: "• Missing Npcap: install Npcap Runtime, then restart the app.\n• Missing Git: install Git, restart, then use Scanner sync/update.\n• Missing game data: run Game data setup from Settings.\n• Capture problems: verify the correct interface and live mode prerequisites."
-                            color: root.mutedColor
-                            font.pixelSize: 11
-                            wrapMode: Text.WordWrap
+                            spacing: 4
+                            Text {
+                                width: parent.width
+                                text: "- Missing Npcap: install Npcap Runtime, then restart the app."
+                                color: root.mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Text {
+                                width: parent.width
+                                text: "- Missing Git: install Git, restart, then use Scanner sync/update."
+                                color: root.mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Text {
+                                width: parent.width
+                                text: "- Missing game data: run Game data setup from Settings."
+                                color: root.mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
+                            Text {
+                                width: parent.width
+                                text: "- Capture problems: verify the correct interface and live mode prerequisites."
+                                color: root.mutedColor
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                            }
                         }
                         Flow {
                             width: parent.width
