@@ -4371,10 +4371,62 @@ def _journal_maps() -> tuple[dict[str, _JournalRule], dict[str, float]]:
 
 
 def _journal_rule_templates() -> dict[tuple[int, str], _JournalRule]:
-    journal_by_item, _ = _journal_maps()
+    items_path = Path(__file__).resolve().parents[3] / "data" / "items.json"
+    try:
+        payload = json.loads(items_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    raw_items = payload.get("items") if isinstance(payload, dict) else None
+    if not isinstance(raw_items, dict):
+        return {}
+
+    entries: dict[str, dict[str, object]] = {}
+
+    def walk(node: object) -> None:
+        if isinstance(node, dict):
+            unique_name = node.get("@uniquename")
+            if isinstance(unique_name, str) and unique_name:
+                entries[unique_name] = node
+            for value in node.values():
+                walk(value)
+            return
+        if isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(raw_items)
+
     templates: dict[tuple[int, str], _JournalRule] = {}
-    for rule in journal_by_item.values():
-        templates[(int(rule.tier), str(rule.kind).upper())] = rule
+    journal_types = ("WARRIOR", "HUNTER", "MAGE", "TOOLMAKER")
+    for tier in range(2, 9):
+        for kind in journal_types:
+            journal_id = f"T{tier}_JOURNAL_{kind}"
+            node = entries.get(journal_id)
+            if node is None:
+                continue
+            max_fame_raw = node.get("@maxfame")
+            fame_missions = node.get("famefillingmissions")
+            if not isinstance(fame_missions, dict):
+                continue
+            craft = fame_missions.get("craftitemfame")
+            if not isinstance(craft, dict):
+                continue
+            value_raw = craft.get("@value")
+            try:
+                max_fame = float(max_fame_raw)
+                fame_per_item = float(value_raw)
+            except (TypeError, ValueError):
+                continue
+            if max_fame <= 0 or fame_per_item <= 0:
+                continue
+            templates[(tier, kind)] = _JournalRule(
+                kind=kind,
+                tier=tier,
+                empty_item_id=journal_id,
+                full_item_id=f"{journal_id}_FULL",
+                max_fame=max_fame,
+                fame_per_item=fame_per_item,
+            )
     return templates
 
 
