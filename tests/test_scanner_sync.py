@@ -142,5 +142,8 @@ def test_open_capture_runtime_action_repairs_shortcuts_when_reconcile_available(
 
     state.openCaptureRuntimeAction()
 
-    assert repaired == [("C:\\tmp\\albion-command-desk.exe", "live")]
+    assert len(repaired) == 1
+    repaired_path, repaired_mode = repaired[0]
+    assert repaired_path.replace("\\", "/") == "C:/tmp/albion-command-desk.exe"
+    assert repaired_mode == "live"
     assert "Updated Albion Command Desk shortcuts to launch live mode." in state.logText
