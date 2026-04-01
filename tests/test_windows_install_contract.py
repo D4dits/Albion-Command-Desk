@@ -21,3 +21,17 @@ def test_windows_bootstrap_knows_capture_bundle_contract() -> None:
     script = Path("tools/release/windows/build_bootstrap_setup.ps1").read_text(encoding="utf-8")
     assert "AlbionCommandDesk-WindowsCapture-" in script
     assert "TryStageWindowsCaptureBundle" in script
+
+
+def test_windows_capture_bundle_builder_contract() -> None:
+    script = Path("tools/release/windows/build_capture_bundle.ps1").read_text(encoding="utf-8")
+    assert "AlbionCommandDesk-WindowsCapture-" in script
+    assert "bundle-manifest.json" in script
+    assert "No wheel files found" in script
+
+
+def test_windows_capture_backend_workflow_exists() -> None:
+    workflow = Path(".github/workflows/windows-capture-backend.yml").read_text(encoding="utf-8")
+    assert "name: windows-capture-backend" in workflow
+    assert "build_capture_bundle.ps1" in workflow
+    assert "dist/windows-capture/*.zip" in workflow

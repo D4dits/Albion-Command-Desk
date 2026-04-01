@@ -1,0 +1,79 @@
+name: windows-capture-backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag used for bundle naming, for example v0.1.21"
+        required: true
+        default: "v0.1.20"
+      npcap_sdk_url:
+        description: "Direct Npcap SDK zip URL used for wheel builds"
+        required: true
+        default: "https://npcap.com/dist/npcap-sdk-1.13.zip"
+  release:
+    types: [published, prereleased]
+
+jobs:
+  build-windows-capture:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || github.event.inputs.release_tag }}
+      NPCAP_SDK_URL: ${{ github.event_name == 'release' && 'https://npcap.com/dist/npcap-sdk-1.13.zip' || github.event.inputs.npcap_sdk_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download and stage Npcap SDK
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $sdkZip = Join-Path $env:RUNNER_TEMP "npcap-sdk.zip"
+          Invoke-WebRequest -UseBasicParsing -Uri $env:NPCAP_SDK_URL -OutFile $sdkZip
+          if (Test-Path "C:\WpdPack") {
+            Remove-Item -Recurse -Force "C:\WpdPack"
+          }
+          Expand-Archive -Path $sdkZip -DestinationPath "C:\WpdPack" -Force
+
+      - name: Build pcapy-ng wheel
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $wheelDir = Join-Path $PWD "artifacts\windows-capture\wheels"
+          New-Item -ItemType Directory -Force -Path $wheelDir | Out-Null
+          python -m pip install --upgrade pip wheel setuptools
+          python -m pip wheel --wheel-dir $wheelDir "pcapy-ng>=1.0.0"
+
+      - name: Build Windows capture bundle
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          .\tools\release\windows\build_capture_bundle.ps1 `
+            -ReleaseTag $env:RELEASE_TAG `
+            -WheelDirectory "$PWD\artifacts\windows-capture\wheels"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-capture-backend-${{ env.RELEASE_TAG }}
+          path: dist/windows-capture/*.zip
+          if-no-files-found: error
+
+      - name: Upload bundle to release assets
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $bundle = Get-ChildItem "$PWD\dist\windows-capture\*.zip" | Select-Object -First 1
+          if (-not $bundle) {
+            throw "Windows capture bundle not found."
+          }
+          gh release upload $env:RELEASE_TAG $bundle.FullName --clobber

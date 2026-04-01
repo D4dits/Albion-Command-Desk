@@ -50,6 +50,7 @@ def _powershell_parse_check(root: Path) -> CheckResult:
     files = [
         root / "tools" / "install" / "windows" / "install.ps1",
         root / "tools" / "release" / "windows" / "build_bootstrap_setup.ps1",
+        root / "tools" / "release" / "windows" / "build_capture_bundle.ps1",
     ]
     parse_script = (
         "$ErrorActionPreference='Stop';"

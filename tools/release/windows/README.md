@@ -5,6 +5,11 @@ Builds the canonical Windows release bootstrap executable:
 - output name: `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`
 - purpose: download tagged source zip, run `tools/install/windows/install.ps1`, and keep console open on error.
 
+Optional Windows live-capture sidecar bundle:
+
+- output name: `AlbionCommandDesk-WindowsCapture-vX.Y.Z.zip`
+- purpose: ship prebuilt Windows capture wheel(s) so end users do not need `Npcap SDK` or local C/C++ build tools.
+
 ## Usage
 
 From repository root:
@@ -26,6 +31,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap
 - `ReleaseTag` accepts tag (`vX.Y.Z`) or branch name.
 - Bootstrap EXE installs into `%LOCALAPPDATA%\AlbionCommandDesk` (persistent path) instead of temp folders.
 - Bootstrap EXE passes `-ReleaseVersion X.Y.Z -SkipRun` to `install.ps1`.
+- On tagged releases the bootstrap EXE also looks for `AlbionCommandDesk-WindowsCapture-vX.Y.Z.zip` and stages it under `artifacts/windows-capture` before running the installer.
 - Installer now defaults to capture extras and auto-falls back to core when capture prerequisites are missing.
 - EXE requires outbound access to GitHub release/source URLs.
 - Expected post-install paths:
@@ -38,3 +44,13 @@ powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_bootstrap
 - Bootstrap EXE also creates:
   - Desktop shortcut: `Albion Command Desk`
   - Start Menu shortcut folder: `Albion Command Desk`
+
+## Build capture bundle
+
+If you already have prebuilt wheel(s):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\release\windows\build_capture_bundle.ps1 `
+  -ReleaseTag vX.Y.Z `
+  -WheelDirectory .\artifacts\windows-capture\wheels
+```
