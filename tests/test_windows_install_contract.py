@@ -21,6 +21,9 @@ def test_windows_bootstrap_knows_capture_bundle_contract() -> None:
     script = Path("tools/release/windows/build_bootstrap_setup.ps1").read_text(encoding="utf-8")
     assert "AlbionCommandDesk-WindowsCapture-" in script
     assert "TryStageWindowsCaptureBundle" in script
+    assert "DeterminePreferredLaunchMode" in script
+    assert 'Console.WriteLine("  " + cliPath + " live")' in script
+    assert 'CreateShortcut(desktopLink, cliPath, launchMode, workDir, iconPath);' in script
 
 
 def test_windows_capture_bundle_builder_contract() -> None:

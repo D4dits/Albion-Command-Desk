@@ -116,10 +116,19 @@ namespace AlbionCommandDeskBootstrap
                 Console.WriteLine("[ACD bootstrap] Virtual environment: " + venvPath);
                 if (File.Exists(cliPath))
                 {
-                    TryCreateShortcuts(cliPath, installRoot);
+                    string launchMode = DeterminePreferredLaunchMode(cliPath);
+                    TryCreateShortcuts(cliPath, installRoot, launchMode);
                     Console.WriteLine("[ACD bootstrap] Start app with:");
-                    Console.WriteLine("  " + cliPath + " core");
-                    Console.WriteLine("  " + cliPath + " live   # requires Npcap Runtime");
+                    if (string.Equals(launchMode, "live", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.WriteLine("  " + cliPath + " live");
+                        Console.WriteLine("  " + cliPath + " core   # fallback mode if runtime is not available");
+                    }
+                    else
+                    {
+                        Console.WriteLine("  " + cliPath + " core");
+                        Console.WriteLine("  " + cliPath + " live   # requires Npcap Runtime");
+                    }
                 }
 
                 return 0;
@@ -252,7 +261,7 @@ namespace AlbionCommandDeskBootstrap
             return "\"" + value.Replace("\"", "\\\"") + "\"";
         }
 
-        private static void TryCreateShortcuts(string cliPath, string installRoot)
+        private static void TryCreateShortcuts(string cliPath, string installRoot, string launchMode)
         {
             try
             {
@@ -271,8 +280,8 @@ namespace AlbionCommandDeskBootstrap
                 Directory.CreateDirectory(startMenuDir);
                 string startMenuLink = Path.Combine(startMenuDir, "Albion Command Desk.lnk");
 
-                CreateShortcut(desktopLink, cliPath, "core", workDir, iconPath);
-                CreateShortcut(startMenuLink, cliPath, "core", workDir, iconPath);
+                CreateShortcut(desktopLink, cliPath, launchMode, workDir, iconPath);
+                CreateShortcut(startMenuLink, cliPath, launchMode, workDir, iconPath);
                 Console.WriteLine("[ACD bootstrap] Shortcuts created:");
                 Console.WriteLine("  Desktop: " + desktopLink);
                 Console.WriteLine("  Start Menu: " + startMenuLink);
@@ -303,6 +312,49 @@ namespace AlbionCommandDeskBootstrap
             {
                 throw new InvalidOperationException("shortcut command failed with exit code " + exitCode + " for: " + shortcutPath);
             }
+        }
+
+        private static string DeterminePreferredLaunchMode(string cliPath)
+        {
+            try
+            {
+                if (!NpcapRuntimeAvailable())
+                {
+                    return "core";
+                }
+
+                string pythonPath = Path.Combine(Path.GetDirectoryName(cliPath) ?? "", "python.exe");
+                if (!File.Exists(pythonPath))
+                {
+                    return "core";
+                }
+
+                int importExitCode = RunProcess(
+                    pythonPath,
+                    "-c " + Quote("import pcapy")
+                );
+                if (importExitCode == 0)
+                {
+                    return "live";
+                }
+            }
+            catch
+            {
+            }
+            return "core";
+        }
+
+        private static bool NpcapRuntimeAvailable()
+        {
+            string windir = Environment.GetEnvironmentVariable("WINDIR") ?? @"C:\Windows";
+            string[] candidates = new[]
+            {
+                Path.Combine(windir, "System32", "Npcap", "wpcap.dll"),
+                Path.Combine(windir, "System32", "Npcap", "Packet.dll"),
+                Path.Combine(windir, "SysWOW64", "Npcap", "wpcap.dll"),
+                Path.Combine(windir, "SysWOW64", "Npcap", "Packet.dll"),
+            };
+            return candidates.Any(File.Exists);
         }
 
         private static string EscapeForSingleQuotedPowershell(string value)

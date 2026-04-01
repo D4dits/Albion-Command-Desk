@@ -7,6 +7,11 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.1.22] - 2026-04-01
+
+### Changed
+- Windows bootstrap shortcuts now prefer `live` automatically when `Npcap Runtime` is installed and the bundled Windows capture backend is available, so clean-machine installs no longer default to `core` after a successful live-capable setup.
+
 ## [0.1.21] - 2026-04-01
 
 ### Changed
