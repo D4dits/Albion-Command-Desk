@@ -1103,6 +1103,55 @@ def test_market_setup_state_results_cost_not_coupled_to_journal_revenue(
     assert result_cost_after == pytest.approx(result_cost_before, rel=0.0, abs=0.01)
 
 
+def test_market_setup_state_results_rows_match_selected_totals_with_journals(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
+
+    fake_totals = market_state._JournalTotals(
+        input_cost=1000.0,
+        output_value=2500.0,
+        market_tax=100.0,
+        full_quantity=2.0,
+        lines=(
+            market_state._JournalLine(
+                kind="MAGE",
+                tier=4,
+                empty_item_id="T4_JOURNAL_MAGE",
+                full_item_id="T4_JOURNAL_MAGE_FULL",
+                empty_quantity=3.0,
+                full_quantity=2.0,
+                input_cost=1000.0,
+                output_value=2500.0,
+                market_tax=100.0,
+            ),
+        ),
+    )
+    monkeypatch.setattr(state, "_estimate_journal_totals", lambda **_: fake_totals)
+    state.refreshPrices()
+
+    total_revenue = 0.0
+    total_cost = 0.0
+    total_fee = 0.0
+    total_tax = 0.0
+    total_profit = 0.0
+    for idx in range(state.resultsItemsModel.rowCount()):
+        model_index = state.resultsItemsModel.index(idx, 0)
+        total_revenue += float(state.resultsItemsModel.data(model_index, state.resultsItemsModel.RevenueRole) or 0.0)
+        total_cost += float(state.resultsItemsModel.data(model_index, state.resultsItemsModel.CostRole) or 0.0)
+        total_fee += float(state.resultsItemsModel.data(model_index, state.resultsItemsModel.FeeRole) or 0.0)
+        total_tax += float(state.resultsItemsModel.data(model_index, state.resultsItemsModel.TaxRole) or 0.0)
+        total_profit += float(state.resultsItemsModel.data(model_index, state.resultsItemsModel.ProfitRole) or 0.0)
+
+    assert total_revenue == pytest.approx(state.selectedOutputsTotalValue, rel=0.0, abs=0.01)
+    assert total_cost == pytest.approx(state.selectedInputsTotalCost, rel=0.0, abs=0.01)
+    assert total_fee == pytest.approx(state.stationFeeValue, rel=0.0, abs=0.01)
+    assert total_tax == pytest.approx(state.marketTaxValue, rel=0.0, abs=0.01)
+    assert total_profit == pytest.approx(state.selectedNetProfitValue, rel=0.0, abs=0.01)
+
+
 def test_market_setup_state_can_switch_recipe_by_index() -> None:
     state = MarketSetupState()
     before = state.recipeId

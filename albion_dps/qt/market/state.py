@@ -3036,17 +3036,28 @@ class MarketSetupState(QObject):
         for run in runs:
             if not run.outputs:
                 continue
-            run_input_cost = float(sum(line.total_cost for line in run.inputs))
+            run_journal_totals = self._estimate_journal_totals(
+                runs=[run],
+                setup=self._setup,
+                price_index=self._price_index,
+            )
+            run_input_cost = float(sum(line.total_cost for line in run.inputs) + float(run_journal_totals.input_cost))
             valuations = compute_output_valuations(
                 output_lines=run.outputs,
                 station_fee_percent=self._setup.station_fee_percent,
                 market_tax_percent=self._setup.market_tax_percent,
             )
             run_revenue_total = max(0.0, sum(float(v.gross_value) for v in valuations))
+            run_journal_gross = float(run_journal_totals.output_value)
+            run_journal_tax = float(run_journal_totals.market_tax)
+            run_journal_net = max(0.0, run_journal_gross - run_journal_tax)
             for valuation in valuations:
                 line = valuation.line
                 share = (float(valuation.gross_value) / run_revenue_total) if run_revenue_total > 0 else 0.0
                 allocated_cost = run_input_cost * share
+                allocated_journal_gross = run_journal_gross * share
+                allocated_journal_tax = run_journal_tax * share
+                allocated_journal_net = run_journal_net * share
                 key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
                 row = acc.get(key)
                 if row is None:
@@ -3057,19 +3068,19 @@ class MarketSetupState(QObject):
                         "city": line.city,
                         "price_type": line.price_type.value,
                         "unit_price": float(line.unit_price),
-                        "total_value": float(valuation.gross_value),
+                        "total_value": float(valuation.gross_value + allocated_journal_gross),
                         "allocated_cost": float(allocated_cost),
                         "fee_value": float(valuation.fee_value),
-                        "tax_value": float(valuation.tax_value),
-                        "net_value": float(valuation.net_value),
+                        "tax_value": float(valuation.tax_value + allocated_journal_tax),
+                        "net_value": float(valuation.net_value + allocated_journal_net),
                     }
                 else:
                     row["quantity"] = float(row["quantity"]) + float(line.quantity)
-                    row["total_value"] = float(row["total_value"]) + float(valuation.gross_value)
+                    row["total_value"] = float(row["total_value"]) + float(valuation.gross_value + allocated_journal_gross)
                     row["allocated_cost"] = float(row["allocated_cost"]) + float(allocated_cost)
                     row["fee_value"] = float(row["fee_value"]) + float(valuation.fee_value)
-                    row["tax_value"] = float(row["tax_value"]) + float(valuation.tax_value)
-                    row["net_value"] = float(row["net_value"]) + float(valuation.net_value)
+                    row["tax_value"] = float(row["tax_value"]) + float(valuation.tax_value + allocated_journal_tax)
+                    row["net_value"] = float(row["net_value"]) + float(valuation.net_value + allocated_journal_net)
 
         rows: list[ResultItemRow] = []
         for output in acc.values():
