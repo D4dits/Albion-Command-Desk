@@ -3120,13 +3120,9 @@ class MarketSetupState(QObject):
     ) -> dict[tuple[str, str, str, float], dict[str, object]]:
         input_acc: dict[tuple[str, str, str, float], dict[str, object]] = {}
         for (_, recipe), run in zip(prepared_recipes, runs):
+            return_fraction = effective_return_fraction(setup=run.setup, recipe=recipe)
             for component, line in zip(recipe.components, run.inputs):
                 key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
-                preview_quantity = (
-                    float(component.quantity) * float(run.quantity)
-                    if component.returnable
-                    else float(line.quantity)
-                )
                 row = input_acc.get(key)
                 if row is None:
                     input_acc[key] = {
@@ -3142,14 +3138,29 @@ class MarketSetupState(QObject):
                             price_type=line.price_type.value,
                         ),
                         "unit_price": float(line.unit_price),
-                        "quantity": float(preview_quantity),
-                        "total_cost": float(preview_quantity * float(line.unit_price)),
+                        "quantity": 0.0,
+                        "total_cost": 0.0,
                         "returnable": bool(component.returnable),
+                        "return_batches": [],
                     }
+                    row = input_acc[key]
+                if component.returnable:
+                    batches = row.setdefault("return_batches", [])
+                    if isinstance(batches, list):
+                        batches.extend(
+                            [
+                                (float(component.quantity), float(return_fraction))
+                                for _ in range(int(run.quantity))
+                            ]
+                        )
+                    preview_quantity = _minimal_upfront_quantity_for_batches(
+                        batches if isinstance(batches, list) else []
+                    )
                 else:
-                    row["quantity"] = float(row["quantity"]) + float(preview_quantity)
-                    row["total_cost"] = float(row["total_cost"]) + float(preview_quantity * float(line.unit_price))
-                    row["returnable"] = bool(row.get("returnable", False) or component.returnable)
+                    preview_quantity = float(row.get("quantity", 0.0)) + float(line.quantity)
+                row["quantity"] = float(preview_quantity)
+                row["total_cost"] = float(preview_quantity * float(line.unit_price))
+                row["returnable"] = bool(row.get("returnable", False) or component.returnable)
         return input_acc
 
     def _build_breakdown_rows(self) -> list[BreakdownRow]:
@@ -4809,6 +4820,31 @@ def _format_age(updated_at: datetime) -> str:
 def _need_quantity_with_safety_buffer(quantity_raw: float, is_returnable: bool) -> int:
     base = max(0.0, float(quantity_raw))
     return int(math.ceil(base))
+
+
+def _rounded_cumulative_return(expected_total: float) -> int:
+    return max(0, int(math.floor(float(expected_total) + 0.5)))
+
+
+def _minimal_upfront_quantity_for_batches(batches: Sequence[tuple[float, float]]) -> float:
+    if not batches:
+        return 0.0
+    required = 0.0
+    gross_so_far = 0.0
+    returned_so_far = 0.0
+    expected_return_total = 0.0
+    rounded_return_total = 0
+    for gross_quantity, return_fraction in batches:
+        gross = max(0.0, float(gross_quantity))
+        fraction = max(0.0, min(1.0, float(return_fraction)))
+        gross_so_far += gross
+        required = max(required, gross_so_far - returned_so_far)
+        expected_return_total += gross * fraction
+        next_rounded_total = _rounded_cumulative_return(expected_return_total)
+        returned_this_batch = max(0, next_rounded_total - rounded_return_total)
+        returned_so_far += float(min(gross, float(returned_this_batch)))
+        rounded_return_total = next_rounded_total
+    return float(required)
 
 
 def _input_preview_row_key(item_id: str, city: str, price_type: str) -> str:

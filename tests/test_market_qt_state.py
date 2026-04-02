@@ -591,11 +591,11 @@ def test_market_setup_state_input_preview_uses_full_upfront_returnable_quantity(
     row = next(iter(preview_rows.values()))
 
     assert row["item_id"] == "T4_METALBAR"
-    assert float(row["quantity"]) == 32.0
-    assert float(row["total_cost"]) == 28800.0
+    assert float(row["quantity"]) == 29.0
+    assert float(row["total_cost"]) == 26100.0
 
 
-def test_market_setup_state_input_preview_keeps_full_upfront_counts_for_two_component_weapon() -> None:
+def test_market_setup_state_input_preview_uses_minimal_upfront_counts_for_two_component_weapon() -> None:
     weapon = ItemRef(
         unique_name="T4_2H_CROSSBOW_CANNON",
         display_name="Boltcasters",
@@ -681,9 +681,100 @@ def test_market_setup_state_input_preview_keeps_full_upfront_counts_for_two_comp
         runs=[run],
     )
 
-    assert float(preview_rows[("T4_PLANKS", "Bridgewatch", "buy_order", 280.0)]["quantity"]) == 40.0
-    assert float(preview_rows[("T4_METALBAR", "Bridgewatch", "buy_order", 380.0)]["quantity"]) == 24.0
+    assert float(preview_rows[("T4_PLANKS", "Bridgewatch", "buy_order", 280.0)]["quantity"]) == 37.0
+    assert float(preview_rows[("T4_METALBAR", "Bridgewatch", "buy_order", 380.0)]["quantity"]) == 22.0
     assert float(preview_rows[("T4_ARTEFACT_2H_DEMONIC_CROSSBOW", "Bridgewatch", "buy_order", 8500.0)]["quantity"]) == 2.0
+
+
+def test_market_setup_state_input_preview_matches_batch_return_behavior_for_oathkeepers() -> None:
+    weapon = ItemRef(
+        unique_name="T7_2H_ARCANE_RIFT",
+        display_name="Grandmaster's Oathkeepers",
+        tier=7,
+        enchantment=0,
+        item_value=1200,
+    )
+    cloth = ItemRef(
+        unique_name="T7_CLOTH",
+        display_name="Opulent Cloth",
+        tier=7,
+        enchantment=0,
+        item_value=300,
+    )
+    bars = ItemRef(
+        unique_name="T7_METALBAR",
+        display_name="Meteorite Steel Bar",
+        tier=7,
+        enchantment=0,
+        item_value=300,
+    )
+    artifact = ItemRef(
+        unique_name="T7_ARTEFACT_MAIN_ARCANE_RIFT",
+        display_name="Grandmaster's Broken Oaths",
+        tier=7,
+        enchantment=0,
+        item_value=800,
+    )
+    recipe = Recipe(
+        item=weapon,
+        station="Mage Tower",
+        city_bonus="Martlock",
+        components=(
+            RecipeComponent(item=bars, quantity=20.0, returnable=True),
+            RecipeComponent(item=cloth, quantity=12.0, returnable=True),
+            RecipeComponent(item=artifact, quantity=1.0, returnable=False),
+        ),
+        outputs=(RecipeOutput(item=weapon, quantity=1.0),),
+        focus_per_craft=200,
+    )
+    setup = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Martlock",
+        default_buy_city="Martlock",
+        default_sell_city="Martlock",
+        return_rate_percent=21.8,
+        quality=1,
+    )
+    price_index = {
+        ("T7_CLOTH", "Martlock", 1): MarketPriceRecord(
+            item_id="T7_CLOTH",
+            city="Martlock",
+            quality=1,
+            sell_price_min=3000,
+            buy_price_max=2800,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+        ("T7_METALBAR", "Martlock", 1): MarketPriceRecord(
+            item_id="T7_METALBAR",
+            city="Martlock",
+            quality=1,
+            sell_price_min=4000,
+            buy_price_max=3800,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+        ("T7_ARTEFACT_MAIN_ARCANE_RIFT", "Martlock", 1): MarketPriceRecord(
+            item_id="T7_ARTEFACT_MAIN_ARCANE_RIFT",
+            city="Martlock",
+            quality=1,
+            sell_price_min=90000,
+            buy_price_max=85000,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+    }
+    state = MarketSetupState(auto_refresh_prices=False)
+    run = build_craft_run(recipe=recipe, quantity=10, setup=setup, price_index=price_index)
+
+    preview_rows = state._accumulate_input_preview_rows(
+        prepared_recipes=[(SimpleNamespace(row_id=1), recipe)],
+        runs=[run],
+    )
+
+    assert float(preview_rows[("T7_METALBAR", "Martlock", "buy_order", 3800.0)]["quantity"]) == 161.0
+    assert float(preview_rows[("T7_CLOTH", "Martlock", "buy_order", 2800.0)]["quantity"]) == 96.0
+    assert float(preview_rows[("T7_ARTEFACT_MAIN_ARCANE_RIFT", "Martlock", "buy_order", 85000.0)]["quantity"]) == 10.0
 
 
 def test_market_setup_state_selected_input_total_uses_exact_expected_quantity() -> None:
