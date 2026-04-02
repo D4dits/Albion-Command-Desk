@@ -7,6 +7,12 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.1.24] - 2026-04-02
+
+### Changed
+- Market shopping lists now compute minimal upfront material requirements per craft batch instead of raw totals, so returnable materials no longer overbuy large stacks while non-returnable components still stay one-to-one.
+- Market result rows now include journal economics directly in row-level revenue, cost, tax, and profit allocation, keeping item rows aligned with the top-level selected totals and breakdown values.
+
 ## [0.1.23] - 2026-04-01
 
 ### Changed
