@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+import tomllib
 from pathlib import Path
 
 
@@ -38,3 +40,13 @@ def test_windows_capture_backend_workflow_exists() -> None:
     assert "name: windows-capture-backend" in workflow
     assert "build_capture_bundle.ps1" in workflow
     assert "dist/windows-capture/*.zip" in workflow
+
+
+def test_windows_capture_backend_workflow_default_tag_matches_project_version() -> None:
+    pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+    expected_tag = f'v{pyproject["project"]["version"]}'
+    workflow = Path(".github/workflows/windows-capture-backend.yml").read_text(encoding="utf-8")
+    match = re.search(r'default:\s*"(v[^"]+)"', workflow)
+
+    assert match is not None
+    assert match.group(1) == expected_tag

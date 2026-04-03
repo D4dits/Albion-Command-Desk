@@ -6,7 +6,7 @@ on:
       release_tag:
         description: "Release tag used for bundle naming, for example v0.1.21"
         required: true
-        default: "v0.1.20"
+        default: "v0.1.24"
       npcap_sdk_url:
         description: "Direct Npcap SDK zip URL used for wheel builds"
         required: true
