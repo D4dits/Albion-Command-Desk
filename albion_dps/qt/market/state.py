@@ -3164,9 +3164,9 @@ class MarketSetupState(QObject):
                                 for _ in range(int(run.quantity))
                             ]
                         )
-                    preview_quantity = _minimal_upfront_quantity_for_batches(
-                        batches if isinstance(batches, list) else []
-                    )
+                    effective_batches = batches if isinstance(batches, list) else []
+                    preview_quantity = _minimal_upfront_quantity_for_batches(effective_batches)
+                    preview_quantity += float(_upfront_return_safety_units(effective_batches))
                 else:
                     preview_quantity = float(row.get("quantity", 0.0)) + float(line.quantity)
                 row["quantity"] = float(preview_quantity)
@@ -4833,29 +4833,31 @@ def _need_quantity_with_safety_buffer(quantity_raw: float, is_returnable: bool) 
     return int(math.ceil(base))
 
 
-def _rounded_cumulative_return(expected_total: float) -> int:
-    return max(0, int(math.floor(float(expected_total) + 0.5)))
-
-
 def _minimal_upfront_quantity_for_batches(batches: Sequence[tuple[float, float]]) -> float:
     if not batches:
         return 0.0
     required = 0.0
     gross_so_far = 0.0
-    returned_so_far = 0.0
     expected_return_total = 0.0
-    rounded_return_total = 0
     for gross_quantity, return_fraction in batches:
         gross = max(0.0, float(gross_quantity))
         fraction = max(0.0, min(1.0, float(return_fraction)))
         gross_so_far += gross
+        returned_so_far = float(max(0, int(math.floor(expected_return_total))))
         required = max(required, gross_so_far - returned_so_far)
         expected_return_total += gross * fraction
-        next_rounded_total = _rounded_cumulative_return(expected_return_total)
-        returned_this_batch = max(0, next_rounded_total - rounded_return_total)
-        returned_so_far += float(min(gross, float(returned_this_batch)))
-        rounded_return_total = next_rounded_total
     return float(required)
+
+
+def _upfront_return_safety_units(batches: Sequence[tuple[float, float]]) -> int:
+    if len(batches) <= 1:
+        return 0
+    if not any(max(0.0, float(gross)) > 0.0 and max(0.0, min(1.0, float(fraction))) > 0.0 for gross, fraction in batches):
+        return 0
+    # In-game return application is discrete per crafting batch and can lag the
+    # idealized cumulative expectation by a single unit for a component. Add a
+    # one-unit shopping buffer so the last craft does not fail on borderline runs.
+    return 1
 
 
 def _input_preview_row_key(item_id: str, city: str, price_type: str) -> str:
