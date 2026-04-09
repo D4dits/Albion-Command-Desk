@@ -60,6 +60,7 @@ from albion_dps.qt.market import journal_ops
 from albion_dps.qt.market import preset_ops
 from albion_dps.qt.market import pricing_ops
 from albion_dps.qt.market import recipe_ops
+from albion_dps.qt.market import selection_ops
 from albion_dps.qt.market.preview_ops import (
     accumulate_input_preview_rows,
     build_breakdown_rows,
@@ -1234,141 +1235,51 @@ class MarketSetupState(QObject):
         self._craft_plan_model.set_items(self._sorted_craft_plan_rows(self._craft_plan_rows))
 
     def _family_recipe_ids(self, recipe_id: str) -> list[str]:
-        base_recipe = self._catalog.get(recipe_id)
-        if base_recipe is None:
-            return []
-        if not _is_recipe_plan_candidate(base_recipe):
-            return []
-        family_key = _item_family_key(base_recipe.item.unique_name)
-        if not family_key:
-            return [_recipe_identity(base_recipe)]
-
-        rows: list[tuple[int, int, str, str]] = []
-        for candidate_id in self._catalog.items():
-            recipe = self._catalog.get(candidate_id)
-            if recipe is None:
-                continue
-            if not _is_recipe_plan_candidate(recipe):
-                continue
-            if _item_family_key(recipe.item.unique_name) != family_key:
-                continue
-            tier = int(recipe.item.tier or 0)
-            enchant = int(recipe.item.enchantment or 0)
-            if self._recipe_tier_filters and tier not in self._recipe_tier_filters:
-                continue
-            if self._recipe_enchant_filters and enchant not in self._recipe_enchant_filters:
-                continue
-            rows.append(
-                (
-                    tier,
-                    enchant,
-                    _recipe_display_label(recipe).lower(),
-                    _recipe_identity(recipe),
-                )
-            )
-        rows.sort()
-        return [row[3] for row in rows]
+        return selection_ops.family_recipe_ids(
+            self._catalog,
+            recipe_id,
+            recipe_tier_filters=self._recipe_tier_filters,
+            recipe_enchant_filters=self._recipe_enchant_filters,
+            is_recipe_plan_candidate=_is_recipe_plan_candidate,
+            item_family_key=_item_family_key,
+            recipe_display_label=_recipe_display_label,
+            recipe_identity=_recipe_identity,
+        )
 
     def _family_recipe_ids_for_filtered(self, recipe_ids: list[str]) -> list[str]:
-        if not recipe_ids:
-            return []
-        collected: list[str] = []
-        seen_family_keys: set[str] = set()
-        seen_recipe_ids: set[str] = set()
-        for recipe_id in recipe_ids:
-            recipe = self._catalog.get(recipe_id)
-            if recipe is None:
-                continue
-            family_key = _item_family_key(recipe.item.unique_name)
-            dedupe_key = family_key or recipe.item.unique_name
-            if dedupe_key in seen_family_keys:
-                continue
-            seen_family_keys.add(dedupe_key)
-            for family_recipe_id in self._family_recipe_ids(_recipe_identity(recipe)):
-                if family_recipe_id in seen_recipe_ids:
-                    continue
-                seen_recipe_ids.add(family_recipe_id)
-                collected.append(family_recipe_id)
-        return collected
+        return selection_ops.family_recipe_ids_for_filtered(
+            self._catalog,
+            recipe_ids,
+            family_recipe_ids_for_recipe=self._family_recipe_ids,
+            item_family_key=_item_family_key,
+            recipe_identity=_recipe_identity,
+        )
 
     def _station_recipe_ids(self, recipe_id: str) -> list[str]:
-        base_recipe = self._catalog.get(recipe_id)
-        if base_recipe is None:
-            return []
-        if not _is_recipe_plan_candidate(base_recipe):
-            return []
-        station_key = str(base_recipe.station or "").strip().lower()
-        if not station_key:
-            return []
-
-        rows: list[tuple[int, int, str, str]] = []
-        for candidate_id in self._catalog.items():
-            recipe = self._catalog.get(candidate_id)
-            if recipe is None:
-                continue
-            if not _is_recipe_plan_candidate(recipe):
-                continue
-            if str(recipe.station or "").strip().lower() != station_key:
-                continue
-            tier = int(recipe.item.tier or 0)
-            enchant = int(recipe.item.enchantment or 0)
-            if self._recipe_tier_filters and tier not in self._recipe_tier_filters:
-                continue
-            if self._recipe_enchant_filters and enchant not in self._recipe_enchant_filters:
-                continue
-            rows.append(
-                (
-                    tier,
-                    enchant,
-                    _recipe_display_label(recipe).lower(),
-                    _recipe_identity(recipe),
-                )
-            )
-        rows.sort()
-        return [row[3] for row in rows]
+        return selection_ops.station_recipe_ids(
+            self._catalog,
+            recipe_id,
+            recipe_tier_filters=self._recipe_tier_filters,
+            recipe_enchant_filters=self._recipe_enchant_filters,
+            is_recipe_plan_candidate=_is_recipe_plan_candidate,
+            recipe_display_label=_recipe_display_label,
+            recipe_identity=_recipe_identity,
+        )
 
     def _station_recipe_ids_for_filtered(self, recipe_ids: list[str]) -> list[str]:
-        if not recipe_ids:
-            return []
-        collected: list[str] = []
-        seen_station_keys: set[str] = set()
-        seen_recipe_ids: set[str] = set()
-        for recipe_id in recipe_ids:
-            recipe = self._catalog.get(recipe_id)
-            if recipe is None:
-                continue
-            station_key = str(recipe.station or "").strip().lower()
-            if not station_key or station_key in seen_station_keys:
-                continue
-            seen_station_keys.add(station_key)
-            for station_recipe_id in self._station_recipe_ids(_recipe_identity(recipe)):
-                if station_recipe_id in seen_recipe_ids:
-                    continue
-                seen_recipe_ids.add(station_recipe_id)
-                collected.append(station_recipe_id)
-        return collected
+        return selection_ops.station_recipe_ids_for_filtered(
+            self._catalog,
+            recipe_ids,
+            station_recipe_ids_for_recipe=self._station_recipe_ids,
+            recipe_identity=_recipe_identity,
+        )
 
     def _sorted_craft_plan_rows(self, rows: list[CraftPlanRow]) -> list[CraftPlanRow]:
-        source = list(rows)
-        sort_key = self._craft_plan_sort_key
-        reverse = bool(self._craft_plan_sort_desc)
-
-        def pl_value(row: CraftPlanRow) -> float:
-            if row.profit_percent is None:
-                return float("-inf")
-            return float(row.profit_percent)
-
-        if sort_key == "added":
-            source.sort(key=lambda row: int(row.row_id), reverse=reverse)
-        elif sort_key == "tier":
-            source.sort(key=lambda row: (int(row.tier), int(row.enchant), row.display_name.lower(), int(row.row_id)), reverse=reverse)
-        elif sort_key == "city":
-            source.sort(key=lambda row: (row.craft_city.lower(), row.display_name.lower(), int(row.row_id)), reverse=reverse)
-        elif sort_key == "pl":
-            source.sort(key=lambda row: (pl_value(row), row.display_name.lower(), int(row.row_id)), reverse=reverse)
-        else:
-            source.sort(key=lambda row: (row.display_name.lower(), int(row.tier), int(row.enchant), int(row.row_id)), reverse=reverse)
-        return source
+        return selection_ops.sorted_craft_plan_rows(
+            rows,
+            sort_key=self._craft_plan_sort_key,
+            reverse=bool(self._craft_plan_sort_desc),
+        )
 
     def _add_recipe_to_plan_internal(self, recipe_id: str, *, runs: int, enabled: bool) -> bool:
         recipe = self._catalog.get(recipe_id)
@@ -2874,25 +2785,12 @@ class MarketSetupState(QObject):
         return catalog
 
     def _build_recipe_options(self) -> list[RecipeOptionRow]:
-        rows: list[RecipeOptionRow] = []
-        for recipe_id in self._catalog.items():
-            recipe = self._catalog.get(recipe_id)
-            if recipe is None:
-                continue
-            if not _is_recipe_plan_candidate(recipe):
-                continue
-            rows.append(
-                RecipeOptionRow(
-                    recipe_id=_recipe_identity(recipe),
-                    display_name=_recipe_display_label(recipe),
-                    tier=int(recipe.item.tier or 0),
-                    enchant=int(recipe.item.enchantment or 0),
-                    variant_label=str(recipe.variant_label or ""),
-                    uses_crystallized=bool(recipe.uses_crystallized),
-                )
-            )
-        rows.sort(key=lambda row: row.display_name.lower())
-        return rows
+        return selection_ops.build_recipe_options(
+            self._catalog,
+            is_recipe_plan_candidate=_is_recipe_plan_candidate,
+            recipe_identity=_recipe_identity,
+            recipe_display_label=_recipe_display_label,
+        )
 
     def _resolve_recipe(self, recipe_id: str) -> Recipe:
         recipe = self._catalog.get(recipe_id)
