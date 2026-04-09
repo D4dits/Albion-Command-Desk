@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import csv
-import io
 import json
 import logging
 import math
@@ -10,11 +8,9 @@ from math import ceil
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
-from urllib.parse import urlencode
-
 from PySide6.QtCore import QObject, Property, Qt, QTimer, Signal, Slot
 
-from albion_dps.market.aod_client import MarketPriceRecord, REGION_HOSTS
+from albion_dps.market.aod_client import MarketPriceRecord
 from albion_dps.market.catalog import RecipeCatalog
 from albion_dps.market.engine import (
     build_craft_run,
@@ -62,6 +58,7 @@ from albion_dps.qt.market import pricing_ops
 from albion_dps.qt.market import price_refresh_ops
 from albion_dps.qt.market import recipe_ops
 from albion_dps.qt.market import selection_ops
+from albion_dps.qt.market import ui_ops
 from albion_dps.qt.market.preview_ops import (
     accumulate_input_preview_rows,
     build_breakdown_rows,
@@ -2360,95 +2357,37 @@ class MarketSetupState(QObject):
         self.listsChanged.emit()
 
     def _build_aodata_url(self) -> str | None:
-        setup = self.to_setup()
-        item_ids = self._collect_pricing_item_ids()
-        if not item_ids:
-            self._set_list_action_text("Select a recipe in Craft Plan to build AOData URL.")
-            return None
-        locations = self._collect_locations(setup)
-        if not locations:
-            self._set_list_action_text("No market locations selected.")
-            return None
-        qualities = [setup.quality]
-        params = urlencode(
-            {
-                "locations": ",".join(locations),
-                "qualities": ",".join(str(x) for x in qualities),
-            }
-        )
-        host = REGION_HOSTS.get(setup.region)
-        if not host:
-            self._set_list_action_text("Unknown AOData region.")
-            return None
-        joined_ids = ",".join(item_ids)
-        return f"https://{host}/api/v2/stats/prices/{joined_ids}.json?{params}"
+        return ui_ops.build_aodata_url(self)
 
     def _copy_to_clipboard(self, value: str, *, success_message: str) -> None:
-        from PySide6.QtGui import QGuiApplication
-
-        clipboard = QGuiApplication.clipboard()
-        if clipboard is None:
-            self._set_list_action_text("Clipboard is not available.")
-            return
-        clipboard.setText(value)
-        self._set_list_action_text(success_message)
+        ui_ops.copy_to_clipboard(self, value, success_message=success_message)
 
     def _export_csv_interactive(self, *, payload: str, label: str, suggested_name: str) -> None:
-        path = self._prompt_export_path(label=label, suggested_name=suggested_name)
-        if not path:
-            return
-        self._export_csv(raw_path=path, payload=payload, label=label)
+        ui_ops.export_csv_interactive(
+            self,
+            payload=payload,
+            label=label,
+            suggested_name=suggested_name,
+        )
 
     def _prompt_export_path(self, *, label: str, suggested_name: str) -> str | None:
-        try:
-            from PySide6.QtWidgets import QFileDialog
-        except Exception as exc:
-            self._set_list_action_text(f"{label} export dialog unavailable: {exc}")
-            return None
-        base_dir = Path(self._default_export_dir).expanduser() if self._default_export_dir else Path.home()
-        suggested_path = str((base_dir / suggested_name).resolve())
-        selected_path, _selected_filter = QFileDialog.getSaveFileName(
-            None,
-            f"Export {label} CSV",
-            suggested_path,
-            "CSV Files (*.csv);;All Files (*)",
+        return ui_ops.prompt_export_path(
+            self,
+            label=label,
+            suggested_name=suggested_name,
         )
-        selected = str(selected_path or "").strip()
-        if not selected:
-            return None
-        try:
-            self._default_export_dir = str(Path(selected).expanduser().resolve().parent)
-            self._persist_app_settings()
-        except Exception:
-            pass
-        return selected
 
     def _export_csv(self, *, raw_path: str, payload: str, label: str) -> None:
-        path_text = raw_path.strip()
-        if not path_text:
-            self._set_list_action_text(f"{label} export path is empty.")
-            return
-        if not payload:
-            self._set_list_action_text(f"{label} CSV is empty.")
-            return
-        try:
-            path = Path(path_text)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(payload, encoding="utf-8")
-        except Exception as exc:
-            self._set_list_action_text(f"{label} export failed: {exc}")
-            return
-        self._default_export_dir = str(path.parent)
-        self._persist_app_settings()
-        self._set_list_action_text(f"{label} CSV exported to {path}.")
+        ui_ops.export_csv(
+            self,
+            raw_path=raw_path,
+            payload=payload,
+            label=label,
+        )
 
     @staticmethod
     def _rows_to_csv(*, header: list[str], rows: list[list[str]]) -> str:
-        buf = io.StringIO()
-        writer = csv.writer(buf, lineterminator="\n")
-        writer.writerow(header)
-        writer.writerows(rows)
-        return buf.getvalue()
+        return ui_ops.rows_to_csv(header=header, rows=rows)
 
     def _current_price_index(
         self,
