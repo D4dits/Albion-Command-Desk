@@ -57,7 +57,9 @@ from albion_dps.qt.market.list_models import (
     ShoppingPreviewRow,
 )
 from albion_dps.qt.market import journal_ops
+from albion_dps.qt.market import preset_ops
 from albion_dps.qt.market import pricing_ops
+from albion_dps.qt.market import recipe_ops
 from albion_dps.qt.market.preview_ops import (
     accumulate_input_preview_rows,
     build_breakdown_rows,
@@ -68,66 +70,6 @@ from albion_dps.qt.market.state_types import _JournalLine, _JournalRule, _Journa
 from albion_dps.settings import load_app_settings, update_app_settings
 _TIER_PREFIX_RE = re.compile(r"^T(?P<tier>\d+)_(?P<rest>.+)$", re.IGNORECASE)
 _LEVEL_SUFFIX_RE = re.compile(r"_LEVEL\d+$", re.IGNORECASE)
-
-_ALLOWED_PLAN_STATIONS: set[str] = {
-    "axe",
-    "arcanestaff",
-    "armors",
-    "bag",
-    "battle mount",
-    "basemounts",
-    "bow",
-    "cape",
-    "capes",
-    "cloth armor",
-    "cloth helmet",
-    "cloth shoes",
-    "crossbow",
-    "cursestaff",
-    "dagger",
-    "firestaff",
-    "food",
-    "froststaff",
-    "gatherergear",
-    "hammer",
-    "head",
-    "holystaff",
-    "hunter",
-    "knuckles",
-    "leather armor",
-    "leather helmet",
-    "leather shoes",
-    "mace",
-    "mounts",
-    "naturestaff",
-    "offhand",
-    "offhands",
-    "plate armor",
-    "plate helmet",
-    "plate shoes",
-    "potion",
-    "quarterstaff",
-    "shapeshifterstaff",
-    "shieldtype",
-    "shoes",
-    "spear",
-    "sword",
-    "tools",
-}
-
-_ITEM_ID_WORD_ALIASES: dict[str, str] = {
-    "ARTEFACT": "Artifact",
-    "METALBAR": "Metal Bar",
-    "OFFHAND": "Off Hand",
-    "QUARTERSTAFF": "Quarterstaff",
-    "SHAPESHIFTERSTAFF": "Shapeshifter Staff",
-    "ARCANESTAFF": "Arcane Staff",
-    "CURSEDSTAFF": "Cursed Staff",
-    "FIRESTAFF": "Fire Staff",
-    "FROSTSTAFF": "Frost Staff",
-    "HOLYSTAFF": "Holy Staff",
-    "NATURESTAFF": "Nature Staff",
-}
 
 
 class MarketSetupState(QObject):
@@ -2856,29 +2798,16 @@ class MarketSetupState(QObject):
 
     def _load_presets(self) -> dict[str, dict[str, object]]:
         path = self._preset_path
-        if not path.exists():
-            return {}
         try:
-            payload = json.loads(path.read_text(encoding="utf-8"))
+            return preset_ops.load_presets(path)
         except Exception as exc:
             self._log.warning("Market preset load failed: %s", exc)
             return {}
-        if not isinstance(payload, dict):
-            return {}
-        out: dict[str, dict[str, object]] = {}
-        for key, value in payload.items():
-            name = _sanitize_preset_name(str(key))
-            if not name or not isinstance(value, dict):
-                continue
-            out[name] = value
-        return out
 
     def _save_presets(self) -> bool:
         path = self._preset_path
         try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            serialized = json.dumps(self._presets, ensure_ascii=True, indent=2, sort_keys=True)
-            path.write_text(serialized, encoding="utf-8")
+            preset_ops.save_presets(path, self._presets)
         except Exception as exc:
             self._log.warning("Market preset save failed: %s", exc)
             self._set_list_action_text(f"Preset save failed: {exc}")
@@ -3054,68 +2983,23 @@ def _parse_bool(raw_value: object, *, default: bool) -> bool:
 
 
 def _default_preset_path() -> Path:
-    return Path.home() / ".albion_dps" / "market_presets.json"
+    return preset_ops.default_preset_path()
 
 
 def _sanitize_preset_name(raw_value: str) -> str:
-    value = str(raw_value or "").strip()
-    value = re.sub(r"\s+", " ", value)
-    return value[:64]
+    return preset_ops.sanitize_preset_name(raw_value)
 
 
 def _setup_to_dict(setup: CraftSetup) -> dict[str, object]:
-    return {
-        "region": setup.region.value,
-        "craft_city": setup.craft_city,
-        "default_buy_city": setup.default_buy_city,
-        "default_sell_city": setup.default_sell_city,
-        "premium": bool(setup.premium),
-        "focus_enabled": bool(setup.focus_enabled),
-        "station_fee_percent": float(setup.station_fee_percent),
-        "market_tax_percent": float(setup.market_tax_percent),
-        "daily_bonus_percent": float(setup.daily_bonus_percent),
-        "return_rate_percent": float(setup.return_rate_percent),
-        "hideout_power_percent": float(setup.hideout_power_percent),
-        "quality": int(setup.quality),
-    }
+    return preset_ops.setup_to_dict(setup)
 
 
 def _setup_from_dict(payload: dict[str, object], *, fallback: CraftSetup) -> CraftSetup:
-    region_raw = str(payload.get("region") or fallback.region.value).strip().lower()
-    region_map = {
-        "europe": MarketRegion.EUROPE,
-        "west": MarketRegion.WEST,
-        "east": MarketRegion.EAST,
-    }
-    region = region_map.get(region_raw, fallback.region)
-    return CraftSetup(
-        region=region,
-        craft_city=str(payload.get("craft_city") or fallback.craft_city),
-        default_buy_city=str(payload.get("default_buy_city") or fallback.default_buy_city),
-        default_sell_city=str(payload.get("default_sell_city") or fallback.default_sell_city),
-        premium=bool(payload.get("premium", fallback.premium)),
-        focus_enabled=bool(payload.get("focus_enabled", fallback.focus_enabled)),
-        station_fee_percent=float(payload.get("station_fee_percent") or fallback.station_fee_percent),
-        market_tax_percent=float(payload.get("market_tax_percent") or fallback.market_tax_percent),
-        daily_bonus_percent=float(payload.get("daily_bonus_percent") or fallback.daily_bonus_percent),
-        return_rate_percent=float(payload.get("return_rate_percent") or fallback.return_rate_percent),
-        hideout_power_percent=float(payload.get("hideout_power_percent") or fallback.hideout_power_percent),
-        quality=int(payload.get("quality") or fallback.quality),
-    )
+    return preset_ops.setup_from_dict(payload, fallback=fallback)
 
 
 def _craft_plan_row_to_dict(row: CraftPlanRow) -> dict[str, object]:
-    return {
-        "row_id": int(row.row_id),
-        "recipe_id": row.recipe_id,
-        "display_name": row.display_name,
-        "tier": int(row.tier),
-        "enchant": int(row.enchant),
-        "craft_city": row.craft_city,
-        "daily_bonus_percent": float(row.daily_bonus_percent),
-        "runs": int(row.runs),
-        "enabled": bool(row.enabled),
-    }
+    return preset_ops.craft_plan_row_to_dict(row)
 
 
 def _craft_plan_rows_from_payload(
@@ -3125,62 +3009,18 @@ def _craft_plan_rows_from_payload(
     fallback_city: str,
     fallback_daily_bonus_percent: float,
 ) -> list[CraftPlanRow] | None:
-    if payload is None:
-        return None
-    if not isinstance(payload, list):
-        return []
-
-    rows: list[CraftPlanRow] = []
-    used_recipe_ids: set[str] = set()
-    next_row_id = 1
-    fallback_city_value = fallback_city.strip() or "Bridgewatch"
-    fallback_daily_bonus = float(MarketSetupState._normalize_daily_bonus_percent(fallback_daily_bonus_percent))
-    for raw_row in payload:
-        if not isinstance(raw_row, dict):
-            continue
-        recipe_id = str(raw_row.get("recipe_id") or "").strip()
-        if not recipe_id or recipe_id in used_recipe_ids:
-            continue
-        recipe = catalog.get(recipe_id)
-        if recipe is None:
-            continue
-        used_recipe_ids.add(recipe_id)
-
-        requested_row_id = _parse_price(str(raw_row.get("row_id") or next_row_id))
-        row_id = max(next_row_id, requested_row_id if requested_row_id > 0 else next_row_id)
-        next_row_id = row_id + 1
-        display_name = str(raw_row.get("display_name") or "").strip()
-        if not display_name:
-            display_name = _recipe_display_label(recipe)
-        tier = _parse_price(str(raw_row.get("tier") or int(recipe.item.tier or 0)))
-        enchant = _parse_price(str(raw_row.get("enchant") or int(recipe.item.enchantment or 0)))
-        craft_city = str(raw_row.get("craft_city") or fallback_city_value).strip() or fallback_city_value
-        daily_bonus = float(
-            MarketSetupState._normalize_daily_bonus_percent(
-                _parse_float(str(raw_row.get("daily_bonus_percent") or fallback_daily_bonus))
-            )
-        )
-        runs = max(1, _parse_price(str(raw_row.get("runs") or 1)))
-        enabled = _parse_bool(raw_row.get("enabled"), default=True)
-        rows.append(
-            CraftPlanRow(
-                row_id=row_id,
-                recipe_id=_recipe_identity(recipe),
-                display_name=display_name,
-                tier=tier,
-                enchant=enchant,
-                variant_label=str(recipe.variant_label or ""),
-                uses_crystallized=bool(recipe.uses_crystallized),
-                craft_city=craft_city,
-                daily_bonus_percent=daily_bonus,
-                return_rate_percent=None,
-                runs=runs,
-                enabled=enabled,
-                profit_percent=None,
-                has_fresh_component_prices=True,
-            )
-        )
-    return rows
+    return preset_ops.craft_plan_rows_from_payload(
+        payload,
+        catalog=catalog,
+        fallback_city=fallback_city,
+        fallback_daily_bonus_percent=fallback_daily_bonus_percent,
+        normalize_daily_bonus_percent=MarketSetupState._normalize_daily_bonus_percent,
+        parse_price=_parse_price,
+        parse_float=_parse_float,
+        parse_bool=lambda raw_value, default: _parse_bool(raw_value, default=default),
+        recipe_display_label=_recipe_display_label,
+        recipe_identity=_recipe_identity,
+    )
 
 
 def _base_item_id(item_id: str) -> str:
@@ -3271,224 +3111,39 @@ def _journal_display_name(kind: str, tier: int) -> str:
 
 
 def _friendly_item_label(display_name: str, item_id: str) -> str:
-    name = str(display_name or "").strip()
-    if name and name.upper() != str(item_id or "").strip().upper():
-        return name
-    fallback = _humanize_item_id(item_id)
-    return fallback or str(item_id or "").strip()
+    return recipe_ops.friendly_item_label(display_name, item_id)
 
 
 def _recipe_identity(recipe: Recipe) -> str:
-    identity = str(recipe.recipe_id or "").strip()
-    if identity:
-        return identity
-    return str(recipe.item.unique_name or "").strip()
+    return recipe_ops.recipe_identity(recipe)
 
 
 def _recipe_output_item(recipe: Recipe) -> ItemRef:
-    if recipe.outputs:
-        return recipe.outputs[0].item
-    return recipe.item
+    return recipe_ops.recipe_output_item(recipe)
 
 
 def _recipe_display_label(recipe: Recipe) -> str:
-    output_item = _recipe_output_item(recipe)
-    label = _friendly_item_label(output_item.display_name, output_item.unique_name)
-    variant_label = str(recipe.variant_label or "").strip()
-    if variant_label:
-        return f"{label} [{variant_label}]"
-    return label
+    return recipe_ops.recipe_display_label(recipe)
 
 
 def _item_family_key(item_id: str) -> str:
-    base = str(item_id or "").strip().upper()
-    if not base:
-        return ""
-    if "@" in base:
-        base = base.rsplit("@", 1)[0]
-    base = _LEVEL_SUFFIX_RE.sub("", base)
-    tier_match = _TIER_PREFIX_RE.match(base)
-    if tier_match is not None:
-        base = tier_match.group("rest").upper()
-    return base
+    return recipe_ops.item_family_key(item_id)
 
 
 def _is_recipe_plan_candidate(recipe: Recipe) -> bool:
-    output_item = _recipe_output_item(recipe)
-    item_id = str(output_item.unique_name or recipe.item.unique_name or "").strip().upper()
-    if not item_id:
-        return False
-    if item_id.startswith("UNIQUE_"):
-        return False
-    if not recipe.components:
-        return False
-    if not recipe.outputs:
-        return False
-    if bool(recipe.uses_crystallized) and "_ARTEFACT_" not in item_id:
-        return True
-    # Exclude artefacts/resources/quest-token style intermediary entries.
-    if "_ARTEFACT_" in item_id or "_TOKEN_" in item_id:
-        return False
-    station = str(recipe.station or "").strip().lower()
-    if not station:
-        return False
-    if station.startswith("accessoires capes"):
-        return True
-    return station in _ALLOWED_PLAN_STATIONS
+    return recipe_ops.is_recipe_plan_candidate(recipe)
 
 
 def _humanize_item_id(item_id: str) -> str:
-    raw = str(item_id or "").strip()
-    if not raw:
-        return ""
-
-    enchant: int | None = None
-    base = raw
-    if "@" in base:
-        stem, enchant_raw = base.rsplit("@", 1)
-        base = stem
-        try:
-            enchant = int(enchant_raw)
-        except ValueError:
-            enchant = None
-
-    base = _LEVEL_SUFFIX_RE.sub("", base)
-    tier: int | None = None
-    tier_match = _TIER_PREFIX_RE.match(base)
-    if tier_match is not None:
-        tier = int(tier_match.group("tier"))
-        base = tier_match.group("rest")
-
-    words: list[str] = []
-    for token in base.split("_"):
-        cleaned = token.strip()
-        if not cleaned:
-            continue
-        upper = cleaned.upper()
-        if upper in {"MAIN", "2H"}:
-            continue
-        mapped = _ITEM_ID_WORD_ALIASES.get(upper)
-        if mapped is not None:
-            words.append(mapped)
-            continue
-        if len(upper) <= 3 and upper.isalpha():
-            words.append(upper)
-            continue
-        words.append(cleaned.replace("-", " ").title())
-
-    item_name = " ".join(words).strip() or raw
-    if tier is None:
-        return item_name
-    if enchant is not None and enchant > 0:
-        return f"{item_name} {tier}.{enchant}"
-    return f"{item_name} T{tier}"
+    return recipe_ops.humanize_item_id(item_id)
 
 
 def _item_id_candidates(item_id: str) -> tuple[str, ...]:
-    base = str(item_id or "").strip()
-    if not base:
-        return ()
-    out: list[str] = [base]
-
-    # AOData and game assets may expose enchanting suffix in three forms:
-    # @3, _LEVEL3, and _LEVEL3@3. Query all to maximize hit rate.
-    core = base
-    had_at = "@" in base
-    enchant: int | None = None
-    if "@" in core:
-        maybe_core, maybe_enchant = core.rsplit("@", 1)
-        try:
-            enchant = int(maybe_enchant)
-            core = maybe_core
-        except ValueError:
-            pass
-
-    stem = core
-    level: int | None = None
-    level_match = _LEVEL_SUFFIX_RE.search(core)
-    had_level = level_match is not None
-    if level_match is not None:
-        stem = core[: level_match.start()]
-        suffix = level_match.group(0)
-        try:
-            level = int(suffix.rsplit("LEVEL", 1)[1])
-        except (IndexError, ValueError):
-            level = None
-
-    if enchant is None and level is not None:
-        enchant = level
-    if level is None and enchant is not None:
-        level = enchant
-
-    if level is not None:
-        out.append(f"{stem}_LEVEL{level}")
-    # For *_LEVELN ids prefer *_LEVELN@N (canonical refined form) over *@N.
-    if enchant is not None and (had_at or not had_level):
-        out.append(f"{stem}@{enchant}")
-    if level is not None and enchant is not None:
-        out.append(f"{stem}_LEVEL{level}@{enchant}")
-    # For enchanted/leveled entries do not silently fall back to plain tier item.
-    if not had_level and enchant is None:
-        out.append(stem)
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for value in out:
-        if value and value not in seen:
-            seen.add(value)
-            ordered.append(value)
-    return tuple(ordered)
+    return recipe_ops.item_id_candidates(item_id)
 
 
 def _item_id_query_candidates(item_id: str) -> tuple[str, ...]:
-    base = str(item_id or "").strip()
-    if not base:
-        return ()
-    out: list[str] = [base]
-
-    core = base
-    had_at = "@" in base
-    enchant: int | None = None
-    if "@" in core:
-        maybe_core, maybe_enchant = core.rsplit("@", 1)
-        try:
-            enchant = int(maybe_enchant)
-            core = maybe_core
-        except ValueError:
-            pass
-
-    stem = core
-    level: int | None = None
-    level_match = _LEVEL_SUFFIX_RE.search(core)
-    had_level = level_match is not None
-    if level_match is not None:
-        stem = core[: level_match.start()]
-        suffix = level_match.group(0)
-        try:
-            level = int(suffix.rsplit("LEVEL", 1)[1])
-        except (IndexError, ValueError):
-            level = None
-
-    if enchant is None and level is not None:
-        enchant = level
-    if level is None and enchant is not None:
-        level = enchant
-
-    if level is not None:
-        out.append(f"{stem}_LEVEL{level}")
-    if enchant is not None and (had_at or not had_level):
-        out.append(f"{stem}@{enchant}")
-    if level is not None and enchant is not None:
-        out.append(f"{stem}_LEVEL{level}@{enchant}")
-    if not had_level and enchant is None:
-        out.append(stem)
-
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for value in out:
-        if value and value not in seen:
-            seen.add(value)
-            ordered.append(value)
-    return tuple(ordered)
+    return recipe_ops.item_id_query_candidates(item_id)
 
 
 def _mode_has_price(quote: MarketPriceRecord, preferred_mode: str | None) -> bool:
