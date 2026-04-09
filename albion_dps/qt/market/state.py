@@ -57,6 +57,7 @@ from albion_dps.qt.market.list_models import (
     ShoppingPreviewRow,
 )
 from albion_dps.qt.market import journal_ops
+from albion_dps.qt.market import pricing_ops
 from albion_dps.qt.market.preview_ops import (
     accumulate_input_preview_rows,
     build_breakdown_rows,
@@ -2885,15 +2886,15 @@ class MarketSetupState(QObject):
         return True
 
     def _price_key(self, setup: CraftSetup) -> tuple[str, int, tuple[str, ...], tuple[str, ...]]:
-        item_ids = tuple(self._collect_pricing_item_ids())
-        locations = tuple(self._collect_locations(setup))
-        return (setup.region.value, int(setup.quality), item_ids, locations)
+        return pricing_ops.price_key(
+            setup,
+            item_ids=tuple(self._collect_pricing_item_ids()),
+            locations=tuple(self._collect_locations(setup)),
+        )
 
     @staticmethod
     def _default_market_tax_percent(premium: bool) -> float:
-        # Margin-based default: setup fee + sales tax.
-        # premium=True -> 2.5% + 4.0%; premium=False -> 2.5% + 8.0%
-        return 6.5 if premium else 10.5
+        return pricing_ops.default_market_tax_percent(premium)
 
     @staticmethod
     def _normalize_daily_bonus_percent(value: float) -> float:
@@ -2928,21 +2929,7 @@ class MarketSetupState(QObject):
 
     @staticmethod
     def _is_market_location(location: str) -> bool:
-        normalized = location.strip().lower()
-        normalized = " ".join(normalized.split())
-        market_locations = {
-            "bridgewatch",
-            "martlock",
-            "lymhurst",
-            "fort sterling",
-            "fortsterling",
-            "thetford",
-            "caerleon",
-            "brecilien",
-            "black market",
-            "blackmarket",
-        }
-        return normalized in market_locations
+        return pricing_ops.is_market_location(location)
 
     def _load_catalog(self) -> RecipeCatalog:
         try:
@@ -3013,81 +3000,20 @@ class MarketSetupState(QObject):
     ) -> dict[tuple[str, str, int], MarketPriceRecord]:
         locations = set(self._collect_locations(setup))
         locations.add("Bridgewatch")
-        prices = self._estimate_fallback_prices()
-        index: dict[tuple[str, str, int], MarketPriceRecord] = {}
-        for location in locations:
-            if not location:
-                continue
-            for item_id, (buy_price, sell_price) in prices.items():
-                index[(item_id, location, int(setup.quality))] = MarketPriceRecord(
-                    item_id=item_id,
-                    city=location,
-                    quality=int(setup.quality),
-                    sell_price_min=int(sell_price),
-                    buy_price_max=int(buy_price),
-                    sell_price_min_date="",
-                    buy_price_max_date="",
-                )
-                if int(setup.quality) != 1:
-                    index[(item_id, location, 1)] = MarketPriceRecord(
-                        item_id=item_id,
-                        city=location,
-                        quality=1,
-                        sell_price_min=int(sell_price),
-                        buy_price_max=int(buy_price),
-                        sell_price_min_date="",
-                        buy_price_max_date="",
-                    )
-        return index
+        return pricing_ops.build_fallback_price_index(
+            setup=setup,
+            locations=locations,
+            prices=self._estimate_fallback_prices(),
+        )
 
     def _estimate_fallback_prices(self) -> dict[str, tuple[int, int]]:
-        known_prices: dict[str, tuple[int, int]] = {
-            "T4_METALBAR": (900, 1000),
-            "T4_PLANKS": (500, 600),
-            "T4_CLOTH": (540, 620),
-            "T4_LEATHER": (560, 640),
-        }
-        prices: dict[str, tuple[int, int]] = {}
-        for recipe in self._recipes_for_pricing():
-            for component in recipe.components:
-                item_id = component.item.unique_name
-                prices[item_id] = known_prices.get(item_id, self._price_by_tier(component.item.tier))
-
-            component_sell_total = 0.0
-            for component in recipe.components:
-                buy_price, sell_price = prices.get(
-                    component.item.unique_name,
-                    self._price_by_tier(component.item.tier),
-                )
-                _ = buy_price
-                component_sell_total += sell_price * component.quantity
-
-            outputs = recipe.outputs or ()
-            total_output_qty = sum(max(0.01, x.quantity) for x in outputs)
-            if outputs and component_sell_total > 0:
-                estimated_sell = int((component_sell_total / total_output_qty) * 1.30)
-            else:
-                estimated_sell = 1200
-            estimated_buy = int(max(1, estimated_sell * 0.95))
-            for output in outputs:
-                prices[output.item.unique_name] = (estimated_buy, estimated_sell)
-        return prices
+        return pricing_ops.estimate_fallback_prices(
+            recipes=self._recipes_for_pricing(),
+        )
 
     @staticmethod
     def _price_by_tier(tier: int | None) -> tuple[int, int]:
-        value_by_tier = {
-            2: 80,
-            3: 220,
-            4: 600,
-            5: 1800,
-            6: 5200,
-            7: 14500,
-            8: 42000,
-        }
-        tier_value = value_by_tier.get(int(tier or 4), value_by_tier[4])
-        buy_price = int(max(1, tier_value * 0.92))
-        sell_price = int(max(1, tier_value))
-        return buy_price, sell_price
+        return pricing_ops.price_by_tier(tier)
 
 
 def _parse_price(raw_value: str) -> int:
