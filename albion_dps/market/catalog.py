@@ -13,6 +13,13 @@ DEFAULT_RECIPES_PATH = Path(__file__).resolve().parent / "data" / "recipes.json"
 DEFAULT_ITEMS_PATH = Path(__file__).resolve().parents[2] / "data" / "items.json"
 _TIER_PATTERN = re.compile(r"^T(?P<tier>\d+)")
 _LEVEL_SUFFIX_RE = re.compile(r"_LEVEL\d+$")
+_CRYSTALLIZED_RECIPE_SUFFIX = "#CRYSTALLIZED"
+_CRYSTALLIZED_COMPONENT_MAP: dict[str, tuple[str, str]] = {
+    "RUNE": ("ARTEFACT_TOKEN_FAVOR_1", "Crystallized Spirit"),
+    "SOUL": ("ARTEFACT_TOKEN_FAVOR_2", "Crystallized Dread"),
+    "RELIC": ("ARTEFACT_TOKEN_FAVOR_3", "Crystallized Magic"),
+    "SHARD_AVALONIAN": ("ARTEFACT_TOKEN_FAVOR_4", "Crystallized Divinity"),
+}
 
 
 def _to_item_ref(
@@ -109,14 +116,21 @@ class RecipeCatalog:
                 craftable_item_ids=craftable_item_ids,
             )
             outputs = _parse_outputs(row.get("outputs"), item, item_values=item_values)
-            recipes[item.unique_name] = Recipe(
+            recipe_id = str(row.get("recipe_id") or item.unique_name).strip() or item.unique_name
+            variant_label = str(row.get("variant_label") or "").strip()
+            uses_crystallized = bool(row.get("uses_crystallized"))
+            recipes[recipe_id] = Recipe(
                 item=item,
                 station=station,
                 city_bonus=city_bonus,
                 components=components,
                 outputs=outputs,
                 focus_per_craft=focus_per_craft,
+                recipe_id=recipe_id,
+                variant_label=variant_label,
+                uses_crystallized=uses_crystallized,
             )
+        recipes.update(_build_crystallized_variants(recipes, item_values=item_values))
         return cls(recipes=recipes)
 
     @classmethod
@@ -290,6 +304,151 @@ def _infer_component_returnable(unique_name: str) -> bool:
         "_SIGIL",
     )
     return not any(marker in name for marker in non_returnable_markers)
+
+
+def _build_crystallized_variants(
+    recipes: dict[str, Recipe],
+    *,
+    item_values: dict[str, int],
+) -> dict[str, Recipe]:
+    variants: dict[str, Recipe] = {}
+    for recipe in list(recipes.values()):
+        variant = _build_crystallized_artifact_variant(recipe, item_values=item_values)
+        if variant is None:
+            continue
+        if variant.recipe_id in recipes or variant.recipe_id in variants:
+            continue
+        variants[variant.recipe_id] = variant
+    materialized = dict(recipes)
+    materialized.update(variants)
+    for recipe in list(materialized.values()):
+        variant = _build_crystallized_item_variant(recipe, recipes=materialized)
+        if variant is None:
+            continue
+        if variant.recipe_id in recipes or variant.recipe_id in variants:
+            continue
+        variants[variant.recipe_id] = variant
+    return variants
+
+
+def _build_crystallized_artifact_variant(
+    recipe: Recipe,
+    *,
+    item_values: dict[str, int],
+) -> Recipe | None:
+    output_item = recipe.outputs[0].item if recipe.outputs else recipe.item
+    output_id = str(output_item.unique_name or "").strip().upper()
+    if "_ARTEFACT_" not in output_id:
+        return None
+    if recipe.uses_crystallized:
+        return None
+    if len(recipe.components) != 1:
+        return None
+    component = recipe.components[0]
+    base_component_id = str(component.item.unique_name or "").strip().upper()
+    tier = int(output_item.tier or component.item.tier or _parse_tier_from_unique_name(output_id) or 0)
+    if tier <= 0:
+        return None
+    component_kind = _base_component_kind(base_component_id, tier=tier)
+    crystal_suffix, display_name = _CRYSTALLIZED_COMPONENT_MAP.get(component_kind, ("", ""))
+    if not crystal_suffix:
+        return None
+    crystal_item_id = f"T{tier}_{crystal_suffix}"
+    crystal_item = ItemRef(
+        unique_name=crystal_item_id,
+        display_name=display_name,
+        tier=tier,
+        enchantment=0,
+        item_value=_resolve_item_value(
+            unique_name=crystal_item_id,
+            explicit_value=None,
+            item_values=item_values,
+        ),
+    )
+    return Recipe(
+        item=recipe.item,
+        station=recipe.station,
+        city_bonus=recipe.city_bonus,
+        components=(RecipeComponent(item=crystal_item, quantity=1.0, returnable=False),),
+        outputs=recipe.outputs,
+        focus_per_craft=recipe.focus_per_craft,
+        recipe_id=f"{output_item.unique_name}{_CRYSTALLIZED_RECIPE_SUFFIX}",
+        variant_label="Crystallized",
+        uses_crystallized=True,
+    )
+
+
+def _build_crystallized_item_variant(
+    recipe: Recipe,
+    *,
+    recipes: dict[str, Recipe],
+) -> Recipe | None:
+    output_item = recipe.outputs[0].item if recipe.outputs else recipe.item
+    output_id = str(output_item.unique_name or "").strip().upper()
+    if not output_id or "_ARTEFACT_" in output_id:
+        return None
+    if recipe.uses_crystallized:
+        return None
+
+    replaced_components: list[RecipeComponent] = []
+    replaced_any = False
+    for component in recipe.components:
+        crystallized_component = _crystallized_component_for_artifact(component.item.unique_name, recipes=recipes)
+        if crystallized_component is None:
+            replaced_components.append(component)
+            continue
+        replaced_any = True
+        replaced_components.append(
+            RecipeComponent(
+                item=crystallized_component.item,
+                quantity=float(component.quantity) * float(crystallized_component.quantity),
+                returnable=False,
+            )
+        )
+    if not replaced_any:
+        return None
+    return Recipe(
+        item=recipe.item,
+        station=recipe.station,
+        city_bonus=recipe.city_bonus,
+        components=tuple(replaced_components),
+        outputs=recipe.outputs,
+        focus_per_craft=recipe.focus_per_craft,
+        recipe_id=f"{output_item.unique_name}{_CRYSTALLIZED_RECIPE_SUFFIX}",
+        variant_label="Crystallized",
+        uses_crystallized=True,
+    )
+
+
+def _crystallized_component_for_artifact(
+    artifact_item_id: str,
+    *,
+    recipes: dict[str, Recipe],
+) -> RecipeComponent | None:
+    base_id = str(artifact_item_id or "").strip()
+    if not base_id:
+        return None
+    variant = recipes.get(f"{base_id}{_CRYSTALLIZED_RECIPE_SUFFIX}")
+    if variant is None or not variant.components:
+        return None
+    if len(variant.components) != 1:
+        return None
+    return variant.components[0]
+
+
+def _base_component_kind(component_id: str, *, tier: int) -> str:
+    normalized = str(component_id or "").strip().upper()
+    if not normalized:
+        return ""
+    normalized = normalized.split("@", 1)[0]
+    normalized = _LEVEL_SUFFIX_RE.sub("", normalized)
+    tier_prefix = f"T{int(tier)}_"
+    if normalized.startswith(tier_prefix):
+        return normalized[len(tier_prefix) :]
+    tier_match = _TIER_PATTERN.match(normalized)
+    if tier_match is not None and "_" in normalized:
+        return normalized.split("_", 1)[1]
+    return normalized
 
 
 def _parse_outputs(

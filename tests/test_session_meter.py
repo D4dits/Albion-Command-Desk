@@ -147,6 +147,22 @@ def test_battle_mode_does_not_end_on_combat_state_if_damage_continues() -> None:
     assert history[0].total_damage == 17.0
 
 
+def test_battle_mode_active_combatants_extend_idle_timeout() -> None:
+    meter = SessionMeter(history_limit=5, mode="battle")
+
+    meter.push(CombatEvent(1.0, 1, 2, 10, "damage"))
+    meter.observe_combat_state(1, True, False, 1.1)
+    meter.observe_packet(_packet(30.0))
+
+    assert meter.history() == []
+
+    meter.observe_packet(_packet(41.1))
+    history = meter.history()
+    assert len(history) == 1
+    assert history[0].reason == "idle"
+    assert history[0].total_damage == 10.0
+
+
 def test_history_preserves_source_ids_for_replay_view() -> None:
     meter = SessionMeter(history_limit=5, mode="battle")
     meter.push(CombatEvent(0.0, 111, 2, 100, "damage"))

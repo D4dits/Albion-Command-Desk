@@ -46,6 +46,9 @@ ColumnLayout {
     property var theme: null
     property color textColor: theme.textPrimary
     property color mutedColor: theme.textMuted
+    property color crystallizedBadgeFill: "#173247"
+    property color crystallizedBadgeBorder: "#4fa7d9"
+    property color crystallizedBadgeText: "#a9dcff"
 
     function _asArray(items) {
         if (!items) {
@@ -116,6 +119,19 @@ ColumnLayout {
             labels.push(String(Number(values[i])))
         }
         return labels.join(", ")
+    }
+
+    function _baseRecipeLabel(displayName, variantLabel) {
+        var label = String(displayName || "")
+        var variant = String(variantLabel || "").trim()
+        if (variant.length === 0) {
+            return label
+        }
+        var suffix = " [" + variant + "]"
+        if (label.slice(-suffix.length) === suffix) {
+            return label.slice(0, label.length - suffix.length)
+        }
+        return label
     }
 
     // Search input row
@@ -297,12 +313,35 @@ ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 4
                     spacing: 6
-                    Text {
-                        text: displayName
-                        color: root.textColor
-                        font.pixelSize: 11
+                    RowLayout {
                         Layout.fillWidth: true
-                        elide: Text.ElideNone
+                        spacing: 6
+
+                        Text {
+                            text: root._baseRecipeLabel(displayName, variantLabel)
+                            color: root.textColor
+                            font.pixelSize: 11
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                        }
+
+                        Rectangle {
+                            visible: Boolean(usesCrystallized)
+                            radius: 9
+                            color: root.crystallizedBadgeFill
+                            border.color: root.crystallizedBadgeBorder
+                            implicitHeight: 18
+                            implicitWidth: badgeLabel.implicitWidth + 12
+
+                            Text {
+                                id: badgeLabel
+                                anchors.centerIn: parent
+                                text: String(variantLabel || "Crystal")
+                                color: root.crystallizedBadgeText
+                                font.pixelSize: 9
+                                font.bold: true
+                            }
+                        }
                     }
                     Text {
                         text: "T" + tier + "." + enchant

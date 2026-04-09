@@ -72,6 +72,22 @@ TableSurface {
     property color textColor: theme.textPrimary
     property color mutedColor: theme.textMuted
     property color accentColor: theme.brandPrimary
+    property color crystallizedBadgeFill: "#173247"
+    property color crystallizedBadgeBorder: "#4fa7d9"
+    property color crystallizedBadgeText: "#a9dcff"
+
+    function craftLabelBase(displayName, variantLabel) {
+        var label = String(displayName || "")
+        var variant = String(variantLabel || "").trim()
+        if (variant.length === 0) {
+            return label
+        }
+        var suffix = " [" + variant + "]"
+        if (label.slice(-suffix.length) === suffix) {
+            return label.slice(0, label.length - suffix.length)
+        }
+        return label
+    }
 
     Timer {
         id: craftPlanRestoreTimer
@@ -286,16 +302,44 @@ TableSurface {
                                 }
                             }
 
-                            Text {
+                            Item {
                                 Layout.preferredWidth: root.craftNameColumnWidth
-                                text: itemLabelWithTierParts(displayName, tier, enchant)
-                                color: textColor
-                                font.pixelSize: 10
-                                elide: Text.ElideRight
-                                MouseArea {
+                                Layout.fillHeight: true
+
+                                RowLayout {
                                     anchors.fill: parent
-                                    acceptedButtons: Qt.LeftButton
-                                    onDoubleClicked: root.copyCellText(parent.text)
+                                    spacing: 6
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: itemLabelWithTierParts(root.craftLabelBase(displayName, variantLabel), tier, enchant)
+                                        color: textColor
+                                        font.pixelSize: 10
+                                        elide: Text.ElideRight
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            acceptedButtons: Qt.LeftButton
+                                            onDoubleClicked: root.copyCellText(parent.text)
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        visible: Boolean(usesCrystallized)
+                                        radius: 9
+                                        color: root.crystallizedBadgeFill
+                                        border.color: root.crystallizedBadgeBorder
+                                        implicitHeight: 18
+                                        implicitWidth: craftBadgeLabel.implicitWidth + 12
+
+                                        Text {
+                                            id: craftBadgeLabel
+                                            anchors.centerIn: parent
+                                            text: String(variantLabel || "Crystal")
+                                            color: root.crystallizedBadgeText
+                                            font.pixelSize: 9
+                                            font.bold: true
+                                        }
+                                    }
                                 }
                             }
 

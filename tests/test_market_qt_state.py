@@ -1305,6 +1305,24 @@ def test_market_setup_state_add_recipe_family_expands_weapon_tree_station_group(
     assert all("_ARTEFACT_" not in recipe_id for recipe_id in recipe_ids)
 
 
+def test_market_setup_state_add_recipe_family_keeps_crystallized_final_variants() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.setRecipeSearchQuery("curse")
+    state.setRecipeEnchantFilter(0)
+    state.addRecipeFamily()
+
+    model = state.craftPlanModel
+    recipe_ids: set[str] = set()
+    for idx in range(model.rowCount()):
+        model_index = model.index(idx, 0)
+        recipe_id = str(model.data(model_index, model.RecipeIdRole) or "")
+        if recipe_id:
+            recipe_ids.add(recipe_id)
+
+    assert any(recipe_id.endswith("#CRYSTALLIZED") for recipe_id in recipe_ids)
+    assert all("_ARTEFACT_" not in recipe_id for recipe_id in recipe_ids)
+
+
 def test_market_setup_state_new_plan_rows_default_to_disabled() -> None:
     state = MarketSetupState(auto_refresh_prices=False)
     state.setRecipeSearchQuery("curse")
@@ -1344,6 +1362,41 @@ def test_market_setup_state_recipe_search_supports_common_typo_aliases() -> None
         names.append(str(model.data(model_index, model.DisplayNameRole) or "").lower())
 
     assert any("siege hammer" in name for name in names)
+
+
+def test_market_setup_state_exposes_crystallized_recipe_variants() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    model = state.recipeOptionsModel
+    crystallized_ids = [recipe_id for recipe_id in model.recipe_ids() if recipe_id.endswith("#CRYSTALLIZED")]
+
+    assert crystallized_ids
+    recipe_id = crystallized_ids[0]
+    assert "_ARTEFACT_" not in recipe_id
+    state.setRecipeId(recipe_id)
+
+    assert state.recipeId == recipe_id
+    assert "[Crystallized]" in state.recipeDisplayName
+
+    option_index = model.index_of_recipe(recipe_id)
+    assert option_index >= 0
+    option_model_index = model.index(option_index, 0)
+    assert model.data(option_model_index, model.VariantLabelRole) == "Crystallized"
+    assert model.data(option_model_index, model.UsesCrystallizedRole) is True
+
+    state.addCurrentRecipeToPlan()
+    row = state._craft_plan_rows[0]
+    state.setPlanRowEnabled(row.row_id, True)
+
+    plan_index = state.craftPlanModel.index(0, 0)
+    assert state.craftPlanModel.data(plan_index, state.craftPlanModel.VariantLabelRole) == "Crystallized"
+    assert state.craftPlanModel.data(plan_index, state.craftPlanModel.UsesCrystallizedRole) is True
+
+    input_item_ids = set()
+    for idx in range(state.inputsModel.rowCount()):
+        model_index = state.inputsModel.index(idx, 0)
+        input_item_ids.add(str(state.inputsModel.data(model_index, state.inputsModel.ItemIdRole) or ""))
+
+    assert any("_ARTEFACT_TOKEN_FAVOR_" in item_id for item_id in input_item_ids)
 
 
 def test_market_setup_state_marks_completed_input_rows_and_clears_state() -> None:

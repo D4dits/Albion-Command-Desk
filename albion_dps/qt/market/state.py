@@ -592,6 +592,8 @@ class RecipeOptionRow:
     display_name: str
     tier: int
     enchant: int
+    variant_label: str = ""
+    uses_crystallized: bool = False
 
 
 @dataclass(frozen=True)
@@ -715,6 +717,8 @@ class RecipeOptionsModel(QAbstractListModel):
     DisplayNameRole = Qt.UserRole + 2
     TierRole = Qt.UserRole + 3
     EnchantRole = Qt.UserRole + 4
+    VariantLabelRole = Qt.UserRole + 5
+    UsesCrystallizedRole = Qt.UserRole + 6
 
     def __init__(self) -> None:
         super().__init__()
@@ -742,6 +746,10 @@ class RecipeOptionsModel(QAbstractListModel):
             return item.tier
         if role == self.EnchantRole:
             return item.enchant
+        if role == self.VariantLabelRole:
+            return item.variant_label
+        if role == self.UsesCrystallizedRole:
+            return bool(item.uses_crystallized)
         return None
 
     def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
@@ -750,6 +758,8 @@ class RecipeOptionsModel(QAbstractListModel):
             self.DisplayNameRole: b"displayName",
             self.TierRole: b"tier",
             self.EnchantRole: b"enchant",
+            self.VariantLabelRole: b"variantLabel",
+            self.UsesCrystallizedRole: b"usesCrystallized",
         }
 
     def set_items(self, rows: list[RecipeOptionRow]) -> None:
@@ -820,6 +830,8 @@ class CraftPlanRow:
     display_name: str
     tier: int
     enchant: int
+    variant_label: str
+    uses_crystallized: bool
     craft_city: str
     daily_bonus_percent: float
     return_rate_percent: float | None
@@ -842,6 +854,8 @@ class CraftPlanModel(QAbstractListModel):
     EnabledRole = Qt.UserRole + 10
     ProfitPercentRole = Qt.UserRole + 11
     HasFreshComponentPricesRole = Qt.UserRole + 12
+    VariantLabelRole = Qt.UserRole + 13
+    UsesCrystallizedRole = Qt.UserRole + 14
 
     def __init__(self) -> None:
         super().__init__()
@@ -881,6 +895,10 @@ class CraftPlanModel(QAbstractListModel):
             return item.profit_percent
         if role == self.HasFreshComponentPricesRole:
             return bool(item.has_fresh_component_prices)
+        if role == self.VariantLabelRole:
+            return item.variant_label
+        if role == self.UsesCrystallizedRole:
+            return bool(item.uses_crystallized)
         return None
 
     def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
@@ -897,6 +915,8 @@ class CraftPlanModel(QAbstractListModel):
             self.EnabledRole: b"isEnabled",
             self.ProfitPercentRole: b"profitPercent",
             self.HasFreshComponentPricesRole: b"hasFreshComponentPrices",
+            self.VariantLabelRole: b"variantLabel",
+            self.UsesCrystallizedRole: b"usesCrystallized",
         }
 
     def set_items(self, rows: list[CraftPlanRow]) -> None:
@@ -1095,11 +1115,11 @@ class MarketSetupState(QObject):
 
     @Property(str, notify=setupChanged)
     def recipeId(self) -> str:
-        return self._recipe.item.unique_name
+        return _recipe_identity(self._recipe)
 
     @Property(str, notify=setupChanged)
     def recipeDisplayName(self) -> str:
-        return _friendly_item_label(self._recipe.item.display_name, self._recipe.item.unique_name)
+        return _recipe_display_label(self._recipe)
 
     @Property(int, notify=setupChanged)
     def recipeTier(self) -> int:
@@ -1343,7 +1363,7 @@ class MarketSetupState(QObject):
     @Property(float, notify=setupChanged)
     def resourceReturnRatePercent(self) -> float:
         setup = self.to_setup()
-        row = self._find_plan_row_by_recipe(self._recipe.item.unique_name)
+        row = self._find_plan_row_by_recipe(_recipe_identity(self._recipe))
         if row is not None:
             setup = self._setup_for_plan_row(setup, row)
         return float(effective_return_fraction(setup=setup, recipe=self._recipe) * 100.0)
@@ -1399,11 +1419,11 @@ class MarketSetupState(QObject):
         recipe = self._catalog.get(recipe_id)
         if recipe is None:
             return
-        if recipe.item.unique_name == self._recipe.item.unique_name:
+        if _recipe_identity(recipe) == _recipe_identity(self._recipe):
             return
         self._recipe = recipe
         self._ensure_price_preferences_for_recipe(self._recipe)
-        plan_row = self._find_plan_row_by_recipe(self._recipe.item.unique_name)
+        plan_row = self._find_plan_row_by_recipe(_recipe_identity(self._recipe))
         if plan_row is not None:
             self._craft_runs = max(1, int(plan_row.runs))
         self._rebuild_preview(force_price_refresh=False)
@@ -1474,7 +1494,7 @@ class MarketSetupState(QObject):
         self._presets[name] = {
             "setup": _setup_to_dict(self._setup),
             "craft_runs": int(self._craft_runs),
-            "recipe_id": self._recipe.item.unique_name,
+            "recipe_id": _recipe_identity(self._recipe),
             "recipe_search_query": self._recipe_search_query,
             "recipe_tier_filters": list(self._recipe_tier_filters),
             "recipe_enchant_filters": list(self._recipe_enchant_filters),
@@ -1576,7 +1596,7 @@ class MarketSetupState(QObject):
         self._hide_rows_without_fresh_prices = bool(payload.get("hide_rows_without_fresh_prices", False))
 
         self._craft_runs = max(1, int(payload.get("craft_runs") or self._craft_runs))
-        active_row = self._find_plan_row_by_recipe(self._recipe.item.unique_name)
+        active_row = self._find_plan_row_by_recipe(_recipe_identity(self._recipe))
         if active_row is not None:
             self._craft_runs = max(1, int(active_row.runs))
         self._selected_preset_name = name
@@ -1645,9 +1665,9 @@ class MarketSetupState(QObject):
             if not family_ids:
                 family_ids = self._family_recipe_ids_for_filtered(filtered_ids)
         else:
-            family_ids = self._station_recipe_ids(self._recipe.item.unique_name)
+            family_ids = self._station_recipe_ids(_recipe_identity(self._recipe))
             if not family_ids:
-                family_ids = self._family_recipe_ids(self._recipe.item.unique_name)
+                family_ids = self._family_recipe_ids(_recipe_identity(self._recipe))
         if not family_ids:
             self._set_list_action_text("No recipes found for selected family.")
             return
@@ -1665,9 +1685,9 @@ class MarketSetupState(QObject):
 
     @Slot()
     def addCurrentRecipeToPlan(self) -> None:
-        added = self._add_recipe_to_plan_internal(self._recipe.item.unique_name, runs=self._craft_runs, enabled=False)
+        added = self._add_recipe_to_plan_internal(_recipe_identity(self._recipe), runs=self._craft_runs, enabled=False)
         if not added:
-            row = self._find_plan_row_by_recipe(self._recipe.item.unique_name)
+            row = self._find_plan_row_by_recipe(_recipe_identity(self._recipe))
             if row is not None and row.runs != self._craft_runs:
                 self._update_plan_row(row.row_id, runs=self._craft_runs)
         self._rebuild_preview(force_price_refresh=False)
@@ -1699,7 +1719,7 @@ class MarketSetupState(QObject):
         if len(self._craft_plan_rows) == before:
             return
         self._sync_craft_plan_model()
-        if not any(row.recipe_id == self._recipe.item.unique_name for row in self._craft_plan_rows):
+        if not any(row.recipe_id == _recipe_identity(self._recipe) for row in self._craft_plan_rows):
             if self._craft_plan_rows:
                 self._recipe = self._resolve_recipe(self._craft_plan_rows[0].recipe_id)
                 self._craft_runs = max(1, int(self._craft_plan_rows[0].runs))
@@ -1722,7 +1742,7 @@ class MarketSetupState(QObject):
         if not self._update_plan_row(row_id, runs=normalized):
             return
         row = self._find_plan_row(row_id)
-        if row is not None and row.recipe_id == self._recipe.item.unique_name:
+        if row is not None and row.recipe_id == _recipe_identity(self._recipe):
             self._craft_runs = normalized
         self._rebuild_preview(force_price_refresh=False)
         self.setupChanged.emit()
@@ -1823,7 +1843,7 @@ class MarketSetupState(QObject):
         if runs == self._craft_runs:
             return
         self._craft_runs = runs
-        row = self._find_plan_row_by_recipe(self._recipe.item.unique_name)
+        row = self._find_plan_row_by_recipe(_recipe_identity(self._recipe))
         if row is not None and row.runs != runs:
             self._update_plan_row(row.row_id, runs=runs)
         self._rebuild_preview(force_price_refresh=False)
@@ -2091,7 +2111,7 @@ class MarketSetupState(QObject):
             return []
         family_key = _item_family_key(base_recipe.item.unique_name)
         if not family_key:
-            return [base_recipe.item.unique_name]
+            return [_recipe_identity(base_recipe)]
 
         rows: list[tuple[int, int, str, str]] = []
         for candidate_id in self._catalog.items():
@@ -2112,8 +2132,8 @@ class MarketSetupState(QObject):
                 (
                     tier,
                     enchant,
-                    _friendly_item_label(recipe.item.display_name, recipe.item.unique_name).lower(),
-                    recipe.item.unique_name,
+                    _recipe_display_label(recipe).lower(),
+                    _recipe_identity(recipe),
                 )
             )
         rows.sort()
@@ -2134,7 +2154,7 @@ class MarketSetupState(QObject):
             if dedupe_key in seen_family_keys:
                 continue
             seen_family_keys.add(dedupe_key)
-            for family_recipe_id in self._family_recipe_ids(recipe.item.unique_name):
+            for family_recipe_id in self._family_recipe_ids(_recipe_identity(recipe)):
                 if family_recipe_id in seen_recipe_ids:
                     continue
                 seen_recipe_ids.add(family_recipe_id)
@@ -2170,8 +2190,8 @@ class MarketSetupState(QObject):
                 (
                     tier,
                     enchant,
-                    _friendly_item_label(recipe.item.display_name, recipe.item.unique_name).lower(),
-                    recipe.item.unique_name,
+                    _recipe_display_label(recipe).lower(),
+                    _recipe_identity(recipe),
                 )
             )
         rows.sort()
@@ -2191,7 +2211,7 @@ class MarketSetupState(QObject):
             if not station_key or station_key in seen_station_keys:
                 continue
             seen_station_keys.add(station_key)
-            for station_recipe_id in self._station_recipe_ids(recipe.item.unique_name):
+            for station_recipe_id in self._station_recipe_ids(_recipe_identity(recipe)):
                 if station_recipe_id in seen_recipe_ids:
                     continue
                 seen_recipe_ids.add(station_recipe_id)
@@ -2231,10 +2251,12 @@ class MarketSetupState(QObject):
         self._ensure_price_preferences_for_recipe(recipe)
         row = CraftPlanRow(
             row_id=self._next_plan_row_id,
-            recipe_id=recipe.item.unique_name,
-            display_name=_friendly_item_label(recipe.item.display_name, recipe.item.unique_name),
+            recipe_id=_recipe_identity(recipe),
+            display_name=_recipe_display_label(recipe),
             tier=int(recipe.item.tier or 0),
             enchant=int(recipe.item.enchantment or 0),
+            variant_label=str(recipe.variant_label or ""),
+            uses_crystallized=bool(recipe.uses_crystallized),
             craft_city=self._setup.craft_city or "Bridgewatch",
             daily_bonus_percent=float(self._normalize_daily_bonus_percent(self._setup.daily_bonus_percent)),
             return_rate_percent=None,
@@ -2293,6 +2315,8 @@ class MarketSetupState(QObject):
                 display_name=row.display_name,
                 tier=row.tier,
                 enchant=row.enchant,
+                variant_label=row.variant_label,
+                uses_crystallized=bool(row.uses_crystallized),
                 craft_city=next_craft_city,
                 daily_bonus_percent=next_daily_bonus,
                 return_rate_percent=row.return_rate_percent,
@@ -2358,9 +2382,10 @@ class MarketSetupState(QObject):
             recipe = self._catalog.get(row.recipe_id)
             if recipe is None:
                 continue
-            if recipe.item.unique_name in seen:
+            recipe_key = _recipe_identity(recipe)
+            if recipe_key in seen:
                 continue
-            seen.add(recipe.item.unique_name)
+            seen.add(recipe_key)
             recipes.append(recipe)
         return recipes
 
@@ -2465,7 +2490,7 @@ class MarketSetupState(QObject):
                     manual_output_prices=dict(self._manual_output_prices),
                 )
             except Exception as exc:
-                recipe_id = str(recipe.item.unique_name or row.recipe_id)
+                recipe_id = _recipe_identity(recipe)
                 skipped_rows.append(recipe_id)
                 self._append_diag(
                     f"Preview build skipped recipe {recipe_id}: {exc}",
@@ -3259,6 +3284,8 @@ class MarketSetupState(QObject):
                 display_name=row.display_name,
                 tier=row.tier,
                 enchant=row.enchant,
+                variant_label=row.variant_label,
+                uses_crystallized=bool(row.uses_crystallized),
                 craft_city=row.craft_city,
                 daily_bonus_percent=row.daily_bonus_percent,
                 return_rate_percent=next_rrr,
@@ -3978,10 +4005,12 @@ class MarketSetupState(QObject):
                 continue
             rows.append(
                 RecipeOptionRow(
-                    recipe_id=recipe.item.unique_name,
-                    display_name=_friendly_item_label(recipe.item.display_name, recipe.item.unique_name),
+                    recipe_id=_recipe_identity(recipe),
+                    display_name=_recipe_display_label(recipe),
                     tier=int(recipe.item.tier or 0),
                     enchant=int(recipe.item.enchantment or 0),
+                    variant_label=str(recipe.variant_label or ""),
+                    uses_crystallized=bool(recipe.uses_crystallized),
                 )
             )
         rows.sort(key=lambda row: row.display_name.lower())
@@ -4234,7 +4263,7 @@ def _craft_plan_rows_from_payload(
         next_row_id = row_id + 1
         display_name = str(raw_row.get("display_name") or "").strip()
         if not display_name:
-            display_name = _friendly_item_label(recipe.item.display_name, recipe.item.unique_name)
+            display_name = _recipe_display_label(recipe)
         tier = _parse_price(str(raw_row.get("tier") or int(recipe.item.tier or 0)))
         enchant = _parse_price(str(raw_row.get("enchant") or int(recipe.item.enchantment or 0)))
         craft_city = str(raw_row.get("craft_city") or fallback_city_value).strip() or fallback_city_value
@@ -4248,10 +4277,12 @@ def _craft_plan_rows_from_payload(
         rows.append(
             CraftPlanRow(
                 row_id=row_id,
-                recipe_id=recipe.item.unique_name,
+                recipe_id=_recipe_identity(recipe),
                 display_name=display_name,
                 tier=tier,
                 enchant=enchant,
+                variant_label=str(recipe.variant_label or ""),
+                uses_crystallized=bool(recipe.uses_crystallized),
                 craft_city=craft_city,
                 daily_bonus_percent=daily_bonus,
                 return_rate_percent=None,
@@ -4549,6 +4580,28 @@ def _friendly_item_label(display_name: str, item_id: str) -> str:
     return fallback or str(item_id or "").strip()
 
 
+def _recipe_identity(recipe: Recipe) -> str:
+    identity = str(recipe.recipe_id or "").strip()
+    if identity:
+        return identity
+    return str(recipe.item.unique_name or "").strip()
+
+
+def _recipe_output_item(recipe: Recipe) -> ItemRef:
+    if recipe.outputs:
+        return recipe.outputs[0].item
+    return recipe.item
+
+
+def _recipe_display_label(recipe: Recipe) -> str:
+    output_item = _recipe_output_item(recipe)
+    label = _friendly_item_label(output_item.display_name, output_item.unique_name)
+    variant_label = str(recipe.variant_label or "").strip()
+    if variant_label:
+        return f"{label} [{variant_label}]"
+    return label
+
+
 def _item_family_key(item_id: str) -> str:
     base = str(item_id or "").strip().upper()
     if not base:
@@ -4563,20 +4616,23 @@ def _item_family_key(item_id: str) -> str:
 
 
 def _is_recipe_plan_candidate(recipe: Recipe) -> bool:
-    item_id = str(recipe.item.unique_name or "").strip().upper()
+    output_item = _recipe_output_item(recipe)
+    item_id = str(output_item.unique_name or recipe.item.unique_name or "").strip().upper()
     if not item_id:
         return False
     if item_id.startswith("UNIQUE_"):
         return False
+    if not recipe.components:
+        return False
+    if not recipe.outputs:
+        return False
+    if bool(recipe.uses_crystallized) and "_ARTEFACT_" not in item_id:
+        return True
     # Exclude artefacts/resources/quest-token style intermediary entries.
     if "_ARTEFACT_" in item_id or "_TOKEN_" in item_id:
         return False
     station = str(recipe.station or "").strip().lower()
     if not station:
-        return False
-    if not recipe.components:
-        return False
-    if not recipe.outputs:
         return False
     if station.startswith("accessoires capes"):
         return True

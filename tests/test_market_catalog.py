@@ -224,3 +224,167 @@ def test_recipe_catalog_marks_quest_tokens_non_returnable() -> None:
     assert royal_recipe is not None
     assert royal_recipe.components
     assert royal_recipe.components[0].returnable is False
+
+
+def test_recipe_catalog_builds_crystallized_variant_for_artifact_recipe() -> None:
+    tmp_dir = Path(f"tmp_market_catalog_{uuid.uuid4().hex}")
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        path = tmp_dir / "recipes.json"
+        path.write_text(
+            json.dumps(
+                [
+                    {
+                        "item": {
+                            "unique_name": "T4_ARTEFACT_2H_BOW_KEEPER",
+                            "display_name": "Adept's Keeper Bow Artifact",
+                            "tier": 4,
+                            "enchantment": 0,
+                        },
+                        "station": "Artifact Foundry",
+                        "components": [
+                            {
+                                "item": {
+                                    "unique_name": "T4_RELIC",
+                                    "display_name": "Relic",
+                                    "tier": 4,
+                                    "enchantment": 0,
+                                },
+                                "quantity": 50.0,
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "item": {
+                                    "unique_name": "T4_ARTEFACT_2H_BOW_KEEPER",
+                                    "display_name": "Adept's Keeper Bow Artifact",
+                                    "tier": 4,
+                                    "enchantment": 0,
+                                },
+                                "quantity": 1.0,
+                            }
+                        ],
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+        catalog = RecipeCatalog.from_json(path)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    variant = catalog.get("T4_ARTEFACT_2H_BOW_KEEPER#CRYSTALLIZED")
+    assert variant is not None
+    assert variant.variant_label == "Crystallized"
+    assert variant.uses_crystallized is True
+    assert len(variant.components) == 1
+    assert variant.components[0].quantity == 1.0
+    assert variant.components[0].returnable is False
+    assert variant.components[0].item.unique_name == "T4_ARTEFACT_TOKEN_FAVOR_3"
+    assert variant.components[0].item.display_name == "Crystallized Magic"
+
+
+def test_recipe_catalog_builds_crystallized_variant_for_final_item_recipe() -> None:
+    tmp_dir = Path(f"tmp_market_catalog_{uuid.uuid4().hex}")
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        path = tmp_dir / "recipes.json"
+        path.write_text(
+            json.dumps(
+                [
+                    {
+                        "item": {
+                            "unique_name": "T4_ARTEFACT_2H_BOW_KEEPER",
+                            "display_name": "Adept's Keeper Bow Artifact",
+                            "tier": 4,
+                            "enchantment": 0,
+                        },
+                        "station": "Artifact Foundry",
+                        "components": [
+                            {
+                                "item": {
+                                    "unique_name": "T4_RELIC",
+                                    "display_name": "Relic",
+                                    "tier": 4,
+                                    "enchantment": 0,
+                                },
+                                "quantity": 50.0,
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "item": {
+                                    "unique_name": "T4_ARTEFACT_2H_BOW_KEEPER",
+                                    "display_name": "Adept's Keeper Bow Artifact",
+                                    "tier": 4,
+                                    "enchantment": 0,
+                                },
+                                "quantity": 1.0,
+                            }
+                        ],
+                    },
+                    {
+                        "item": {
+                            "unique_name": "T4_2H_BOW_KEEPER",
+                            "display_name": "Adept's Wailing Bow",
+                            "tier": 4,
+                            "enchantment": 0,
+                        },
+                        "station": "Hunter's Lodge",
+                        "components": [
+                            {
+                                "item": {
+                                    "unique_name": "T4_PLANKS",
+                                    "display_name": "Planks",
+                                    "tier": 4,
+                                    "enchantment": 0,
+                                },
+                                "quantity": 16.0,
+                            },
+                            {
+                                "item": {
+                                    "unique_name": "T4_ARTEFACT_2H_BOW_KEEPER",
+                                    "display_name": "Adept's Keeper Bow Artifact",
+                                    "tier": 4,
+                                    "enchantment": 0,
+                                },
+                                "quantity": 1.0,
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "item": {
+                                    "unique_name": "T4_2H_BOW_KEEPER",
+                                    "display_name": "Adept's Wailing Bow",
+                                    "tier": 4,
+                                    "enchantment": 0,
+                                },
+                                "quantity": 1.0,
+                            }
+                        ],
+                    },
+                ]
+            ),
+            encoding="utf-8",
+        )
+        catalog = RecipeCatalog.from_json(path)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    variant = catalog.get("T4_2H_BOW_KEEPER#CRYSTALLIZED")
+    assert variant is not None
+    assert variant.variant_label == "Crystallized"
+    assert variant.uses_crystallized is True
+    assert [component.item.unique_name for component in variant.components] == [
+        "T4_PLANKS",
+        "T4_ARTEFACT_TOKEN_FAVOR_3",
+    ]
+    assert variant.components[0].returnable is True
+    assert variant.components[1].quantity == 1.0
+    assert variant.components[1].returnable is False
+
+
+def test_recipe_catalog_default_dataset_contains_crystallized_variants() -> None:
+    catalog = RecipeCatalog.from_default()
+    crystallized_ids = [recipe_id for recipe_id in catalog.items() if recipe_id.endswith("#CRYSTALLIZED")]
+    assert crystallized_ids

@@ -13,6 +13,10 @@ ZONE_PORTS = {5056, 5058}
 # briefly drops during target swaps, movement, or packet jitter.
 COMBAT_END_GRACE_SECONDS = 5.0
 COMBAT_MERGE_GAP_SECONDS = 5.0
+# Combat-state tracked encounters can include longer non-damage windows
+# before Albion emits a matching combat-state stop. Keep those sessions alive
+# longer than the base idle timeout so live stats do not reset mid-fight.
+ACTIVE_COMBAT_IDLE_MIN_SECONDS = 40.0
 NON_PLAYER_LABEL_PREFIXES = ("@", "MOB_", "NPC_")
 
 
@@ -117,10 +121,7 @@ class SessionMeter:
                     end_ts = self._combat_end_ts
                 self._end_session(end_ts, "combat_state")
                 return
-            if (
-                self._last_combat_event_ts is not None
-                and end_ts - self._last_combat_event_ts >= self.battle_timeout_seconds
-            ):
+            if self._idle_end_ready(end_ts):
                 self._end_session(end_ts, "idle")
                 return
         self._end_session(end_ts, "stream_end")
@@ -136,6 +137,15 @@ class SessionMeter:
         # stop marker and the last observed combat activity are outside grace.
         effective_end_ts = max(self._combat_end_ts, last_activity_ts)
         return now_ts - effective_end_ts >= COMBAT_END_GRACE_SECONDS
+
+    def _idle_end_ready(self, now_ts: float) -> bool:
+        last_activity_ts = self._last_combat_event_ts
+        if last_activity_ts is None:
+            return False
+        idle_timeout = self.battle_timeout_seconds
+        if self._saw_combat_state and self._combatants:
+            idle_timeout = max(idle_timeout, ACTIVE_COMBAT_IDLE_MIN_SECONDS)
+        return now_ts - last_activity_ts >= idle_timeout
 
     def observe_message(self, message: PhotonMessage, packet: RawPacket | None = None) -> None:
         map_index = extract_map_index(message)
@@ -167,12 +177,10 @@ class SessionMeter:
             elif self._map_index is None and self._zone_key is None:
                 self._set_zone_key(zone_socket, packet.timestamp)
 
-        last_activity_ts = self._last_combat_event_ts
         if (
             self.mode == "battle"
             and self._active
-            and last_activity_ts is not None
-            and packet.timestamp - last_activity_ts >= self.battle_timeout_seconds
+            and self._idle_end_ready(packet.timestamp)
         ):
             self._end_session(packet.timestamp, "idle")
 

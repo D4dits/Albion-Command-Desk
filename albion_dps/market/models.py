@@ -47,6 +47,9 @@ class Recipe:
     components: tuple[RecipeComponent, ...] = ()
     outputs: tuple[RecipeOutput, ...] = ()
     focus_per_craft: int = 0
+    recipe_id: str = ""
+    variant_label: str = ""
+    uses_crystallized: bool = False
 
 
 @dataclass(frozen=True)
