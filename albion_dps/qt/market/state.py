@@ -56,6 +56,7 @@ from albion_dps.qt.market.list_models import (
     ShoppingPreviewRow,
 )
 from albion_dps.qt.market import common_ops
+from albion_dps.qt.market import catalog_ops
 from albion_dps.qt.market import journal_ops
 from albion_dps.qt.market import preset_ops
 from albion_dps.qt.market import pricing_ops
@@ -2770,17 +2771,7 @@ class MarketSetupState(QObject):
         return pricing_ops.is_market_location(location)
 
     def _load_catalog(self) -> RecipeCatalog:
-        try:
-            catalog = RecipeCatalog.from_default()
-        except Exception as exc:
-            self._log.warning("Market recipe catalog load failed: %s", exc)
-            return RecipeCatalog(recipes={})
-        issues = catalog.validate_integrity()
-        if issues:
-            self._log.warning("Market recipe catalog integrity issues: %d", len(issues))
-            for issue in issues[:5]:
-                self._log.warning("Recipe issue [%s]: %s", issue.recipe_id, issue.message)
-        return catalog
+        return catalog_ops.load_catalog(self._log)
 
     def _build_recipe_options(self) -> list[RecipeOptionRow]:
         return selection_ops.build_recipe_options(
@@ -2791,10 +2782,7 @@ class MarketSetupState(QObject):
         )
 
     def _resolve_recipe(self, recipe_id: str) -> Recipe:
-        recipe = self._catalog.get(recipe_id)
-        if recipe is not None:
-            return recipe
-        recipe = self._catalog.first()
+        recipe = catalog_ops.resolve_recipe(self._catalog, recipe_id)
         if recipe is not None:
             return recipe
         self._log.warning("Market catalog empty, using builtin fallback recipe.")
@@ -2802,22 +2790,7 @@ class MarketSetupState(QObject):
 
     @staticmethod
     def _build_builtin_recipe() -> Recipe:
-        from albion_dps.market.models import ItemRef, RecipeComponent, RecipeOutput
-
-        sword = ItemRef(unique_name="T4_MAIN_SWORD", display_name="Broadsword", tier=4, enchantment=0)
-        bars = ItemRef(unique_name="T4_METALBAR", display_name="Metal Bar", tier=4, enchantment=0)
-        planks = ItemRef(unique_name="T4_PLANKS", display_name="Planks", tier=4, enchantment=0)
-        return Recipe(
-            item=sword,
-            station="Warrior Forge",
-            city_bonus="Bridgewatch",
-            components=(
-                RecipeComponent(item=bars, quantity=16.0),
-                RecipeComponent(item=planks, quantity=8.0),
-            ),
-            outputs=(RecipeOutput(item=sword, quantity=1.0),),
-            focus_per_craft=200,
-        )
+        return catalog_ops.build_builtin_recipe()
 
     def _build_fallback_price_index(
         self,
