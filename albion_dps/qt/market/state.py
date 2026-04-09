@@ -54,18 +54,13 @@ from albion_dps.qt.market import preset_ops
 from albion_dps.qt.market import pricing_ops
 from albion_dps.qt.market import price_refresh_ops
 from albion_dps.qt.market import preview_flow_ops
+from albion_dps.qt.market import preview_metric_ops
 from albion_dps.qt.market import preview_render_ops
 from albion_dps.qt.market import preview_state_ops
 from albion_dps.qt.market import quote_ops
 from albion_dps.qt.market import recipe_ops
 from albion_dps.qt.market import selection_ops
 from albion_dps.qt.market import ui_ops
-from albion_dps.qt.market.preview_ops import (
-    accumulate_input_preview_rows,
-    build_breakdown_rows,
-    build_results_rows_from_runs,
-    compute_input_total_from_lines,
-)
 from albion_dps.qt.market.state_types import _JournalLine, _JournalRule, _JournalTotals
 from albion_dps.settings import load_app_settings, update_app_settings
 
@@ -1721,21 +1716,10 @@ class MarketSetupState(QObject):
         runs: list[CraftRun],
         input_total: float,
     ) -> list[ResultItemRow]:
-        _ = input_total
-        return build_results_rows_from_runs(
+        return preview_metric_ops.build_results_rows(
+            self,
             runs=runs,
-            setup=self._setup,
-            results_sort_key=self._results_sort_key,
-            estimate_journal_totals=lambda selected_runs: self._estimate_journal_totals(
-                runs=selected_runs,
-                setup=self._setup,
-                price_index=self._price_index,
-            ),
-            demand_proxy_percent=lambda item_id, city: self._demand_proxy_percent(
-                item_id=item_id,
-                city=city,
-                quality=self._setup.quality,
-            ),
+            input_total=input_total,
             item_label=_friendly_item_label,
             result_row_profit_and_margin=lambda allocated_cost, net_value: _result_row_profit_and_margin(
                 allocated_cost=allocated_cost,
@@ -1749,26 +1733,17 @@ class MarketSetupState(QObject):
         prepared_recipes: list[tuple[CraftPlanRow, Recipe]],
         runs: list[CraftRun],
     ) -> dict[tuple[str, str, str, float], dict[str, object]]:
-        return accumulate_input_preview_rows(
+        return preview_metric_ops.accumulate_inputs(
+            self,
             prepared_recipes=prepared_recipes,
             runs=runs,
-            price_age_text=lambda item_id, city, price_type: self._price_age_text(
-                item_id=item_id,
-                city=city,
-                quality=self._setup.quality,
-                price_type=price_type,
-            ),
             item_label=_friendly_item_label,
             minimal_upfront_quantity_for_batches=_minimal_upfront_quantity_for_batches,
             upfront_return_safety_units=_upfront_return_safety_units,
         )
 
     def _build_breakdown_rows(self) -> list[BreakdownRow]:
-        return build_breakdown_rows(
-            selected_material_input_total_cost=self._selected_material_input_total_cost,
-            journal_totals=self._results_journal_totals,
-            breakdown=self._breakdown,
-        )
+        return preview_metric_ops.build_breakdown(self)
 
     def _compute_input_total_from_lines(
         self,
@@ -1776,10 +1751,10 @@ class MarketSetupState(QObject):
         input_lines: list[InputLine] | tuple[InputLine, ...],
         prepared_recipes: list[tuple[CraftPlanRow, Recipe]],
     ) -> float:
-        _ = prepared_recipes
-        return compute_input_total_from_lines(
+        return preview_metric_ops.compute_input_total(
+            self,
             input_lines=input_lines,
-            input_stock_quantities=self._input_stock_quantities,
+            prepared_recipes=prepared_recipes,
         )
 
     def _demand_proxy_percent(self, *, item_id: str, city: str, quality: int) -> float:
