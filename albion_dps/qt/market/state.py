@@ -9,7 +9,6 @@ import os
 import re
 import time
 from math import ceil
-from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
@@ -57,6 +56,7 @@ from albion_dps.qt.market.list_models import (
     SellingPreviewRow,
     ShoppingPreviewRow,
 )
+from albion_dps.qt.market import journal_ops
 from albion_dps.qt.market.preview_ops import (
     accumulate_input_preview_rows,
     build_breakdown_rows,
@@ -65,22 +65,6 @@ from albion_dps.qt.market.preview_ops import (
 )
 from albion_dps.qt.market.state_types import _JournalLine, _JournalRule, _JournalTotals
 from albion_dps.settings import load_app_settings, update_app_settings
-
-_JOURNAL_NPC_EMPTY_PRICES: dict[int, int] = {
-    2: 500,
-    3: 1000,
-    4: 2000,
-    5: 4000,
-    6: 8000,
-    7: 16000,
-    8: 32000,
-}
-_JOURNAL_NAME_BY_KIND: dict[str, str] = {
-    "WARRIOR": "Blacksmith's Journal",
-    "HUNTER": "Fletcher's Journal",
-    "MAGE": "Imbuer's Journal",
-    "TOOLMAKER": "Tinker's Journal",
-}
 _TIER_PREFIX_RE = re.compile(r"^T(?P<tier>\d+)_(?P<rest>.+)$", re.IGNORECASE)
 _LEVEL_SUFFIX_RE = re.compile(r"_LEVEL\d+$", re.IGNORECASE)
 
@@ -2454,117 +2438,20 @@ class MarketSetupState(QObject):
         setup: CraftSetup,
         price_index: dict[tuple[str, str, int], MarketPriceRecord],
     ) -> _JournalTotals:
-        buy_city = (setup.default_buy_city or setup.craft_city or "").strip()
-        sell_city = (setup.default_sell_city or setup.craft_city or "").strip()
-        if not buy_city or not sell_city:
-            return _JournalTotals()
-
-        aggregates: dict[str, dict[str, float | str]] = {}
-        for run in runs:
-            recipe = getattr(run, "recipe", None)
-            outputs = getattr(run, "outputs", ())
-            if recipe is None:
-                continue
-            rule = _journal_rule_for_item(str(recipe.item.unique_name))
-            if rule is None:
-                continue
-            recipe_base = _base_item_id(str(recipe.item.unique_name))
-            crafted_units = 0.0
-            for line in outputs:
-                if _base_item_id(str(line.item.unique_name)) == recipe_base:
-                    crafted_units += float(line.quantity)
-            if crafted_units <= 0:
-                continue
-            factor = _journal_fame_factor_for_item(str(recipe.item.unique_name))
-            gained_fame = crafted_units * float(rule.fame_per_item) * float(factor)
-            if gained_fame <= 0:
-                continue
-            key = f"{rule.empty_item_id}|{rule.full_item_id}|{rule.max_fame}"
-            row = aggregates.get(key)
-            if row is None:
-                aggregates[key] = {
-                    "kind": rule.kind,
-                    "tier": float(rule.tier),
-                    "empty_item_id": rule.empty_item_id,
-                    "full_item_id": rule.full_item_id,
-                    "max_fame": float(rule.max_fame),
-                    "gained_fame": gained_fame,
-                }
-            else:
-                row["gained_fame"] = float(row["gained_fame"]) + gained_fame
-
-        if not aggregates:
-            return _JournalTotals()
-
-        total_input_cost = 0.0
-        total_output_value = 0.0
-        total_full_quantity = 0.0
-        journal_lines: list[_JournalLine] = []
-        for row in aggregates.values():
-            max_fame = max(1.0, float(row["max_fame"]))
-            full_equivalent = max(0.0, float(row["gained_fame"]) / max_fame)
-            empty_quantity = float(max(0, math.ceil(full_equivalent - 1e-9)))
-            full_quantity = float(max(0, math.floor(full_equivalent + 1e-9)))
-            if empty_quantity <= 0 and full_quantity <= 0:
-                continue
-            kind = str(row.get("kind", ""))
-            tier = int(float(row.get("tier", 0.0)))
-            empty_item_id = str(row["empty_item_id"])
-            full_item_id = str(row["full_item_id"])
-
-            empty_market_price, empty_price_mode, empty_price_item_id = self._resolve_market_price_for_item_ids(
-                price_index=price_index,
-                item_ids=[f"{empty_item_id}_EMPTY", empty_item_id],
-                city=buy_city,
-                quality=setup.quality,
-                preferred_mode=PriceType.SELL_ORDER.value,
-            )
-            empty_npc_price = float(_JOURNAL_NPC_EMPTY_PRICES.get(_tier_from_item_id(empty_item_id), 0))
-            # Prefer ADP quote whenever available; NPC is fallback only.
-            empty_unit_price = empty_market_price if empty_market_price > 0 else empty_npc_price
-
-            full_unit_price, full_price_mode, full_price_item_id = self._resolve_market_price_for_item_ids(
-                price_index=price_index,
-                item_ids=[full_item_id],
-                city=sell_city,
-                quality=setup.quality,
-                preferred_mode=PriceType.SELL_ORDER.value,
-            )
-            if full_unit_price <= 0:
-                continue
-
-            line_input_cost = float(empty_quantity * empty_unit_price)
-            line_output_value = float(full_quantity * full_unit_price)
-            line_market_tax = max(0.0, line_output_value * (float(setup.market_tax_percent) / 100.0))
-
-            total_input_cost += line_input_cost
-            total_output_value += line_output_value
-            total_full_quantity += full_quantity
-            journal_lines.append(
-                _JournalLine(
-                    kind=kind,
-                    tier=tier,
-                    empty_item_id=empty_item_id,
-                    full_item_id=full_item_id,
-                    empty_quantity=float(empty_quantity),
-                    input_price_mode=str(empty_price_mode),
-                    output_price_mode=str(full_price_mode),
-                    full_quantity=float(full_quantity),
-                    input_cost=line_input_cost,
-                    output_value=line_output_value,
-                    market_tax=float(line_market_tax),
-                    empty_price_item_id=str(empty_price_item_id),
-                    full_price_item_id=str(full_price_item_id),
-                )
-            )
-
-        journal_market_tax = max(0.0, sum(line.market_tax for line in journal_lines))
-        return _JournalTotals(
-            input_cost=float(total_input_cost),
-            output_value=float(total_output_value),
-            market_tax=float(journal_market_tax),
-            full_quantity=float(total_full_quantity),
-            lines=tuple(journal_lines),
+        return journal_ops.estimate_journal_totals(
+            runs=runs,
+            setup=setup,
+            price_index=price_index,
+            resolve_market_price_for_item_ids=lambda price_index_value, item_ids, city, quality, preferred_mode: self._resolve_market_price_for_item_ids(
+                price_index=price_index_value,
+                item_ids=item_ids,
+                city=city,
+                quality=quality,
+                preferred_mode=preferred_mode,
+            ),
+            journal_rule_for_item=_journal_rule_for_item,
+            journal_fame_factor_for_item=_journal_fame_factor_for_item,
+            tier_from_item_id=_tier_from_item_id,
         )
 
     def _resolve_market_price_for_item_ids(
@@ -3416,206 +3303,20 @@ def _input_preview_sort_key(row: InputPreviewRow) -> tuple[int, int, str, str, s
     )
 
 
-@lru_cache(maxsize=1)
 def _journal_maps() -> tuple[dict[str, _JournalRule], dict[str, float]]:
-    items_path = Path(__file__).resolve().parents[3] / "data" / "items.json"
-    try:
-        payload = json.loads(items_path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}, {}
-    raw_items = payload.get("items") if isinstance(payload, dict) else None
-    if not isinstance(raw_items, dict):
-        return {}, {}
-
-    entries: dict[str, dict[str, object]] = {}
-
-    def walk(node: object) -> None:
-        if isinstance(node, dict):
-            unique_name = node.get("@uniquename")
-            if isinstance(unique_name, str) and unique_name:
-                entries[unique_name] = node
-            for value in node.values():
-                walk(value)
-            return
-        if isinstance(node, list):
-            for value in node:
-                walk(value)
-
-    walk(raw_items)
-
-    journal_by_item: dict[str, _JournalRule] = {}
-    fame_factor_by_item: dict[str, float] = {}
-    for unique_name, node in entries.items():
-        factor_raw = node.get("@destinyandjournalcraftfamefactor")
-        if factor_raw is not None:
-            try:
-                fame_factor_by_item[_base_item_id(unique_name)] = float(factor_raw)
-            except (TypeError, ValueError):
-                pass
-
-    journal_types = ("WARRIOR", "HUNTER", "MAGE", "TOOLMAKER")
-    for tier in range(2, 9):
-        for kind in journal_types:
-            journal_id = f"T{tier}_JOURNAL_{kind}"
-            node = entries.get(journal_id)
-            if node is None:
-                continue
-            max_fame_raw = node.get("@maxfame")
-            fame_missions = node.get("famefillingmissions")
-            if not isinstance(fame_missions, dict):
-                continue
-            craft = fame_missions.get("craftitemfame")
-            if not isinstance(craft, dict):
-                continue
-            value_raw = craft.get("@value")
-            valid_items = craft.get("validitem")
-            if isinstance(valid_items, dict):
-                valid_list = [valid_items]
-            elif isinstance(valid_items, list):
-                valid_list = [x for x in valid_items if isinstance(x, dict)]
-            else:
-                valid_list = []
-            try:
-                max_fame = float(max_fame_raw)
-                fame_per_item = float(value_raw)
-            except (TypeError, ValueError):
-                continue
-            if max_fame <= 0 or fame_per_item <= 0:
-                continue
-            rule = _JournalRule(
-                kind=kind,
-                tier=tier,
-                empty_item_id=journal_id,
-                full_item_id=f"{journal_id}_FULL",
-                max_fame=max_fame,
-                fame_per_item=fame_per_item,
-            )
-            for row in valid_list:
-                item_id = row.get("@id")
-                if not isinstance(item_id, str) or not item_id:
-                    continue
-                journal_by_item[_base_item_id(item_id)] = rule
-    return journal_by_item, fame_factor_by_item
+    return journal_ops.journal_maps()
 
 
 def _journal_rule_templates() -> dict[tuple[int, str], _JournalRule]:
-    items_path = Path(__file__).resolve().parents[3] / "data" / "items.json"
-    try:
-        payload = json.loads(items_path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    raw_items = payload.get("items") if isinstance(payload, dict) else None
-    if not isinstance(raw_items, dict):
-        return {}
-
-    entries: dict[str, dict[str, object]] = {}
-
-    def walk(node: object) -> None:
-        if isinstance(node, dict):
-            unique_name = node.get("@uniquename")
-            if isinstance(unique_name, str) and unique_name:
-                entries[unique_name] = node
-            for value in node.values():
-                walk(value)
-            return
-        if isinstance(node, list):
-            for value in node:
-                walk(value)
-
-    walk(raw_items)
-
-    templates: dict[tuple[int, str], _JournalRule] = {}
-    journal_types = ("WARRIOR", "HUNTER", "MAGE", "TOOLMAKER")
-    for tier in range(2, 9):
-        for kind in journal_types:
-            journal_id = f"T{tier}_JOURNAL_{kind}"
-            node = entries.get(journal_id)
-            if node is None:
-                continue
-            max_fame_raw = node.get("@maxfame")
-            fame_missions = node.get("famefillingmissions")
-            if not isinstance(fame_missions, dict):
-                continue
-            craft = fame_missions.get("craftitemfame")
-            if not isinstance(craft, dict):
-                continue
-            value_raw = craft.get("@value")
-            try:
-                max_fame = float(max_fame_raw)
-                fame_per_item = float(value_raw)
-            except (TypeError, ValueError):
-                continue
-            if max_fame <= 0 or fame_per_item <= 0:
-                continue
-            templates[(tier, kind)] = _JournalRule(
-                kind=kind,
-                tier=tier,
-                empty_item_id=journal_id,
-                full_item_id=f"{journal_id}_FULL",
-                max_fame=max_fame,
-                fame_per_item=fame_per_item,
-            )
-    return templates
+    return journal_ops.journal_rule_templates()
 
 
-@lru_cache(maxsize=1)
 def _item_metadata_map() -> dict[str, dict[str, str]]:
-    items_path = Path(__file__).resolve().parents[3] / "data" / "items.json"
-    try:
-        payload = json.loads(items_path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    raw_items = payload.get("items") if isinstance(payload, dict) else None
-    if not isinstance(raw_items, dict):
-        return {}
-
-    out: dict[str, dict[str, str]] = {}
-
-    def walk(node: object) -> None:
-        if isinstance(node, dict):
-            unique_name = node.get("@uniquename")
-            if isinstance(unique_name, str) and unique_name:
-                out[_base_item_id(unique_name)] = {
-                    "shopcategory": str(node.get("@shopcategory") or ""),
-                    "shopsubcategory1": str(node.get("@shopsubcategory1") or ""),
-                    "shopsubcategory2": str(node.get("@shopsubcategory2") or ""),
-                    "slottype": str(node.get("@slottype") or ""),
-                }
-            for value in node.values():
-                walk(value)
-            return
-        if isinstance(node, list):
-            for value in node:
-                walk(value)
-
-    walk(raw_items)
-    return out
+    return journal_ops.item_metadata_map()
 
 
 def _infer_journal_kind_for_item(item_id: str) -> str | None:
-    base_id = _base_item_id(item_id)
-    if "_PLATE_" in base_id:
-        return "WARRIOR"
-    if "_LEATHER_" in base_id:
-        return "HUNTER"
-    if "_CLOTH_" in base_id:
-        return "MAGE"
-    metadata = _item_metadata_map().get(base_id, {})
-    hints = [
-        str(metadata.get("shopcategory") or "").upper(),
-        str(metadata.get("shopsubcategory1") or "").upper(),
-        str(metadata.get("shopsubcategory2") or "").upper(),
-        str(metadata.get("slottype") or "").upper(),
-        base_id,
-    ]
-    combined = " ".join(hint for hint in hints if hint)
-    if "PLATE" in combined:
-        return "WARRIOR"
-    if "LEATHER" in combined:
-        return "HUNTER"
-    if "CLOTH" in combined:
-        return "MAGE"
-    return None
+    return journal_ops.infer_journal_kind_for_item(item_id)
 
 
 def _journal_rule_fallback_for_item(item_id: str) -> _JournalRule | None:
@@ -3640,11 +3341,7 @@ def _journal_fame_factor_for_item(item_id: str) -> float:
 
 
 def _journal_display_name(kind: str, tier: int) -> str:
-    base_name = _JOURNAL_NAME_BY_KIND.get(str(kind or "").upper(), "Journal")
-    normalized_tier = max(0, int(tier))
-    if normalized_tier > 0:
-        return f"T{normalized_tier} {base_name}"
-    return base_name
+    return journal_ops.journal_display_name(kind, tier)
 
 
 def _friendly_item_label(display_name: str, item_id: str) -> str:
