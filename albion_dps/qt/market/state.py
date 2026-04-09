@@ -5,15 +5,14 @@ import io
 import json
 import logging
 import math
-import os
 import time
 from math import ceil
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
 from urllib.parse import urlencode
 
-from PySide6.QtCore import QCoreApplication, QObject, Property, Qt, QTimer, Signal, Slot
+from PySide6.QtCore import QObject, Property, Qt, QTimer, Signal, Slot
 
 from albion_dps.market.aod_client import MarketPriceRecord, REGION_HOSTS
 from albion_dps.market.catalog import RecipeCatalog
@@ -60,6 +59,7 @@ from albion_dps.qt.market import catalog_ops
 from albion_dps.qt.market import journal_ops
 from albion_dps.qt.market import preset_ops
 from albion_dps.qt.market import pricing_ops
+from albion_dps.qt.market import price_refresh_ops
 from albion_dps.qt.market import recipe_ops
 from albion_dps.qt.market import selection_ops
 from albion_dps.qt.market.preview_ops import (
@@ -982,18 +982,7 @@ class MarketSetupState(QObject):
 
     @Slot()
     def refreshPrices(self) -> None:
-        if not self.canRefreshPrices:
-            self._set_list_action_text(f"Refresh available in {self.refreshCooldownSeconds}s.")
-            return
-        self._append_diag("Manual price refresh requested.", level="INFO")
-        self._set_next_live_fetch_cooldown(self._manual_refresh_cooldown_seconds)
-        if not self._should_defer_price_refresh():
-            self._rebuild_preview(force_price_refresh=True)
-        else:
-            self._prices_source = "loading"
-            self._prices_status_text = "Queued live refresh..."
-            self.pricesChanged.emit()
-            self._schedule_deferred_price_refresh(0.01, force=True)
+        price_refresh_ops.refresh_prices(self)
 
     @Slot()
     def showAoDataRaw(self) -> None:
@@ -2468,19 +2457,12 @@ class MarketSetupState(QObject):
         force_refresh: bool,
         allow_live: bool,
     ) -> dict[tuple[str, str, int], MarketPriceRecord]:
-        if force_refresh:
-            return self._refresh_price_index(setup, force=True)
-        if not allow_live:
-            # Setup tab: keep local estimate/cache snapshot, skip live AOData pulls.
-            fallback_index = self._build_fallback_price_index(setup)
-            if self._price_index:
-                fallback_index.update(self._price_index)
-            self._price_index = fallback_index
-            return self._price_index
-        context_key = self._price_key(setup)
-        if self._price_index and context_key == self._price_context_key:
-            return self._price_index
-        return self._refresh_price_index(setup, force=False)
+        return price_refresh_ops.current_price_index(
+            self,
+            setup,
+            force_refresh=force_refresh,
+            allow_live=allow_live,
+        )
 
     def _refresh_price_index(
         self,
@@ -2488,223 +2470,40 @@ class MarketSetupState(QObject):
         *,
         force: bool,
     ) -> dict[tuple[str, str, int], MarketPriceRecord]:
-        item_ids = self._collect_pricing_item_ids()
-        locations = self._collect_locations(setup)
-        context_key = self._price_key(setup)
-        if not force and self._price_index and context_key == self._price_context_key:
-            return self._price_index
-        if not item_ids:
-            self._set_fallback_status("No recipe items selected. Prices unavailable.")
-            self._price_index = {}
-            self._price_context_key = context_key
-            return self._price_index
-
-        if self._service is None:
-            self._set_fallback_status("AO Data client not configured. Using bundled fallback prices.")
-            self._price_index = self._build_fallback_price_index(setup)
-            self._price_context_key = context_key
-            self._append_diag("AO Data client unavailable, switched to fallback prices.", level="WARN")
-            return self._price_index
-
-        now = time.monotonic()
-        if not force:
-            if self._price_fetch_in_progress:
-                self._schedule_deferred_price_refresh(0.35)
-                if self._price_index:
-                    return self._price_index
-                self._price_index = self._build_fallback_price_index(setup)
-                self._price_context_key = context_key
-                return self._price_index
-            if now < self._next_live_fetch_not_before:
-                remaining = max(0.1, self._next_live_fetch_not_before - now)
-                self._schedule_deferred_price_refresh(remaining + 0.05)
-                self._set_prices_status(
-                    "cooldown",
-                    f"AO Data cooldown active ({remaining:.0f}s). Using cache/fallback prices."
-                )
-                fallback_index = self._build_fallback_price_index(setup)
-                if self._price_index:
-                    fallback_index.update(self._price_index)
-                self._price_index = fallback_index
-                self._price_context_key = context_key
-                return self._price_index
-
-        self._price_fetch_in_progress = True
-        batch_count = 0
-        try:
-            client = getattr(self._service, "client", None)
-            if client is not None and hasattr(client, "_split_price_batches") and hasattr(client, "_base_url"):
-                base = client._base_url(setup.region)
-                params = {
-                    "locations": ",".join(locations),
-                    "qualities": ",".join(str(x) for x in [setup.quality]),
-                }
-                batch_count = len(client._split_price_batches(base=base, item_ids=item_ids, params=params))
-        except Exception:
-            batch_count = 0
-        self._prices_source = "loading"
-        self._prices_status_text = (
-            f"Fetching live prices ({len(item_ids)} IDs"
-            + (f", ~{batch_count} batch(es)" if batch_count > 0 else "")
-            + f", {len(locations)} location(s))..."
+        return price_refresh_ops.refresh_price_index(
+            self,
+            setup,
+            force=force,
         )
-        self.pricesChanged.emit()
-        self._process_ui_events()
-        try:
-            self._append_diag(
-                f"AO Data fetch request: {len(item_ids)} item IDs across {len(locations)} locations.",
-                level="INFO",
-            )
-            if len(item_ids) >= 200:
-                self._append_diag(
-                    "Large refresh in progress. This can take up to ~60s depending on AO Data rate limits.",
-                    level="INFO",
-                )
-            self._process_ui_events()
-            index = self._service.get_price_index(
-                region=setup.region,
-                item_ids=item_ids,
-                locations=locations,
-                qualities=[setup.quality],
-                ttl_seconds=120.0,
-                allow_stale=not force,
-                allow_cache=not force,
-                allow_live=True,
-            )
-            if index:
-                meta = self._service.last_prices_meta
-                self._price_index = index
-                self._price_context_key = context_key
-                if not force and meta.source == "live":
-                    self._set_next_live_fetch_cooldown(self._min_live_refresh_interval_seconds)
-                self._prices_source = meta.source
-                self._prices_status_text = (
-                    f"{meta.source}: {meta.record_count} rows in {meta.elapsed_ms:.0f} ms"
-                )
-                self.pricesChanged.emit()
-                self._append_diag(
-                    f"Prices loaded from {meta.source} ({meta.record_count} rows, {meta.elapsed_ms:.0f} ms).",
-                    level="INFO",
-                )
-                # If setup tab/tab switch returned stale cache, queue one forced live refresh.
-                # This keeps UI responsive (immediate stale data), then upgrades to live data automatically.
-                if (
-                    meta.source == "stale_cache"
-                    and not force
-                    and QCoreApplication.instance() is not None
-                    and self.refreshCooldownSeconds <= 0
-                    and not self._deferred_price_refresh_timer.isActive()
-                    and not self._deferred_force_price_refresh
-                ):
-                    self._append_diag(
-                        "Stale cache shown first; scheduling background live refresh.",
-                        level="INFO",
-                    )
-                    self._set_prices_status(
-                        "refreshing_cache",
-                        f"Showing stale cache ({meta.record_count} rows); background live refresh queued.",
-                    )
-                    self._schedule_deferred_price_refresh(0.15, force=True)
-                return self._price_index
-            self._set_fallback_status("AO Data returned no price rows. Using bundled fallback prices.")
-            self._append_diag("AO Data returned no rows; using fallback prices.", level="WARN")
-        except Exception as exc:
-            self._log.warning("AO Data fetch failed, using fallback prices: %s", exc)
-            error_text = str(exc)
-            if "429" in error_text or "Too Many Requests" in error_text:
-                cooldown = max(
-                    self._rate_limit_cooldown_seconds,
-                    self._min_live_refresh_interval_seconds,
-                )
-                self._set_next_live_fetch_cooldown(cooldown)
-                self._schedule_deferred_price_refresh(cooldown + 0.1)
-                self._set_prices_status(
-                    "cooldown",
-                    f"AO Data rate limit (429). Cooling down for {cooldown:.0f}s; using fallback prices."
-                )
-            else:
-                self._set_fallback_status(f"AO Data fetch failed ({exc}). Using bundled fallback prices.")
-            self._append_diag(f"AO Data fetch failed: {exc}", level="ERROR")
-        finally:
-            self._price_fetch_in_progress = False
-            self.pricesChanged.emit()
-
-        self._price_index = self._build_fallback_price_index(setup)
-        self._price_context_key = context_key
-        return self._price_index
 
     def _process_ui_events(self) -> None:
-        app = QCoreApplication.instance()
-        if app is None:
-            return
-        try:
-            app.processEvents()
-        except Exception:
-            return
+        price_refresh_ops.process_ui_events()
 
     def _should_defer_price_refresh(self) -> bool:
-        app = QCoreApplication.instance()
-        if app is None:
-            return False
-        if os.environ.get("PYTEST_CURRENT_TEST"):
-            return False
-        return len(self._craft_plan_rows) >= 8
+        return price_refresh_ops.should_defer_price_refresh(self)
 
     def _set_prices_status(self, source: str, message: str) -> None:
-        self._prices_source = str(source or "fallback")
-        self._prices_status_text = message
-        self.pricesChanged.emit()
+        price_refresh_ops.set_prices_status(self, source, message)
 
     def _set_fallback_status(self, message: str) -> None:
-        self._set_prices_status("fallback", message)
+        price_refresh_ops.set_fallback_status(self, message)
 
     def _append_diag(self, message: str, *, level: str = "INFO") -> None:
-        now = datetime.now(timezone.utc).strftime("%H:%M:%S")
-        line = f"[{now}] {level}: {message}"
-        self._diagnostics_lines.append(line)
-        if len(self._diagnostics_lines) > 200:
-            self._diagnostics_lines = self._diagnostics_lines[-200:]
-        self.diagnosticsChanged.emit()
+        price_refresh_ops.append_diag(self, message, level=level)
 
     def _schedule_deferred_price_refresh(self, delay_seconds: float, *, force: bool = False) -> None:
-        if force:
-            self._deferred_force_price_refresh = True
-        delay_ms = max(50, int(delay_seconds * 1000))
-        if self._deferred_price_refresh_timer.isActive():
-            remaining = self._deferred_price_refresh_timer.remainingTime()
-            if remaining >= 0 and remaining <= delay_ms:
-                return
-        self._deferred_price_refresh_timer.start(delay_ms)
-        self.pricesChanged.emit()
+        price_refresh_ops.schedule_deferred_price_refresh(self, delay_seconds, force=force)
 
     @Slot()
     def _on_deferred_price_refresh_timeout(self) -> None:
-        self.pricesChanged.emit()
-        if self._price_fetch_in_progress:
-            self._schedule_deferred_price_refresh(
-                0.35,
-                force=self._deferred_force_price_refresh,
-            )
-            return
-        force_refresh = bool(self._deferred_force_price_refresh)
-        self._deferred_force_price_refresh = False
-        self._rebuild_preview(force_price_refresh=force_refresh)
+        price_refresh_ops.on_deferred_price_refresh_timeout(self)
 
     def _set_next_live_fetch_cooldown(self, seconds: float) -> None:
-        target = time.monotonic() + max(0.0, float(seconds))
-        self._next_live_fetch_not_before = max(self._next_live_fetch_not_before, target)
-        if self.refreshCooldownSeconds > 0:
-            if not self._refresh_cooldown_tick_timer.isActive():
-                self._refresh_cooldown_tick_timer.start()
-        else:
-            self._refresh_cooldown_tick_timer.stop()
-        self.pricesChanged.emit()
+        price_refresh_ops.set_next_live_fetch_cooldown(self, seconds)
 
     @Slot()
     def _on_refresh_cooldown_tick(self) -> None:
-        if self.refreshCooldownSeconds <= 0:
-            self._refresh_cooldown_tick_timer.stop()
-        self.pricesChanged.emit()
+        price_refresh_ops.on_refresh_cooldown_tick(self)
 
     def _load_presets(self) -> dict[str, dict[str, object]]:
         path = self._preset_path
