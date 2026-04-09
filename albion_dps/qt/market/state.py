@@ -56,6 +56,7 @@ from albion_dps.qt.market import journal_ops
 from albion_dps.qt.market import preset_ops
 from albion_dps.qt.market import pricing_ops
 from albion_dps.qt.market import price_refresh_ops
+from albion_dps.qt.market import preview_state_ops
 from albion_dps.qt.market import quote_ops
 from albion_dps.qt.market import recipe_ops
 from albion_dps.qt.market import selection_ops
@@ -1377,109 +1378,35 @@ class MarketSetupState(QObject):
             self._output_price_types.setdefault(output.item.unique_name, PriceType.SELL_ORDER)
 
     def _recipes_for_preview(self) -> list[tuple[CraftPlanRow, Recipe]]:
-        rows: list[tuple[CraftPlanRow, Recipe]] = []
-        for row in self._craft_plan_rows:
-            recipe = self._catalog.get(row.recipe_id)
-            if recipe is None:
-                continue
-            rows.append((row, recipe))
-        return rows
+        return preview_state_ops.recipes_for_preview(self)
 
     @staticmethod
     def _setup_for_plan_row(setup: CraftSetup, row: CraftPlanRow) -> CraftSetup:
-        return CraftSetup(
-            region=setup.region,
-            craft_city=row.craft_city,
-            default_buy_city=setup.default_buy_city,
-            default_sell_city=setup.default_sell_city,
-            premium=setup.premium,
-            focus_enabled=setup.focus_enabled,
-            station_fee_percent=setup.station_fee_percent,
-            market_tax_percent=setup.market_tax_percent,
-            daily_bonus_percent=float(row.daily_bonus_percent),
-            return_rate_percent=setup.return_rate_percent,
-            hideout_power_percent=setup.hideout_power_percent,
-            quality=setup.quality,
-        )
+        return preview_state_ops.setup_for_plan_row(setup, row)
 
     def _recipes_for_pricing(self) -> list[Recipe]:
-        recipes: list[Recipe] = []
-        seen: set[str] = set()
-        for row in self._craft_plan_rows:
-            recipe = self._catalog.get(row.recipe_id)
-            if recipe is None:
-                continue
-            recipe_key = _recipe_identity(recipe)
-            if recipe_key in seen:
-                continue
-            seen.add(recipe_key)
-            recipes.append(recipe)
-        return recipes
+        return preview_state_ops.recipes_for_pricing(
+            self,
+            recipe_identity=_recipe_identity,
+        )
 
     def _collect_pricing_item_ids(self) -> list[str]:
-        item_ids: set[str] = set()
-        for recipe in self._recipes_for_pricing():
-            for component in recipe.components:
-                item_ids.update(_item_id_query_candidates(component.item.unique_name))
-            for output in recipe.outputs:
-                item_ids.update(_item_id_query_candidates(output.item.unique_name))
-            journal_rule = _journal_rule_for_item(recipe.item.unique_name)
-            if journal_rule is not None:
-                # Market IDs for journals are not fully consistent across dumps; query all common variants.
-                item_ids.add(journal_rule.empty_item_id)
-                item_ids.add(f"{journal_rule.empty_item_id}_EMPTY")
-                item_ids.add(journal_rule.full_item_id)
-        return sorted(item_ids)
+        return preview_state_ops.collect_pricing_item_ids(
+            self,
+            recipes_for_pricing=self._recipes_for_pricing,
+            item_id_query_candidates=_item_id_query_candidates,
+            journal_rule_for_item=_journal_rule_for_item,
+        )
 
     def _collect_locations(self, setup: CraftSetup) -> list[str]:
-        location_set = {
-            setup.craft_city.strip(),
-            setup.default_buy_city.strip(),
-            setup.default_sell_city.strip(),
-        }
-        for row in self._craft_plan_rows:
-            city_value = row.craft_city.strip()
-            if city_value:
-                location_set.add(city_value)
-        locations = sorted(
-            location
-            for location in (location_set - {""})
-            if self._is_market_location(location)
+        return preview_state_ops.collect_locations(
+            self,
+            setup,
+            is_market_location=self._is_market_location,
         )
-        if not locations:
-            locations = ["Bridgewatch"]
-        return locations
 
     def _clear_preview_state(self, note: str) -> None:
-        self._inputs_model.set_items([])
-        self._inputs_on_model.set_items([])
-        self._outputs_model.set_items([])
-        self._outputs_on_model.set_items([])
-        self._shopping_model.set_items([])
-        self._selling_model.set_items([])
-        self._results_items_model.set_items([])
-        self._breakdown_model.set_items([])
-        self._set_plan_profit_map({}, fresh_component_prices={})
-        self._shopping_csv = ""
-        self._selling_csv = ""
-        self._results_csv = ""
-        self._breakdown = ProfitBreakdown(notes=[note] if note else [])
-        self._base_input_total_cost = 0.0
-        self._journal_totals = _JournalTotals()
-        self._results_journal_totals = _JournalTotals()
-        self._selected_material_input_total_cost = 0.0
-        self._selected_input_total_cost = 0.0
-        self._selected_output_total_value = 0.0
-        self._selected_output_net_value = 0.0
-        self._selected_net_profit_value = 0.0
-        self._selected_margin_percent = 0.0
-        self._selected_input_item_ids = []
-        self._selected_output_item_ids = []
-        self.inputsChanged.emit()
-        self.outputsChanged.emit()
-        self.resultsChanged.emit()
-        self.listsChanged.emit()
-        self.resultsDetailsChanged.emit()
+        preview_state_ops.clear_preview_state(self, note)
 
     def _rebuild_preview(self, *, force_price_refresh: bool) -> None:
         setup = self.to_setup()
