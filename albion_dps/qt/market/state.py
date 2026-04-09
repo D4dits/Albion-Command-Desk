@@ -56,6 +56,7 @@ from albion_dps.qt.market import journal_ops
 from albion_dps.qt.market import preset_ops
 from albion_dps.qt.market import pricing_ops
 from albion_dps.qt.market import price_refresh_ops
+from albion_dps.qt.market import quote_ops
 from albion_dps.qt.market import recipe_ops
 from albion_dps.qt.market import selection_ops
 from albion_dps.qt.market import ui_ops
@@ -2144,18 +2145,13 @@ class MarketSetupState(QObject):
         )
 
     def _demand_proxy_percent(self, *, item_id: str, city: str, quality: int) -> float:
-        quote = _find_price_quote(
+        return quote_ops.demand_proxy_percent(
             self._price_index,
             item_id=item_id,
             city=city,
             quality=quality,
-            preferred_mode=None,
+            find_price_quote=_find_price_quote,
         )
-        if quote is None:
-            return 0.0
-        if quote.sell_price_min <= 0 or quote.buy_price_max <= 0:
-            return 0.0
-        return (float(quote.buy_price_max) / float(quote.sell_price_min)) * 100.0
 
     def _set_plan_profit_map(
         self,
@@ -2163,112 +2159,38 @@ class MarketSetupState(QObject):
         return_rates: dict[int, float] | None = None,
         fresh_component_prices: dict[int, bool] | None = None,
     ) -> None:
-        rates = return_rates or {}
-        freshness = fresh_component_prices or {}
-        next_rows: list[CraftPlanRow] = []
-        changed = False
-        for row in self._craft_plan_rows:
-            next_profit = values.get(int(row.row_id))
-            next_rrr = rates.get(int(row.row_id), row.return_rate_percent)
-            if int(row.row_id) in freshness:
-                next_has_fresh = bool(freshness[int(row.row_id)])
-            elif row.enabled and fresh_component_prices is not None:
-                next_has_fresh = False
-            else:
-                next_has_fresh = bool(row.has_fresh_component_prices)
-            next_row = CraftPlanRow(
-                row_id=row.row_id,
-                recipe_id=row.recipe_id,
-                display_name=row.display_name,
-                tier=row.tier,
-                enchant=row.enchant,
-                variant_label=row.variant_label,
-                uses_crystallized=bool(row.uses_crystallized),
-                craft_city=row.craft_city,
-                daily_bonus_percent=row.daily_bonus_percent,
-                return_rate_percent=next_rrr,
-                runs=row.runs,
-                enabled=row.enabled,
-                profit_percent=next_profit,
-                has_fresh_component_prices=next_has_fresh,
-            )
-            if next_row != row:
-                changed = True
-            next_rows.append(next_row)
-        if changed:
-            self._craft_plan_rows = next_rows
-            if str(self._craft_plan_sort_key or "") == "pl":
-                self._sync_craft_plan_model()
-            else:
-                self._craft_plan_model.set_items_in_place(self._sorted_craft_plan_rows(self._craft_plan_rows))
+        quote_ops.set_plan_profit_map(
+            self,
+            values,
+            return_rates=return_rates,
+            fresh_component_prices=fresh_component_prices,
+        )
 
     def _price_age_text(self, *, item_id: str, city: str, quality: int, price_type: str) -> str:
-        normalized = str(price_type).strip().lower()
-        if normalized == PriceType.MANUAL.value:
-            return "manual"
-        quote = _find_price_quote(
+        return quote_ops.price_age_text(
             self._price_index,
             item_id=item_id,
             city=city,
             quality=quality,
-            preferred_mode=normalized,
+            price_type=price_type,
+            find_price_quote=_find_price_quote,
+            parse_iso_datetime=_parse_iso_datetime,
+            format_age=_format_age,
         )
-        if quote is None:
-            return "n/a"
-
-        if normalized == PriceType.BUY_ORDER.value:
-            if int(quote.buy_price_max or 0) <= 0:
-                return "n/a"
-            dt = _parse_iso_datetime(quote.buy_price_max_date)
-        elif normalized == PriceType.SELL_ORDER.value:
-            if int(quote.sell_price_min or 0) <= 0:
-                return "n/a"
-            dt = _parse_iso_datetime(quote.sell_price_min_date)
-        else:
-            dt_buy = _parse_iso_datetime(quote.buy_price_max_date) if int(quote.buy_price_max or 0) > 0 else None
-            dt_sell = _parse_iso_datetime(quote.sell_price_min_date) if int(quote.sell_price_min or 0) > 0 else None
-            dt = max([x for x in [dt_buy, dt_sell] if x is not None], default=None)
-
-        if dt is None:
-            return "n/a"
-        return _format_age(dt)
 
     def _run_has_fresh_component_prices(self, run: CraftRun) -> bool:
-        checked: set[tuple[str, str, str]] = set()
-        for line in run.inputs:
-            key = (str(line.item.unique_name), str(line.city), str(line.price_type.value))
-            if key in checked:
-                continue
-            checked.add(key)
-            if not self._has_fresh_price(
-                item_id=str(line.item.unique_name),
-                city=str(line.city),
-                quality=int(self._setup.quality),
-                price_type=str(line.price_type.value),
-            ):
-                return False
-        return True
+        return quote_ops.run_has_fresh_component_prices(self, run)
 
     def _has_fresh_price(self, *, item_id: str, city: str, quality: int, price_type: str) -> bool:
-        normalized = str(price_type).strip().lower()
-        if normalized == PriceType.MANUAL.value:
-            return True
-        quote = _find_price_quote(
+        return quote_ops.has_fresh_price(
             self._price_index,
             item_id=item_id,
             city=city,
             quality=quality,
-            preferred_mode=normalized,
+            price_type=price_type,
+            find_price_quote=_find_price_quote,
+            parse_iso_datetime=_parse_iso_datetime,
         )
-        if quote is None:
-            return False
-        if normalized == PriceType.BUY_ORDER.value:
-            return int(quote.buy_price_max or 0) > 0 and _parse_iso_datetime(quote.buy_price_max_date) is not None
-        if normalized == PriceType.SELL_ORDER.value:
-            return int(quote.sell_price_min or 0) > 0 and _parse_iso_datetime(quote.sell_price_min_date) is not None
-        has_buy = int(quote.buy_price_max or 0) > 0 and _parse_iso_datetime(quote.buy_price_max_date) is not None
-        has_sell = int(quote.sell_price_min or 0) > 0 and _parse_iso_datetime(quote.sell_price_min_date) is not None
-        return bool(has_buy or has_sell)
 
     def _estimate_journal_totals(
         self,
@@ -2302,31 +2224,14 @@ class MarketSetupState(QObject):
         quality: int,
         preferred_mode: str,
     ) -> tuple[float, str, str]:
-        normalized_mode = str(preferred_mode).strip().lower()
-        fallback_modes: list[str] = []
-        if normalized_mode != PriceType.SELL_ORDER.value:
-            fallback_modes.append(PriceType.SELL_ORDER.value)
-        if normalized_mode != PriceType.BUY_ORDER.value:
-            fallback_modes.append(PriceType.BUY_ORDER.value)
-        mode_order = [normalized_mode] + fallback_modes
-        for mode in mode_order:
-            for item_id in item_ids:
-                quote = _find_price_quote(
-                    price_index,
-                    item_id=item_id,
-                    city=city,
-                    quality=quality,
-                    preferred_mode=mode,
-                )
-                if quote is None:
-                    continue
-                if mode == PriceType.BUY_ORDER.value:
-                    value = int(quote.buy_price_max or 0)
-                else:
-                    value = int(quote.sell_price_min or 0)
-                if value > 0:
-                    return float(value), mode, str(item_id)
-        return 0.0, normalized_mode, (str(item_ids[0]) if item_ids else "")
+        return quote_ops.resolve_market_price_for_item_ids(
+            price_index,
+            item_ids=item_ids,
+            city=city,
+            quality=quality,
+            preferred_mode=preferred_mode,
+            find_price_quote=_find_price_quote,
+        )
 
     def _price_age_text_for_item_ids(
         self,
@@ -2336,21 +2241,13 @@ class MarketSetupState(QObject):
         quality: int,
         price_type: str,
     ) -> str:
-        seen: set[str] = set()
-        for item_id in item_ids:
-            normalized_item_id = str(item_id).strip()
-            if not normalized_item_id or normalized_item_id in seen:
-                continue
-            seen.add(normalized_item_id)
-            age_text = self._price_age_text(
-                item_id=normalized_item_id,
-                city=city,
-                quality=quality,
-                price_type=price_type,
-            )
-            if age_text.strip().lower() not in {"", "n/a", "unknown"}:
-                return age_text
-        return "n/a"
+        return quote_ops.price_age_text_for_item_ids(
+            self,
+            item_ids=item_ids,
+            city=city,
+            quality=quality,
+            price_type=price_type,
+        )
 
     def _set_list_action_text(self, text: str) -> None:
         self._list_action_text = text
