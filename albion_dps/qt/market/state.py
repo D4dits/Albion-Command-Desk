@@ -10,13 +10,12 @@ import re
 import time
 from math import ceil
 from functools import lru_cache
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
 from urllib.parse import urlencode
 
-from PySide6.QtCore import QAbstractListModel, QCoreApplication, QModelIndex, QObject, Property, Qt, QTimer, Signal, Slot
+from PySide6.QtCore import QCoreApplication, QObject, Property, Qt, QTimer, Signal, Slot
 
 from albion_dps.market.aod_client import MarketPriceRecord, REGION_HOSTS
 from albion_dps.market.catalog import RecipeCatalog
@@ -40,6 +39,31 @@ from albion_dps.market.models import (
 from albion_dps.market.planner import build_selling_entries, build_shopping_entries
 from albion_dps.market.service import MarketDataService
 from albion_dps.market.setup import sanitized_setup, validate_setup
+from albion_dps.qt.market.list_models import (
+    BreakdownRow,
+    CraftPlanModel,
+    CraftPlanRow,
+    InputPreviewRow,
+    MarketBreakdownModel,
+    MarketInputsModel,
+    MarketOutputsModel,
+    MarketResultsItemsModel,
+    MarketSellingModel,
+    MarketShoppingModel,
+    OutputPreviewRow,
+    RecipeOptionRow,
+    RecipeOptionsModel,
+    ResultItemRow,
+    SellingPreviewRow,
+    ShoppingPreviewRow,
+)
+from albion_dps.qt.market.preview_ops import (
+    accumulate_input_preview_rows,
+    build_breakdown_rows,
+    build_results_rows_from_runs,
+    compute_input_total_from_lines,
+)
+from albion_dps.qt.market.state_types import _JournalLine, _JournalRule, _JournalTotals
 from albion_dps.settings import load_app_settings, update_app_settings
 
 _JOURNAL_NPC_EMPTY_PRICES: dict[int, int] = {
@@ -57,597 +81,6 @@ _JOURNAL_NAME_BY_KIND: dict[str, str] = {
     "MAGE": "Imbuer's Journal",
     "TOOLMAKER": "Tinker's Journal",
 }
-_RECIPE_SEARCH_TOKEN_ALIASES: dict[str, str] = {
-    "siedge": "siege",
-}
-
-
-@dataclass(frozen=True)
-class InputPreviewRow:
-    item_id: str
-    row_key: str
-    item: str
-    quantity: float
-    stock_quantity: float
-    buy_quantity: float
-    city: str
-    price_type: str
-    price_age_text: str
-    manual_price: int
-    unit_price: float
-    total_cost: float
-    completed: bool = False
-
-
-class MarketInputsModel(QAbstractListModel):
-    ItemIdRole = Qt.UserRole + 1
-    ItemRole = Qt.UserRole + 2
-    QuantityRole = Qt.UserRole + 3
-    CityRole = Qt.UserRole + 4
-    PriceTypeRole = Qt.UserRole + 5
-    PriceAgeRole = Qt.UserRole + 6
-    ManualPriceRole = Qt.UserRole + 7
-    UnitPriceRole = Qt.UserRole + 8
-    TotalCostRole = Qt.UserRole + 9
-    StockQuantityRole = Qt.UserRole + 10
-    BuyQuantityRole = Qt.UserRole + 11
-    RowKeyRole = Qt.UserRole + 12
-    CompletedRole = Qt.UserRole + 13
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._items: list[InputPreviewRow] = []
-
-    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
-        return len(self._items)
-
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
-        if not index.isValid():
-            return None
-        row = index.row()
-        if row < 0 or row >= len(self._items):
-            return None
-        item = self._items[row]
-        if role == self.ItemIdRole:
-            return item.item_id
-        if role == self.RowKeyRole:
-            return item.row_key
-        if role == self.ItemRole:
-            return item.item
-        if role == self.QuantityRole:
-            return item.quantity
-        if role == self.StockQuantityRole:
-            return item.stock_quantity
-        if role == self.BuyQuantityRole:
-            return item.buy_quantity
-        if role == self.CityRole:
-            return item.city
-        if role == self.PriceTypeRole:
-            return item.price_type
-        if role == self.PriceAgeRole:
-            return item.price_age_text
-        if role == self.ManualPriceRole:
-            return item.manual_price
-        if role == self.UnitPriceRole:
-            return item.unit_price
-        if role == self.TotalCostRole:
-            return item.total_cost
-        if role == self.CompletedRole:
-            return item.completed
-        return None
-
-    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
-        return {
-            self.ItemIdRole: b"itemId",
-            self.RowKeyRole: b"rowKey",
-            self.ItemRole: b"item",
-            self.QuantityRole: b"quantity",
-            self.CityRole: b"city",
-            self.PriceTypeRole: b"priceType",
-            self.PriceAgeRole: b"priceAgeText",
-            self.ManualPriceRole: b"manualPrice",
-            self.UnitPriceRole: b"unitPrice",
-            self.TotalCostRole: b"totalCost",
-            self.StockQuantityRole: b"stockQuantity",
-            self.BuyQuantityRole: b"buyQuantity",
-            self.CompletedRole: b"completed",
-        }
-
-    def set_items(self, rows: list[InputPreviewRow]) -> None:
-        self.beginResetModel()
-        self._items = list(rows)
-        self.endResetModel()
-
-    def set_completed_by_item_id(self, item_id: str, completed: bool) -> None:
-        if not item_id:
-            return
-        changed_rows: list[int] = []
-        new_items = list(self._items)
-        for idx, row in enumerate(new_items):
-            if row.item_id != item_id or bool(row.completed) == bool(completed):
-                continue
-            new_items[idx] = InputPreviewRow(
-                item_id=row.item_id,
-                row_key=row.row_key,
-                item=row.item,
-                quantity=row.quantity,
-                stock_quantity=row.stock_quantity,
-                buy_quantity=row.buy_quantity,
-                city=row.city,
-                price_type=row.price_type,
-                price_age_text=row.price_age_text,
-                manual_price=row.manual_price,
-                unit_price=row.unit_price,
-                total_cost=row.total_cost,
-                completed=bool(completed),
-            )
-            changed_rows.append(idx)
-        if not changed_rows:
-            return
-        self._items = new_items
-        for row_idx in changed_rows:
-            model_index = self.index(row_idx, 0)
-            self.dataChanged.emit(model_index, model_index, [self.CompletedRole])
-
-
-@dataclass(frozen=True)
-class OutputPreviewRow:
-    item_id: str
-    item: str
-    quantity: float
-    city: str
-    price_type: str
-    price_age_text: str
-    manual_price: int
-    unit_price: float
-    total_value: float
-    fee_value: float
-    tax_value: float
-    net_value: float
-    completed: bool = False
-
-
-class MarketOutputsModel(QAbstractListModel):
-    ItemIdRole = Qt.UserRole + 1
-    ItemRole = Qt.UserRole + 2
-    QuantityRole = Qt.UserRole + 3
-    CityRole = Qt.UserRole + 4
-    PriceTypeRole = Qt.UserRole + 5
-    PriceAgeRole = Qt.UserRole + 6
-    ManualPriceRole = Qt.UserRole + 7
-    UnitPriceRole = Qt.UserRole + 8
-    TotalValueRole = Qt.UserRole + 9
-    FeeValueRole = Qt.UserRole + 10
-    TaxValueRole = Qt.UserRole + 11
-    NetValueRole = Qt.UserRole + 12
-    CompletedRole = Qt.UserRole + 13
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._items: list[OutputPreviewRow] = []
-
-    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
-        return len(self._items)
-
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
-        if not index.isValid():
-            return None
-        row = index.row()
-        if row < 0 or row >= len(self._items):
-            return None
-        item = self._items[row]
-        if role == self.ItemIdRole:
-            return item.item_id
-        if role == self.ItemRole:
-            return item.item
-        if role == self.QuantityRole:
-            return item.quantity
-        if role == self.CityRole:
-            return item.city
-        if role == self.PriceTypeRole:
-            return item.price_type
-        if role == self.PriceAgeRole:
-            return item.price_age_text
-        if role == self.ManualPriceRole:
-            return item.manual_price
-        if role == self.UnitPriceRole:
-            return item.unit_price
-        if role == self.TotalValueRole:
-            return item.total_value
-        if role == self.FeeValueRole:
-            return item.fee_value
-        if role == self.TaxValueRole:
-            return item.tax_value
-        if role == self.NetValueRole:
-            return item.net_value
-        if role == self.CompletedRole:
-            return item.completed
-        return None
-
-    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
-        return {
-            self.ItemIdRole: b"itemId",
-            self.ItemRole: b"item",
-            self.QuantityRole: b"quantity",
-            self.CityRole: b"city",
-            self.PriceTypeRole: b"priceType",
-            self.PriceAgeRole: b"priceAgeText",
-            self.ManualPriceRole: b"manualPrice",
-            self.UnitPriceRole: b"unitPrice",
-            self.TotalValueRole: b"totalValue",
-            self.FeeValueRole: b"feeValue",
-            self.TaxValueRole: b"taxValue",
-            self.NetValueRole: b"netValue",
-            self.CompletedRole: b"completed",
-        }
-
-    def set_items(self, rows: list[OutputPreviewRow]) -> None:
-        self.beginResetModel()
-        self._items = list(rows)
-        self.endResetModel()
-
-    def set_completed_by_item_id(self, item_id: str, completed: bool) -> None:
-        if not item_id:
-            return
-        changed_rows: list[int] = []
-        new_items = list(self._items)
-        for idx, row in enumerate(new_items):
-            if row.item_id != item_id or bool(row.completed) == bool(completed):
-                continue
-            new_items[idx] = OutputPreviewRow(
-                item_id=row.item_id,
-                item=row.item,
-                quantity=row.quantity,
-                city=row.city,
-                price_type=row.price_type,
-                price_age_text=row.price_age_text,
-                manual_price=row.manual_price,
-                unit_price=row.unit_price,
-                total_value=row.total_value,
-                fee_value=row.fee_value,
-                tax_value=row.tax_value,
-                net_value=row.net_value,
-                completed=bool(completed),
-            )
-            changed_rows.append(idx)
-        if not changed_rows:
-            return
-        self._items = new_items
-        for row_idx in changed_rows:
-            model_index = self.index(row_idx, 0)
-            self.dataChanged.emit(model_index, model_index, [self.CompletedRole])
-
-
-@dataclass(frozen=True)
-class ShoppingPreviewRow:
-    item_id: str
-    item: str
-    quantity: float
-    city: str
-    price_type: str
-    unit_price: float
-    total_cost: float
-
-
-class MarketShoppingModel(QAbstractListModel):
-    ItemIdRole = Qt.UserRole + 1
-    ItemRole = Qt.UserRole + 2
-    QuantityRole = Qt.UserRole + 3
-    CityRole = Qt.UserRole + 4
-    PriceTypeRole = Qt.UserRole + 5
-    UnitPriceRole = Qt.UserRole + 6
-    TotalCostRole = Qt.UserRole + 7
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._items: list[ShoppingPreviewRow] = []
-
-    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
-        return len(self._items)
-
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
-        if not index.isValid():
-            return None
-        row = index.row()
-        if row < 0 or row >= len(self._items):
-            return None
-        item = self._items[row]
-        if role == self.ItemIdRole:
-            return item.item_id
-        if role == self.ItemRole:
-            return item.item
-        if role == self.QuantityRole:
-            return item.quantity
-        if role == self.CityRole:
-            return item.city
-        if role == self.PriceTypeRole:
-            return item.price_type
-        if role == self.UnitPriceRole:
-            return item.unit_price
-        if role == self.TotalCostRole:
-            return item.total_cost
-        return None
-
-    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
-        return {
-            self.ItemIdRole: b"itemId",
-            self.ItemRole: b"item",
-            self.QuantityRole: b"quantity",
-            self.CityRole: b"city",
-            self.PriceTypeRole: b"priceType",
-            self.UnitPriceRole: b"unitPrice",
-            self.TotalCostRole: b"totalCost",
-        }
-
-    def set_items(self, rows: list[ShoppingPreviewRow]) -> None:
-        self.beginResetModel()
-        self._items = list(rows)
-        self.endResetModel()
-
-
-@dataclass(frozen=True)
-class SellingPreviewRow:
-    item_id: str
-    item: str
-    quantity: float
-    city: str
-    price_type: str
-    unit_price: float
-    total_value: float
-
-
-class MarketSellingModel(QAbstractListModel):
-    ItemIdRole = Qt.UserRole + 1
-    ItemRole = Qt.UserRole + 2
-    QuantityRole = Qt.UserRole + 3
-    CityRole = Qt.UserRole + 4
-    PriceTypeRole = Qt.UserRole + 5
-    UnitPriceRole = Qt.UserRole + 6
-    TotalValueRole = Qt.UserRole + 7
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._items: list[SellingPreviewRow] = []
-
-    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
-        return len(self._items)
-
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
-        if not index.isValid():
-            return None
-        row = index.row()
-        if row < 0 or row >= len(self._items):
-            return None
-        item = self._items[row]
-        if role == self.ItemIdRole:
-            return item.item_id
-        if role == self.ItemRole:
-            return item.item
-        if role == self.QuantityRole:
-            return item.quantity
-        if role == self.CityRole:
-            return item.city
-        if role == self.PriceTypeRole:
-            return item.price_type
-        if role == self.UnitPriceRole:
-            return item.unit_price
-        if role == self.TotalValueRole:
-            return item.total_value
-        return None
-
-    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
-        return {
-            self.ItemIdRole: b"itemId",
-            self.ItemRole: b"item",
-            self.QuantityRole: b"quantity",
-            self.CityRole: b"city",
-            self.PriceTypeRole: b"priceType",
-            self.UnitPriceRole: b"unitPrice",
-            self.TotalValueRole: b"totalValue",
-        }
-
-    def set_items(self, rows: list[SellingPreviewRow]) -> None:
-        self.beginResetModel()
-        self._items = list(rows)
-        self.endResetModel()
-
-
-@dataclass(frozen=True)
-class ResultItemRow:
-    item_id: str
-    item: str
-    city: str
-    quantity: float
-    unit_price: float
-    revenue: float
-    allocated_cost: float
-    fee_value: float
-    tax_value: float
-    profit: float
-    margin_percent: float
-    demand_proxy: float
-
-
-class MarketResultsItemsModel(QAbstractListModel):
-    ItemIdRole = Qt.UserRole + 1
-    ItemRole = Qt.UserRole + 2
-    CityRole = Qt.UserRole + 3
-    QuantityRole = Qt.UserRole + 4
-    UnitPriceRole = Qt.UserRole + 5
-    RevenueRole = Qt.UserRole + 6
-    CostRole = Qt.UserRole + 7
-    FeeRole = Qt.UserRole + 8
-    TaxRole = Qt.UserRole + 9
-    ProfitRole = Qt.UserRole + 10
-    MarginRole = Qt.UserRole + 11
-    DemandRole = Qt.UserRole + 12
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._items: list[ResultItemRow] = []
-
-    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
-        return len(self._items)
-
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
-        if not index.isValid():
-            return None
-        row = index.row()
-        if row < 0 or row >= len(self._items):
-            return None
-        item = self._items[row]
-        if role == self.ItemIdRole:
-            return item.item_id
-        if role == self.ItemRole:
-            return item.item
-        if role == self.CityRole:
-            return item.city
-        if role == self.QuantityRole:
-            return item.quantity
-        if role == self.UnitPriceRole:
-            return item.unit_price
-        if role == self.RevenueRole:
-            return item.revenue
-        if role == self.CostRole:
-            return item.allocated_cost
-        if role == self.FeeRole:
-            return item.fee_value
-        if role == self.TaxRole:
-            return item.tax_value
-        if role == self.ProfitRole:
-            return item.profit
-        if role == self.MarginRole:
-            return item.margin_percent
-        if role == self.DemandRole:
-            return item.demand_proxy
-        return None
-
-    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
-        return {
-            self.ItemIdRole: b"itemId",
-            self.ItemRole: b"item",
-            self.CityRole: b"city",
-            self.QuantityRole: b"quantity",
-            self.UnitPriceRole: b"unitPrice",
-            self.RevenueRole: b"revenue",
-            self.CostRole: b"cost",
-            self.FeeRole: b"feeValue",
-            self.TaxRole: b"taxValue",
-            self.ProfitRole: b"profit",
-            self.MarginRole: b"marginPercent",
-            self.DemandRole: b"demandProxy",
-        }
-
-    def set_items(self, rows: list[ResultItemRow]) -> None:
-        self.beginResetModel()
-        self._items = list(rows)
-        self.endResetModel()
-
-
-@dataclass(frozen=True)
-class BreakdownRow:
-    label: str
-    value: float
-
-
-class MarketBreakdownModel(QAbstractListModel):
-    LabelRole = Qt.UserRole + 1
-    ValueRole = Qt.UserRole + 2
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._items: list[BreakdownRow] = []
-
-    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
-        return len(self._items)
-
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
-        if not index.isValid():
-            return None
-        row = index.row()
-        if row < 0 or row >= len(self._items):
-            return None
-        item = self._items[row]
-        if role == self.LabelRole:
-            return item.label
-        if role == self.ValueRole:
-            return item.value
-        return None
-
-    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
-        return {
-            self.LabelRole: b"label",
-            self.ValueRole: b"value",
-        }
-
-    def set_items(self, rows: list[BreakdownRow]) -> None:
-        self.beginResetModel()
-        self._items = list(rows)
-        self.endResetModel()
-
-
-@dataclass(frozen=True)
-class RecipeOptionRow:
-    recipe_id: str
-    display_name: str
-    tier: int
-    enchant: int
-    variant_label: str = ""
-    uses_crystallized: bool = False
-
-
-@dataclass(frozen=True)
-class RecipeFilter:
-    terms: tuple[str, ...]
-    tier: int | None
-    enchant: int | None
-
-
-@dataclass(frozen=True)
-class _JournalRule:
-    kind: str
-    tier: int
-    empty_item_id: str
-    full_item_id: str
-    max_fame: float
-    fame_per_item: float
-
-
-@dataclass(frozen=True)
-class _JournalTotals:
-    input_cost: float = 0.0
-    output_value: float = 0.0
-    market_tax: float = 0.0
-    full_quantity: float = 0.0
-    lines: tuple["_JournalLine", ...] = ()
-
-    @property
-    def net_profit(self) -> float:
-        return float(self.output_value - self.input_cost - self.market_tax)
-
-
-@dataclass(frozen=True)
-class _JournalLine:
-    kind: str
-    tier: int
-    empty_item_id: str
-    full_item_id: str
-    empty_quantity: float
-    full_quantity: float
-    input_cost: float
-    output_value: float
-    market_tax: float
-    input_price_mode: str = PriceType.SELL_ORDER.value
-    output_price_mode: str = PriceType.SELL_ORDER.value
-    empty_price_item_id: str = ""
-    full_price_item_id: str = ""
-
-    @property
-    def net_profit(self) -> float:
-        return float(self.output_value - self.input_cost - self.market_tax)
-
-
-_RECIPE_TIER_ENCHANT_RE = re.compile(r"\b(?:t)?(?P<tier>[1-8])(?:[.\-\/](?P<ench>[0-4]))?\b", re.IGNORECASE)
 _TIER_PREFIX_RE = re.compile(r"^T(?P<tier>\d+)_(?P<rest>.+)$", re.IGNORECASE)
 _LEVEL_SUFFIX_RE = re.compile(r"_LEVEL\d+$", re.IGNORECASE)
 
@@ -710,236 +143,6 @@ _ITEM_ID_WORD_ALIASES: dict[str, str] = {
     "HOLYSTAFF": "Holy Staff",
     "NATURESTAFF": "Nature Staff",
 }
-
-
-class RecipeOptionsModel(QAbstractListModel):
-    RecipeIdRole = Qt.UserRole + 1
-    DisplayNameRole = Qt.UserRole + 2
-    TierRole = Qt.UserRole + 3
-    EnchantRole = Qt.UserRole + 4
-    VariantLabelRole = Qt.UserRole + 5
-    UsesCrystallizedRole = Qt.UserRole + 6
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._all_items: list[RecipeOptionRow] = []
-        self._items: list[RecipeOptionRow] = []
-        self._filter = RecipeFilter(terms=(), tier=None, enchant=None)
-        self._tier_filters: tuple[int, ...] = ()
-        self._enchant_filters: tuple[int, ...] = ()
-
-    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
-        return len(self._items)
-
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
-        if not index.isValid():
-            return None
-        row = index.row()
-        if row < 0 or row >= len(self._items):
-            return None
-        item = self._items[row]
-        if role == self.RecipeIdRole:
-            return item.recipe_id
-        if role == self.DisplayNameRole:
-            return item.display_name
-        if role == self.TierRole:
-            return item.tier
-        if role == self.EnchantRole:
-            return item.enchant
-        if role == self.VariantLabelRole:
-            return item.variant_label
-        if role == self.UsesCrystallizedRole:
-            return bool(item.uses_crystallized)
-        return None
-
-    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
-        return {
-            self.RecipeIdRole: b"recipeId",
-            self.DisplayNameRole: b"displayName",
-            self.TierRole: b"tier",
-            self.EnchantRole: b"enchant",
-            self.VariantLabelRole: b"variantLabel",
-            self.UsesCrystallizedRole: b"usesCrystallized",
-        }
-
-    def set_items(self, rows: list[RecipeOptionRow]) -> None:
-        self._all_items = list(rows)
-        self._apply_filter()
-
-    def set_query(self, query: str) -> None:
-        self._filter = _parse_recipe_filter(query)
-        self._apply_filter()
-
-    def set_tier_filters(self, tiers: Sequence[int] | None) -> None:
-        normalized = tuple(_normalize_int_values(tiers, minimum=1, maximum=8))
-        if normalized == self._tier_filters:
-            return
-        self._tier_filters = normalized
-        self._apply_filter()
-
-    def set_enchant_filters(self, enchants: Sequence[int] | None) -> None:
-        normalized = tuple(_normalize_int_values(enchants, minimum=0, maximum=4))
-        if normalized == self._enchant_filters:
-            return
-        self._enchant_filters = normalized
-        self._apply_filter()
-
-    def set_enchant_filter(self, enchant: int | None) -> None:
-        if enchant is None:
-            self.set_enchant_filters(())
-            return
-        parsed = int(enchant)
-        if parsed < 0:
-            self.set_enchant_filters(())
-            return
-        self.set_enchant_filters((parsed,))
-
-    def _apply_filter(self) -> None:
-        rows = self._all_items
-        if self._filter.terms or self._filter.tier is not None or self._filter.enchant is not None:
-            rows = [row for row in rows if _matches_recipe_filter(row, self._filter)]
-        if self._tier_filters:
-            tiers = set(self._tier_filters)
-            rows = [row for row in rows if int(row.tier) in tiers]
-        if self._enchant_filters:
-            enchants = set(self._enchant_filters)
-            rows = [row for row in rows if int(row.enchant) in enchants]
-        self.beginResetModel()
-        self._items = list(rows)
-        self.endResetModel()
-
-    def recipe_id_at(self, index: int) -> str | None:
-        if index < 0 or index >= len(self._items):
-            return None
-        return self._items[index].recipe_id
-
-    def index_of_recipe(self, recipe_id: str) -> int:
-        for idx, item in enumerate(self._items):
-            if item.recipe_id == recipe_id:
-                return idx
-        return -1
-
-    def recipe_ids(self) -> list[str]:
-        return [item.recipe_id for item in self._items]
-
-
-@dataclass(frozen=True)
-class CraftPlanRow:
-    row_id: int
-    recipe_id: str
-    display_name: str
-    tier: int
-    enchant: int
-    variant_label: str
-    uses_crystallized: bool
-    craft_city: str
-    daily_bonus_percent: float
-    return_rate_percent: float | None
-    runs: int
-    enabled: bool
-    profit_percent: float | None = None
-    has_fresh_component_prices: bool = True
-
-
-class CraftPlanModel(QAbstractListModel):
-    RowIdRole = Qt.UserRole + 1
-    RecipeIdRole = Qt.UserRole + 2
-    DisplayNameRole = Qt.UserRole + 3
-    TierRole = Qt.UserRole + 4
-    EnchantRole = Qt.UserRole + 5
-    CraftCityRole = Qt.UserRole + 6
-    DailyBonusRole = Qt.UserRole + 7
-    ReturnRateRole = Qt.UserRole + 8
-    RunsRole = Qt.UserRole + 9
-    EnabledRole = Qt.UserRole + 10
-    ProfitPercentRole = Qt.UserRole + 11
-    HasFreshComponentPricesRole = Qt.UserRole + 12
-    VariantLabelRole = Qt.UserRole + 13
-    UsesCrystallizedRole = Qt.UserRole + 14
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._items: list[CraftPlanRow] = []
-
-    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
-        return len(self._items)
-
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
-        if not index.isValid():
-            return None
-        row = index.row()
-        if row < 0 or row >= len(self._items):
-            return None
-        item = self._items[row]
-        if role == self.RowIdRole:
-            return item.row_id
-        if role == self.RecipeIdRole:
-            return item.recipe_id
-        if role == self.DisplayNameRole:
-            return item.display_name
-        if role == self.TierRole:
-            return item.tier
-        if role == self.EnchantRole:
-            return item.enchant
-        if role == self.CraftCityRole:
-            return item.craft_city
-        if role == self.DailyBonusRole:
-            return item.daily_bonus_percent
-        if role == self.ReturnRateRole:
-            return item.return_rate_percent
-        if role == self.RunsRole:
-            return item.runs
-        if role == self.EnabledRole:
-            return item.enabled
-        if role == self.ProfitPercentRole:
-            return item.profit_percent
-        if role == self.HasFreshComponentPricesRole:
-            return bool(item.has_fresh_component_prices)
-        if role == self.VariantLabelRole:
-            return item.variant_label
-        if role == self.UsesCrystallizedRole:
-            return bool(item.uses_crystallized)
-        return None
-
-    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
-        return {
-            self.RowIdRole: b"rowId",
-            self.RecipeIdRole: b"recipeId",
-            self.DisplayNameRole: b"displayName",
-            self.TierRole: b"tier",
-            self.EnchantRole: b"enchant",
-            self.CraftCityRole: b"craftCity",
-            self.DailyBonusRole: b"dailyBonusPercent",
-            self.ReturnRateRole: b"returnRatePercent",
-            self.RunsRole: b"runs",
-            self.EnabledRole: b"isEnabled",
-            self.ProfitPercentRole: b"profitPercent",
-            self.HasFreshComponentPricesRole: b"hasFreshComponentPrices",
-            self.VariantLabelRole: b"variantLabel",
-            self.UsesCrystallizedRole: b"usesCrystallized",
-        }
-
-    def set_items(self, rows: list[CraftPlanRow]) -> None:
-        self.beginResetModel()
-        self._items = list(rows)
-        self.endResetModel()
-
-    def set_items_in_place(self, rows: list[CraftPlanRow]) -> None:
-        incoming = list(rows)
-        if len(incoming) != len(self._items):
-            self.set_items(incoming)
-            return
-        for idx, current in enumerate(self._items):
-            if int(current.row_id) != int(incoming[idx].row_id):
-                self.set_items(incoming)
-                return
-        changed_indexes = [idx for idx, current in enumerate(self._items) if incoming[idx] != current]
-        if not changed_indexes:
-            return
-        self._items = incoming
-        first = min(changed_indexes)
-        last = max(changed_indexes)
-        self.dataChanged.emit(self.index(first, 0), self.index(last, 0), [])
 
 
 class MarketSetupState(QObject):
@@ -3057,96 +2260,26 @@ class MarketSetupState(QObject):
         input_total: float,
     ) -> list[ResultItemRow]:
         _ = input_total
-        acc: dict[tuple[str, str, str, float], dict[str, float | str]] = {}
-        for run in runs:
-            if not run.outputs:
-                continue
-            run_journal_totals = self._estimate_journal_totals(
-                runs=[run],
+        return build_results_rows_from_runs(
+            runs=runs,
+            setup=self._setup,
+            results_sort_key=self._results_sort_key,
+            estimate_journal_totals=lambda selected_runs: self._estimate_journal_totals(
+                runs=selected_runs,
                 setup=self._setup,
                 price_index=self._price_index,
-            )
-            run_input_cost = float(sum(line.total_cost for line in run.inputs) + float(run_journal_totals.input_cost))
-            valuations = compute_output_valuations(
-                output_lines=run.outputs,
-                station_fee_percent=self._setup.station_fee_percent,
-                market_tax_percent=self._setup.market_tax_percent,
-            )
-            run_revenue_total = max(0.0, sum(float(v.gross_value) for v in valuations))
-            run_journal_gross = float(run_journal_totals.output_value)
-            run_journal_tax = float(run_journal_totals.market_tax)
-            run_journal_net = max(0.0, run_journal_gross - run_journal_tax)
-            for valuation in valuations:
-                line = valuation.line
-                share = (float(valuation.gross_value) / run_revenue_total) if run_revenue_total > 0 else 0.0
-                allocated_cost = run_input_cost * share
-                allocated_journal_gross = run_journal_gross * share
-                allocated_journal_tax = run_journal_tax * share
-                allocated_journal_net = run_journal_net * share
-                key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
-                row = acc.get(key)
-                if row is None:
-                    acc[key] = {
-                        "item_id": line.item.unique_name,
-                        "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
-                        "quantity": float(line.quantity),
-                        "city": line.city,
-                        "price_type": line.price_type.value,
-                        "unit_price": float(line.unit_price),
-                        "total_value": float(valuation.gross_value + allocated_journal_gross),
-                        "allocated_cost": float(allocated_cost),
-                        "fee_value": float(valuation.fee_value),
-                        "tax_value": float(valuation.tax_value + allocated_journal_tax),
-                        "net_value": float(valuation.net_value + allocated_journal_net),
-                    }
-                else:
-                    row["quantity"] = float(row["quantity"]) + float(line.quantity)
-                    row["total_value"] = float(row["total_value"]) + float(valuation.gross_value + allocated_journal_gross)
-                    row["allocated_cost"] = float(row["allocated_cost"]) + float(allocated_cost)
-                    row["fee_value"] = float(row["fee_value"]) + float(valuation.fee_value)
-                    row["tax_value"] = float(row["tax_value"]) + float(valuation.tax_value + allocated_journal_tax)
-                    row["net_value"] = float(row["net_value"]) + float(valuation.net_value + allocated_journal_net)
-
-        rows: list[ResultItemRow] = []
-        for output in acc.values():
-            allocated_cost = float(output["allocated_cost"])
-            fee_value = float(output["fee_value"])
-            tax_value = float(output["tax_value"])
-            net_value = float(output["net_value"])
-            profit, margin = _result_row_profit_and_margin(
+            ),
+            demand_proxy_percent=lambda item_id, city: self._demand_proxy_percent(
+                item_id=item_id,
+                city=city,
+                quality=self._setup.quality,
+            ),
+            item_label=_friendly_item_label,
+            result_row_profit_and_margin=lambda allocated_cost, net_value: _result_row_profit_and_margin(
                 allocated_cost=allocated_cost,
                 net_value=net_value,
-            )
-            rows.append(
-                ResultItemRow(
-                    item_id=str(output["item_id"]),
-                    item=str(output["item"]),
-                    city=str(output["city"]),
-                    quantity=float(output["quantity"]),
-                    unit_price=float(output["unit_price"]),
-                    revenue=float(output["total_value"]),
-                    allocated_cost=float(allocated_cost),
-                    fee_value=float(fee_value),
-                    tax_value=float(tax_value),
-                    profit=float(profit),
-                    margin_percent=float(margin),
-                    demand_proxy=float(
-                        self._demand_proxy_percent(
-                            item_id=str(output["item_id"]),
-                            city=str(output["city"]),
-                            quality=self._setup.quality,
-                        )
-                    ),
-                )
-            )
-
-        if self._results_sort_key == "margin":
-            rows.sort(key=lambda x: x.margin_percent, reverse=True)
-        elif self._results_sort_key == "revenue":
-            rows.sort(key=lambda x: x.revenue, reverse=True)
-        else:
-            rows.sort(key=lambda x: x.profit, reverse=True)
-        return rows
+            ),
+        )
 
     def _accumulate_input_preview_rows(
         self,
@@ -3154,63 +2287,26 @@ class MarketSetupState(QObject):
         prepared_recipes: list[tuple[CraftPlanRow, Recipe]],
         runs: list[CraftRun],
     ) -> dict[tuple[str, str, str, float], dict[str, object]]:
-        input_acc: dict[tuple[str, str, str, float], dict[str, object]] = {}
-        for (_, recipe), run in zip(prepared_recipes, runs):
-            return_fraction = effective_return_fraction(setup=run.setup, recipe=recipe)
-            for component, line in zip(recipe.components, run.inputs):
-                key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
-                row = input_acc.get(key)
-                if row is None:
-                    input_acc[key] = {
-                        "item_id": line.item.unique_name,
-                        "item": _friendly_item_label(line.item.display_name, line.item.unique_name),
-                        "item_ref": line.item,
-                        "city": line.city,
-                        "price_type": line.price_type.value,
-                        "price_age_text": self._price_age_text(
-                            item_id=line.item.unique_name,
-                            city=line.city,
-                            quality=self._setup.quality,
-                            price_type=line.price_type.value,
-                        ),
-                        "unit_price": float(line.unit_price),
-                        "quantity": 0.0,
-                        "total_cost": 0.0,
-                        "returnable": bool(component.returnable),
-                        "return_batches": [],
-                    }
-                    row = input_acc[key]
-                if component.returnable:
-                    batches = row.setdefault("return_batches", [])
-                    if isinstance(batches, list):
-                        batches.extend(
-                            [
-                                (float(component.quantity), float(return_fraction))
-                                for _ in range(int(run.quantity))
-                            ]
-                        )
-                    effective_batches = batches if isinstance(batches, list) else []
-                    preview_quantity = _minimal_upfront_quantity_for_batches(effective_batches)
-                    preview_quantity += float(_upfront_return_safety_units(effective_batches))
-                else:
-                    preview_quantity = float(row.get("quantity", 0.0)) + float(line.quantity)
-                row["quantity"] = float(preview_quantity)
-                row["total_cost"] = float(preview_quantity * float(line.unit_price))
-                row["returnable"] = bool(row.get("returnable", False) or component.returnable)
-        return input_acc
+        return accumulate_input_preview_rows(
+            prepared_recipes=prepared_recipes,
+            runs=runs,
+            price_age_text=lambda item_id, city, price_type: self._price_age_text(
+                item_id=item_id,
+                city=city,
+                quality=self._setup.quality,
+                price_type=price_type,
+            ),
+            item_label=_friendly_item_label,
+            minimal_upfront_quantity_for_batches=_minimal_upfront_quantity_for_batches,
+            upfront_return_safety_units=_upfront_return_safety_units,
+        )
 
     def _build_breakdown_rows(self) -> list[BreakdownRow]:
-        rows: list[BreakdownRow] = [
-            BreakdownRow(label="Raw materials", value=float(self._selected_material_input_total_cost)),
-        ]
-        if self._results_journal_totals.input_cost > 0:
-            rows.append(BreakdownRow(label="Journals (empty)", value=float(self._results_journal_totals.input_cost)))
-        rows.append(BreakdownRow(label="Station fee", value=float(self._breakdown.station_fee)))
-        rows.append(BreakdownRow(label="Market tax", value=float(self._breakdown.market_tax)))
-        if self._results_journal_totals.output_value > 0:
-            rows.append(BreakdownRow(label="Journals (full)", value=float(self._results_journal_totals.output_value)))
-        rows.append(BreakdownRow(label="Net profit", value=float(self._breakdown.net_profit)))
-        return rows
+        return build_breakdown_rows(
+            selected_material_input_total_cost=self._selected_material_input_total_cost,
+            journal_totals=self._results_journal_totals,
+            breakdown=self._breakdown,
+        )
 
     def _compute_input_total_from_lines(
         self,
@@ -3218,32 +2314,11 @@ class MarketSetupState(QObject):
         input_lines: list[InputLine] | tuple[InputLine, ...],
         prepared_recipes: list[tuple[CraftPlanRow, Recipe]],
     ) -> float:
-        input_acc: dict[tuple[str, str, str, float], dict[str, float | str]] = {}
-        for line in input_lines:
-            key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
-            row = input_acc.get(key)
-            if row is None:
-                input_acc[key] = {
-                    "item_id": line.item.unique_name,
-                    "city": line.city,
-                    "price_type": line.price_type.value,
-                    "unit_price": float(line.unit_price),
-                    "quantity": float(line.quantity),
-                }
-            else:
-                row["quantity"] = float(row["quantity"]) + float(line.quantity)
-
-        total_cost = 0.0
-        for row in input_acc.values():
-            item_id = str(row["item_id"])
-            quantity_raw = float(row["quantity"])
-            stock_qty = float(max(0.0, self._input_stock_quantities.get(item_id, 0.0)))
-            stock_qty = min(stock_qty, quantity_raw)
-            buy_qty = max(0.0, quantity_raw - stock_qty)
-            unit_price = float(row["unit_price"])
-            total_cost += float(buy_qty * unit_price)
-
-        return float(total_cost)
+        _ = prepared_recipes
+        return compute_input_total_from_lines(
+            input_lines=input_lines,
+            input_stock_quantities=self._input_stock_quantities,
+        )
 
     def _demand_proxy_percent(self, *, item_id: str, city: str, quality: int) -> float:
         quote = _find_price_quote(
@@ -4920,34 +3995,6 @@ def _input_preview_row_key(item_id: str, city: str, price_type: str) -> str:
     return f"{item_id}|{city}|{price_type}"
 
 
-def _normalize_recipe_search_token(token: str) -> str:
-    normalized = token.strip().lower()
-    if not normalized:
-        return ""
-    return _RECIPE_SEARCH_TOKEN_ALIASES.get(normalized, normalized)
-
-
-def _parse_recipe_filter(query: str) -> RecipeFilter:
-    text = query.strip().lower()
-    if not text:
-        return RecipeFilter(terms=(), tier=None, enchant=None)
-
-    tier: int | None = None
-    enchant: int | None = None
-    remainder = text
-    match = _RECIPE_TIER_ENCHANT_RE.search(text)
-    if match is not None:
-        tier = int(match.group("tier"))
-        enchant_raw = match.group("ench")
-        enchant = int(enchant_raw) if enchant_raw is not None else None
-        start, end = match.span()
-        remainder = (text[:start] + " " + text[end:]).strip()
-
-    clean = "".join(ch if ch.isalnum() else " " for ch in remainder)
-    terms = tuple(_normalize_recipe_search_token(part) for part in clean.split() if _normalize_recipe_search_token(part))
-    return RecipeFilter(terms=terms, tier=tier, enchant=enchant)
-
-
 def _normalize_int_values(
     values: Sequence[object] | None,
     *,
@@ -4983,14 +4030,3 @@ def _normalize_int_values(
         if minimum <= parsed <= maximum:
             normalized.add(parsed)
     return sorted(normalized)
-
-
-def _matches_recipe_filter(row: RecipeOptionRow, recipe_filter: RecipeFilter) -> bool:
-    if recipe_filter.tier is not None and int(row.tier or 0) != int(recipe_filter.tier):
-        return False
-    if recipe_filter.enchant is not None and int(row.enchant or 0) != int(recipe_filter.enchant):
-        return False
-    if not recipe_filter.terms:
-        return True
-    haystack = f"{row.display_name} {row.recipe_id}".lower()
-    return all(term in haystack for term in recipe_filter.terms)
