@@ -139,8 +139,8 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: theme.cornerRadiusPanel
-        color: theme.surfacePanel
-        border.color: theme.borderSubtle
+        color: theme.cardLevel0
+        border.color: theme.borderStrong
         clip: true
 
         ColumnLayout {
@@ -259,8 +259,8 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 radius: theme.radiusLg
-                color: theme.cardLevel1
-                border.color: theme.borderSubtle
+                color: theme.cardLevel2
+                border.color: theme.borderStrong
                 implicitHeight: compactLayout ? 128 : 84
 
                 ColumnLayout {
@@ -371,8 +371,8 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     radius: theme.radiusLg
-                    color: theme.cardLevel1
-                    border.color: theme.borderSubtle
+                    color: theme.surfacePanel
+                    border.color: theme.borderStrong
                     clip: true
 
                     ColumnLayout {
@@ -581,7 +581,7 @@ Item {
                                         text: root.kindFilter === "silver"
                                             ? "No silver events yet"
                                             : (root.kindFilter === "items" ? "No item drops yet" : "No loot yet")
-                                        color: theme.textPrimary
+                                        color: theme.textSecondary
                                         font.pixelSize: 18
                                         font.bold: true
                                     }
@@ -589,7 +589,7 @@ Item {
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: "Party-only data will appear here after loot events are detected."
-                                        color: theme.textMuted
+                                        color: theme.textSecondary
                                         font.pixelSize: 12
                                     }
                                 }
@@ -608,8 +608,8 @@ Item {
                         Layout.preferredHeight: 188
                         Layout.fillHeight: false
                         radius: theme.radiusLg
-                        color: theme.cardLevel1
-                        border.color: theme.borderSubtle
+                        color: theme.surfacePanel
+                        border.color: theme.borderStrong
                         clip: true
 
                         ColumnLayout {
@@ -637,6 +637,7 @@ Item {
                                     model: root.topLootersModel
 
                                     delegate: Rectangle {
+                                        required property int index
                                         required property string label
                                         required property string sublabel
                                         required property int quantity
@@ -674,23 +675,23 @@ Item {
                                     anchors.fill: parent
                                     visible: topLootersList.count === 0
 
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "No looters in this view"
-                                        color: theme.textMuted
-                                        font.pixelSize: 12
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "No looters in this view"
+                                            color: theme.textSecondary
+                                            font.pixelSize: 12
+                                        }
                                     }
                                 }
                             }
-                        }
                     }
 
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         radius: theme.radiusLg
-                        color: theme.cardLevel1
-                        border.color: theme.borderSubtle
+                        color: theme.surfacePanel
+                        border.color: theme.borderStrong
                         clip: true
 
                         ColumnLayout {
@@ -735,6 +736,7 @@ Item {
                                     model: root.topItemsModel
 
                                     delegate: Rectangle {
+                                        required property int index
                                         required property string label
                                         required property string sublabel
                                         required property int quantity
@@ -772,23 +774,23 @@ Item {
                                     anchors.fill: parent
                                     visible: topItemsList.count === 0
 
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "No item drops in this view"
-                                        color: theme.textMuted
-                                        font.pixelSize: 12
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "No item drops in this view"
+                                            color: theme.textSecondary
+                                            font.pixelSize: 12
+                                        }
                                     }
                                 }
                             }
-                        }
                     }
 
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         radius: theme.radiusLg
-                        color: theme.cardLevel1
-                        border.color: theme.borderSubtle
+                        color: theme.surfacePanel
+                        border.color: theme.borderStrong
                         clip: true
 
                         ColumnLayout {
@@ -833,6 +835,7 @@ Item {
                                     model: root.topSilverLootersModel
 
                                     delegate: Rectangle {
+                                        required property int index
                                         required property string label
                                         required property string sublabel
                                         required property int quantity
@@ -870,15 +873,15 @@ Item {
                                     anchors.fill: parent
                                     visible: topSilverList.count === 0
 
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: "No silver events in this view"
-                                        color: theme.textMuted
-                                        font.pixelSize: 12
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "No silver events in this view"
+                                            color: theme.textSecondary
+                                            font.pixelSize: 12
+                                        }
                                     }
                                 }
                             }
-                        }
                     }
                 }
             }
