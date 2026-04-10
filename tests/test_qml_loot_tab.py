@@ -40,8 +40,15 @@ LootTab {
     theme: Theme
     compactLayout: false
     eventCount: 2
+    totalQuantity: 3
+    uniqueLooters: 2
+    uniqueItems: 2
     latestLootSummary: "Alice looted 2x Journeyman's Bag from Enemy"
     logPath: "artifacts/loot/loot-events-2026-04-10-12-34-56.txt"
+    logDirectoryUrl: "file:///C:/Users/Users/Documents/DPS_Master/DPS_Meter_AO/artifacts/loot"
+    searchQuery: ""
+    sourceFilter: "all"
+    sourceFilterOptions: ["all", "player", "mob", "silver", "system"]
     eventsModel: ListModel {
         ListElement {
             timestampText: "01:01:01"
@@ -56,6 +63,12 @@ LootTab {
             isSilver: false
             summary: "Alice looted 2x Journeyman's Bag from Enemy"
         }
+    }
+    topLootersModel: ListModel {
+        ListElement { label: "Alice"; sublabel: "Guild A"; quantity: 2; eventCount: 1 }
+    }
+    topItemsModel: ListModel {
+        ListElement { label: "Journeyman's Bag"; sublabel: "T3_BAG"; quantity: 2; eventCount: 1 }
     }
 }
 """

@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QAbstractListModel, QModelIndex, QObject, Property, Qt, Signal
+from PySide6.QtCore import (
+    QAbstractListModel,
+    QModelIndex,
+    QObject,
+    Property,
+    Qt,
+    Signal,
+    Slot,
+)
+from PySide6.QtGui import QGuiApplication
 
 from albion_dps.domain.loot_export import loot_events_to_txt
 from albion_dps.domain.loot_types import LootEvent
@@ -22,6 +32,14 @@ class LootRow:
     source_kind: str
     is_silver: bool
     summary: str
+
+
+@dataclass(frozen=True)
+class LootAggregateRow:
+    label: str
+    sublabel: str
+    quantity: int
+    event_count: int
 
 
 class LootEventsModel(QAbstractListModel):
@@ -98,6 +116,52 @@ class LootEventsModel(QAbstractListModel):
         self.endResetModel()
 
 
+class LootAggregateModel(QAbstractListModel):
+    LabelRole = Qt.UserRole + 1
+    SublabelRole = Qt.UserRole + 2
+    QuantityRole = Qt.UserRole + 3
+    EventCountRole = Qt.UserRole + 4
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._items: list[LootAggregateRow] = []
+
+    def rowCount(self, _parent: QModelIndex | None = None) -> int:  # type: ignore[override]
+        return len(self._items)
+
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:  # type: ignore[override]
+        if not index.isValid():
+            return None
+        row = index.row()
+        if row < 0 or row >= len(self._items):
+            return None
+        item = self._items[row]
+        if role == self.LabelRole:
+            return item.label
+        if role == self.SublabelRole:
+            return item.sublabel
+        if role == self.QuantityRole:
+            return item.quantity
+        if role == self.EventCountRole:
+            return item.event_count
+        return None
+
+    def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
+        return {
+            self.LabelRole: b"label",
+            self.SublabelRole: b"sublabel",
+            self.QuantityRole: b"quantity",
+            self.EventCountRole: b"eventCount",
+        }
+
+    def set_items(self, items: list[LootAggregateRow]) -> None:
+        if items == self._items:
+            return
+        self.beginResetModel()
+        self._items = list(items)
+        self.endResetModel()
+
+
 class LootState(QObject):
     changed = Signal()
 
@@ -105,18 +169,47 @@ class LootState(QObject):
         super().__init__()
         self._history_limit = max(1, int(history_limit))
         self._events_model = LootEventsModel()
+        self._top_looters_model = LootAggregateModel()
+        self._top_items_model = LootAggregateModel()
+        self._all_events: list[LootEvent] = []
+        self._search_query = ""
+        self._source_filter = "all"
         self._event_count = 0
+        self._total_quantity = 0
+        self._unique_looters = 0
+        self._unique_items = 0
         self._latest_summary = ""
         self._export_text = loot_events_to_txt([])
         self._log_path = ""
+        self._log_directory_url = ""
 
     @Property(QObject, constant=True)
     def eventsModel(self) -> LootEventsModel:
         return self._events_model
 
+    @Property(QObject, constant=True)
+    def topLootersModel(self) -> LootAggregateModel:
+        return self._top_looters_model
+
+    @Property(QObject, constant=True)
+    def topItemsModel(self) -> LootAggregateModel:
+        return self._top_items_model
+
     @Property(int, notify=changed)
     def eventCount(self) -> int:
         return self._event_count
+
+    @Property(int, notify=changed)
+    def totalQuantity(self) -> int:
+        return self._total_quantity
+
+    @Property(int, notify=changed)
+    def uniqueLooters(self) -> int:
+        return self._unique_looters
+
+    @Property(int, notify=changed)
+    def uniqueItems(self) -> int:
+        return self._unique_items
 
     @Property(str, notify=changed)
     def latestLootSummary(self) -> str:
@@ -130,29 +223,230 @@ class LootState(QObject):
     def logPath(self) -> str:
         return self._log_path
 
+    @Property(str, notify=changed)
+    def logDirectoryUrl(self) -> str:
+        return self._log_directory_url
+
+    @Property(str, notify=changed)
+    def searchQuery(self) -> str:
+        return self._search_query
+
+    @Property(str, notify=changed)
+    def sourceFilter(self) -> str:
+        return self._source_filter
+
+    @Property("QVariantList", constant=True)
+    def sourceFilterOptions(self) -> list[str]:
+        return ["all", "player", "mob", "silver", "system"]
+
     def set_log_path(self, value: str) -> None:
         next_value = str(value or "")
-        if next_value == self._log_path:
+        next_dir_url = ""
+        if next_value:
+            try:
+                next_dir_url = Path(next_value).expanduser().resolve().parent.as_uri()
+            except Exception:
+                next_dir_url = ""
+        if next_value == self._log_path and next_dir_url == self._log_directory_url:
             return
         self._log_path = next_value
+        self._log_directory_url = next_dir_url
         self.changed.emit()
 
+    @Slot(str)
+    def setSearchQuery(self, value: str) -> None:
+        next_value = str(value or "").strip()
+        if next_value == self._search_query:
+            return
+        self._search_query = next_value
+        self._refresh_models()
+
+    @Slot(str)
+    def setSourceFilter(self, value: str) -> None:
+        next_value = str(value or "all").strip().lower() or "all"
+        if next_value not in {"all", "player", "mob", "silver", "system"}:
+            next_value = "all"
+        if next_value == self._source_filter:
+            return
+        self._source_filter = next_value
+        self._refresh_models()
+
+    @Slot(result=bool)
+    def copyLatestSummary(self) -> bool:
+        if not self._latest_summary:
+            return False
+        return self._copy_to_clipboard(self._latest_summary)
+
+    @Slot(result=bool)
+    def copyCurrentView(self) -> bool:
+        if not self._export_text:
+            return False
+        return self._copy_to_clipboard(self._export_text)
+
+    @Slot(result=str)
+    def exportCurrentViewInteractive(self) -> str:
+        if not self._export_text:
+            return ""
+        path = self._prompt_export_path(
+            label="Loot view",
+            suggested_name="acd-loot-view.txt",
+            file_filter="Text Files (*.txt);;All Files (*)",
+        )
+        if not path:
+            return ""
+        try:
+            target = Path(path)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(self._export_text, encoding="utf-8")
+        except Exception:
+            return ""
+        return str(target)
+
     def update_from_tracker(self, tracker) -> None:
-        events = list(tracker.events(limit=self._history_limit))
-        rows = [_loot_event_to_row(event) for event in events]
-        export_text = loot_events_to_txt(list(reversed(events)))
+        self._all_events = list(tracker.events(limit=self._history_limit))
+        self._refresh_models()
+
+    def _refresh_models(self) -> None:
+        filtered_events = _filter_events(
+            self._all_events,
+            search_query=self._search_query,
+            source_filter=self._source_filter,
+        )
+        rows = [_loot_event_to_row(event) for event in filtered_events]
+        export_text = loot_events_to_txt(list(reversed(filtered_events)))
         latest_summary = rows[0].summary if rows else ""
+        total_quantity = sum(row.quantity for row in rows)
+        unique_looters = len({row.looted_by_name for row in rows if row.looted_by_name})
+        unique_items = len({row.item_id or row.item_name for row in rows if row.item_id or row.item_name})
+        top_looters = _build_top_looters(rows)
+        top_items = _build_top_items(rows)
         changed = (
             self._event_count != len(rows)
             or self._latest_summary != latest_summary
             or self._export_text != export_text
+            or self._total_quantity != total_quantity
+            or self._unique_looters != unique_looters
+            or self._unique_items != unique_items
         )
         self._events_model.set_items(rows)
+        self._top_looters_model.set_items(top_looters)
+        self._top_items_model.set_items(top_items)
         self._event_count = len(rows)
         self._latest_summary = latest_summary
         self._export_text = export_text
+        self._total_quantity = total_quantity
+        self._unique_looters = unique_looters
+        self._unique_items = unique_items
         if changed:
             self.changed.emit()
+
+    def _copy_to_clipboard(self, value: str) -> bool:
+        text = str(value or "")
+        if not text:
+            return False
+        try:
+            clipboard = QGuiApplication.clipboard()
+        except Exception:
+            return False
+        if clipboard is None:
+            return False
+        clipboard.setText(text)
+        return True
+
+    def _prompt_export_path(self, *, label: str, suggested_name: str, file_filter: str) -> str | None:
+        try:
+            from PySide6.QtWidgets import QFileDialog
+        except Exception:
+            return None
+        base_dir = Path(self._log_path).expanduser().resolve().parent if self._log_path else Path.home()
+        suggested_path = str((base_dir / suggested_name).resolve())
+        selected_path, _selected_filter = QFileDialog.getSaveFileName(
+            None,
+            f"Export {label}",
+            suggested_path,
+            file_filter,
+        )
+        selected = str(selected_path or "").strip()
+        return selected or None
+
+
+def _filter_events(
+    events: list[LootEvent],
+    *,
+    search_query: str,
+    source_filter: str,
+) -> list[LootEvent]:
+    query = search_query.strip().lower()
+    filtered: list[LootEvent] = []
+    for event in events:
+        if source_filter != "all" and event.source_kind != source_filter:
+            continue
+        if query:
+            haystack = " ".join(
+                part
+                for part in (
+                    event.looted_by.player_name,
+                    event.looted_by.guild_name or "",
+                    event.looted_by.alliance_name or "",
+                    event.item.unique_name if event.item is not None and event.item.unique_name else "",
+                    event.item.display_name if event.item is not None else "",
+                    event.source_name or "",
+                )
+                if part
+            ).lower()
+            if query not in haystack:
+                continue
+        filtered.append(event)
+    return filtered
+
+
+def _build_top_looters(rows: list[LootRow]) -> list[LootAggregateRow]:
+    stats: dict[str, dict[str, int | str]] = {}
+    for row in rows:
+        entry = stats.setdefault(
+            row.looted_by_name,
+            {"quantity": 0, "events": 0, "sublabel": row.looted_by_guild or row.looted_by_alliance or ""},
+        )
+        entry["quantity"] = int(entry["quantity"]) + row.quantity
+        entry["events"] = int(entry["events"]) + 1
+    ordered = sorted(
+        stats.items(),
+        key=lambda item: (-int(item[1]["quantity"]), -int(item[1]["events"]), item[0].lower()),
+    )
+    return [
+        LootAggregateRow(
+            label=name,
+            sublabel=str(values["sublabel"]),
+            quantity=int(values["quantity"]),
+            event_count=int(values["events"]),
+        )
+        for name, values in ordered[:10]
+    ]
+
+
+def _build_top_items(rows: list[LootRow]) -> list[LootAggregateRow]:
+    stats: dict[str, dict[str, int | str]] = {}
+    for row in rows:
+        key = row.item_id or row.item_name or "Unknown item"
+        entry = stats.setdefault(
+            key,
+            {"quantity": 0, "events": 0, "sublabel": row.item_id or row.source_kind},
+        )
+        entry["quantity"] = int(entry["quantity"]) + row.quantity
+        entry["events"] = int(entry["events"]) + 1
+    ordered = sorted(
+        stats.items(),
+        key=lambda item: (-int(item[1]["quantity"]), -int(item[1]["events"]), item[0].lower()),
+    )
+    return [
+        LootAggregateRow(
+            label=name,
+            sublabel=str(values["sublabel"]),
+            quantity=int(values["quantity"]),
+            event_count=int(values["events"]),
+        )
+        for name, values in ordered[:10]
+    ]
 
 
 def _loot_event_to_row(event: LootEvent) -> LootRow:

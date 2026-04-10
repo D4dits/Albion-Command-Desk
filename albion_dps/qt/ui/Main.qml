@@ -902,9 +902,48 @@ ApplicationWindow {
                     compactLayout: root.compactLayout
                     theme: root.theme
                     eventCount: lootState.eventCount
+                    totalQuantity: lootState.totalQuantity
+                    uniqueLooters: lootState.uniqueLooters
+                    uniqueItems: lootState.uniqueItems
                     latestLootSummary: lootState.latestLootSummary
                     logPath: lootState.logPath
+                    logDirectoryUrl: lootState.logDirectoryUrl
+                    searchQuery: lootState.searchQuery
+                    sourceFilter: lootState.sourceFilter
+                    sourceFilterOptions: lootState.sourceFilterOptions
                     eventsModel: lootState.eventsModel
+                    topLootersModel: lootState.topLootersModel
+                    topItemsModel: lootState.topItemsModel
+                    onSetSearchQuery: function(value) { lootState.setSearchQuery(value) }
+                    onSetSourceFilter: function(value) { lootState.setSourceFilter(value) }
+                    onCopyLatestSummary: function() {
+                        if (lootState.copyLatestSummary()) {
+                            toastManager.showSuccess("Copied to clipboard", "Latest loot summary copied")
+                        } else {
+                            toastManager.showWarning("Loot", "No summary available")
+                        }
+                    }
+                    onCopyCurrentView: function() {
+                        if (lootState.copyCurrentView()) {
+                            toastManager.showSuccess("Copied to clipboard", "Current loot view copied")
+                        } else {
+                            toastManager.showWarning("Loot", "Nothing to copy")
+                        }
+                    }
+                    onExportCurrentView: function() {
+                        var exportPath = lootState.exportCurrentViewInteractive()
+                        if (exportPath && exportPath.length > 0) {
+                            toastManager.showSuccess("Loot exported", exportPath)
+                        }
+                    }
+                    onOpenLogFolder: function() {
+                        if (lootState.logDirectoryUrl && lootState.logDirectoryUrl.length > 0) {
+                            Qt.openUrlExternally(lootState.logDirectoryUrl)
+                            toastManager.showInfo("Loot folder", lootState.logPath)
+                        } else {
+                            toastManager.showWarning("Loot", "Log folder is not available yet")
+                        }
+                    }
                 }
             }
 

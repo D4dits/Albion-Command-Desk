@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import queue
 import threading
+from pathlib import Path
 
 import pytest
 
@@ -18,6 +19,7 @@ from albion_dps.models import MeterSnapshot
 from albion_dps.qt.loot_state import LootState
 from albion_dps.qt.models import UiState
 from albion_dps.qt.runner import _drain_snapshots
+from tests.support_temp import mk_test_dir
 
 
 class _FakeLootTracker:
@@ -66,6 +68,9 @@ def test_loot_state_builds_model_and_export_text() -> None:
     state.update_from_tracker(tracker)
 
     assert state.eventCount == 2
+    assert state.totalQuantity == 3
+    assert state.uniqueLooters == 2
+    assert state.uniqueItems == 2
     assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"
     model = state.eventsModel
     assert model.rowCount() == 2
@@ -76,6 +81,37 @@ def test_loot_state_builds_model_and_export_text() -> None:
     assert model.data(first, model.SourceKindRole) == "player"
     assert "timestamp_utc;looted_by__alliance;looted_by__guild;looted_by__name" in state.exportText
     assert "1970-01-01T01:01:00.000Z;;;Bob;T4_POTION;Adept's Potion;1;;;@MOB_KEEPER_DRUID_CHAMPION" in state.exportText
+    looters = state.topLootersModel
+    assert looters.rowCount() == 2
+    top_looter = looters.index(0, 0)
+    assert looters.data(top_looter, looters.LabelRole) == "Alice"
+    items = state.topItemsModel
+    assert items.rowCount() == 2
+
+
+def test_loot_state_filters_and_rebuilds_aggregates() -> None:
+    state = LootState(history_limit=10)
+    tracker = _FakeLootTracker(_sample_events())
+
+    state.update_from_tracker(tracker)
+    state.setSearchQuery("potion")
+
+    assert state.eventCount == 1
+    assert state.totalQuantity == 1
+    assert state.uniqueLooters == 1
+    assert state.uniqueItems == 1
+    assert state.latestLootSummary == "Bob looted 1x Adept's Potion from @MOB_KEEPER_DRUID_CHAMPION"
+    assert "Adept's Potion" in state.exportText
+    assert "Journeyman's Bag" not in state.exportText
+
+    state.setSearchQuery("")
+    state.setSourceFilter("player")
+    assert state.eventCount == 1
+    assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"
+
+    state.setSourceFilter("mob")
+    assert state.eventCount == 1
+    assert state.latestLootSummary == "Bob looted 1x Adept's Potion from @MOB_KEEPER_DRUID_CHAMPION"
 
 
 def test_runner_drain_snapshots_updates_loot_state() -> None:
@@ -104,3 +140,27 @@ def test_runner_drain_snapshots_updates_loot_state() -> None:
 
     assert loot_state.eventCount == 1
     assert loot_state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"
+
+
+def test_loot_state_copy_and_export_actions(monkeypatch) -> None:
+    state = LootState(history_limit=10)
+    tracker = _FakeLootTracker(_sample_events())
+    state.update_from_tracker(tracker)
+
+    copied: list[str] = []
+    monkeypatch.setattr(state, "_copy_to_clipboard", lambda value: copied.append(value) or True)
+
+    assert state.copyLatestSummary() is True
+    assert copied[0] == "Alice looted 2x Journeyman's Bag from Enemy"
+    assert state.copyCurrentView() is True
+    assert "timestamp_utc;looted_by__alliance;looted_by__guild;looted_by__name" in copied[1]
+
+    tmp_dir = mk_test_dir("loot_state_export")
+    export_path = tmp_dir / "loot-view.txt"
+    monkeypatch.setattr(state, "_prompt_export_path", lambda **_kwargs: str(export_path))
+
+    written = state.exportCurrentViewInteractive()
+    assert written == str(export_path)
+    payload = export_path.read_text(encoding="utf-8")
+    assert "Journeyman's Bag" in payload
+    assert "Adept's Potion" in payload
