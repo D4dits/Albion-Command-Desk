@@ -172,9 +172,11 @@ def run_qt(args: argparse.Namespace) -> int:
         logger=logging.getLogger(__name__),
         auto_refresh_prices=True,
     )
+    app_settings = load_app_settings()
     loot_state = LootState(history_limit=max(args.history, 1))
-    loot_writer = LootLogWriter()
+    loot_writer = LootLogWriter(keep_files=app_settings.loot_log_keep_files)
     loot_state.set_log_path(str(loot_writer.path))
+    scanner_state.settingsChanged.connect(lambda: loot_writer.set_keep_files(scanner_state.lootLogKeepFiles))
     engine.rootContext().setContextProperty("uiState", state)
     engine.rootContext().setContextProperty("scannerState", scanner_state)
     engine.rootContext().setContextProperty("marketSetupState", market_setup_state)

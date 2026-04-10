@@ -211,3 +211,33 @@ def test_loot_state_splits_items_and_silver_views() -> None:
     assert state.eventCount == 2
     assert state.totalQuantity == 3
     assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"
+
+
+def test_loot_state_can_import_log_and_return_to_live(monkeypatch) -> None:
+    state = LootState(history_limit=10)
+    live_tracker = _FakeLootTracker(_sample_events())
+    state.update_from_tracker(live_tracker)
+
+    tmp_dir = mk_test_dir("loot_state_import")
+    import_path = tmp_dir / "loot-events-import.txt"
+    import_path.write_text(
+        "timestamp_utc;looted_by__alliance;looted_by__guild;looted_by__name;item_id;item_name;quantity;looted_from__alliance;looted_from__guild;looted_from__name\n"
+        "1970-01-01T01:02:03.000Z;;;Carol;SILVER;Silver;900;;;\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(state, "_prompt_import_path", lambda **_kwargs: str(import_path))
+
+    imported = state.importLogInteractive()
+
+    assert imported == str(import_path.resolve())
+    assert state.importedLogActive is True
+    assert state.eventCount == 1
+    assert state.silverEventCount == 1
+    assert state.latestLootSummary == "Carol looted 900 Silver"
+
+    state.useLiveLog()
+
+    assert state.importedLogActive is False
+    assert state.eventCount == 2
+    assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"

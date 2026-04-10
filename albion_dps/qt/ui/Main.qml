@@ -912,6 +912,7 @@ ApplicationWindow {
                     latestLootSummary: lootState.latestLootSummary
                     logPath: lootState.logPath
                     logDirectoryUrl: lootState.logDirectoryUrl
+                    importedLogActive: lootState.importedLogActive
                     searchQuery: lootState.searchQuery
                     sourceFilter: lootState.sourceFilter
                     kindFilter: lootState.kindFilter
@@ -952,6 +953,16 @@ ApplicationWindow {
                             toastManager.showWarning("Loot", "Log folder is not available yet")
                         }
                     }
+                    onImportLog: function() {
+                        var importedPath = lootState.importLogInteractive()
+                        if (importedPath && importedPath.length > 0) {
+                            toastManager.showSuccess("Loot log imported", importedPath)
+                        }
+                    }
+                    onUseLiveLog: function() {
+                        lootState.useLiveLog()
+                        toastManager.showInfo("Loot", "Switched back to live session log")
+                    }
                 }
             }
 
@@ -977,6 +988,7 @@ ApplicationWindow {
                     scannerRepoDir: scannerState.scannerRepoDir
                     scannerRepoUrl: scannerState.scannerRepoUrl
                     appLogLevel: scannerState.appLogLevel
+                    lootLogKeepFiles: scannerState.lootLogKeepFiles
                     configDir: scannerState.configDir
                     captureRuntimeState: scannerState.captureRuntimeState
                     captureRuntimeDetail: scannerState.captureRuntimeDetail
@@ -1015,6 +1027,10 @@ ApplicationWindow {
                     onSetAppLogLevel: function(levelText) {
                         scannerState.setAppLogLevel(levelText)
                         toastManager.showInfo("Log level saved", "Applies on next launch: " + scannerState.appLogLevel)
+                    }
+                    onSetLootLogKeepFiles: function(count) {
+                        scannerState.setLootLogKeepFiles(count)
+                        toastManager.showInfo("Loot logs", "Keeping latest " + scannerState.lootLogKeepFiles + " files")
                     }
                     onRefreshCaptureRuntimeStatus: scannerState.refreshCaptureRuntimeStatus()
                     onOpenCaptureRuntimeAction: scannerState.openCaptureRuntimeAction()

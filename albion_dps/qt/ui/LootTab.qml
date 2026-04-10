@@ -8,6 +8,7 @@ Item {
 
     property var theme
     property bool compactLayout: false
+    property bool importedLogActive: false
     property int eventCount: 0
     property int totalQuantity: 0
     property int itemEventCount: 0
@@ -28,8 +29,11 @@ Item {
     property var topLootersModel: null
     property var topItemsModel: null
     property var topSilverLootersModel: null
+    property bool stackedControls: width < 1140
+    property bool stackedSummary: width < 980
+    property int aggregateColumns: width >= 1360 ? 3 : (width >= 980 ? 2 : 1)
     property int timeColumnWidth: compactLayout ? 56 : 64
-    property int looterColumnWidth: compactLayout ? 120 : 136
+    property int looterColumnWidth: compactLayout ? 136 : 164
     property int qtyColumnWidth: compactLayout ? 48 : 56
     property int sourceColumnWidth: compactLayout ? 124 : 140
 
@@ -40,6 +44,8 @@ Item {
     signal copyCurrentView()
     signal exportCurrentView()
     signal openLogFolder()
+    signal importLog()
+    signal useLiveLog()
 
     function cardValue(value) {
         return String(value === undefined || value === null ? 0 : value)
@@ -53,6 +59,14 @@ Item {
             return "Silver"
         }
         return "All"
+    }
+
+    function sourceLabel(value) {
+        var text = String(value || "all")
+        if (text.length === 0) {
+            return "All"
+        }
+        return text.charAt(0).toUpperCase() + text.slice(1)
     }
 
     function lootKindBadgeBg(isSilverValue) {
@@ -163,52 +177,9 @@ Item {
                     Layout.fillWidth: true
                     text: latestLootSummary.length > 0
                         ? latestLootSummary
-                        : "Party loot log. Use filters to inspect recent pickups and silver splits."
-                    color: latestLootSummary.length > 0 ? theme.textMuted : theme.textDisabled
+                        : "Party loot log. Import previous logs or inspect the current session feed."
+                    color: latestLootSummary.length > 0 ? theme.textSecondary : theme.textMuted
                     wrapMode: Text.Wrap
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
-
-                    Rectangle {
-                        radius: 10
-                        color: theme.stateInfoBg
-                        border.color: theme.stateInfo
-                        implicitHeight: 22
-                        implicitWidth: partyOnlyBadge.implicitWidth + 16
-
-                        Text {
-                            id: partyOnlyBadge
-                            anchors.centerIn: parent
-                            text: "Party Only"
-                            color: theme.stateInfo
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-                    }
-
-                    Rectangle {
-                        radius: 10
-                        color: root.kindFilter === "silver" ? theme.stateWarningBg : (root.kindFilter === "items" ? theme.stateSuccessBg : theme.surfaceRaised)
-                        border.color: root.kindFilter === "silver" ? theme.stateWarning : (root.kindFilter === "items" ? theme.stateSuccess : theme.borderSubtle)
-                        implicitHeight: 22
-                        implicitWidth: viewBadgeText.implicitWidth + 16
-
-                        Text {
-                            id: viewBadgeText
-                            anchors.centerIn: parent
-                            text: "Mode: " + root.kindLabel(root.kindFilter)
-                            color: root.kindFilter === "silver" ? theme.stateWarning : (root.kindFilter === "items" ? theme.stateSuccess : theme.textPrimary)
-                            font.pixelSize: 11
-                            font.bold: true
-                        }
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
                 }
 
                 Flow {
@@ -261,12 +232,12 @@ Item {
                 radius: theme.radiusLg
                 color: theme.cardLevel2
                 border.color: theme.borderStrong
-                implicitHeight: compactLayout ? 128 : 84
+                implicitHeight: compactLayout ? 176 : 140
 
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.margins: 12
-                    spacing: 8
+                    spacing: 10
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -303,21 +274,22 @@ Item {
                         }
                     }
 
-                    RowLayout {
+                    GridLayout {
                         Layout.fillWidth: true
-                        spacing: 10
+                        columns: root.stackedControls ? 1 : 3
+                        columnSpacing: 10
+                        rowSpacing: 10
 
                         AppTextField {
-                            id: searchField
                             Layout.fillWidth: true
+                            Layout.columnSpan: root.stackedControls ? 1 : 2
                             placeholderText: "Search looter, item, source..."
                             text: root.searchQuery
                             onTextEdited: root.setSearchQuery(text)
                         }
 
                         AppComboBox {
-                            id: sourceFilterCombo
-                            Layout.preferredWidth: compactLayout ? 110 : 128
+                            Layout.fillWidth: true
                             model: root.sourceFilterOptions
                             currentIndex: Math.max(0, model.indexOf(root.sourceFilter))
                             onActivated: function(index) {
@@ -330,12 +302,37 @@ Item {
                         Layout.fillWidth: true
                         spacing: 8
 
-                        Text {
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            text: logPath.length > 0 ? logPath : "Writer not initialized"
-                            color: theme.textMuted
-                            font.pixelSize: 11
-                            elide: Text.ElideMiddle
+                            spacing: 2
+
+                            Text {
+                                text: root.importedLogActive ? "Imported log" : "Live session log"
+                                color: root.importedLogActive ? theme.stateInfo : theme.textSecondary
+                                font.pixelSize: 11
+                                font.bold: true
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: logPath.length > 0 ? logPath : "No loot log available yet"
+                                color: theme.textMuted
+                                font.pixelSize: 11
+                                elide: Text.ElideMiddle
+                            }
+                        }
+
+                        AppButton {
+                            text: "Import Log"
+                            compact: true
+                            onClicked: root.importLog()
+                        }
+
+                        AppButton {
+                            visible: root.importedLogActive
+                            text: "Back To Live"
+                            compact: true
+                            onClicked: root.useLiveLog()
                         }
 
                         AppButton {
@@ -362,14 +359,12 @@ Item {
                 }
             }
 
-            RowLayout {
+            ColumnLayout {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
                 spacing: theme.spacingSection
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
                     radius: theme.radiusLg
                     color: theme.surfacePanel
                     border.color: theme.borderStrong
@@ -393,16 +388,16 @@ Item {
 
                             Rectangle {
                                 radius: 9
-                                color: theme.surfaceRaised
-                                border.color: theme.borderSubtle
+                                color: root.importedLogActive ? theme.stateInfoBg : theme.surfaceRaised
+                                border.color: root.importedLogActive ? theme.stateInfo : theme.borderSubtle
                                 implicitHeight: 20
                                 implicitWidth: recentLootCount.implicitWidth + 14
 
                                 Text {
                                     id: recentLootCount
                                     anchors.centerIn: parent
-                                    text: root.eventCount + " rows"
-                                    color: theme.textMuted
+                                    text: root.importedLogActive ? "Imported view" : (root.eventCount + " rows")
+                                    color: root.importedLogActive ? theme.stateInfo : theme.textMuted
                                     font.pixelSize: 10
                                     font.bold: true
                                 }
@@ -411,11 +406,18 @@ Item {
                             Item {
                                 Layout.fillWidth: true
                             }
+
+                            Text {
+                                text: "Source: " + root.sourceLabel(root.sourceFilter)
+                                color: theme.textMuted
+                                font.pixelSize: 11
+                            }
                         }
 
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 12
+                            visible: !root.stackedSummary
 
                             Text { text: "Time"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: root.timeColumnWidth }
                             Text { text: "Looter"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: root.looterColumnWidth }
@@ -456,9 +458,10 @@ Item {
 
                                     width: lootList.width
                                     radius: theme.radiusLg
-                                    color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
-                                    border.color: theme.borderSubtle
-                                    implicitHeight: 62
+                                    color: isSilver ? "#171d12" : theme.surfaceInteractive
+                                    border.color: isSilver ? "#4f431f" : theme.borderSubtle
+                                    border.width: 1
+                                    implicitHeight: compactLayout ? 68 : 72
 
                                     ColumnLayout {
                                         anchors.fill: parent
@@ -494,8 +497,8 @@ Item {
                                                         Layout.fillWidth: true
                                                         text: itemName
                                                         color: isSilver ? theme.brandWarmAccent : theme.textPrimary
-                                                        font.pixelSize: 11
-                                                        font.bold: isSilver
+                                                        font.pixelSize: 12
+                                                        font.bold: true
                                                         elide: Text.ElideRight
                                                     }
 
@@ -543,7 +546,7 @@ Item {
 
                                                 Text {
                                                     anchors.centerIn: parent
-                                                    text: sourceKind === "silver" ? "Silver" : sourceName
+                                                    text: sourceKind === "silver" ? "Silver" : (sourceName.length > 0 ? sourceName : "System")
                                                     color: root.sourceBadgeText(sourceKind)
                                                     font.pixelSize: 10
                                                     elide: Text.ElideRight
@@ -579,8 +582,8 @@ Item {
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         text: root.kindFilter === "silver"
-                                            ? "No silver events yet"
-                                            : (root.kindFilter === "items" ? "No item drops yet" : "No loot yet")
+                                            ? "No silver events in this view"
+                                            : (root.kindFilter === "items" ? "No item drops in this view" : "No loot events in this view")
                                         color: theme.textSecondary
                                         font.pixelSize: 18
                                         font.bold: true
@@ -588,8 +591,10 @@ Item {
 
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        text: "Party-only data will appear here after loot events are detected."
-                                        color: theme.textSecondary
+                                        text: root.importedLogActive
+                                            ? "Try another imported log or change the filters above."
+                                            : "Wait for party loot or import an earlier log file."
+                                        color: theme.textMuted
                                         font.pixelSize: 12
                                     }
                                 }
@@ -598,290 +603,39 @@ Item {
                     }
                 }
 
-                ColumnLayout {
-                    Layout.preferredWidth: compactLayout ? 240 : 300
-                    Layout.fillHeight: true
-                    spacing: theme.spacingSection
+                GridLayout {
+                    Layout.fillWidth: true
+                    Layout.minimumWidth: 0
+                    columns: root.aggregateColumns
+                    columnSpacing: theme.spacingSection
+                    rowSpacing: theme.spacingSection
 
-                    Rectangle {
+                    LootSummaryPanel {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: 188
-                        Layout.fillHeight: false
-                        radius: theme.radiusLg
-                        color: theme.surfacePanel
-                        border.color: theme.borderStrong
-                        clip: true
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 8
-
-                            Text {
-                                text: "Top Looters"
-                                color: theme.textPrimary
-                                font.pixelSize: 14
-                                font.bold: true
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                clip: true
-
-                                ListView {
-                                    id: topLootersList
-                                    anchors.fill: parent
-                                    clip: true
-                                    spacing: 6
-                                    model: root.topLootersModel
-
-                                    delegate: Rectangle {
-                                        required property int index
-                                        required property string label
-                                        required property string sublabel
-                                        required property int quantity
-                                        required property int eventCount
-
-                                        width: ListView.view.width
-                                        radius: theme.radiusLg
-                                        color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
-                                        border.color: theme.borderSubtle
-                                        implicitHeight: 52
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.margins: 10
-                                            spacing: 8
-
-                                            ColumnLayout {
-                                                Layout.fillWidth: true
-                                                spacing: 2
-                                                Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
-                                                Text { text: sublabel; color: theme.textDisabled; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
-                                            }
-                                            ColumnLayout {
-                                                spacing: 1
-                                                Text { text: quantity + "x"; color: theme.textPrimary; font.pixelSize: 12; font.bold: true; horizontalAlignment: Text.AlignRight }
-                                                Text { text: eventCount + " ev"; color: theme.textMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignRight }
-                                            }
-                                        }
-                                    }
-
-                                    ScrollBar.vertical: ScrollBar {}
-                                }
-
-                                Item {
-                                    anchors.fill: parent
-                                    visible: topLootersList.count === 0
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "No looters in this view"
-                                            color: theme.textSecondary
-                                            font.pixelSize: 12
-                                        }
-                                    }
-                                }
-                            }
+                        theme: root.theme
+                        title: "Top Looters"
+                        emptyText: "No looters in this view"
+                        accentMode: "neutral"
+                        model: root.topLootersModel
                     }
 
-                    Rectangle {
+                    LootSummaryPanel {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        radius: theme.radiusLg
-                        color: theme.surfacePanel
-                        border.color: theme.borderStrong
-                        clip: true
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 8
-
-                            Text {
-                                text: "Top Items"
-                                color: theme.textPrimary
-                                font.pixelSize: 14
-                                font.bold: true
-                            }
-
-                            Rectangle {
-                                radius: 10
-                                color: theme.stateSuccessBg
-                                border.color: theme.stateSuccess
-                                implicitHeight: 22
-                                implicitWidth: itemsBadgeText.implicitWidth + 16
-
-                                Text {
-                                    id: itemsBadgeText
-                                    anchors.centerIn: parent
-                                    text: "ITEMS"
-                                    color: theme.stateSuccess
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                }
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                clip: true
-
-                                ListView {
-                                    id: topItemsList
-                                    anchors.fill: parent
-                                    clip: true
-                                    spacing: 6
-                                    model: root.topItemsModel
-
-                                    delegate: Rectangle {
-                                        required property int index
-                                        required property string label
-                                        required property string sublabel
-                                        required property int quantity
-                                        required property int eventCount
-
-                                        width: ListView.view.width
-                                        radius: theme.radiusLg
-                                        color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
-                                        border.color: theme.borderSubtle
-                                        implicitHeight: 52
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.margins: 10
-                                            spacing: 8
-
-                                            ColumnLayout {
-                                                Layout.fillWidth: true
-                                                spacing: 2
-                                                Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
-                                                Text { text: sublabel; color: theme.textDisabled; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
-                                            }
-                                            ColumnLayout {
-                                                spacing: 1
-                                                Text { text: quantity + "x"; color: theme.textPrimary; font.pixelSize: 12; font.bold: true; horizontalAlignment: Text.AlignRight }
-                                                Text { text: eventCount + " ev"; color: theme.textMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignRight }
-                                            }
-                                        }
-                                    }
-
-                                    ScrollBar.vertical: ScrollBar {}
-                                }
-
-                                Item {
-                                    anchors.fill: parent
-                                    visible: topItemsList.count === 0
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "No item drops in this view"
-                                            color: theme.textSecondary
-                                            font.pixelSize: 12
-                                        }
-                                    }
-                                }
-                            }
+                        theme: root.theme
+                        title: "Top Items"
+                        emptyText: "No item drops in this view"
+                        accentMode: "items"
+                        model: root.topItemsModel
                     }
 
-                    Rectangle {
+                    LootSummaryPanel {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        radius: theme.radiusLg
-                        color: theme.surfacePanel
-                        border.color: theme.borderStrong
-                        clip: true
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 8
-
-                            Text {
-                                text: "Top Silver"
-                                color: theme.textPrimary
-                                font.pixelSize: 14
-                                font.bold: true
-                            }
-
-                            Rectangle {
-                                radius: 10
-                                color: theme.stateWarningBg
-                                border.color: theme.stateWarning
-                                implicitHeight: 22
-                                implicitWidth: silverBadgeText.implicitWidth + 16
-
-                                Text {
-                                    id: silverBadgeText
-                                    anchors.centerIn: parent
-                                    text: "SILVER"
-                                    color: theme.stateWarning
-                                    font.pixelSize: 11
-                                    font.bold: true
-                                }
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                clip: true
-
-                                ListView {
-                                    id: topSilverList
-                                    anchors.fill: parent
-                                    clip: true
-                                    spacing: 6
-                                    model: root.topSilverLootersModel
-
-                                    delegate: Rectangle {
-                                        required property int index
-                                        required property string label
-                                        required property string sublabel
-                                        required property int quantity
-                                        required property int eventCount
-
-                                        width: ListView.view.width
-                                        radius: theme.radiusLg
-                                        color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
-                                        border.color: theme.borderSubtle
-                                        implicitHeight: 52
-
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.margins: 10
-                                            spacing: 8
-
-                                            ColumnLayout {
-                                                Layout.fillWidth: true
-                                                spacing: 2
-                                                Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
-                                                Text { text: sublabel; color: theme.textDisabled; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
-                                            }
-                                            ColumnLayout {
-                                                spacing: 1
-                                                Text { text: quantity + ""; color: theme.textPrimary; font.pixelSize: 12; font.bold: true; horizontalAlignment: Text.AlignRight }
-                                                Text { text: eventCount + " ev"; color: theme.textMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignRight }
-                                            }
-                                        }
-                                    }
-
-                                    ScrollBar.vertical: ScrollBar {}
-                                }
-
-                                Item {
-                                    anchors.fill: parent
-                                    visible: topSilverList.count === 0
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "No silver events in this view"
-                                            color: theme.textSecondary
-                                            font.pixelSize: 12
-                                        }
-                                    }
-                                }
-                            }
+                        theme: root.theme
+                        title: "Top Silver"
+                        emptyText: "No silver events in this view"
+                        accentMode: "silver"
+                        valueSuffix: ""
+                        model: root.topSilverLootersModel
                     }
                 }
             }

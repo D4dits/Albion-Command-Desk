@@ -47,6 +47,7 @@ LootTab {
     silverTotalQuantity: 1500
     uniqueLooters: 2
     uniqueItems: 2
+    importedLogActive: false
     latestLootSummary: "Alice looted 2x Journeyman's Bag from Enemy"
     logPath: "artifacts/loot/loot-events-2026-04-10-12-34-56.txt"
     logDirectoryUrl: "file:///C:/Users/Users/Documents/DPS_Master/DPS_Meter_AO/artifacts/loot"

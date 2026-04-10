@@ -37,3 +37,34 @@ def test_loot_log_writer_creates_session_file_and_syncs_payload() -> None:
 
     second_path = writer.sync_events(events)
     assert second_path == path
+
+
+def test_loot_log_writer_prunes_old_files() -> None:
+    tmp_dir = mk_test_dir("loot_log_writer_prune")
+    events: list[LootEvent] = []
+
+    first = LootLogWriter(
+        output_dir=tmp_dir,
+        session_started_at=datetime(2026, 4, 10, 12, 0, 0),
+        keep_files=2,
+    )
+    second = LootLogWriter(
+        output_dir=tmp_dir,
+        session_started_at=datetime(2026, 4, 10, 12, 5, 0),
+        keep_files=2,
+    )
+    third = LootLogWriter(
+        output_dir=tmp_dir,
+        session_started_at=datetime(2026, 4, 10, 12, 10, 0),
+        keep_files=2,
+    )
+
+    first.sync_events(events)
+    second.sync_events(events)
+    third.sync_events(events)
+
+    remaining = sorted(path.name for path in tmp_dir.glob("loot-events-*.txt"))
+    assert remaining == [
+        "loot-events-2026-04-10-12-05-00.txt",
+        "loot-events-2026-04-10-12-10-00.txt",
+    ]

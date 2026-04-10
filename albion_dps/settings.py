@@ -12,6 +12,7 @@ class AppSettings:
     market_selected_preset: str = ""
     market_export_dir: str = ""
     meter_export_dir: str = ""
+    loot_log_keep_files: int = 5
     scanner_repo_dir: str = ""
     scanner_repo_url: str = ""
     log_level: str = "INFO"
@@ -45,6 +46,7 @@ def load_app_settings() -> AppSettings:
             market_selected_preset=str(raw.get("market_selected_preset", "") or ""),
             market_export_dir=str(raw.get("market_export_dir", "") or ""),
             meter_export_dir=str(raw.get("meter_export_dir", "") or ""),
+            loot_log_keep_files=_normalize_keep_files(raw.get("loot_log_keep_files", 5)),
             scanner_repo_dir=str(raw.get("scanner_repo_dir", "") or ""),
             scanner_repo_url=str(raw.get("scanner_repo_url", "") or ""),
             log_level=_normalize_log_level(raw.get("log_level", "INFO")),
@@ -61,6 +63,7 @@ def save_app_settings(settings: AppSettings) -> None:
         "market_selected_preset": str(settings.market_selected_preset or ""),
         "market_export_dir": str(settings.market_export_dir or ""),
         "meter_export_dir": str(settings.meter_export_dir or ""),
+        "loot_log_keep_files": _normalize_keep_files(settings.loot_log_keep_files),
         "scanner_repo_dir": str(settings.scanner_repo_dir or ""),
         "scanner_repo_url": str(settings.scanner_repo_url or ""),
         "log_level": _normalize_log_level(settings.log_level),
@@ -72,6 +75,8 @@ def update_app_settings(**changes) -> AppSettings:
     current = load_app_settings()
     if "log_level" in changes:
         changes["log_level"] = _normalize_log_level(changes["log_level"])
+    if "loot_log_keep_files" in changes:
+        changes["loot_log_keep_files"] = _normalize_keep_files(changes["loot_log_keep_files"])
     updated = replace(current, **changes)
     save_app_settings(updated)
     return updated
@@ -86,3 +91,11 @@ def _normalize_log_level(value) -> str:
     if candidate not in {"DEBUG", "INFO", "WARNING", "ERROR"}:
         return "INFO"
     return candidate
+
+
+def _normalize_keep_files(value) -> int:
+    try:
+        keep = int(value)
+    except (TypeError, ValueError):
+        return 5
+    return min(50, max(1, keep))

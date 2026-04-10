@@ -16,6 +16,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QGuiApplication
 
 from albion_dps.domain.loot_export import loot_events_to_txt
+from albion_dps.domain.loot_import import read_loot_events_txt
 from albion_dps.domain.loot_types import LootEvent
 
 
@@ -172,6 +173,8 @@ class LootState(QObject):
         self._top_looters_model = LootAggregateModel()
         self._top_items_model = LootAggregateModel()
         self._top_silver_looters_model = LootAggregateModel()
+        self._live_events: list[LootEvent] = []
+        self._imported_events: list[LootEvent] | None = None
         self._all_events: list[LootEvent] = []
         self._search_query = ""
         self._source_filter = "all"
@@ -188,6 +191,7 @@ class LootState(QObject):
         self._export_text = loot_events_to_txt([])
         self._log_path = ""
         self._log_directory_url = ""
+        self._imported_log_path = ""
 
     @Property(QObject, constant=True)
     def eventsModel(self) -> LootEventsModel:
@@ -247,11 +251,20 @@ class LootState(QObject):
 
     @Property(str, notify=changed)
     def logPath(self) -> str:
-        return self._log_path
+        return self._imported_log_path or self._log_path
 
     @Property(str, notify=changed)
     def logDirectoryUrl(self) -> str:
+        if self._imported_log_path:
+            try:
+                return Path(self._imported_log_path).expanduser().resolve().parent.as_uri()
+            except Exception:
+                return ""
         return self._log_directory_url
+
+    @Property(bool, notify=changed)
+    def importedLogActive(self) -> bool:
+        return bool(self._imported_log_path)
 
     @Property(str, notify=changed)
     def searchQuery(self) -> str:
@@ -346,8 +359,38 @@ class LootState(QObject):
             return ""
         return str(target)
 
+    @Slot(result=str)
+    def importLogInteractive(self) -> str:
+        path = self._prompt_import_path(
+            label="Loot log",
+            file_filter="Text Files (*.txt);;All Files (*)",
+        )
+        if not path:
+            return ""
+        try:
+            imported = read_loot_events_txt(path)
+        except Exception:
+            return ""
+        self._imported_events = imported
+        self._imported_log_path = str(Path(path).expanduser().resolve())
+        self._all_events = list(imported)
+        self._refresh_models()
+        return self._imported_log_path
+
+    @Slot()
+    def useLiveLog(self) -> None:
+        if not self._imported_log_path:
+            return
+        self._imported_log_path = ""
+        self._imported_events = None
+        self._all_events = list(self._live_events)
+        self._refresh_models()
+
     def update_from_tracker(self, tracker) -> None:
-        self._all_events = list(tracker.events(limit=self._history_limit))
+        self._live_events = list(tracker.events(limit=self._history_limit))
+        if self._imported_events is not None:
+            return
+        self._all_events = list(self._live_events)
         self._refresh_models()
 
     def _refresh_models(self) -> None:
@@ -431,6 +474,21 @@ class LootState(QObject):
             None,
             f"Export {label}",
             suggested_path,
+            file_filter,
+        )
+        selected = str(selected_path or "").strip()
+        return selected or None
+
+    def _prompt_import_path(self, *, label: str, file_filter: str) -> str | None:
+        try:
+            from PySide6.QtWidgets import QFileDialog
+        except Exception:
+            return None
+        base_dir = Path(self._log_path).expanduser().resolve().parent if self._log_path else Path.home()
+        selected_path, _selected_filter = QFileDialog.getOpenFileName(
+            None,
+            f"Import {label}",
+            str(base_dir),
             file_filter,
         )
         selected = str(selected_path or "").strip()

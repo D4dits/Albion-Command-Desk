@@ -13,6 +13,7 @@ CardPanel {
     property string scannerRepoDir: ""
     property string scannerRepoUrl: ""
     property string appLogLevel: "INFO"
+    property int lootLogKeepFiles: 5
     property string configDir: ""
 
     property string captureRuntimeState: "unknown"
@@ -49,6 +50,7 @@ CardPanel {
     signal resetScannerRepoDir()
     signal setScannerRepoUrl(string urlText)
     signal setAppLogLevel(string value)
+    signal setLootLogKeepFiles(int value)
     signal refreshCaptureRuntimeStatus()
     signal openCaptureRuntimeAction()
     signal refreshGitStatus()
@@ -204,6 +206,23 @@ CardPanel {
                             color: root.mutedColor
                             font.pixelSize: 11
                             wrapMode: Text.WordWrap
+                        }
+                        Row {
+                            width: parent.width
+                            spacing: 8
+                            Text { text: "Keep loot logs"; color: root.mutedColor; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
+                            AppComboBox {
+                                width: 96
+                                model: [1, 3, 5, 10, 20]
+                                currentIndex: Math.max(0, model.indexOf(root.lootLogKeepFiles))
+                                onActivated: root.setLootLogKeepFiles(Number(currentText))
+                            }
+                            Text {
+                                text: "files"
+                                color: root.mutedColor
+                                font.pixelSize: 11
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
                         }
                     }
                 }

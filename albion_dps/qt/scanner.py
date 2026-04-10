@@ -72,6 +72,7 @@ class ScannerState(QObject):
         self._client_dir = Path(configured_client_dir).expanduser() if configured_client_dir else self._default_client_dir
         self._repo_url = str(self._settings.scanner_repo_url or DEFAULT_REPO_URL).strip() or DEFAULT_REPO_URL
         self._app_log_level = str(self._settings.log_level or "INFO").strip().upper() or "INFO"
+        self._loot_log_keep_files = int(self._settings.loot_log_keep_files or 5)
         self._config_dir = settings_dir()
         self._app_version = resolve_app_version()
         self._app_mode = str(app_mode or "core").strip().lower() or "core"
@@ -192,6 +193,10 @@ class ScannerState(QObject):
     @Property(str, notify=settingsChanged)
     def appLogLevel(self) -> str:
         return self._app_log_level
+
+    @Property(int, notify=settingsChanged)
+    def lootLogKeepFiles(self) -> int:
+        return self._loot_log_keep_files
 
     @Property(str, constant=True)
     def configDir(self) -> str:
@@ -358,6 +363,19 @@ class ScannerState(QObject):
             return
         self._app_log_level = level
         self._persist_settings(log_level=level)
+        self.settingsChanged.emit()
+
+    @Slot(int)
+    def setLootLogKeepFiles(self, value: int) -> None:
+        try:
+            keep_files = int(value)
+        except (TypeError, ValueError):
+            keep_files = 5
+        keep_files = min(50, max(1, keep_files))
+        if keep_files == self._loot_log_keep_files:
+            return
+        self._loot_log_keep_files = keep_files
+        self._persist_settings(loot_log_keep_files=keep_files)
         self.settingsChanged.emit()
 
     @Slot()
