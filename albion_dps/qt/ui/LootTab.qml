@@ -162,7 +162,7 @@ Item {
                     Layout.fillWidth: true
                     text: latestLootSummary.length > 0
                         ? latestLootSummary
-                        : "Party-only loot log. Use search and source filter to inspect recent pickups."
+                        : "Party loot log. Use filters to inspect recent pickups and silver splits."
                     color: latestLootSummary.length > 0 ? theme.textMuted : theme.textFaint
                     wrapMode: Text.Wrap
                 }
@@ -198,7 +198,7 @@ Item {
                         Text {
                             id: viewBadgeText
                             anchors.centerIn: parent
-                            text: "View: " + root.kindLabel(root.kindFilter)
+                            text: "Mode: " + root.kindLabel(root.kindFilter)
                             color: root.kindFilter === "silver" ? theme.stateWarning : (root.kindFilter === "items" ? theme.stateSuccess : theme.textPrimary)
                             font.pixelSize: 11
                             font.bold: true
@@ -383,7 +383,7 @@ Item {
                             spacing: 8
 
                             Text {
-                                text: "Recent Loot"
+                                text: "Loot Feed"
                                 color: theme.textPrimary
                                 font.pixelSize: 14
                                 font.bold: true
@@ -610,7 +610,7 @@ Item {
                             spacing: 8
 
                             Text {
-                                text: "Top View Looters"
+                                text: "Top Looters"
                                 color: theme.textPrimary
                                 font.pixelSize: 14
                                 font.bold: true
@@ -667,7 +667,7 @@ Item {
 
                                     Text {
                                         anchors.centerIn: parent
-                                        text: "No looters in current view"
+                                        text: "No looters in this view"
                                         color: theme.textMuted
                                         font.pixelSize: 12
                                     }
@@ -763,7 +763,7 @@ Item {
 
                                     Text {
                                         anchors.centerIn: parent
-                                        text: "No item drops in current view"
+                                        text: "No item drops in this view"
                                         color: theme.textMuted
                                         font.pixelSize: 12
                                     }
@@ -785,7 +785,7 @@ Item {
                             spacing: 8
 
                             Text {
-                                text: "Top Silver Looters"
+                                text: "Top Silver"
                                 color: theme.textPrimary
                                 font.pixelSize: 14
                                 font.bold: true
@@ -859,7 +859,7 @@ Item {
 
                                     Text {
                                         anchors.centerIn: parent
-                                        text: "No silver events in current view"
+                                        text: "No silver events in this view"
                                         color: theme.textMuted
                                         font.pixelSize: 12
                                     }
