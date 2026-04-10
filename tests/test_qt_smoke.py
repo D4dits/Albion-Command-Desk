@@ -14,6 +14,7 @@ except ImportError as exc:  # pragma: no cover - depends on system Qt libs
     pytest.skip(f"Qt runtime unavailable: {exc}", allow_module_level=True)
 
 from albion_dps.qt.models import UiState
+from albion_dps.qt.loot_state import LootState
 from albion_dps.qt.market import MarketSetupState
 from albion_dps.qt.scanner import ScannerState
 
@@ -30,9 +31,11 @@ def test_qt_smoke_loads_qml() -> None:
 
     engine.warnings.connect(handle_warnings)
     state = UiState(sort_key="dps", top_n=5, history_limit=5)
+    loot_state = LootState(history_limit=5)
     scanner_state = ScannerState()
     market_setup_state = MarketSetupState()
     engine.rootContext().setContextProperty("uiState", state)
+    engine.rootContext().setContextProperty("lootState", loot_state)
     engine.rootContext().setContextProperty("scannerState", scanner_state)
     engine.rootContext().setContextProperty("marketSetupState", market_setup_state)
 

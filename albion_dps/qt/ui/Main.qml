@@ -81,8 +81,9 @@ ApplicationWindow {
     property bool meterView: viewTabs.currentIndex === 1
     property bool scannerView: viewTabs.currentIndex === 2
     property bool marketView: viewTabs.currentIndex === 3
-    property bool settingsView: viewTabs.currentIndex === 4
-    property bool helpView: viewTabs.currentIndex === 5
+    property bool lootView: viewTabs.currentIndex === 4
+    property bool settingsView: viewTabs.currentIndex === 5
+    property bool helpView: viewTabs.currentIndex === 6
     property bool marketDiagnosticsVisible: false
     property bool marketStatusExpanded: false
     property bool marketBreakdownExpanded: false
@@ -319,6 +320,7 @@ ApplicationWindow {
             meterView: root.meterView
             scannerView: root.scannerView
             marketView: root.marketView
+            lootView: root.lootView
             settingsView: root.settingsView
             helpView: root.helpView
             compactLayout: root.compactLayout
@@ -339,6 +341,8 @@ ApplicationWindow {
             marketCraftPlanCount: marketSetupState.craftPlanCount
             marketInputsTotalCost: marketSetupState.selectedInputsTotalCost
             marketNetProfitValue: marketSetupState.selectedNetProfitValue
+            lootEventCount: lootState.eventCount
+            lootLatestSummary: lootState.latestLootSummary
             updateBannerVisible: uiState.updateBannerVisible
             updateBannerText: uiState.updateBannerText
             updateBannerUrl: uiState.updateBannerUrl
@@ -423,6 +427,17 @@ ApplicationWindow {
                 ShellTabButton {
                     id: marketTabButton
                     text: "Market"
+                    activeColor: accentColor
+                    inactiveColor: shellTabIdleBackground
+                    activeTextColor: shellTabActiveText
+                    inactiveTextColor: textColor
+                    borderColor: borderColor
+                    cornerRadius: shellTabRadius
+                    labelPixelSize: 13
+                }
+                ShellTabButton {
+                    id: lootTabButton
+                    text: "Loot"
                     activeColor: accentColor
                     inactiveColor: shellTabIdleBackground
                     activeTextColor: shellTabActiveText
@@ -869,8 +884,33 @@ ApplicationWindow {
             }
 
             Item {
-                id: settingsTabContainer
+                id: lootTabContainer
                 opacity: viewTabs.currentIndex === 4 ? 1.0 : 0.0
+                visible: true
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Utils.AnimationUtils.durationNormal
+                        easing.type: Utils.AnimationUtils.easingOut
+                    }
+                }
+
+                LootTab {
+                    id: lootTab
+                    anchors.fill: parent
+                    compactLayout: root.compactLayout
+                    theme: root.theme
+                    eventCount: lootState.eventCount
+                    latestLootSummary: lootState.latestLootSummary
+                    logPath: lootState.logPath
+                    eventsModel: lootState.eventsModel
+                }
+            }
+
+            Item {
+                id: settingsTabContainer
+                opacity: viewTabs.currentIndex === 5 ? 1.0 : 0.0
                 visible: true
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -947,7 +987,7 @@ ApplicationWindow {
 
             Item {
                 id: helpTabContainer
-                opacity: viewTabs.currentIndex === 5 ? 1.0 : 0.0
+                opacity: viewTabs.currentIndex === 6 ? 1.0 : 0.0
                 visible: true
                 Layout.fillWidth: true
                 Layout.fillHeight: true

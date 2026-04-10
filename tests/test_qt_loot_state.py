@@ -97,6 +97,7 @@ def test_runner_drain_snapshots_updates_loot_state() -> None:
         fame=FameTracker(),
         map_trail=MapTrailTracker(),
         loot_tracker=tracker,
+        loot_writer=None,
         loot_state=loot_state,
         stop_event=stop_event,
     )

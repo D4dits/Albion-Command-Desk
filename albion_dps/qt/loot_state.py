@@ -108,6 +108,7 @@ class LootState(QObject):
         self._event_count = 0
         self._latest_summary = ""
         self._export_text = loot_events_to_txt([])
+        self._log_path = ""
 
     @Property(QObject, constant=True)
     def eventsModel(self) -> LootEventsModel:
@@ -124,6 +125,17 @@ class LootState(QObject):
     @Property(str, notify=changed)
     def exportText(self) -> str:
         return self._export_text
+
+    @Property(str, notify=changed)
+    def logPath(self) -> str:
+        return self._log_path
+
+    def set_log_path(self, value: str) -> None:
+        next_value = str(value or "")
+        if next_value == self._log_path:
+            return
+        self._log_path = next_value
+        self.changed.emit()
 
     def update_from_tracker(self, tracker) -> None:
         events = list(tracker.events(limit=self._history_limit))

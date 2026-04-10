@@ -16,6 +16,7 @@ from albion_dps.capture.npcap_runtime import (
 from albion_dps.capture.startup_policy import decide_live_startup
 from albion_dps.domain import (
     FameTracker,
+    LootLogWriter,
     LootTracker,
     MapTrailTracker,
     NameRegistry,
@@ -168,6 +169,8 @@ def run_qt(args: argparse.Namespace) -> int:
         auto_refresh_prices=True,
     )
     loot_state = LootState(history_limit=max(args.history, 1))
+    loot_writer = LootLogWriter()
+    loot_state.set_log_path(str(loot_writer.path))
     engine.rootContext().setContextProperty("uiState", state)
     engine.rootContext().setContextProperty("scannerState", scanner_state)
     engine.rootContext().setContextProperty("marketSetupState", market_setup_state)
@@ -197,6 +200,7 @@ def run_qt(args: argparse.Namespace) -> int:
             fame=fame,
             map_trail=map_trail,
             loot_tracker=loot_tracker,
+            loot_writer=loot_writer,
             loot_state=loot_state,
             stop_event=stop_event,
         )
@@ -432,6 +436,7 @@ def _drain_snapshots(
     fame: FameTracker,
     map_trail: MapTrailTracker,
     loot_tracker: LootTracker,
+    loot_writer: LootLogWriter | None,
     loot_state: LootState,
     stop_event: threading.Event,
 ) -> None:
@@ -467,6 +472,9 @@ def _drain_snapshots(
             allowed_player_names=allowed_names or None,
         )
         loot_state.update_from_tracker(loot_tracker)
+        if loot_writer is not None:
+            written_path = loot_writer.sync_events(list(reversed(loot_tracker.events())))
+            loot_state.set_log_path(str(written_path))
 
 
 LOCAL_PARTY_VISIBILITY_SECONDS = 20.0
