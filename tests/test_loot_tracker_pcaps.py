@@ -66,6 +66,7 @@ def _pcap_loot_summary(name: str) -> dict[str, object]:
         ("albion_combat_51_party.pcap", 0, 0, 0, 0),
         ("albion_combat_52_party_full.pcap", 40, 1, 39, 7),
         ("albion_combat_54_group_camps.pcap", 82, 2, 80, 17),
+        ("albion_combat_55_group_camps.pcap", 139, 3, 136, 19),
     ],
 )
 def test_loot_pcaps_match_expected_item_and_silver_counts(
@@ -93,6 +94,8 @@ def test_loot_pcap49_is_mostly_party_silver_distribution() -> None:
 def test_loot_pcaps_keep_expected_item_samples() -> None:
     summary52 = _pcap_loot_summary("albion_combat_52_party_full.pcap")
     summary54 = _pcap_loot_summary("albion_combat_54_group_camps.pcap")
+    summary55 = _pcap_loot_summary("albion_combat_55_group_camps.pcap")
 
     assert summary52["item_names"] == {"Adept's Rune"}
     assert summary54["item_names"] == {"Rotten Chocolate Egg", "Chocolate"}
+    assert summary55["item_names"] == {"Chocolate"}

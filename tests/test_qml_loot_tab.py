@@ -64,6 +64,7 @@ LootTab {
             lootedByAlliance: "AAA"
             itemId: "T3_BAG"
             itemName: "Journeyman's Bag"
+            iconUrl: "https://render.albiononline.com/v1/item/T3_BAG?size=64"
             quantity: 2
             sourceName: "Enemy"
             sourceKind: "player"
@@ -72,13 +73,13 @@ LootTab {
         }
     }
     topLootersModel: ListModel {
-        ListElement { label: "Alice"; sublabel: "Guild A"; quantity: 2; eventCount: 1 }
+        ListElement { label: "Alice"; sublabel: "Guild A"; iconUrl: ""; quantity: 2; eventCount: 1 }
     }
     topItemsModel: ListModel {
-        ListElement { label: "Journeyman's Bag"; sublabel: "T3_BAG"; quantity: 2; eventCount: 1 }
+        ListElement { label: "Journeyman's Bag"; sublabel: "T3_BAG"; iconUrl: "https://render.albiononline.com/v1/item/T3_BAG?size=64"; quantity: 2; eventCount: 1 }
     }
     topSilverLootersModel: ListModel {
-        ListElement { label: "Alice"; sublabel: "Guild A"; quantity: 1500; eventCount: 1 }
+        ListElement { label: "Alice"; sublabel: "Guild A"; iconUrl: ""; quantity: 1500; eventCount: 1 }
     }
 }
 """

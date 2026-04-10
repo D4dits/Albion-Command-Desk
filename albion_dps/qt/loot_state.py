@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from pathlib import Path
+from statistics import median
 from typing import Any
 
 from PySide6.QtCore import (
@@ -28,6 +30,7 @@ class LootRow:
     looted_by_alliance: str
     item_id: str
     item_name: str
+    icon_url: str
     quantity: int
     source_name: str
     source_kind: str
@@ -39,6 +42,7 @@ class LootRow:
 class LootAggregateRow:
     label: str
     sublabel: str
+    icon_url: str
     quantity: int
     event_count: int
 
@@ -50,11 +54,12 @@ class LootEventsModel(QAbstractListModel):
     LootedByAllianceRole = Qt.UserRole + 4
     ItemIdRole = Qt.UserRole + 5
     ItemNameRole = Qt.UserRole + 6
-    QuantityRole = Qt.UserRole + 7
-    SourceNameRole = Qt.UserRole + 8
-    SourceKindRole = Qt.UserRole + 9
-    IsSilverRole = Qt.UserRole + 10
-    SummaryRole = Qt.UserRole + 11
+    IconUrlRole = Qt.UserRole + 7
+    QuantityRole = Qt.UserRole + 8
+    SourceNameRole = Qt.UserRole + 9
+    SourceKindRole = Qt.UserRole + 10
+    IsSilverRole = Qt.UserRole + 11
+    SummaryRole = Qt.UserRole + 12
 
     def __init__(self) -> None:
         super().__init__()
@@ -82,6 +87,8 @@ class LootEventsModel(QAbstractListModel):
             return item.item_id
         if role == self.ItemNameRole:
             return item.item_name
+        if role == self.IconUrlRole:
+            return item.icon_url
         if role == self.QuantityRole:
             return item.quantity
         if role == self.SourceNameRole:
@@ -102,6 +109,7 @@ class LootEventsModel(QAbstractListModel):
             self.LootedByAllianceRole: b"lootedByAlliance",
             self.ItemIdRole: b"itemId",
             self.ItemNameRole: b"itemName",
+            self.IconUrlRole: b"iconUrl",
             self.QuantityRole: b"quantity",
             self.SourceNameRole: b"sourceName",
             self.SourceKindRole: b"sourceKind",
@@ -120,8 +128,9 @@ class LootEventsModel(QAbstractListModel):
 class LootAggregateModel(QAbstractListModel):
     LabelRole = Qt.UserRole + 1
     SublabelRole = Qt.UserRole + 2
-    QuantityRole = Qt.UserRole + 3
-    EventCountRole = Qt.UserRole + 4
+    IconUrlRole = Qt.UserRole + 3
+    QuantityRole = Qt.UserRole + 4
+    EventCountRole = Qt.UserRole + 5
 
     def __init__(self) -> None:
         super().__init__()
@@ -141,6 +150,8 @@ class LootAggregateModel(QAbstractListModel):
             return item.label
         if role == self.SublabelRole:
             return item.sublabel
+        if role == self.IconUrlRole:
+            return item.icon_url
         if role == self.QuantityRole:
             return item.quantity
         if role == self.EventCountRole:
@@ -151,6 +162,7 @@ class LootAggregateModel(QAbstractListModel):
         return {
             self.LabelRole: b"label",
             self.SublabelRole: b"sublabel",
+            self.IconUrlRole: b"iconUrl",
             self.QuantityRole: b"quantity",
             self.EventCountRole: b"eventCount",
         }
@@ -394,8 +406,9 @@ class LootState(QObject):
         self._refresh_models()
 
     def _refresh_models(self) -> None:
+        visible_events = _filter_suspicious_silver_events(self._all_events)
         base_events = _filter_events(
-            self._all_events,
+            visible_events,
             search_query=self._search_query,
             source_filter=self._source_filter,
         )
@@ -664,6 +677,7 @@ def _build_top_looters(rows: list[LootRow]) -> list[LootAggregateRow]:
         LootAggregateRow(
             label=name,
             sublabel=str(values["sublabel"]),
+            icon_url="",
             quantity=int(values["quantity"]),
             event_count=int(values["events"]),
         )
@@ -677,7 +691,12 @@ def _build_top_items(rows: list[LootRow]) -> list[LootAggregateRow]:
         key = row.item_id or row.item_name or "Unknown item"
         entry = stats.setdefault(
             key,
-            {"quantity": 0, "events": 0, "sublabel": row.item_id or row.source_kind},
+            {
+                "quantity": 0,
+                "events": 0,
+                "sublabel": row.item_id or row.source_kind,
+                "icon_url": row.icon_url,
+            },
         )
         entry["quantity"] = int(entry["quantity"]) + row.quantity
         entry["events"] = int(entry["events"]) + 1
@@ -689,6 +708,7 @@ def _build_top_items(rows: list[LootRow]) -> list[LootAggregateRow]:
         LootAggregateRow(
             label=name,
             sublabel=str(values["sublabel"]),
+            icon_url=str(values.get("icon_url", "")),
             quantity=int(values["quantity"]),
             event_count=int(values["events"]),
         )
@@ -712,6 +732,7 @@ def _loot_event_to_row(event: LootEvent) -> LootRow:
         looted_by_alliance=event.looted_by.alliance_name or "",
         item_id=item_id,
         item_name=item_name,
+        icon_url=_loot_icon_url(item_id),
         quantity=int(event.quantity),
         source_name=source_name,
         source_kind=event.source_kind,
@@ -737,3 +758,29 @@ def _format_summary(event: LootEvent, *, item_name: str, source_name: str) -> st
         f"{event.looted_by.player_name} looted {int(event.quantity)}x "
         f"{item_label} from {source_label}"
     )
+
+
+def _loot_icon_url(item_id: str) -> str:
+    unique = str(item_id or "").strip()
+    if not unique or unique == "SILVER":
+        return ""
+    base = os.environ.get("ALBION_DPS_ICON_BASE", "https://render.albiononline.com/v1/item").strip()
+    if not base:
+        return ""
+    return f"{base.rstrip('/')}/{unique}?size=64"
+
+
+def _filter_suspicious_silver_events(events: list[LootEvent]) -> list[LootEvent]:
+    silver_quantities = [int(event.quantity) for event in events if event.is_silver and int(event.quantity) > 0]
+    if len(silver_quantities) < 10:
+        return list(events)
+    baseline = int(median(silver_quantities))
+    threshold = max(5_000_000, baseline * 20)
+    return [
+        event
+        for event in events
+        if not (
+            event.is_silver
+            and int(event.quantity) > threshold
+        )
+    ]

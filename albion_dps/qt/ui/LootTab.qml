@@ -30,8 +30,8 @@ Item {
     property var topItemsModel: null
     property var topSilverLootersModel: null
     property bool stackedControls: width < 1140
-    property bool stackedSummary: width < 980
-    property int aggregateColumns: width >= 1360 ? 3 : (width >= 980 ? 2 : 1)
+    property bool stackedSummary: width < 920
+    property int aggregateColumns: width >= 1050 ? 3 : (width >= 720 ? 2 : 1)
     property int timeColumnWidth: compactLayout ? 56 : 64
     property int looterColumnWidth: compactLayout ? 136 : 164
     property int qtyColumnWidth: compactLayout ? 48 : 56
@@ -48,7 +48,21 @@ Item {
     signal useLiveLog()
 
     function cardValue(value) {
-        return String(value === undefined || value === null ? 0 : value)
+        var number = Number(value)
+        if (!isFinite(number)) {
+            return "0"
+        }
+        var absValue = Math.abs(number)
+        if (absValue >= 1000000000) {
+            return (number / 1000000000).toFixed(1) + "B"
+        }
+        if (absValue >= 1000000) {
+            return (number / 1000000).toFixed(1) + "M"
+        }
+        if (absValue >= 1000) {
+            return (number / 1000).toFixed(1) + "k"
+        }
+        return String(Math.round(number))
     }
 
     function kindLabel(value) {
@@ -434,7 +448,7 @@ Item {
 
                         Item {
                             Layout.fillWidth: true
-                            Layout.fillHeight: true
+                            Layout.preferredHeight: compactLayout ? 260 : 300
                             clip: true
 
                             ListView {
@@ -450,6 +464,7 @@ Item {
                                     required property string lootedByGuild
                                     required property string itemName
                                     required property string itemId
+                                    required property string iconUrl
                                     required property int quantity
                                     required property string sourceName
                                     required property string sourceKind
@@ -485,6 +500,29 @@ Item {
                                                 Layout.preferredWidth: root.looterColumnWidth
                                                 elide: Text.ElideRight
                                             }
+
+                                            Item {
+                                                Layout.preferredWidth: iconUrl.length > 0 ? 28 : 0
+                                                Layout.preferredHeight: 28
+                                                visible: iconUrl.length > 0
+
+                                                Rectangle {
+                                                    anchors.fill: parent
+                                                    radius: 6
+                                                    color: theme.surfaceRaised
+                                                    border.color: theme.borderSubtle
+
+                                                    Image {
+                                                        anchors.fill: parent
+                                                        anchors.margins: 2
+                                                        source: iconUrl
+                                                        fillMode: Image.PreserveAspectFit
+                                                        asynchronous: true
+                                                        cache: true
+                                                    }
+                                                }
+                                            }
+
                                             ColumnLayout {
                                                 Layout.fillWidth: true
                                                 Layout.minimumWidth: compactLayout ? 180 : 260

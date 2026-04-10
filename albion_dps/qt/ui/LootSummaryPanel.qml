@@ -12,6 +12,24 @@ Rectangle {
     property var model: null
     property string valueSuffix: "x"
 
+    function formatValue(value) {
+        var number = Number(value)
+        if (!isFinite(number)) {
+            return "0"
+        }
+        var absValue = Math.abs(number)
+        if (absValue >= 1000000000) {
+            return (number / 1000000000).toFixed(1) + "B"
+        }
+        if (absValue >= 1000000) {
+            return (number / 1000000).toFixed(1) + "M"
+        }
+        if (absValue >= 1000) {
+            return (number / 1000).toFixed(1) + "k"
+        }
+        return String(Math.round(number))
+    }
+
     function panelBorderColor() {
         if (accentMode === "items") {
             return theme.stateSuccess
@@ -56,7 +74,7 @@ Rectangle {
     color: theme.surfacePanel
     border.color: panelBorderColor()
     clip: true
-    implicitHeight: 206
+    implicitHeight: 172
 
     ColumnLayout {
         anchors.fill: parent
@@ -84,19 +102,43 @@ Rectangle {
                 delegate: Rectangle {
                     required property string label
                     required property string sublabel
+                    required property string iconUrl
                     required property int quantity
                     required property int eventCount
 
                     width: summaryList.width
-                    height: 52
+                    height: 56
                     radius: theme.radiusLg
                     color: root.rowBackground()
                     border.color: root.rowBorderColor()
+                    border.width: 1
 
                     RowLayout {
                         anchors.fill: parent
                         anchors.margins: 10
                         spacing: 8
+
+                        Item {
+                            width: iconUrl.length > 0 ? 34 : 0
+                            height: 34
+                            visible: iconUrl.length > 0
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: 6
+                                color: theme.surfaceRaised
+                                border.color: theme.borderSubtle
+
+                                Image {
+                                    anchors.fill: parent
+                                    anchors.margins: 2
+                                    source: iconUrl
+                                    fillMode: Image.PreserveAspectFit
+                                    asynchronous: true
+                                    cache: true
+                                }
+                            }
+                        }
 
                         ColumnLayout {
                             Layout.fillWidth: true
@@ -119,19 +161,25 @@ Rectangle {
                         }
 
                         ColumnLayout {
+                            Layout.preferredWidth: 88
+                            Layout.alignment: Qt.AlignRight
                             spacing: 1
 
                             Text {
-                                text: valueSuffix.length > 0 ? (quantity + valueSuffix) : String(quantity)
+                                text: valueSuffix.length > 0 ? (root.formatValue(quantity) + valueSuffix) : root.formatValue(quantity)
                                 color: root.valueColor()
                                 font.pixelSize: 12
                                 font.bold: true
+                                horizontalAlignment: Text.AlignRight
+                                width: parent.width
                             }
 
                             Text {
                                 text: eventCount + " ev"
                                 color: theme.textMuted
                                 font.pixelSize: 10
+                                horizontalAlignment: Text.AlignRight
+                                width: parent.width
                             }
                         }
                     }
