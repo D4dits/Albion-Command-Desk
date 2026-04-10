@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from albion_dps.domain.item_resolver import ItemResolver
+from albion_dps.domain.party_registry import PartyRegistry
 from albion_dps.domain.loot_types import (
     LootContainer,
     LootEvent,
@@ -36,6 +37,7 @@ LOOT_OBJECT_SUBTYPES = {
 @dataclass
 class LootTracker:
     item_resolver: ItemResolver | None = None
+    party_registry: PartyRegistry | None = None
     include_silver: bool = False
     history_limit: int = 500
     _players: dict[str, LootPlayer] = field(default_factory=dict)
@@ -219,6 +221,8 @@ class LootTracker:
         item_num_id = parameters.get(4)
         quantity = parameters.get(5)
         if not isinstance(looted_by_name, str) or not looted_by_name:
+            return
+        if self.party_registry is not None and not self.party_registry.allows_player_name(looted_by_name):
             return
         if not isinstance(quantity, int) or quantity <= 0:
             return

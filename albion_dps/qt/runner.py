@@ -66,7 +66,7 @@ def run_qt(args: argparse.Namespace) -> int:
     names, party, fame, meter, map_trail, decoder, mapper = _build_runtime(args)
     ensure_game_databases(logger=logging.getLogger(__name__), interactive=False)
     item_resolver = load_item_resolver(logger=logging.getLogger(__name__))
-    loot_tracker = LootTracker(item_resolver=item_resolver)
+    loot_tracker = LootTracker(item_resolver=item_resolver, party_registry=party)
     map_resolver = load_map_resolver(logger=logging.getLogger(__name__))
     meter.map_lookup = map_resolver.name_for_index
     map_trail.map_lookup = map_resolver.name_for_index

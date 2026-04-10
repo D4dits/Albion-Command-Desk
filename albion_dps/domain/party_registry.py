@@ -383,6 +383,13 @@ class PartyRegistry:
     def snapshot_names(self) -> set[str]:
         return set(self._party_names)
 
+    def allows_player_name(self, player_name: str) -> bool:
+        if not _looks_like_player_name(player_name):
+            return False
+        if self._self_name_confirmed and self._self_name == player_name:
+            return True
+        return player_name in self._party_names
+
     def snapshot_ids(self) -> set[int]:
         return set(self._party_ids)
 

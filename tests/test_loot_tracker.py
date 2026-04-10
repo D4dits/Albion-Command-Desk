@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import albion_dps.domain.loot_tracker as loot_tracker_module
 
 from albion_dps.domain.item_resolver import ItemResolver
+from albion_dps.domain.party_registry import PartyRegistry
 from albion_dps.domain.loot_tracker import (
     EV_ATTACH_ITEM_CONTAINER,
     EV_CHARACTER_STATS,
@@ -155,6 +156,60 @@ def test_loot_tracker_marks_mob_source_without_creating_fake_player(monkeypatch)
     assert events[0].source_kind == "mob"
     assert events[0].source_name == "@MOB_KEEPER_DRUID_CHAMPION"
     assert tracker.player("@MOB_KEEPER_DRUID_CHAMPION") is None
+
+
+def test_loot_tracker_rejects_loot_from_non_party_player(monkeypatch) -> None:
+    party = PartyRegistry()
+    party.seed_names(["Alice", "Bob"])
+    tracker = LootTracker(
+        party_registry=party,
+        item_resolver=ItemResolver(
+            index_to_unique={3130: "T3_BAG"},
+            index_to_name={3130: "Journeyman's Bag"},
+        ),
+    )
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_OTHER_GRABBED_LOOT,
+        parameters={
+            1: "@MOB_KEEPER_DRUID_CHAMPION",
+            2: "EnemyGuy",
+            4: 3130,
+            5: 2,
+        },
+    )
+    tracker.observe(_message(), _packet(2.0))
+
+    assert tracker.events() == []
+
+
+def test_loot_tracker_accepts_loot_from_party_player(monkeypatch) -> None:
+    party = PartyRegistry()
+    party.seed_names(["Alice", "Bob"])
+    tracker = LootTracker(
+        party_registry=party,
+        item_resolver=ItemResolver(
+            index_to_unique={3130: "T3_BAG"},
+            index_to_name={3130: "Journeyman's Bag"},
+        ),
+    )
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_OTHER_GRABBED_LOOT,
+        parameters={
+            1: "@MOB_KEEPER_DRUID_CHAMPION",
+            2: "Alice",
+            4: 3130,
+            5: 2,
+        },
+    )
+    tracker.observe(_message(), _packet(2.0))
+
+    events = tracker.events()
+    assert len(events) == 1
+    assert events[0].looted_by.player_name == "Alice"
 
 
 def test_loot_tracker_attaches_loot_objects_to_container(monkeypatch) -> None:
