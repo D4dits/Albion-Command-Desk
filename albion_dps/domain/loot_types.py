@@ -22,6 +22,8 @@ class LootEvent:
     timestamp: float
     looted_by: LootPlayer
     looted_from: LootPlayer | None
+    source_name: str | None
+    source_kind: str
     item: LootItemRef | None
     quantity: int
     is_silver: bool

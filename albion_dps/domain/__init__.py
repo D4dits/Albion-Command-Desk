@@ -1,4 +1,5 @@
 from .fame_tracker import FameTracker
+from .loot_export import LOOT_EXPORT_HEADER, loot_events_to_txt, write_loot_events_txt
 from .item_resolver import ItemResolver, load_item_resolver
 from .loot_tracker import LootTracker
 from .loot_types import LootContainer, LootEvent, LootItemRef, LootObject, LootPlayer
@@ -13,16 +14,19 @@ __all__ = [
     "FameTracker",
     "ItemResolver",
     "load_item_resolver",
+    "LOOT_EXPORT_HEADER",
     "LootContainer",
     "LootEvent",
     "LootItemRef",
     "LootObject",
     "LootPlayer",
     "LootTracker",
+    "loot_events_to_txt",
     "NameRegistry",
     "MapResolver",
     "load_map_resolver",
     "PartyRegistry",
     "MapTrailTracker",
     "SessionActivityEvent",
+    "write_loot_events_txt",
 ]

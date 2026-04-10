@@ -225,11 +225,14 @@ class LootTracker:
 
         looted_by = self._upsert_player(looted_by_name)
         looted_from = None
+        source_name = None
+        source_kind = "unknown"
         item = None
 
         if is_silver:
             if not self.include_silver:
                 return
+            source_kind = "silver"
             item = LootItemRef(
                 item_num_id=None,
                 unique_name="SILVER",
@@ -240,7 +243,10 @@ class LootTracker:
                 return
             if not isinstance(item_num_id, int) or item_num_id <= 0:
                 return
-            looted_from = self._upsert_player(looted_from_name)
+            source_name = looted_from_name
+            source_kind = _classify_source_kind(looted_from_name)
+            if source_kind == "player":
+                looted_from = self._upsert_player(looted_from_name)
             item = self._resolve_item(item_num_id)
 
         self._events.append(
@@ -248,6 +254,8 @@ class LootTracker:
                 timestamp=float(timestamp),
                 looted_by=looted_by,
                 looted_from=looted_from,
+                source_name=source_name,
+                source_kind=source_kind,
                 item=item,
                 quantity=int(quantity),
                 is_silver=is_silver,
@@ -333,3 +341,11 @@ def _coerce_uuid_bytes(value: object) -> bytes | None:
             out.append(item)
         return bytes(out)
     return None
+
+
+def _classify_source_kind(source_name: str) -> str:
+    if source_name.startswith("@MOB"):
+        return "mob"
+    if source_name.startswith("@"):
+        return "system"
+    return "player"

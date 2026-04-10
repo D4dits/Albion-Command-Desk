@@ -86,6 +86,8 @@ def test_loot_tracker_records_loot_event_with_resolved_item(monkeypatch) -> None
     assert event.looted_by.player_name == "Alice"
     assert event.looted_from is not None
     assert event.looted_from.player_name == "Enemy"
+    assert event.source_kind == "player"
+    assert event.source_name == "Enemy"
     assert event.item is not None
     assert event.item.unique_name == "T4_MAIN_SWORD"
     assert event.item.display_name == "Adept's Broadsword"
@@ -122,6 +124,37 @@ def test_loot_tracker_can_include_silver(monkeypatch) -> None:
     assert events[0].item is not None
     assert events[0].item.unique_name == "SILVER"
     assert events[0].looted_from is None
+    assert events[0].source_kind == "silver"
+    assert events[0].source_name is None
+
+
+def test_loot_tracker_marks_mob_source_without_creating_fake_player(monkeypatch) -> None:
+    tracker = LootTracker(
+        item_resolver=ItemResolver(
+            index_to_unique={3130: "T3_BAG"},
+            index_to_name={3130: "Journeyman's Bag"},
+        )
+    )
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_OTHER_GRABBED_LOOT,
+        parameters={
+            1: "@MOB_KEEPER_DRUID_CHAMPION",
+            2: "Alice",
+            4: 3130,
+            5: 2,
+        },
+    )
+    tracker.observe(_message(), _packet(2.0))
+
+    events = tracker.events()
+    assert len(events) == 1
+    assert events[0].looted_by.player_name == "Alice"
+    assert events[0].looted_from is None
+    assert events[0].source_kind == "mob"
+    assert events[0].source_name == "@MOB_KEEPER_DRUID_CHAMPION"
+    assert tracker.player("@MOB_KEEPER_DRUID_CHAMPION") is None
 
 
 def test_loot_tracker_attaches_loot_objects_to_container(monkeypatch) -> None:

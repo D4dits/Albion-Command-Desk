@@ -16,6 +16,7 @@ from albion_dps.capture.npcap_runtime import (
 from albion_dps.capture.startup_policy import decide_live_startup
 from albion_dps.domain import (
     FameTracker,
+    LootTracker,
     MapTrailTracker,
     NameRegistry,
     PartyRegistry,
@@ -63,6 +64,7 @@ def run_qt(args: argparse.Namespace) -> int:
     names, party, fame, meter, map_trail, decoder, mapper = _build_runtime(args)
     ensure_game_databases(logger=logging.getLogger(__name__), interactive=False)
     item_resolver = load_item_resolver(logger=logging.getLogger(__name__))
+    loot_tracker = LootTracker(item_resolver=item_resolver)
     map_resolver = load_map_resolver(logger=logging.getLogger(__name__))
     meter.map_lookup = map_resolver.name_for_index
     map_trail.map_lookup = map_resolver.name_for_index
@@ -77,7 +79,17 @@ def run_qt(args: argparse.Namespace) -> int:
     def weapon_lookup(entity_id: int):
         items = names.items_for(entity_id)
         return item_resolver.weapon_info_for_items(items)
-    snapshots = _build_snapshot_stream(args, names, party, fame, meter, map_trail, decoder, mapper)
+    snapshots = _build_snapshot_stream(
+        args,
+        names,
+        party,
+        fame,
+        meter,
+        map_trail,
+        decoder,
+        mapper,
+        loot_tracker,
+    )
     if snapshots is None:
         return 1
 
@@ -215,6 +227,7 @@ def _build_snapshot_stream(
     map_trail: MapTrailTracker,
     decoder: PhotonDecoder,
     mapper: CombatEventMapper,
+    loot_tracker: LootTracker,
 ) -> Iterable[MeterSnapshot] | None:
     if args.qt_command == "core":
         logging.getLogger(__name__).info(
@@ -231,6 +244,7 @@ def _build_snapshot_stream(
             party_registry=party,
             fame_tracker=fame,
             activity_tracker=map_trail,
+            loot_tracker=loot_tracker,
             event_mapper=mapper.map,
             snapshot_interval=1.0,
         )
@@ -303,6 +317,7 @@ def _build_snapshot_stream(
             party_registry=party,
             fame_tracker=fame,
             activity_tracker=map_trail,
+            loot_tracker=loot_tracker,
             event_mapper=mapper.map,
             snapshot_interval=1.0,
         )
