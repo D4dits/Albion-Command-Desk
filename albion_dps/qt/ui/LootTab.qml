@@ -163,7 +163,7 @@ Item {
                     text: latestLootSummary.length > 0
                         ? latestLootSummary
                         : "Party loot log. Use filters to inspect recent pickups and silver splits."
-                    color: latestLootSummary.length > 0 ? theme.textMuted : theme.textFaint
+                    color: latestLootSummary.length > 0 ? theme.textMuted : theme.textDisabled
                     wrapMode: Text.Wrap
                 }
 
@@ -227,7 +227,7 @@ Item {
                         delegate: Rectangle {
                             width: compactLayout ? 92 : 116
                             height: 56
-                            radius: theme.cornerRadiusCard
+                            radius: theme.radiusLg
                             color: root.statCardBg(modelData.title)
                             border.color: root.statCardBorder(modelData.title)
 
@@ -257,7 +257,7 @@ Item {
 
             Rectangle {
                 Layout.fillWidth: true
-                radius: theme.cornerRadiusCard
+                radius: theme.radiusLg
                 color: theme.cardLevel1
                 border.color: theme.borderSubtle
                 implicitHeight: compactLayout ? 128 : 84
@@ -369,7 +369,7 @@ Item {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    radius: theme.cornerRadiusCard
+                    radius: theme.radiusLg
                     color: theme.cardLevel1
                     border.color: theme.borderSubtle
 
@@ -428,163 +428,167 @@ Item {
                             color: theme.borderSubtle
                         }
 
-                        ListView {
-                            id: lootList
+                        Item {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            clip: true
-                            spacing: 6
-                            model: root.eventsModel
 
-                            delegate: Rectangle {
-                                required property string timestampText
-                                required property string lootedByName
-                                required property string lootedByGuild
-                                required property string itemName
-                                required property string itemId
-                                required property int quantity
-                                required property string sourceName
-                                required property string sourceKind
-                                required property bool isSilver
-                                required property string summary
+                            ListView {
+                                id: lootList
+                                anchors.fill: parent
+                                clip: true
+                                spacing: 6
+                                model: root.eventsModel
 
-                                width: lootList.width
-                                radius: theme.cornerRadiusCard
-                                color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
-                                border.color: theme.borderSubtle
-                                implicitHeight: 62
+                                delegate: Rectangle {
+                                    required property string timestampText
+                                    required property string lootedByName
+                                    required property string lootedByGuild
+                                    required property string itemName
+                                    required property string itemId
+                                    required property int quantity
+                                    required property string sourceName
+                                    required property string sourceKind
+                                    required property bool isSilver
+                                    required property string summary
 
-                                ColumnLayout {
-                                    anchors.fill: parent
-                                    anchors.margins: 10
-                                    spacing: 4
+                                    width: lootList.width
+                                    radius: theme.radiusLg
+                                    color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
+                                    border.color: theme.borderSubtle
+                                    implicitHeight: 62
 
-                                    RowLayout {
-                                        Layout.fillWidth: true
-                                        spacing: 10
+                                    ColumnLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 10
+                                        spacing: 4
 
-                                        Text {
-                                            text: timestampText
-                                            color: theme.textPrimary
-                                            font.pixelSize: 11
-                                            Layout.preferredWidth: root.timeColumnWidth
-                                        }
-                                        Text {
-                                            text: lootedByGuild.length > 0 ? (lootedByName + " [" + lootedByGuild + "]") : lootedByName
-                                            color: theme.textPrimary
-                                            font.pixelSize: 11
-                                            Layout.preferredWidth: root.looterColumnWidth
-                                            elide: Text.ElideRight
-                                        }
-                                        ColumnLayout {
+                                        RowLayout {
                                             Layout.fillWidth: true
-                                            Layout.minimumWidth: compactLayout ? 180 : 260
-                                            spacing: 1
-                                            RowLayout {
+                                            spacing: 10
+
+                                            Text {
+                                                text: timestampText
+                                                color: theme.textPrimary
+                                                font.pixelSize: 11
+                                                Layout.preferredWidth: root.timeColumnWidth
+                                            }
+                                            Text {
+                                                text: lootedByGuild.length > 0 ? (lootedByName + " [" + lootedByGuild + "]") : lootedByName
+                                                color: theme.textPrimary
+                                                font.pixelSize: 11
+                                                Layout.preferredWidth: root.looterColumnWidth
+                                                elide: Text.ElideRight
+                                            }
+                                            ColumnLayout {
                                                 Layout.fillWidth: true
-                                                spacing: 6
-
-                                                Text {
+                                                Layout.minimumWidth: compactLayout ? 180 : 260
+                                                spacing: 1
+                                                RowLayout {
                                                     Layout.fillWidth: true
-                                                    text: itemName
-                                                    color: isSilver ? theme.brandWarmAccent : theme.textPrimary
-                                                    font.pixelSize: 11
-                                                    font.bold: isSilver
-                                                    elide: Text.ElideRight
-                                                }
-
-                                                Rectangle {
-                                                    radius: 9
-                                                    color: root.lootKindBadgeBg(isSilver)
-                                                    border.color: root.lootKindBadgeBorder(isSilver)
-                                                    implicitHeight: 20
-                                                    implicitWidth: kindBadgeText.implicitWidth + 14
+                                                    spacing: 6
 
                                                     Text {
-                                                        id: kindBadgeText
-                                                        anchors.centerIn: parent
-                                                        text: isSilver ? "SILVER" : "ITEM"
-                                                        color: root.lootKindBadgeText(isSilver)
-                                                        font.pixelSize: 9
-                                                        font.bold: true
+                                                        Layout.fillWidth: true
+                                                        text: itemName
+                                                        color: isSilver ? theme.brandWarmAccent : theme.textPrimary
+                                                        font.pixelSize: 11
+                                                        font.bold: isSilver
+                                                        elide: Text.ElideRight
                                                     }
+
+                                                    Rectangle {
+                                                        radius: 9
+                                                        color: root.lootKindBadgeBg(isSilver)
+                                                        border.color: root.lootKindBadgeBorder(isSilver)
+                                                        implicitHeight: 20
+                                                        implicitWidth: kindBadgeText.implicitWidth + 14
+
+                                                        Text {
+                                                            id: kindBadgeText
+                                                            anchors.centerIn: parent
+                                                            text: isSilver ? "SILVER" : "ITEM"
+                                                            color: root.lootKindBadgeText(isSilver)
+                                                            font.pixelSize: 9
+                                                            font.bold: true
+                                                        }
+                                                    }
+                                                }
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: itemId
+                                                    color: theme.textDisabled
+                                                    font.pixelSize: 9
+                                                    elide: Text.ElideRight
+                                                    visible: itemId.length > 0
                                                 }
                                             }
                                             Text {
-                                                Layout.fillWidth: true
-                                                text: itemId
-                                                color: theme.textFaint
-                                                font.pixelSize: 9
-                                                elide: Text.ElideRight
-                                                visible: itemId.length > 0
+                                                text: isSilver ? String(quantity) : (String(quantity) + "x")
+                                                color: isSilver ? theme.brandWarmAccent : theme.textPrimary
+                                                font.pixelSize: 11
+                                                font.bold: true
+                                                horizontalAlignment: Text.AlignRight
+                                                Layout.preferredWidth: root.qtyColumnWidth
                                             }
-                                        }
-                                        Text {
-                                            text: isSilver ? String(quantity) : (String(quantity) + "x")
-                                            color: isSilver ? theme.brandWarmAccent : theme.textPrimary
-                                            font.pixelSize: 11
-                                            font.bold: true
-                                            horizontalAlignment: Text.AlignRight
-                                            Layout.preferredWidth: root.qtyColumnWidth
-                                        }
-                                        Rectangle {
-                                            Layout.preferredWidth: root.sourceColumnWidth
-                                            radius: 10
-                                            color: root.sourceBadgeBg(sourceKind)
-                                            border.color: root.sourceBadgeBorder(sourceKind)
-                                            border.width: 1
-                                            implicitHeight: 22
+                                            Rectangle {
+                                                Layout.preferredWidth: root.sourceColumnWidth
+                                                radius: 10
+                                                color: root.sourceBadgeBg(sourceKind)
+                                                border.color: root.sourceBadgeBorder(sourceKind)
+                                                border.width: 1
+                                                implicitHeight: 22
 
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: sourceKind === "silver" ? "Silver" : sourceName
-                                                color: root.sourceBadgeText(sourceKind)
-                                                font.pixelSize: 10
-                                                elide: Text.ElideRight
-                                                width: parent.width - 12
-                                                horizontalAlignment: Text.AlignHCenter
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: sourceKind === "silver" ? "Silver" : sourceName
+                                                    color: root.sourceBadgeText(sourceKind)
+                                                    font.pixelSize: 10
+                                                    elide: Text.ElideRight
+                                                    width: parent.width - 12
+                                                    horizontalAlignment: Text.AlignHCenter
+                                                }
                                             }
                                         }
+
+                                        Text {
+                                            id: detailText
+                                            Layout.fillWidth: true
+                                            text: summary
+                                            color: theme.textMuted
+                                            font.pixelSize: 10
+                                            elide: Text.ElideRight
+                                            maximumLineCount: 1
+                                        }
+                                    }
+                                }
+
+                                ScrollBar.vertical: ScrollBar {}
+                            }
+
+                            Item {
+                                anchors.fill: parent
+                                visible: lootList.count === 0
+
+                                Column {
+                                    anchors.centerIn: parent
+                                    spacing: 8
+
+                                    Text {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: root.kindFilter === "silver"
+                                            ? "No silver events yet"
+                                            : (root.kindFilter === "items" ? "No item drops yet" : "No loot yet")
+                                        color: theme.textPrimary
+                                        font.pixelSize: 18
+                                        font.bold: true
                                     }
 
                                     Text {
-                                        id: detailText
-                                        Layout.fillWidth: true
-                                        text: summary
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        text: "Party-only data will appear here after loot events are detected."
                                         color: theme.textMuted
-                                        font.pixelSize: 10
-                                        elide: Text.ElideRight
-                                        maximumLineCount: 1
+                                        font.pixelSize: 12
                                     }
-                                }
-                            }
-
-                            ScrollBar.vertical: ScrollBar {}
-                        }
-
-                        Item {
-                            anchors.fill: lootList
-                            visible: lootList.count === 0
-
-                            Column {
-                                anchors.centerIn: parent
-                                spacing: 8
-
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    text: root.kindFilter === "silver"
-                                        ? "No silver events yet"
-                                        : (root.kindFilter === "items" ? "No item drops yet" : "No loot yet")
-                                    color: theme.textPrimary
-                                    font.pixelSize: 18
-                                    font.bold: true
-                                }
-
-                                Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    text: "Party-only data will appear here after loot events are detected."
-                                    color: theme.textMuted
-                                    font.pixelSize: 12
                                 }
                             }
                         }
@@ -600,7 +604,7 @@ Item {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 188
                         Layout.fillHeight: false
-                        radius: theme.cornerRadiusCard
+                        radius: theme.radiusLg
                         color: theme.cardLevel1
                         border.color: theme.borderSubtle
 
@@ -634,7 +638,7 @@ Item {
                                         required property int eventCount
 
                                         width: ListView.view.width
-                                        radius: theme.cornerRadiusCard
+                                        radius: theme.radiusLg
                                         color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
                                         border.color: theme.borderSubtle
                                         implicitHeight: 52
@@ -648,7 +652,7 @@ Item {
                                                 Layout.fillWidth: true
                                                 spacing: 2
                                                 Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
-                                                Text { text: sublabel; color: theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
+                                                Text { text: sublabel; color: theme.textDisabled; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
                                             }
                                             ColumnLayout {
                                                 spacing: 1
@@ -679,7 +683,7 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        radius: theme.cornerRadiusCard
+                        radius: theme.radiusLg
                         color: theme.cardLevel1
                         border.color: theme.borderSubtle
 
@@ -730,7 +734,7 @@ Item {
                                         required property int eventCount
 
                                         width: ListView.view.width
-                                        radius: theme.cornerRadiusCard
+                                        radius: theme.radiusLg
                                         color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
                                         border.color: theme.borderSubtle
                                         implicitHeight: 52
@@ -744,7 +748,7 @@ Item {
                                                 Layout.fillWidth: true
                                                 spacing: 2
                                                 Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
-                                                Text { text: sublabel; color: theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
+                                                Text { text: sublabel; color: theme.textDisabled; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
                                             }
                                             ColumnLayout {
                                                 spacing: 1
@@ -775,7 +779,7 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        radius: theme.cornerRadiusCard
+                        radius: theme.radiusLg
                         color: theme.cardLevel1
                         border.color: theme.borderSubtle
 
@@ -826,7 +830,7 @@ Item {
                                         required property int eventCount
 
                                         width: ListView.view.width
-                                        radius: theme.cornerRadiusCard
+                                        radius: theme.radiusLg
                                         color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
                                         border.color: theme.borderSubtle
                                         implicitHeight: 52
@@ -840,7 +844,7 @@ Item {
                                                 Layout.fillWidth: true
                                                 spacing: 2
                                                 Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
-                                                Text { text: sublabel; color: theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
+                                                Text { text: sublabel; color: theme.textDisabled; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
                                             }
                                             ColumnLayout {
                                                 spacing: 1
