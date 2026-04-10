@@ -51,6 +51,57 @@ Item {
         return "All"
     }
 
+    function lootKindBadgeBg(isSilverValue) {
+        return isSilverValue ? theme.stateWarningBg : theme.stateSuccessBg
+    }
+
+    function lootKindBadgeBorder(isSilverValue) {
+        return isSilverValue ? theme.stateWarning : theme.stateSuccess
+    }
+
+    function lootKindBadgeText(isSilverValue) {
+        return isSilverValue ? theme.stateWarning : theme.stateSuccess
+    }
+
+    function sourceBadgeBg(kind) {
+        if (kind === "mob") {
+            return theme.stateWarningBg
+        }
+        if (kind === "player") {
+            return theme.stateInfoBg
+        }
+        if (kind === "silver") {
+            return "#33280d"
+        }
+        return theme.surfaceRaised
+    }
+
+    function sourceBadgeBorder(kind) {
+        if (kind === "mob") {
+            return theme.stateWarning
+        }
+        if (kind === "player") {
+            return theme.stateInfo
+        }
+        if (kind === "silver") {
+            return theme.brandWarmAccent
+        }
+        return theme.borderSubtle
+    }
+
+    function sourceBadgeText(kind) {
+        if (kind === "mob") {
+            return theme.stateWarning
+        }
+        if (kind === "player") {
+            return theme.stateInfo
+        }
+        if (kind === "silver") {
+            return theme.brandWarmAccent
+        }
+        return theme.textPrimary
+    }
+
     Rectangle {
         anchors.fill: parent
         radius: theme.cornerRadiusPanel
@@ -84,6 +135,44 @@ Item {
                             : "Party-only loot log. Use search and source filter to inspect recent pickups."
                         color: latestLootSummary.length > 0 ? theme.textMuted : theme.textFaint
                         wrapMode: Text.Wrap
+                    }
+
+                    RowLayout {
+                        spacing: 8
+
+                        Rectangle {
+                            radius: 10
+                            color: theme.stateInfoBg
+                            border.color: theme.stateInfo
+                            implicitHeight: 22
+                            implicitWidth: partyOnlyBadge.implicitWidth + 16
+
+                            Text {
+                                id: partyOnlyBadge
+                                anchors.centerIn: parent
+                                text: "Party Only"
+                                color: theme.stateInfo
+                                font.pixelSize: 11
+                                font.bold: true
+                            }
+                        }
+
+                        Rectangle {
+                            radius: 10
+                            color: root.kindFilter === "silver" ? theme.stateWarningBg : (root.kindFilter === "items" ? theme.stateSuccessBg : theme.surfaceRaised)
+                            border.color: root.kindFilter === "silver" ? theme.stateWarning : (root.kindFilter === "items" ? theme.stateSuccess : theme.borderSubtle)
+                            implicitHeight: 22
+                            implicitWidth: viewBadgeText.implicitWidth + 16
+
+                            Text {
+                                id: viewBadgeText
+                                anchors.centerIn: parent
+                                text: "View: " + root.kindLabel(root.kindFilter)
+                                color: root.kindFilter === "silver" ? theme.stateWarning : (root.kindFilter === "items" ? theme.stateSuccess : theme.textPrimary)
+                                font.pixelSize: 11
+                                font.bold: true
+                            }
+                        }
                     }
                 }
 
@@ -323,12 +412,35 @@ Item {
                                         ColumnLayout {
                                             Layout.fillWidth: true
                                             spacing: 1
-                                            Text {
+                                            RowLayout {
                                                 Layout.fillWidth: true
-                                                text: itemName
-                                                color: isSilver ? theme.brandWarmAccent : theme.textPrimary
-                                                font.pixelSize: 12
-                                                elide: Text.ElideRight
+                                                spacing: 6
+
+                                                Text {
+                                                    Layout.fillWidth: true
+                                                    text: itemName
+                                                    color: isSilver ? theme.brandWarmAccent : theme.textPrimary
+                                                    font.pixelSize: 12
+                                                    font.bold: isSilver
+                                                    elide: Text.ElideRight
+                                                }
+
+                                                Rectangle {
+                                                    radius: 9
+                                                    color: root.lootKindBadgeBg(isSilver)
+                                                    border.color: root.lootKindBadgeBorder(isSilver)
+                                                    implicitHeight: 20
+                                                    implicitWidth: kindBadgeText.implicitWidth + 14
+
+                                                    Text {
+                                                        id: kindBadgeText
+                                                        anchors.centerIn: parent
+                                                        text: isSilver ? "SILVER" : "ITEM"
+                                                        color: root.lootKindBadgeText(isSilver)
+                                                        font.pixelSize: 10
+                                                        font.bold: true
+                                                    }
+                                                }
                                             }
                                             Text {
                                                 Layout.fillWidth: true
@@ -349,17 +461,15 @@ Item {
                                         Rectangle {
                                             Layout.preferredWidth: 156
                                             radius: 10
-                                            color: sourceKind === "mob"
-                                                ? theme.stateWarning
-                                                : (sourceKind === "player"
-                                                    ? theme.stateInfo
-                                                    : (sourceKind === "silver" ? theme.brandWarmAccent : theme.surfaceRaised))
+                                            color: root.sourceBadgeBg(sourceKind)
+                                            border.color: root.sourceBadgeBorder(sourceKind)
+                                            border.width: 1
                                             implicitHeight: 22
 
                                             Text {
                                                 anchors.centerIn: parent
                                                 text: sourceKind === "silver" ? "Silver" : sourceName
-                                                color: sourceKind === "mob" ? theme.surfaceApp : theme.textPrimary
+                                                color: root.sourceBadgeText(sourceKind)
                                                 font.pixelSize: 11
                                                 elide: Text.ElideRight
                                                 width: parent.width - 12
@@ -470,6 +580,23 @@ Item {
                                 font.bold: true
                             }
 
+                            Rectangle {
+                                radius: 10
+                                color: theme.stateSuccessBg
+                                border.color: theme.stateSuccess
+                                implicitHeight: 22
+                                implicitWidth: itemsBadgeText.implicitWidth + 16
+
+                                Text {
+                                    id: itemsBadgeText
+                                    anchors.centerIn: parent
+                                    text: "ITEMS"
+                                    color: theme.stateSuccess
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
+                            }
+
                             ListView {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
@@ -530,6 +657,23 @@ Item {
                                 color: theme.textPrimary
                                 font.pixelSize: 14
                                 font.bold: true
+                            }
+
+                            Rectangle {
+                                radius: 10
+                                color: theme.stateWarningBg
+                                border.color: theme.stateWarning
+                                implicitHeight: 22
+                                implicitWidth: silverBadgeText.implicitWidth + 16
+
+                                Text {
+                                    id: silverBadgeText
+                                    anchors.centerIn: parent
+                                    text: "SILVER"
+                                    color: theme.stateWarning
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                }
                             }
 
                             ListView {
