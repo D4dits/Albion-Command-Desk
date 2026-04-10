@@ -141,6 +141,7 @@ Item {
         radius: theme.cornerRadiusPanel
         color: theme.surfacePanel
         border.color: theme.borderSubtle
+        clip: true
 
         ColumnLayout {
             anchors.fill: parent
@@ -372,6 +373,7 @@ Item {
                     radius: theme.radiusLg
                     color: theme.cardLevel1
                     border.color: theme.borderSubtle
+                    clip: true
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -431,6 +433,7 @@ Item {
                         Item {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
+                            clip: true
 
                             ListView {
                                 id: lootList
@@ -607,6 +610,7 @@ Item {
                         radius: theme.radiusLg
                         color: theme.cardLevel1
                         border.color: theme.borderSubtle
+                        clip: true
 
                         ColumnLayout {
                             anchors.fill: parent
@@ -623,6 +627,7 @@ Item {
                             Item {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
+                                clip: true
 
                                 ListView {
                                     id: topLootersList
@@ -686,6 +691,7 @@ Item {
                         radius: theme.radiusLg
                         color: theme.cardLevel1
                         border.color: theme.borderSubtle
+                        clip: true
 
                         ColumnLayout {
                             anchors.fill: parent
@@ -719,6 +725,7 @@ Item {
                             Item {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
+                                clip: true
 
                                 ListView {
                                     id: topItemsList
@@ -782,6 +789,7 @@ Item {
                         radius: theme.radiusLg
                         color: theme.cardLevel1
                         border.color: theme.borderSubtle
+                        clip: true
 
                         ColumnLayout {
                             anchors.fill: parent
@@ -815,6 +823,7 @@ Item {
                             Item {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
+                                clip: true
 
                                 ListView {
                                     id: topSilverList
