@@ -32,6 +32,7 @@ from albion_dps.pipeline import live_snapshots, replay_snapshots
 from albion_dps.protocol.combat_mapper import CombatEventMapper
 from albion_dps.protocol.photon_decode import PhotonDecoder
 from albion_dps.protocol.registry import default_registry
+from albion_dps.qt.loot_state import LootState
 from albion_dps.settings import load_app_settings, update_app_settings
 from albion_dps.update import check_for_updates
 from albion_dps.versioning import resolve_app_version
@@ -166,9 +167,11 @@ def run_qt(args: argparse.Namespace) -> int:
         logger=logging.getLogger(__name__),
         auto_refresh_prices=True,
     )
+    loot_state = LootState(history_limit=max(args.history, 1))
     engine.rootContext().setContextProperty("uiState", state)
     engine.rootContext().setContextProperty("scannerState", scanner_state)
     engine.rootContext().setContextProperty("marketSetupState", market_setup_state)
+    engine.rootContext().setContextProperty("lootState", loot_state)
     engine.load(str(qml_path))
     if not engine.rootObjects():
         logging.getLogger(__name__).error(
@@ -193,6 +196,8 @@ def run_qt(args: argparse.Namespace) -> int:
             name_registry=names,
             fame=fame,
             map_trail=map_trail,
+            loot_tracker=loot_tracker,
+            loot_state=loot_state,
             stop_event=stop_event,
         )
 
@@ -426,6 +431,8 @@ def _drain_snapshots(
     name_registry: NameRegistry | None,
     fame: FameTracker,
     map_trail: MapTrailTracker,
+    loot_tracker: LootTracker,
+    loot_state: LootState,
     stop_event: threading.Event,
 ) -> None:
     while True:
@@ -459,6 +466,7 @@ def _drain_snapshots(
             ),
             allowed_player_names=allowed_names or None,
         )
+        loot_state.update_from_tracker(loot_tracker)
 
 
 LOCAL_PARTY_VISIBILITY_SECONDS = 20.0
