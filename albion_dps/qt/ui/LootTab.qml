@@ -102,6 +102,36 @@ Item {
         return theme.textPrimary
     }
 
+    function statCardBg(title) {
+        if (title === "Item Ev" || title === "Items") {
+            return theme.stateSuccessBg
+        }
+        if (title === "Silver Ev") {
+            return theme.stateWarningBg
+        }
+        return theme.surfaceRaised
+    }
+
+    function statCardBorder(title) {
+        if (title === "Item Ev" || title === "Items") {
+            return theme.stateSuccess
+        }
+        if (title === "Silver Ev") {
+            return theme.stateWarning
+        }
+        return theme.borderSubtle
+    }
+
+    function statCardValueColor(title) {
+        if (title === "Item Ev" || title === "Items") {
+            return theme.stateSuccess
+        }
+        if (title === "Silver Ev") {
+            return theme.stateWarning
+        }
+        return theme.textPrimary
+    }
+
     Rectangle {
         anchors.fill: parent
         radius: theme.cornerRadiusPanel
@@ -194,8 +224,8 @@ Item {
                             width: compactLayout ? 92 : 116
                             height: 56
                             radius: theme.cornerRadiusCard
-                            color: theme.surfaceRaised
-                            border.color: theme.borderSubtle
+                            color: root.statCardBg(modelData.title)
+                            border.color: root.statCardBorder(modelData.title)
 
                             Column {
                                 anchors.centerIn: parent
@@ -204,7 +234,7 @@ Item {
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: root.cardValue(modelData.value)
-                                    color: theme.textPrimary
+                                    color: root.statCardValueColor(modelData.title)
                                     font.pixelSize: 18
                                     font.bold: true
                                 }
@@ -224,7 +254,7 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 radius: theme.cornerRadiusCard
-                color: theme.surfaceRaised
+                color: theme.cardLevel1
                 border.color: theme.borderSubtle
                 implicitHeight: compactLayout ? 128 : 84
 
@@ -343,6 +373,39 @@ Item {
                         anchors.fill: parent
                         anchors.margins: 12
                         spacing: 8
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            Text {
+                                text: "Recent Loot"
+                                color: theme.textPrimary
+                                font.pixelSize: 14
+                                font.bold: true
+                            }
+
+                            Rectangle {
+                                radius: 9
+                                color: theme.surfaceRaised
+                                border.color: theme.borderSubtle
+                                implicitHeight: 20
+                                implicitWidth: recentLootCount.implicitWidth + 14
+
+                                Text {
+                                    id: recentLootCount
+                                    anchors.centerIn: parent
+                                    text: root.eventCount + " rows"
+                                    color: theme.textMuted
+                                    font.pixelSize: 10
+                                    font.bold: true
+                                }
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                            }
+                        }
 
                         RowLayout {
                             Layout.fillWidth: true
@@ -522,13 +585,14 @@ Item {
                 }
 
                 ColumnLayout {
-                    Layout.preferredWidth: compactLayout ? 220 : 270
+                    Layout.preferredWidth: compactLayout ? 240 : 300
                     Layout.fillHeight: true
                     spacing: theme.spacingSection
 
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
+                        Layout.preferredHeight: 188
+                        Layout.fillHeight: false
                         radius: theme.cornerRadiusCard
                         color: theme.cardLevel1
                         border.color: theme.borderSubtle
@@ -545,45 +609,62 @@ Item {
                                 font.bold: true
                             }
 
-                            ListView {
+                            Item {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                clip: true
-                                spacing: 6
-                                model: root.topLootersModel
 
-                                delegate: Rectangle {
-                                    required property string label
-                                    required property string sublabel
-                                    required property int quantity
-                                    required property int eventCount
+                                ListView {
+                                    id: topLootersList
+                                    anchors.fill: parent
+                                    clip: true
+                                    spacing: 6
+                                    model: root.topLootersModel
 
-                                    width: ListView.view.width
-                                    radius: theme.cornerRadiusCard
-                                    color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
-                                    border.color: theme.borderSubtle
-                                    implicitHeight: 52
+                                    delegate: Rectangle {
+                                        required property string label
+                                        required property string sublabel
+                                        required property int quantity
+                                        required property int eventCount
 
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 10
-                                        spacing: 8
+                                        width: ListView.view.width
+                                        radius: theme.cornerRadiusCard
+                                        color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
+                                        border.color: theme.borderSubtle
+                                        implicitHeight: 52
 
-                                        ColumnLayout {
-                                            Layout.fillWidth: true
-                                            spacing: 2
-                                            Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
-                                            Text { text: sublabel; color: theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
-                                        }
-                                        ColumnLayout {
-                                            spacing: 1
-                                            Text { text: quantity + "x"; color: theme.textPrimary; font.pixelSize: 12; font.bold: true; horizontalAlignment: Text.AlignRight }
-                                            Text { text: eventCount + " ev"; color: theme.textMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignRight }
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 10
+                                            spacing: 8
+
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 2
+                                                Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
+                                                Text { text: sublabel; color: theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
+                                            }
+                                            ColumnLayout {
+                                                spacing: 1
+                                                Text { text: quantity + "x"; color: theme.textPrimary; font.pixelSize: 12; font.bold: true; horizontalAlignment: Text.AlignRight }
+                                                Text { text: eventCount + " ev"; color: theme.textMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignRight }
+                                            }
                                         }
                                     }
+
+                                    ScrollBar.vertical: ScrollBar {}
                                 }
 
-                                ScrollBar.vertical: ScrollBar {}
+                                Item {
+                                    anchors.fill: parent
+                                    visible: topLootersList.count === 0
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "No looters in current view"
+                                        color: theme.textMuted
+                                        font.pixelSize: 12
+                                    }
+                                }
                             }
                         }
                     }
@@ -624,45 +705,62 @@ Item {
                                 }
                             }
 
-                            ListView {
+                            Item {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                clip: true
-                                spacing: 6
-                                model: root.topItemsModel
 
-                                delegate: Rectangle {
-                                    required property string label
-                                    required property string sublabel
-                                    required property int quantity
-                                    required property int eventCount
+                                ListView {
+                                    id: topItemsList
+                                    anchors.fill: parent
+                                    clip: true
+                                    spacing: 6
+                                    model: root.topItemsModel
 
-                                    width: ListView.view.width
-                                    radius: theme.cornerRadiusCard
-                                    color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
-                                    border.color: theme.borderSubtle
-                                    implicitHeight: 52
+                                    delegate: Rectangle {
+                                        required property string label
+                                        required property string sublabel
+                                        required property int quantity
+                                        required property int eventCount
 
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 10
-                                        spacing: 8
+                                        width: ListView.view.width
+                                        radius: theme.cornerRadiusCard
+                                        color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
+                                        border.color: theme.borderSubtle
+                                        implicitHeight: 52
 
-                                        ColumnLayout {
-                                            Layout.fillWidth: true
-                                            spacing: 2
-                                            Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
-                                            Text { text: sublabel; color: theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
-                                        }
-                                        ColumnLayout {
-                                            spacing: 1
-                                            Text { text: quantity + "x"; color: theme.textPrimary; font.pixelSize: 12; font.bold: true; horizontalAlignment: Text.AlignRight }
-                                            Text { text: eventCount + " ev"; color: theme.textMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignRight }
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 10
+                                            spacing: 8
+
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 2
+                                                Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
+                                                Text { text: sublabel; color: theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
+                                            }
+                                            ColumnLayout {
+                                                spacing: 1
+                                                Text { text: quantity + "x"; color: theme.textPrimary; font.pixelSize: 12; font.bold: true; horizontalAlignment: Text.AlignRight }
+                                                Text { text: eventCount + " ev"; color: theme.textMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignRight }
+                                            }
                                         }
                                     }
+
+                                    ScrollBar.vertical: ScrollBar {}
                                 }
 
-                                ScrollBar.vertical: ScrollBar {}
+                                Item {
+                                    anchors.fill: parent
+                                    visible: topItemsList.count === 0
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "No item drops in current view"
+                                        color: theme.textMuted
+                                        font.pixelSize: 12
+                                    }
+                                }
                             }
                         }
                     }
@@ -703,45 +801,62 @@ Item {
                                 }
                             }
 
-                            ListView {
+                            Item {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                clip: true
-                                spacing: 6
-                                model: root.topSilverLootersModel
 
-                                delegate: Rectangle {
-                                    required property string label
-                                    required property string sublabel
-                                    required property int quantity
-                                    required property int eventCount
+                                ListView {
+                                    id: topSilverList
+                                    anchors.fill: parent
+                                    clip: true
+                                    spacing: 6
+                                    model: root.topSilverLootersModel
 
-                                    width: ListView.view.width
-                                    radius: theme.cornerRadiusCard
-                                    color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
-                                    border.color: theme.borderSubtle
-                                    implicitHeight: 52
+                                    delegate: Rectangle {
+                                        required property string label
+                                        required property string sublabel
+                                        required property int quantity
+                                        required property int eventCount
 
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 10
-                                        spacing: 8
+                                        width: ListView.view.width
+                                        radius: theme.cornerRadiusCard
+                                        color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
+                                        border.color: theme.borderSubtle
+                                        implicitHeight: 52
 
-                                        ColumnLayout {
-                                            Layout.fillWidth: true
-                                            spacing: 2
-                                            Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
-                                            Text { text: sublabel; color: theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
-                                        }
-                                        ColumnLayout {
-                                            spacing: 1
-                                            Text { text: quantity + ""; color: theme.textPrimary; font.pixelSize: 12; font.bold: true; horizontalAlignment: Text.AlignRight }
-                                            Text { text: eventCount + " ev"; color: theme.textMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignRight }
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.margins: 10
+                                            spacing: 8
+
+                                            ColumnLayout {
+                                                Layout.fillWidth: true
+                                                spacing: 2
+                                                Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
+                                                Text { text: sublabel; color: theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
+                                            }
+                                            ColumnLayout {
+                                                spacing: 1
+                                                Text { text: quantity + ""; color: theme.textPrimary; font.pixelSize: 12; font.bold: true; horizontalAlignment: Text.AlignRight }
+                                                Text { text: eventCount + " ev"; color: theme.textMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignRight }
+                                            }
                                         }
                                     }
+
+                                    ScrollBar.vertical: ScrollBar {}
                                 }
 
-                                ScrollBar.vertical: ScrollBar {}
+                                Item {
+                                    anchors.fill: parent
+                                    visible: topSilverList.count === 0
+
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "No silver events in current view"
+                                        color: theme.textMuted
+                                        font.pixelSize: 12
+                                    }
+                                }
                             }
                         }
                     }
