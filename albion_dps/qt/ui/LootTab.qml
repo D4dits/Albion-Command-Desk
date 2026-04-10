@@ -10,6 +10,10 @@ Item {
     property bool compactLayout: false
     property int eventCount: 0
     property int totalQuantity: 0
+    property int itemEventCount: 0
+    property int itemTotalQuantity: 0
+    property int silverEventCount: 0
+    property int silverTotalQuantity: 0
     property int uniqueLooters: 0
     property int uniqueItems: 0
     property string latestLootSummary: ""
@@ -17,13 +21,17 @@ Item {
     property string logDirectoryUrl: ""
     property string searchQuery: ""
     property string sourceFilter: "all"
+    property string kindFilter: "all"
     property var sourceFilterOptions: ["all", "player", "mob", "silver", "system"]
+    property var kindFilterOptions: ["all", "items", "silver"]
     property var eventsModel: null
     property var topLootersModel: null
     property var topItemsModel: null
+    property var topSilverLootersModel: null
 
     signal setSearchQuery(string value)
     signal setSourceFilter(string value)
+    signal setKindFilter(string value)
     signal copyLatestSummary()
     signal copyCurrentView()
     signal exportCurrentView()
@@ -31,6 +39,16 @@ Item {
 
     function cardValue(value) {
         return String(value === undefined || value === null ? 0 : value)
+    }
+
+    function kindLabel(value) {
+        if (value === "items") {
+            return "Items"
+        }
+        if (value === "silver") {
+            return "Silver"
+        }
+        return "All"
     }
 
     Rectangle {
@@ -78,7 +96,9 @@ Item {
                             { title: "Events", value: root.eventCount },
                             { title: "Qty", value: root.totalQuantity },
                             { title: "Looters", value: root.uniqueLooters },
-                            { title: "Items", value: root.uniqueItems }
+                            { title: "Items", value: root.uniqueItems },
+                            { title: "Item Ev", value: root.itemEventCount },
+                            { title: "Silver Ev", value: root.silverEventCount }
                         ]
 
                         delegate: Rectangle {
@@ -123,6 +143,41 @@ Item {
                     anchors.fill: parent
                     anchors.margins: 12
                     spacing: 8
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: 8
+
+                            Repeater {
+                                model: root.kindFilterOptions
+
+                                delegate: AppButton {
+                                    text: root.kindLabel(modelData)
+                                    compact: true
+                                    checkable: true
+                                    checked: root.kindFilter === String(modelData)
+                                    variant: checked ? "primary" : "secondary"
+                                    onClicked: root.setKindFilter(String(modelData))
+                                }
+                            }
+                        }
+
+                        Text {
+                            text: "Item qty: " + root.cardValue(root.itemTotalQuantity)
+                            color: theme.textMuted
+                            font.pixelSize: 11
+                        }
+
+                        Text {
+                            text: "Silver qty: " + root.cardValue(root.silverTotalQuantity)
+                            color: theme.textMuted
+                            font.pixelSize: 11
+                        }
+                    }
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -234,6 +289,7 @@ Item {
                                 required property int quantity
                                 required property string sourceName
                                 required property string sourceKind
+                                required property bool isSilver
                                 required property string summary
 
                                 width: lootList.width
@@ -270,7 +326,7 @@ Item {
                                             Text {
                                                 Layout.fillWidth: true
                                                 text: itemName
-                                                color: theme.textPrimary
+                                                color: isSilver ? theme.brandWarmAccent : theme.textPrimary
                                                 font.pixelSize: 12
                                                 elide: Text.ElideRight
                                             }
@@ -293,12 +349,16 @@ Item {
                                         Rectangle {
                                             Layout.preferredWidth: 156
                                             radius: 10
-                                            color: sourceKind === "mob" ? theme.stateWarning : (sourceKind === "player" ? theme.stateInfo : theme.surfaceRaised)
+                                            color: sourceKind === "mob"
+                                                ? theme.stateWarning
+                                                : (sourceKind === "player"
+                                                    ? theme.stateInfo
+                                                    : (sourceKind === "silver" ? theme.brandWarmAccent : theme.surfaceRaised))
                                             implicitHeight: 22
 
                                             Text {
                                                 anchors.centerIn: parent
-                                                text: sourceName
+                                                text: sourceKind === "silver" ? "Silver" : sourceName
                                                 color: sourceKind === "mob" ? theme.surfaceApp : theme.textPrimary
                                                 font.pixelSize: 11
                                                 elide: Text.ElideRight
@@ -342,7 +402,7 @@ Item {
                             spacing: 8
 
                             Text {
-                                text: "Top Looters"
+                                text: "Top View Looters"
                                 color: theme.textPrimary
                                 font.pixelSize: 14
                                 font.bold: true
@@ -443,6 +503,68 @@ Item {
                                         ColumnLayout {
                                             spacing: 1
                                             Text { text: quantity + "x"; color: theme.textPrimary; font.pixelSize: 12; font.bold: true; horizontalAlignment: Text.AlignRight }
+                                            Text { text: eventCount + " ev"; color: theme.textMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignRight }
+                                        }
+                                    }
+                                }
+
+                                ScrollBar.vertical: ScrollBar {}
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        radius: theme.cornerRadiusCard
+                        color: theme.cardLevel1
+                        border.color: theme.borderSubtle
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 8
+
+                            Text {
+                                text: "Top Silver Looters"
+                                color: theme.textPrimary
+                                font.pixelSize: 14
+                                font.bold: true
+                            }
+
+                            ListView {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                clip: true
+                                spacing: 6
+                                model: root.topSilverLootersModel
+
+                                delegate: Rectangle {
+                                    required property string label
+                                    required property string sublabel
+                                    required property int quantity
+                                    required property int eventCount
+
+                                    width: ListView.view.width
+                                    radius: theme.cornerRadiusCard
+                                    color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
+                                    border.color: theme.borderSubtle
+                                    implicitHeight: 52
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 10
+                                        spacing: 8
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 2
+                                            Text { text: label; color: theme.textPrimary; font.pixelSize: 12; elide: Text.ElideRight }
+                                            Text { text: sublabel; color: theme.textFaint; font.pixelSize: 10; elide: Text.ElideRight; visible: sublabel.length > 0 }
+                                        }
+                                        ColumnLayout {
+                                            spacing: 1
+                                            Text { text: quantity + ""; color: theme.textPrimary; font.pixelSize: 12; font.bold: true; horizontalAlignment: Text.AlignRight }
                                             Text { text: eventCount + " ev"; color: theme.textMuted; font.pixelSize: 10; horizontalAlignment: Text.AlignRight }
                                         }
                                     }

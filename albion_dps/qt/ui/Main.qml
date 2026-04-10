@@ -903,6 +903,10 @@ ApplicationWindow {
                     theme: root.theme
                     eventCount: lootState.eventCount
                     totalQuantity: lootState.totalQuantity
+                    itemEventCount: lootState.itemEventCount
+                    itemTotalQuantity: lootState.itemTotalQuantity
+                    silverEventCount: lootState.silverEventCount
+                    silverTotalQuantity: lootState.silverTotalQuantity
                     uniqueLooters: lootState.uniqueLooters
                     uniqueItems: lootState.uniqueItems
                     latestLootSummary: lootState.latestLootSummary
@@ -910,12 +914,16 @@ ApplicationWindow {
                     logDirectoryUrl: lootState.logDirectoryUrl
                     searchQuery: lootState.searchQuery
                     sourceFilter: lootState.sourceFilter
+                    kindFilter: lootState.kindFilter
                     sourceFilterOptions: lootState.sourceFilterOptions
+                    kindFilterOptions: lootState.kindFilterOptions
                     eventsModel: lootState.eventsModel
                     topLootersModel: lootState.topLootersModel
                     topItemsModel: lootState.topItemsModel
+                    topSilverLootersModel: lootState.topSilverLootersModel
                     onSetSearchQuery: function(value) { lootState.setSearchQuery(value) }
                     onSetSourceFilter: function(value) { lootState.setSourceFilter(value) }
+                    onSetKindFilter: function(value) { lootState.setKindFilter(value) }
                     onCopyLatestSummary: function() {
                         if (lootState.copyLatestSummary()) {
                             toastManager.showSuccess("Copied to clipboard", "Latest loot summary copied")

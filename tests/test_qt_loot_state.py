@@ -61,6 +61,23 @@ def _sample_events() -> list[LootEvent]:
     ]
 
 
+def _sample_events_with_silver() -> list[LootEvent]:
+    return _sample_events() + [
+        LootEvent(
+            timestamp=3659.0,
+            looted_by=LootPlayer(player_name="Alice", guild_name="Guild A", alliance_name="AAA"),
+            looted_from=None,
+            source_name=None,
+            source_kind="silver",
+            item=LootItemRef(item_num_id=None, unique_name="SILVER", display_name="Silver"),
+            quantity=1500,
+            is_silver=True,
+            raw_event_code=1,
+            raw_subtype=275,
+        ),
+    ]
+
+
 def test_loot_state_builds_model_and_export_text() -> None:
     state = LootState(history_limit=10)
     tracker = _FakeLootTracker(_sample_events())
@@ -164,3 +181,33 @@ def test_loot_state_copy_and_export_actions(monkeypatch) -> None:
     payload = export_path.read_text(encoding="utf-8")
     assert "Journeyman's Bag" in payload
     assert "Adept's Potion" in payload
+
+
+def test_loot_state_splits_items_and_silver_views() -> None:
+    state = LootState(history_limit=10)
+    tracker = _FakeLootTracker(_sample_events_with_silver())
+
+    state.update_from_tracker(tracker)
+
+    assert state.eventCount == 3
+    assert state.itemEventCount == 2
+    assert state.itemTotalQuantity == 3
+    assert state.silverEventCount == 1
+    assert state.silverTotalQuantity == 1500
+    assert state.kindFilterOptions == ["all", "items", "silver"]
+    assert state.topSilverLootersModel.rowCount() == 1
+
+    state.setKindFilter("silver")
+
+    assert state.eventCount == 1
+    assert state.totalQuantity == 1500
+    assert state.uniqueItems == 0
+    assert state.latestLootSummary == "Alice looted 1500 Silver"
+    assert "SILVER;Silver;1500" in state.exportText
+    assert "Journeyman's Bag" not in state.exportText
+
+    state.setKindFilter("items")
+
+    assert state.eventCount == 2
+    assert state.totalQuantity == 3
+    assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"

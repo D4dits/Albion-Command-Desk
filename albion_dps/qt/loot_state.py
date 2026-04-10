@@ -171,11 +171,17 @@ class LootState(QObject):
         self._events_model = LootEventsModel()
         self._top_looters_model = LootAggregateModel()
         self._top_items_model = LootAggregateModel()
+        self._top_silver_looters_model = LootAggregateModel()
         self._all_events: list[LootEvent] = []
         self._search_query = ""
         self._source_filter = "all"
+        self._kind_filter = "all"
         self._event_count = 0
         self._total_quantity = 0
+        self._item_event_count = 0
+        self._item_total_quantity = 0
+        self._silver_event_count = 0
+        self._silver_total_quantity = 0
         self._unique_looters = 0
         self._unique_items = 0
         self._latest_summary = ""
@@ -195,6 +201,10 @@ class LootState(QObject):
     def topItemsModel(self) -> LootAggregateModel:
         return self._top_items_model
 
+    @Property(QObject, constant=True)
+    def topSilverLootersModel(self) -> LootAggregateModel:
+        return self._top_silver_looters_model
+
     @Property(int, notify=changed)
     def eventCount(self) -> int:
         return self._event_count
@@ -202,6 +212,22 @@ class LootState(QObject):
     @Property(int, notify=changed)
     def totalQuantity(self) -> int:
         return self._total_quantity
+
+    @Property(int, notify=changed)
+    def itemEventCount(self) -> int:
+        return self._item_event_count
+
+    @Property(int, notify=changed)
+    def itemTotalQuantity(self) -> int:
+        return self._item_total_quantity
+
+    @Property(int, notify=changed)
+    def silverEventCount(self) -> int:
+        return self._silver_event_count
+
+    @Property(int, notify=changed)
+    def silverTotalQuantity(self) -> int:
+        return self._silver_total_quantity
 
     @Property(int, notify=changed)
     def uniqueLooters(self) -> int:
@@ -235,9 +261,17 @@ class LootState(QObject):
     def sourceFilter(self) -> str:
         return self._source_filter
 
+    @Property(str, notify=changed)
+    def kindFilter(self) -> str:
+        return self._kind_filter
+
     @Property("QVariantList", constant=True)
     def sourceFilterOptions(self) -> list[str]:
         return ["all", "player", "mob", "silver", "system"]
+
+    @Property("QVariantList", constant=True)
+    def kindFilterOptions(self) -> list[str]:
+        return ["all", "items", "silver"]
 
     def set_log_path(self, value: str) -> None:
         next_value = str(value or "")
@@ -269,6 +303,16 @@ class LootState(QObject):
         if next_value == self._source_filter:
             return
         self._source_filter = next_value
+        self._refresh_models()
+
+    @Slot(str)
+    def setKindFilter(self, value: str) -> None:
+        next_value = str(value or "all").strip().lower() or "all"
+        if next_value not in {"all", "items", "silver"}:
+            next_value = "all"
+        if next_value == self._kind_filter:
+            return
+        self._kind_filter = next_value
         self._refresh_models()
 
     @Slot(result=bool)
@@ -307,34 +351,57 @@ class LootState(QObject):
         self._refresh_models()
 
     def _refresh_models(self) -> None:
-        filtered_events = _filter_events(
+        base_events = _filter_events(
             self._all_events,
             search_query=self._search_query,
             source_filter=self._source_filter,
         )
+        item_events = [event for event in base_events if not event.is_silver]
+        silver_events = [event for event in base_events if event.is_silver]
+        filtered_events = _filter_events_by_kind(base_events, kind_filter=self._kind_filter)
         rows = [_loot_event_to_row(event) for event in filtered_events]
+        item_rows = [_loot_event_to_row(event) for event in item_events]
+        silver_rows = [_loot_event_to_row(event) for event in silver_events]
         export_text = loot_events_to_txt(list(reversed(filtered_events)))
         latest_summary = rows[0].summary if rows else ""
         total_quantity = sum(row.quantity for row in rows)
+        item_total_quantity = sum(row.quantity for row in item_rows)
+        silver_total_quantity = sum(row.quantity for row in silver_rows)
         unique_looters = len({row.looted_by_name for row in rows if row.looted_by_name})
-        unique_items = len({row.item_id or row.item_name for row in rows if row.item_id or row.item_name})
+        unique_items = len(
+            {
+                row.item_id or row.item_name
+                for row in rows
+                if not row.is_silver and (row.item_id or row.item_name)
+            }
+        )
         top_looters = _build_top_looters(rows)
-        top_items = _build_top_items(rows)
+        top_items = _build_top_items(item_rows)
+        top_silver_looters = _build_top_looters(silver_rows)
         changed = (
             self._event_count != len(rows)
             or self._latest_summary != latest_summary
             or self._export_text != export_text
             or self._total_quantity != total_quantity
+            or self._item_event_count != len(item_rows)
+            or self._item_total_quantity != item_total_quantity
+            or self._silver_event_count != len(silver_rows)
+            or self._silver_total_quantity != silver_total_quantity
             or self._unique_looters != unique_looters
             or self._unique_items != unique_items
         )
         self._events_model.set_items(rows)
         self._top_looters_model.set_items(top_looters)
         self._top_items_model.set_items(top_items)
+        self._top_silver_looters_model.set_items(top_silver_looters)
         self._event_count = len(rows)
         self._latest_summary = latest_summary
         self._export_text = export_text
         self._total_quantity = total_quantity
+        self._item_event_count = len(item_rows)
+        self._item_total_quantity = item_total_quantity
+        self._silver_event_count = len(silver_rows)
+        self._silver_total_quantity = silver_total_quantity
         self._unique_looters = unique_looters
         self._unique_items = unique_items
         if changed:
@@ -398,6 +465,14 @@ def _filter_events(
                 continue
         filtered.append(event)
     return filtered
+
+
+def _filter_events_by_kind(events: list[LootEvent], *, kind_filter: str) -> list[LootEvent]:
+    if kind_filter == "items":
+        return [event for event in events if not event.is_silver]
+    if kind_filter == "silver":
+        return [event for event in events if event.is_silver]
+    return list(events)
 
 
 def _build_top_looters(rows: list[LootRow]) -> list[LootAggregateRow]:
@@ -482,6 +557,8 @@ def _format_timestamp(timestamp: float) -> str:
 
 
 def _format_summary(event: LootEvent, *, item_name: str, source_name: str) -> str:
+    if event.is_silver:
+        return f"{event.looted_by.player_name} looted {int(event.quantity)} Silver"
     item_label = item_name or "Unknown item"
     source_label = source_name or "unknown source"
     return (
