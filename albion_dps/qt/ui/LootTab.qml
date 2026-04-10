@@ -113,71 +113,71 @@ Item {
             anchors.margins: theme.spacingSection
             spacing: theme.spacingSection
 
-            RowLayout {
+            ColumnLayout {
                 Layout.fillWidth: true
-                spacing: theme.spacingSection
+                spacing: 10
 
-                ColumnLayout {
+                Text {
+                    text: "Loot"
+                    color: theme.textPrimary
+                    font.pixelSize: 24
+                    font.bold: true
+                }
+
+                Text {
                     Layout.fillWidth: true
-                    spacing: 6
+                    text: latestLootSummary.length > 0
+                        ? latestLootSummary
+                        : "Party-only loot log. Use search and source filter to inspect recent pickups."
+                    color: latestLootSummary.length > 0 ? theme.textMuted : theme.textFaint
+                    wrapMode: Text.Wrap
+                }
 
-                    Text {
-                        text: "Loot"
-                        color: theme.textPrimary
-                        font.pixelSize: 24
-                        font.bold: true
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+
+                    Rectangle {
+                        radius: 10
+                        color: theme.stateInfoBg
+                        border.color: theme.stateInfo
+                        implicitHeight: 22
+                        implicitWidth: partyOnlyBadge.implicitWidth + 16
+
+                        Text {
+                            id: partyOnlyBadge
+                            anchors.centerIn: parent
+                            text: "Party Only"
+                            color: theme.stateInfo
+                            font.pixelSize: 11
+                            font.bold: true
+                        }
                     }
 
-                    Text {
+                    Rectangle {
+                        radius: 10
+                        color: root.kindFilter === "silver" ? theme.stateWarningBg : (root.kindFilter === "items" ? theme.stateSuccessBg : theme.surfaceRaised)
+                        border.color: root.kindFilter === "silver" ? theme.stateWarning : (root.kindFilter === "items" ? theme.stateSuccess : theme.borderSubtle)
+                        implicitHeight: 22
+                        implicitWidth: viewBadgeText.implicitWidth + 16
+
+                        Text {
+                            id: viewBadgeText
+                            anchors.centerIn: parent
+                            text: "View: " + root.kindLabel(root.kindFilter)
+                            color: root.kindFilter === "silver" ? theme.stateWarning : (root.kindFilter === "items" ? theme.stateSuccess : theme.textPrimary)
+                            font.pixelSize: 11
+                            font.bold: true
+                        }
+                    }
+
+                    Item {
                         Layout.fillWidth: true
-                        text: latestLootSummary.length > 0
-                            ? latestLootSummary
-                            : "Party-only loot log. Use search and source filter to inspect recent pickups."
-                        color: latestLootSummary.length > 0 ? theme.textMuted : theme.textFaint
-                        wrapMode: Text.Wrap
-                    }
-
-                    RowLayout {
-                        spacing: 8
-
-                        Rectangle {
-                            radius: 10
-                            color: theme.stateInfoBg
-                            border.color: theme.stateInfo
-                            implicitHeight: 22
-                            implicitWidth: partyOnlyBadge.implicitWidth + 16
-
-                            Text {
-                                id: partyOnlyBadge
-                                anchors.centerIn: parent
-                                text: "Party Only"
-                                color: theme.stateInfo
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-                        }
-
-                        Rectangle {
-                            radius: 10
-                            color: root.kindFilter === "silver" ? theme.stateWarningBg : (root.kindFilter === "items" ? theme.stateSuccessBg : theme.surfaceRaised)
-                            border.color: root.kindFilter === "silver" ? theme.stateWarning : (root.kindFilter === "items" ? theme.stateSuccess : theme.borderSubtle)
-                            implicitHeight: 22
-                            implicitWidth: viewBadgeText.implicitWidth + 16
-
-                            Text {
-                                id: viewBadgeText
-                                anchors.centerIn: parent
-                                text: "View: " + root.kindLabel(root.kindFilter)
-                                color: root.kindFilter === "silver" ? theme.stateWarning : (root.kindFilter === "items" ? theme.stateSuccess : theme.textPrimary)
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-                        }
                     }
                 }
 
                 Flow {
-                    Layout.preferredWidth: compactLayout ? 210 : 280
+                    Layout.fillWidth: true
                     spacing: 8
 
                     Repeater {
@@ -191,29 +191,29 @@ Item {
                         ]
 
                         delegate: Rectangle {
-                            width: compactLayout ? 100 : 132
-                            height: 64
+                            width: compactLayout ? 92 : 116
+                            height: 56
                             radius: theme.cornerRadiusCard
                             color: theme.surfaceRaised
                             border.color: theme.borderSubtle
 
                             Column {
                                 anchors.centerIn: parent
-                                spacing: 3
+                                spacing: 2
 
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: root.cardValue(modelData.value)
                                     color: theme.textPrimary
-                                    font.pixelSize: 20
+                                    font.pixelSize: 18
                                     font.bold: true
                                 }
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: modelData.title
                                     color: theme.textMuted
-                                    font.pixelSize: 11
-                                    font.letterSpacing: 0.5
+                                    font.pixelSize: 10
+                                    font.letterSpacing: 0.4
                                 }
                             }
                         }
@@ -490,6 +490,33 @@ Item {
                             }
 
                             ScrollBar.vertical: ScrollBar {}
+                        }
+
+                        Item {
+                            anchors.fill: lootList
+                            visible: lootList.count === 0
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 8
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: root.kindFilter === "silver"
+                                        ? "No silver events yet"
+                                        : (root.kindFilter === "items" ? "No item drops yet" : "No loot yet")
+                                    color: theme.textPrimary
+                                    font.pixelSize: 18
+                                    font.bold: true
+                                }
+
+                                Text {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    text: "Party-only data will appear here after loot events are detected."
+                                    color: theme.textMuted
+                                    font.pixelSize: 12
+                                }
+                            }
                         }
                     }
                 }
