@@ -28,6 +28,10 @@ Item {
     property var topLootersModel: null
     property var topItemsModel: null
     property var topSilverLootersModel: null
+    property int timeColumnWidth: compactLayout ? 56 : 64
+    property int looterColumnWidth: compactLayout ? 120 : 136
+    property int qtyColumnWidth: compactLayout ? 48 : 56
+    property int sourceColumnWidth: compactLayout ? 124 : 140
 
     signal setSearchQuery(string value)
     signal setSourceFilter(string value)
@@ -411,11 +415,11 @@ Item {
                             Layout.fillWidth: true
                             spacing: 12
 
-                            Text { text: "Time"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: 68 }
-                            Text { text: "Looter"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: 150 }
+                            Text { text: "Time"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: root.timeColumnWidth }
+                            Text { text: "Looter"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: root.looterColumnWidth }
                             Text { text: "Item"; color: theme.textMuted; font.pixelSize: 11; Layout.fillWidth: true }
-                            Text { text: "Qty"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: 42 }
-                            Text { text: "Source"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: 156 }
+                            Text { text: "Qty"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: root.qtyColumnWidth }
+                            Text { text: "Source"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: root.sourceColumnWidth }
                         }
 
                         Rectangle {
@@ -448,32 +452,33 @@ Item {
                                 radius: theme.cornerRadiusCard
                                 color: index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
                                 border.color: theme.borderSubtle
-                                implicitHeight: detailText.implicitHeight + 32
+                                implicitHeight: 62
 
                                 ColumnLayout {
                                     anchors.fill: parent
                                     anchors.margins: 10
-                                    spacing: 6
+                                    spacing: 4
 
                                     RowLayout {
                                         Layout.fillWidth: true
-                                        spacing: 12
+                                        spacing: 10
 
                                         Text {
                                             text: timestampText
                                             color: theme.textPrimary
-                                            font.pixelSize: 12
-                                            Layout.preferredWidth: 68
+                                            font.pixelSize: 11
+                                            Layout.preferredWidth: root.timeColumnWidth
                                         }
                                         Text {
                                             text: lootedByGuild.length > 0 ? (lootedByName + " [" + lootedByGuild + "]") : lootedByName
                                             color: theme.textPrimary
-                                            font.pixelSize: 12
-                                            Layout.preferredWidth: 150
+                                            font.pixelSize: 11
+                                            Layout.preferredWidth: root.looterColumnWidth
                                             elide: Text.ElideRight
                                         }
                                         ColumnLayout {
                                             Layout.fillWidth: true
+                                            Layout.minimumWidth: compactLayout ? 180 : 260
                                             spacing: 1
                                             RowLayout {
                                                 Layout.fillWidth: true
@@ -483,7 +488,7 @@ Item {
                                                     Layout.fillWidth: true
                                                     text: itemName
                                                     color: isSilver ? theme.brandWarmAccent : theme.textPrimary
-                                                    font.pixelSize: 12
+                                                    font.pixelSize: 11
                                                     font.bold: isSilver
                                                     elide: Text.ElideRight
                                                 }
@@ -500,7 +505,7 @@ Item {
                                                         anchors.centerIn: parent
                                                         text: isSilver ? "SILVER" : "ITEM"
                                                         color: root.lootKindBadgeText(isSilver)
-                                                        font.pixelSize: 10
+                                                        font.pixelSize: 9
                                                         font.bold: true
                                                     }
                                                 }
@@ -509,20 +514,21 @@ Item {
                                                 Layout.fillWidth: true
                                                 text: itemId
                                                 color: theme.textFaint
-                                                font.pixelSize: 10
+                                                font.pixelSize: 9
                                                 elide: Text.ElideRight
                                                 visible: itemId.length > 0
                                             }
                                         }
                                         Text {
-                                            text: String(quantity)
-                                            color: theme.textPrimary
-                                            font.pixelSize: 12
+                                            text: isSilver ? String(quantity) : (String(quantity) + "x")
+                                            color: isSilver ? theme.brandWarmAccent : theme.textPrimary
+                                            font.pixelSize: 11
+                                            font.bold: true
                                             horizontalAlignment: Text.AlignRight
-                                            Layout.preferredWidth: 42
+                                            Layout.preferredWidth: root.qtyColumnWidth
                                         }
                                         Rectangle {
-                                            Layout.preferredWidth: 156
+                                            Layout.preferredWidth: root.sourceColumnWidth
                                             radius: 10
                                             color: root.sourceBadgeBg(sourceKind)
                                             border.color: root.sourceBadgeBorder(sourceKind)
@@ -533,7 +539,7 @@ Item {
                                                 anchors.centerIn: parent
                                                 text: sourceKind === "silver" ? "Silver" : sourceName
                                                 color: root.sourceBadgeText(sourceKind)
-                                                font.pixelSize: 11
+                                                font.pixelSize: 10
                                                 elide: Text.ElideRight
                                                 width: parent.width - 12
                                                 horizontalAlignment: Text.AlignHCenter
@@ -546,8 +552,9 @@ Item {
                                         Layout.fillWidth: true
                                         text: summary
                                         color: theme.textMuted
-                                        font.pixelSize: 11
-                                        wrapMode: Text.Wrap
+                                        font.pixelSize: 10
+                                        elide: Text.ElideRight
+                                        maximumLineCount: 1
                                     }
                                 }
                             }
