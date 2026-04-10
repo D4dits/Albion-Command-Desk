@@ -464,35 +464,149 @@ class LootState(QObject):
         return True
 
     def _prompt_export_path(self, *, label: str, suggested_name: str, file_filter: str) -> str | None:
-        try:
-            from PySide6.QtWidgets import QFileDialog
-        except Exception:
-            return None
         base_dir = Path(self._log_path).expanduser().resolve().parent if self._log_path else Path.home()
         suggested_path = str((base_dir / suggested_name).resolve())
-        selected_path, _selected_filter = QFileDialog.getSaveFileName(
-            None,
-            f"Export {label}",
-            suggested_path,
-            file_filter,
+        return self._prompt_file_path(
+            mode="save",
+            title=f"Export {label}",
+            start_path=suggested_path,
+            file_filter=file_filter,
         )
+
+    def _prompt_import_path(self, *, label: str, file_filter: str) -> str | None:
+        base_dir = Path(self._log_path).expanduser().resolve().parent if self._log_path else Path.home()
+        return self._prompt_file_path(
+            mode="open",
+            title=f"Import {label}",
+            start_path=str(base_dir),
+            file_filter=file_filter,
+        )
+
+    def _prompt_file_path(
+        self,
+        *,
+        mode: str,
+        title: str,
+        start_path: str,
+        file_filter: str,
+    ) -> str | None:
+        selected_path = self._prompt_file_path_qtwidgets(
+            mode=mode,
+            title=title,
+            start_path=start_path,
+            file_filter=file_filter,
+        )
+        if not selected_path:
+            selected_path = self._prompt_file_path_tk(
+                mode=mode,
+                title=title,
+                start_path=start_path,
+                file_filter=file_filter,
+            )
         selected = str(selected_path or "").strip()
         return selected or None
 
-    def _prompt_import_path(self, *, label: str, file_filter: str) -> str | None:
+    def _prompt_file_path_qtwidgets(
+        self,
+        *,
+        mode: str,
+        title: str,
+        start_path: str,
+        file_filter: str,
+    ) -> str | None:
         try:
-            from PySide6.QtWidgets import QFileDialog
+            from PySide6.QtWidgets import QApplication, QFileDialog
         except Exception:
             return None
-        base_dir = Path(self._log_path).expanduser().resolve().parent if self._log_path else Path.home()
-        selected_path, _selected_filter = QFileDialog.getOpenFileName(
-            None,
-            f"Import {label}",
-            str(base_dir),
-            file_filter,
-        )
-        selected = str(selected_path or "").strip()
-        return selected or None
+        app = QGuiApplication.instance()
+        if app is None or not isinstance(app, QApplication):
+            return None
+        if mode == "save":
+            selected_path, _selected_filter = QFileDialog.getSaveFileName(
+                None,
+                title,
+                start_path,
+                file_filter,
+            )
+        else:
+            selected_path, _selected_filter = QFileDialog.getOpenFileName(
+                None,
+                title,
+                start_path,
+                file_filter,
+            )
+        return str(selected_path or "").strip() or None
+
+    def _prompt_file_path_tk(
+        self,
+        *,
+        mode: str,
+        title: str,
+        start_path: str,
+        file_filter: str,
+    ) -> str | None:
+        try:
+            from tkinter import Tk, filedialog
+        except Exception:
+            return None
+
+        filetypes = _tk_filetypes(file_filter)
+        initial_dir = start_path
+        initial_file = ""
+        path_obj = Path(start_path)
+        if mode == "save":
+            initial_dir = str(path_obj.parent)
+            initial_file = path_obj.name
+        elif path_obj.suffix:
+            initial_dir = str(path_obj.parent)
+
+        root = None
+        try:
+            root = Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            if mode == "save":
+                selected_path = filedialog.asksaveasfilename(
+                    title=title,
+                    initialdir=initial_dir,
+                    initialfile=initial_file,
+                    filetypes=filetypes,
+                    defaultextension=".txt",
+                )
+            else:
+                selected_path = filedialog.askopenfilename(
+                    title=title,
+                    initialdir=initial_dir,
+                    filetypes=filetypes,
+                )
+            return str(selected_path or "").strip() or None
+        except Exception:
+            return None
+        finally:
+            if root is not None:
+                try:
+                    root.destroy()
+                except Exception:
+                    pass
+
+
+def _tk_filetypes(file_filter: str) -> list[tuple[str, str]]:
+    filetypes: list[tuple[str, str]] = []
+    raw = str(file_filter or "").strip()
+    if not raw:
+        return [("All Files", "*.*")]
+    for part in raw.split(";;"):
+        label, sep, pattern_part = part.partition("(")
+        if not sep:
+            continue
+        patterns = pattern_part.rstrip(") ").strip() or "*.*"
+        normalized_patterns = " ".join(
+            token if token.startswith("*.") or token == "*"
+            else ("*." + token.lstrip("."))
+            for token in patterns.split()
+        ).strip() or "*.*"
+        filetypes.append((label.strip() or "Files", normalized_patterns))
+    return filetypes or [("All Files", "*.*")]
 
 
 def _filter_events(
