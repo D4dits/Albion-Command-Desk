@@ -47,3 +47,4 @@ class LootContainer:
     owner_name: str | None = None
     owner_kind: str = "unknown"
     items: dict[int, LootObject] = field(default_factory=dict)
+    slot_items: dict[int, LootObject] = field(default_factory=dict)

@@ -65,6 +65,7 @@ def _pcap_loot_summary(name: str) -> dict[str, object]:
         ("albion_combat_52_party_full.pcap", 1),
         ("albion_combat_54_group_camps.pcap", 2),
         ("albion_combat_55_group_camps.pcap", 3),
+        ("albion_combat_56_nowy.pcap", 1),
     ],
 )
 def test_loot_pcaps_match_expected_item_counts(
@@ -88,7 +89,9 @@ def test_loot_pcaps_keep_expected_item_samples() -> None:
     summary52 = _pcap_loot_summary("albion_combat_52_party_full.pcap")
     summary54 = _pcap_loot_summary("albion_combat_54_group_camps.pcap")
     summary55 = _pcap_loot_summary("albion_combat_55_group_camps.pcap")
+    summary56 = _pcap_loot_summary("albion_combat_56_nowy.pcap")
 
     assert summary52["item_names"] == {"Adept's Rune"}
     assert summary54["item_names"] == {"Rotten Chocolate Egg", "Chocolate"}
     assert summary55["item_names"] == {"Chocolate"}
+    assert summary56["item_names"] == {"Rotten Chocolate Egg"}

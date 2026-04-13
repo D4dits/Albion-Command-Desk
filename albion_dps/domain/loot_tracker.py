@@ -12,7 +12,11 @@ from albion_dps.domain.loot_types import (
     LootPlayer,
 )
 from albion_dps.models import PhotonMessage, RawPacket
-from albion_dps.protocol.protocol16 import Protocol16Error, decode_event_data
+from albion_dps.protocol.protocol16 import (
+    Protocol16Error,
+    decode_event_data,
+    decode_operation_request,
+)
 
 LOOT_EVENT_CODE = 1
 LOOT_SUBTYPE_KEY = 252
@@ -26,6 +30,7 @@ EV_ATTACH_ITEM_CONTAINER = 99
 EV_DETACH_ITEM_CONTAINER = 100
 EV_CHARACTER_STATS = 143
 EV_OTHER_GRABBED_LOOT = 275
+OP_INVENTORY_MOVE_ITEM = 30
 
 LOOT_OBJECT_SUBTYPES = {
     EV_NEW_SIMPLE_ITEM,
@@ -47,7 +52,13 @@ class LootTracker:
     _events: list[LootEvent] = field(default_factory=list)
 
     def observe(self, message: PhotonMessage, packet: RawPacket | None = None) -> None:
-        if message.event_code is None or message.event_code != LOOT_EVENT_CODE:
+        if message.event_code is None:
+            self._observe_operation_request(
+                message,
+                timestamp=packet.timestamp if packet is not None else 0.0,
+            )
+            return
+        if message.event_code != LOOT_EVENT_CODE:
             return
         try:
             event = decode_event_data(message.payload)
@@ -83,6 +94,22 @@ class LootTracker:
                 raw_event_code=event.code,
                 raw_subtype=subtype,
             )
+
+    def _observe_operation_request(
+        self, message: PhotonMessage, *, timestamp: float
+    ) -> None:
+        try:
+            request = decode_operation_request(message.payload)
+        except Protocol16Error:
+            return
+        operation_code = request.parameters.get(253, request.code)
+        if operation_code != OP_INVENTORY_MOVE_ITEM:
+            return
+        self._observe_inventory_move_item(
+            request.parameters,
+            timestamp=timestamp,
+            raw_operation_code=int(operation_code),
+        )
 
     def events(self, limit: int | None = None) -> list[LootEvent]:
         items = list(reversed(self._events))
@@ -177,6 +204,7 @@ class LootTracker:
         container_id = parameters.get(0)
         raw_uuid = parameters.get(1)
         inventory = parameters.get(3)
+        slot_base = _coerce_slot(parameters.get(4))
         if not isinstance(container_id, int) or container_id <= 0:
             return
         uuid_text = _normalize_uuid(raw_uuid)
@@ -196,7 +224,9 @@ class LootTracker:
             if not loot.owner_name and container.owner_name:
                 loot.owner_name = container.owner_name
             next_items[object_id] = loot
+        next_slot_items = _map_slot_items(inventory_ids, next_items, slot_base)
         container.items = next_items
+        container.slot_items = next_slot_items
 
     def _observe_detach_item_container(self, parameters: dict[int, object]) -> None:
         uuid_text = _normalize_uuid(parameters.get(0))
@@ -206,6 +236,69 @@ class LootTracker:
         if container is None:
             return
         self._containers_by_id.pop(container.container_id, None)
+
+    def _observe_inventory_move_item(
+        self,
+        parameters: dict[int, object],
+        *,
+        timestamp: float,
+        raw_operation_code: int,
+    ) -> None:
+        from_uuid = _normalize_uuid(parameters.get(1))
+        to_uuid = _normalize_uuid(parameters.get(4))
+        if not from_uuid or not to_uuid or from_uuid == to_uuid:
+            return
+        container = self._containers_by_uuid.get(from_uuid)
+        if container is None:
+            return
+        looted_by_name = (
+            self.party_registry.self_name() if self.party_registry is not None else None
+        )
+        if not looted_by_name:
+            return
+        if (
+            self.party_registry is not None
+            and not self.party_registry.allows_player_name(looted_by_name)
+        ):
+            return
+
+        from_slot = _first_slot(parameters.get(0), parameters.get(2))
+        loot = _select_container_loot(container, from_slot)
+        if loot is None or loot.quantity <= 0:
+            return
+
+        source_name = loot.owner_name or container.owner_name
+        source_kind = _classify_source_kind(source_name) if source_name else "unknown"
+        looted_from = None
+        if source_name and source_kind == "player":
+            looted_from = self._upsert_player(source_name)
+
+        self._events.append(
+            LootEvent(
+                timestamp=float(timestamp),
+                looted_by=self._upsert_player(looted_by_name),
+                looted_from=looted_from,
+                source_name=source_name,
+                source_kind=source_kind,
+                item=loot.item,
+                quantity=int(loot.quantity),
+                is_silver=False,
+                raw_event_code=int(raw_operation_code),
+                raw_subtype=int(raw_operation_code),
+            )
+        )
+        self._remove_loot_from_container(container, loot.object_id)
+        if len(self._events) > self.history_limit:
+            self._events = self._events[-self.history_limit :]
+
+    def _remove_loot_from_container(self, container: LootContainer, object_id: int) -> None:
+        container.items.pop(object_id, None)
+        container.slot_items = {
+            slot: loot
+            for slot, loot in container.slot_items.items()
+            if loot.object_id != object_id
+        }
+        self._loot_objects.pop(object_id, None)
 
     def _observe_other_grabbed_loot(
         self,
@@ -316,6 +409,49 @@ def _coerce_int_list(value: object) -> list[int]:
         if isinstance(item, int) and item > 0:
             out.append(item)
     return out
+
+
+def _coerce_slot(value: object) -> int | None:
+    if isinstance(value, int) and value >= 0:
+        return value
+    return None
+
+
+def _first_slot(*values: object) -> int | None:
+    for value in values:
+        slot = _coerce_slot(value)
+        if slot is not None:
+            return slot
+    return None
+
+
+def _map_slot_items(
+    inventory_ids: list[int],
+    items: dict[int, LootObject],
+    slot_base: int | None,
+) -> dict[int, LootObject]:
+    slot_items: dict[int, LootObject] = {}
+    for index, object_id in enumerate(inventory_ids):
+        loot = items.get(object_id)
+        if loot is None:
+            continue
+        slot_items[index] = loot
+        if slot_base is not None:
+            slot_items[slot_base + index] = loot
+            slot_items[slot_base + index + 1] = loot
+    return slot_items
+
+
+def _select_container_loot(
+    container: LootContainer, slot: int | None
+) -> LootObject | None:
+    if slot is not None:
+        loot = container.slot_items.get(slot)
+        if loot is not None:
+            return loot
+    if len(container.items) == 1:
+        return next(iter(container.items.values()))
+    return None
 
 
 def _normalize_uuid(value: object) -> str | None:

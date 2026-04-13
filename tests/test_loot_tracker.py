@@ -15,6 +15,7 @@ from albion_dps.domain.loot_tracker import (
     EV_NEW_SIMPLE_ITEM,
     EV_OTHER_GRABBED_LOOT,
     LootTracker,
+    OP_INVENTORY_MOVE_ITEM,
 )
 from albion_dps.models import PhotonMessage, RawPacket
 
@@ -251,6 +252,75 @@ def test_loot_tracker_attaches_loot_objects_to_container(monkeypatch) -> None:
     assert loot is not None
     assert loot.owner_name == "Enemy"
     assert loot.item.unique_name == "T4_BAG"
+    assert container.slot_items[0].object_id == 7001
+
+
+def test_loot_tracker_records_inventory_move_from_loot_container(monkeypatch) -> None:
+    party = PartyRegistry()
+    party.set_self_name("D4dits", confirmed=True)
+    tracker = LootTracker(
+        party_registry=party,
+        item_resolver=ItemResolver(
+            index_to_unique={3131: "UNIQUE_ROTTEN_CHOCOLATE_EGG"},
+            index_to_name={3131: "Rotten Chocolate Egg"},
+        ),
+    )
+
+    raw_uuid = bytes.fromhex("f52922571799bd4ca728e95c7868ec6c")
+    inventory_uuid = bytes.fromhex("a8813ad2bf29b442900ced9b69c88034")
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_LOOT,
+        parameters={0: 184088, 3: "@MOB_T2_MOB_EVENT_EASTER_RESOURCE"},
+    )
+    tracker.observe(_message())
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_SIMPLE_ITEM,
+        parameters={0: 184090, 1: 3131, 2: 1},
+    )
+    tracker.observe(_message())
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_ATTACH_ITEM_CONTAINER,
+        parameters={0: 184088, 1: raw_uuid, 3: [184090], 4: 1},
+    )
+    tracker.observe(_message())
+
+    monkeypatch.setattr(
+        loot_tracker_module,
+        "decode_operation_request",
+        lambda _payload: SimpleNamespace(
+            code=OP_INVENTORY_MOVE_ITEM,
+            parameters={
+                1: list(raw_uuid),
+                2: 2,
+                4: list(inventory_uuid),
+                5: 2,
+                253: OP_INVENTORY_MOVE_ITEM,
+            },
+        ),
+    )
+    tracker.observe(_message(event_code=None), _packet(1776085534.558984))
+
+    events = tracker.events()
+    assert len(events) == 1
+    event = events[0]
+    assert event.timestamp == 1776085534.558984
+    assert event.looted_by.player_name == "D4dits"
+    assert event.looted_from is None
+    assert event.source_name == "@MOB_T2_MOB_EVENT_EASTER_RESOURCE"
+    assert event.source_kind == "mob"
+    assert event.item is not None
+    assert event.item.item_num_id == 3131
+    assert event.item.display_name == "Rotten Chocolate Egg"
+    assert event.quantity == 1
+    assert event.is_silver is False
+    assert event.raw_event_code == OP_INVENTORY_MOVE_ITEM
+    assert tracker.loot_object(184090) is None
 
 
 def test_loot_tracker_detaches_container_by_uuid(monkeypatch) -> None:

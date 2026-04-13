@@ -399,6 +399,11 @@ class PartyRegistry:
     def snapshot_self_ids(self) -> set[int]:
         return set(self._self_ids)
 
+    def self_name(self) -> str | None:
+        if self._self_name_confirmed:
+            return self._self_name
+        return None
+
     def membership_version(self) -> int:
         return self._membership_version
 
