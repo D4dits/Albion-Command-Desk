@@ -540,20 +540,9 @@ class PartyRegistry:
                     self._set_self_id(entity_id, replace=False)
             if self._self_ids:
                 return
-        if not self._party_names:
-            return
-        snapshot = name_registry.snapshot()
-        name_ids: dict[str, set[int]] = {name: set() for name in self._party_names}
-        for entity_id, name in snapshot.items():
-            if name in name_ids and isinstance(entity_id, int) and entity_id > 0:
-                name_ids[name].add(entity_id)
-        non_self_names = set()
-        for name, ids in name_ids.items():
-            if any(entity_id in self._party_ids and entity_id not in self._self_ids for entity_id in ids):
-                non_self_names.add(name)
-        candidates = [name for name in self._party_names if name not in non_self_names]
-        if len(candidates) == 1:
-            self.set_self_name(candidates[0], confirmed=True)
+        # Do not confirm self from "the only remaining party-like name".
+        # Some loot-adjacent payloads can surface guild/alliance labels here;
+        # confirming those as self corrupts local inventory-move loot events.
 
     def allows(
         self,

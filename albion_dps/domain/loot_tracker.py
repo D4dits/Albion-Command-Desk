@@ -251,16 +251,7 @@ class LootTracker:
         container = self._containers_by_uuid.get(from_uuid)
         if container is None:
             return
-        looted_by_name = (
-            self.party_registry.self_name() if self.party_registry is not None else None
-        )
-        if not looted_by_name:
-            return
-        if (
-            self.party_registry is not None
-            and not self.party_registry.allows_player_name(looted_by_name)
-        ):
-            return
+        looted_by_name = self._local_looter_name()
 
         from_slot = _first_slot(parameters.get(0), parameters.get(2))
         loot = _select_container_loot(container, from_slot)
@@ -376,6 +367,13 @@ class LootTracker:
             unique_name=unique_name,
             display_name=display_name,
         )
+
+    def _local_looter_name(self) -> str:
+        if self.party_registry is not None:
+            self_name = self.party_registry.self_name()
+            if self_name:
+                return self_name
+        return "You"
 
     def _upsert_player(
         self,

@@ -522,6 +522,17 @@ def test_party_registry_resolves_self_id_from_confirmed_name() -> None:
     assert registry.snapshot_self_ids() == {101}
 
 
+def test_party_registry_does_not_confirm_self_name_from_single_party_name() -> None:
+    registry = PartyRegistry()
+    registry.seed_names(["Legion-PL"])
+    names = NameRegistry()
+    names.record(101, "Legion-PL")
+
+    registry.sync_self_name(names)
+
+    assert registry.self_name() is None
+
+
 def test_party_registry_fallback_parses_unknown_roster_subtype(monkeypatch) -> None:
     registry = PartyRegistry()
     message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")

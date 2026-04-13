@@ -217,12 +217,12 @@ Item {
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 10
+                spacing: 6
 
                 Text {
                     text: "Loot"
                     color: theme.textPrimary
-                    font.pixelSize: 24
+                    font.pixelSize: 21
                     font.bold: true
                 }
 
@@ -232,6 +232,7 @@ Item {
                         ? latestLootSummary
                         : "Party loot log. Import previous logs or inspect the current session feed."
                     color: latestLootSummary.length > 0 ? theme.textSecondary : theme.textMuted
+                    font.pixelSize: 11
                     wrapMode: Text.Wrap
                 }
 
@@ -248,8 +249,8 @@ Item {
                         ]
 
                         delegate: Rectangle {
-                            width: compactLayout ? 92 : 116
-                            height: 56
+                            width: compactLayout ? 86 : 92
+                            height: 44
                             radius: theme.radiusLg
                             color: root.statCardBg(modelData.title)
                             border.color: root.statCardBorder(modelData.title)
@@ -262,7 +263,7 @@ Item {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: root.cardValue(modelData.value)
                                     color: root.statCardValueColor(modelData.title)
-                                    font.pixelSize: 18
+                                    font.pixelSize: 15
                                     font.bold: true
                                 }
                                 Text {
@@ -283,13 +284,13 @@ Item {
                 radius: theme.radiusLg
                 color: theme.cardLevel2
                 border.color: theme.borderStrong
-                implicitHeight: filterContent.implicitHeight + 24
+                implicitHeight: filterContent.implicitHeight + 18
 
                 ColumnLayout {
                     id: filterContent
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 10
+                    anchors.margins: 9
+                    spacing: 7
 
                     RowLayout {
                         Layout.fillWidth: true
@@ -449,10 +450,13 @@ Item {
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: theme.spacingSection
+                Layout.fillHeight: true
+                spacing: 10
 
                 Rectangle {
                     Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.minimumHeight: compactLayout ? 240 : 320
                     radius: theme.radiusLg
                     color: theme.surfacePanel
                     border.color: theme.borderStrong
@@ -534,7 +538,8 @@ Item {
 
                         Item {
                             Layout.fillWidth: true
-                            Layout.preferredHeight: compactLayout ? 260 : 300
+                            Layout.fillHeight: true
+                            Layout.minimumHeight: compactLayout ? 180 : 240
                             clip: true
 
                             ListView {
