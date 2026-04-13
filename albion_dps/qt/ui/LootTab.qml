@@ -36,6 +36,8 @@ Item {
     property var topSilverLootersModel: null
     property bool stackedControls: width < 1140
     property bool stackedSummary: width < 920
+    property bool summaryRail: width >= 1040
+    property int summaryRailWidth: 352
     property int aggregateColumns: width >= 1050 ? 3 : (width >= 720 ? 2 : 1)
     property int timeColumnWidth: compactLayout ? 56 : 64
     property int looterColumnWidth: compactLayout ? 136 : 164
@@ -215,30 +217,37 @@ Item {
             anchors.margins: theme.spacingSection
             spacing: 10
 
-            ColumnLayout {
+            RowLayout {
                 Layout.fillWidth: true
-                spacing: 5
+                spacing: 12
 
-                Text {
-                    text: "Loot"
-                    color: theme.textPrimary
-                    font.pixelSize: 21
-                    font.bold: true
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 3
+
+                    Text {
+                        text: "Loot"
+                        color: theme.textPrimary
+                        font.pixelSize: 20
+                        font.bold: true
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: latestLootSummary.length > 0
+                            ? latestLootSummary
+                            : "Party loot log. Import previous logs or inspect the current session feed."
+                        color: latestLootSummary.length > 0 ? theme.textSecondary : theme.textMuted
+                        font.pixelSize: 11
+                        wrapMode: Text.Wrap
+                        maximumLineCount: 2
+                    }
                 }
 
-                Text {
-                    Layout.fillWidth: true
-                    text: latestLootSummary.length > 0
-                        ? latestLootSummary
-                        : "Party loot log. Import previous logs or inspect the current session feed."
-                    color: latestLootSummary.length > 0 ? theme.textSecondary : theme.textMuted
-                    font.pixelSize: 11
-                    wrapMode: Text.Wrap
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
+                Flow {
+                    Layout.preferredWidth: compactLayout ? 330 : 382
+                    Layout.maximumWidth: 382
+                    spacing: 6
 
                     Repeater {
                         model: [
@@ -249,8 +258,8 @@ Item {
                         ]
 
                         delegate: Rectangle {
-                            Layout.preferredWidth: compactLayout ? 78 : 92
-                            Layout.preferredHeight: 28
+                            width: compactLayout ? 76 : 88
+                            height: 26
                             radius: 8
                             color: root.statCardBg(modelData.title)
                             border.color: root.statCardBorder(modelData.title)
@@ -262,7 +271,7 @@ Item {
                                 Text {
                                     text: root.cardValue(modelData.value)
                                     color: root.statCardValueColor(modelData.title)
-                                    font.pixelSize: 13
+                                    font.pixelSize: 12
                                     font.bold: true
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
@@ -276,189 +285,201 @@ Item {
                             }
                         }
                     }
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
                 }
             }
 
-            Rectangle {
+            GridLayout {
                 Layout.fillWidth: true
-                radius: theme.radiusLg
-                color: theme.cardLevel2
-                border.color: theme.borderStrong
-                implicitHeight: filterContent.implicitHeight + 18
+                Layout.fillHeight: true
+                columns: root.summaryRail ? 2 : 1
+                columnSpacing: 10
+                rowSpacing: 10
 
                 ColumnLayout {
-                    id: filterContent
-                    anchors.fill: parent
-                    anchors.margins: 9
-                    spacing: 7
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.minimumWidth: root.summaryRail ? 620 : 0
+                    spacing: 10
 
-                    RowLayout {
+                    Rectangle {
                         Layout.fillWidth: true
-                        spacing: 10
+                        radius: theme.radiusLg
+                        color: theme.cardLevel2
+                        border.color: theme.borderStrong
+                        implicitHeight: filterContent.implicitHeight + 16
 
-                        Flow {
-                            Layout.fillWidth: true
-                            spacing: 8
+                        ColumnLayout {
+                            id: filterContent
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            spacing: 6
 
-                            Repeater {
-                                model: root.categoryFilterOptions
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
 
-                                delegate: AppButton {
-                                    text: root.categoryLabel(modelData)
-                                    compact: true
-                                    checkable: true
-                                    checked: root.categoryFilter === String(modelData)
-                                    variant: checked ? "primary" : "secondary"
-                                    onClicked: root.setCategoryFilter(String(modelData))
+                                Flow {
+                                    Layout.fillWidth: true
+                                    spacing: 7
+
+                                    Repeater {
+                                        model: root.categoryFilterOptions
+
+                                        delegate: AppButton {
+                                            text: root.categoryLabel(modelData)
+                                            compact: true
+                                            checkable: true
+                                            checked: root.categoryFilter === String(modelData)
+                                            variant: checked ? "primary" : "secondary"
+                                            onClicked: root.setCategoryFilter(String(modelData))
+                                        }
+                                    }
+                                }
+                            }
+
+                            GridLayout {
+                                Layout.fillWidth: true
+                                columns: root.stackedControls ? 1 : 4
+                                columnSpacing: 8
+                                rowSpacing: 8
+
+                                AppTextField {
+                                    Layout.fillWidth: true
+                                    Layout.columnSpan: root.stackedControls ? 1 : 2
+                                    placeholderText: "Search item, looter, victim, guild..."
+                                    text: root.searchQuery
+                                    onTextEdited: root.setSearchQuery(text)
+                                }
+
+                                AppComboBox {
+                                    Layout.fillWidth: true
+                                    model: root.looterFilterOptions
+                                    currentIndex: Math.max(0, model.indexOf(root.looterFilter))
+                                    onActivated: function(index) {
+                                        root.setLooterFilter(String(model[index]))
+                                    }
+                                }
+
+                                AppComboBox {
+                                    Layout.fillWidth: true
+                                    model: root.sourceFilterOptions
+                                    currentIndex: Math.max(0, model.indexOf(root.sourceFilter))
+                                    onActivated: function(index) {
+                                        root.setSourceFilter(String(model[index]))
+                                    }
+                                }
+                            }
+
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: 7
+
+                                Rectangle {
+                                    radius: 9
+                                    color: theme.stateDangerBg
+                                    border.color: theme.stateDanger
+                                    implicitHeight: 18
+                                    implicitWidth: corpseLegend.implicitWidth + 12
+
+                                    Text {
+                                        id: corpseLegend
+                                        anchors.centerIn: parent
+                                        text: "red = looted from player corpse"
+                                        color: theme.stateDanger
+                                        font.pixelSize: 9
+                                        font.bold: true
+                                    }
+                                }
+
+                                Rectangle {
+                                    radius: 9
+                                    color: theme.stateWarningBg
+                                    border.color: theme.stateWarning
+                                    implicitHeight: 18
+                                    implicitWidth: mobLegend.implicitWidth + 12
+
+                                    Text {
+                                        id: mobLegend
+                                        anchors.centerIn: parent
+                                        text: "yellow = mob/container"
+                                        color: theme.stateWarning
+                                        font.pixelSize: 9
+                                        font.bold: true
+                                    }
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 5
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 2
+
+                                    Text {
+                                        text: root.importedLogActive ? "Imported log" : "Live session log"
+                                        color: root.importedLogActive ? theme.stateInfo : theme.textSecondary
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                    }
+
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: logPath.length > 0 ? logPath : "No loot log available yet"
+                                        color: theme.textMuted
+                                        font.pixelSize: 10
+                                        elide: Text.ElideMiddle
+                                    }
+                                }
+
+                                Flow {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+
+                                    AppButton {
+                                        text: "Import Log"
+                                        compact: true
+                                        onClicked: root.importLog()
+                                    }
+
+                                    AppButton {
+                                        visible: root.importedLogActive
+                                        text: "Back To Live"
+                                        compact: true
+                                        onClicked: root.useLiveLog()
+                                    }
+
+                                    AppButton {
+                                        text: "Copy Summary"
+                                        compact: true
+                                        onClicked: root.copyLatestSummary()
+                                    }
+                                    AppButton {
+                                        text: "Copy View"
+                                        compact: true
+                                        onClicked: root.copyCurrentView()
+                                    }
+                                    AppButton {
+                                        text: "Export View"
+                                        compact: true
+                                        onClicked: root.exportCurrentView()
+                                    }
+                                    AppButton {
+                                        text: "Open Folder"
+                                        compact: true
+                                        onClicked: root.openLogFolder()
+                                    }
                                 }
                             }
                         }
                     }
 
-                    GridLayout {
-                        Layout.fillWidth: true
-                        columns: root.stackedControls ? 1 : 4
-                        columnSpacing: 10
-                        rowSpacing: 10
-
-                        AppTextField {
-                            Layout.fillWidth: true
-                            Layout.columnSpan: root.stackedControls ? 1 : 2
-                            placeholderText: "Search item, looter, victim, guild..."
-                            text: root.searchQuery
-                            onTextEdited: root.setSearchQuery(text)
-                        }
-
-                        AppComboBox {
-                            Layout.fillWidth: true
-                            model: root.looterFilterOptions
-                            currentIndex: Math.max(0, model.indexOf(root.looterFilter))
-                            onActivated: function(index) {
-                                root.setLooterFilter(String(model[index]))
-                            }
-                        }
-
-                        AppComboBox {
-                            Layout.fillWidth: true
-                            model: root.sourceFilterOptions
-                            currentIndex: Math.max(0, model.indexOf(root.sourceFilter))
-                            onActivated: function(index) {
-                                root.setSourceFilter(String(model[index]))
-                            }
-                        }
-                    }
-
-                    Flow {
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        Rectangle {
-                            radius: 9
-                            color: theme.stateDangerBg
-                            border.color: theme.stateDanger
-                            implicitHeight: 20
-                            implicitWidth: corpseLegend.implicitWidth + 14
-
-                            Text {
-                                id: corpseLegend
-                                anchors.centerIn: parent
-                                text: "red = looted from player corpse"
-                                color: theme.stateDanger
-                                font.pixelSize: 10
-                                font.bold: true
-                            }
-                        }
-
-                        Rectangle {
-                            radius: 9
-                            color: theme.stateWarningBg
-                            border.color: theme.stateWarning
-                            implicitHeight: 20
-                            implicitWidth: mobLegend.implicitWidth + 14
-
-                            Text {
-                                id: mobLegend
-                                anchors.centerIn: parent
-                                text: "yellow = mob/container"
-                                color: theme.stateWarning
-                                font.pixelSize: 10
-                                font.bold: true
-                            }
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 2
-
-                            Text {
-                                text: root.importedLogActive ? "Imported log" : "Live session log"
-                                color: root.importedLogActive ? theme.stateInfo : theme.textSecondary
-                                font.pixelSize: 11
-                                font.bold: true
-                            }
-
-                            Text {
-                                Layout.fillWidth: true
-                                text: logPath.length > 0 ? logPath : "No loot log available yet"
-                                color: theme.textMuted
-                                font.pixelSize: 11
-                                elide: Text.ElideMiddle
-                            }
-                        }
-
-                        AppButton {
-                            text: "Import Log"
-                            compact: true
-                            onClicked: root.importLog()
-                        }
-
-                        AppButton {
-                            visible: root.importedLogActive
-                            text: "Back To Live"
-                            compact: true
-                            onClicked: root.useLiveLog()
-                        }
-
-                        AppButton {
-                            text: "Copy Summary"
-                            compact: true
-                            onClicked: root.copyLatestSummary()
-                        }
-                        AppButton {
-                            text: "Copy View"
-                            compact: true
-                            onClicked: root.copyCurrentView()
-                        }
-                        AppButton {
-                            text: "Export View"
-                            compact: true
-                            onClicked: root.exportCurrentView()
-                        }
-                        AppButton {
-                            text: "Open Folder"
-                            compact: true
-                            onClicked: root.openLogFolder()
-                        }
-                    }
-                }
-            }
-
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 10
-
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: compactLayout ? 220 : 250
+                    Layout.fillHeight: true
+                    Layout.minimumHeight: root.summaryRail ? 330 : 220
+                    Layout.preferredHeight: root.summaryRail ? 420 : (compactLayout ? 220 : 250)
                     radius: theme.radiusLg
                     color: theme.surfacePanel
                     border.color: theme.borderStrong
@@ -734,17 +755,23 @@ Item {
                     }
                 }
 
+                }
+
                 GridLayout {
                     Layout.fillWidth: true
+                    Layout.fillHeight: root.summaryRail
                     Layout.minimumWidth: 0
+                    Layout.preferredWidth: root.summaryRail ? root.summaryRailWidth : -1
+                    Layout.maximumWidth: root.summaryRail ? root.summaryRailWidth : 16777215
                     Layout.bottomMargin: 2
-                    columns: root.aggregateColumns
-                    columnSpacing: theme.spacingSection
-                    rowSpacing: theme.spacingSection
+                    columns: root.summaryRail ? 1 : root.aggregateColumns
+                    columnSpacing: 8
+                    rowSpacing: 8
 
                     LootSummaryPanel {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: compactLayout ? 132 : 146
+                        Layout.fillHeight: root.summaryRail
+                        Layout.preferredHeight: root.summaryRail ? 130 : (compactLayout ? 132 : 146)
                         theme: root.theme
                         title: "Top Looters"
                         emptyText: "No looters in this view"
@@ -754,7 +781,8 @@ Item {
 
                     LootSummaryPanel {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: compactLayout ? 132 : 146
+                        Layout.fillHeight: root.summaryRail
+                        Layout.preferredHeight: root.summaryRail ? 150 : (compactLayout ? 132 : 146)
                         theme: root.theme
                         title: "Top Items"
                         emptyText: "No item drops in this view"
@@ -764,7 +792,8 @@ Item {
 
                     LootSummaryPanel {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: compactLayout ? 132 : 146
+                        Layout.fillHeight: root.summaryRail
+                        Layout.preferredHeight: root.summaryRail ? 130 : (compactLayout ? 132 : 146)
                         theme: root.theme
                         title: "Looted From Players"
                         emptyText: "No player corpses in this view"
