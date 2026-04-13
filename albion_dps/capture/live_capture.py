@@ -39,6 +39,57 @@ def list_interfaces() -> list[str]:
         return _system_interfaces()
 
 
+def rank_interfaces(interfaces: list[str]) -> list[str]:
+    return [
+        item[1]
+        for item in sorted(
+            enumerate(interfaces),
+            key=lambda item: (_interface_rank(item[1]), item[0]),
+        )
+    ]
+
+
+def _interface_rank(interface: str) -> int:
+    lowered = str(interface or "").lower()
+    if "loopback" in lowered or "npf_loopback" in lowered:
+        return 90
+    if _looks_virtual_or_secondary(lowered):
+        return 80
+    if lowered.strip() == "ethernet":
+        return 0
+    if "ethernet" in lowered:
+        return 1
+    if lowered.strip() in {"wi-fi", "wifi"}:
+        return 2
+    if "wi-fi" in lowered or "wifi" in lowered or "wireless" in lowered or "wlan" in lowered:
+        return 3
+    if "lan" in lowered:
+        return 4
+    return 10
+
+
+def _looks_virtual_or_secondary(lowered: str) -> bool:
+    if "*" in lowered and ("połączenie lokalne" in lowered or "local area connection" in lowered):
+        return True
+    return any(
+        token in lowered
+        for token in (
+            "bluetooth",
+            "docker",
+            "hyper-v",
+            "isatap",
+            "npf_loopback",
+            "pseudo",
+            "teredo",
+            "tunnel",
+            "virtual",
+            "virtualbox",
+            "vmware",
+            "vethernet",
+        )
+    )
+
+
 def auto_detect_interface(
     *,
     bpf_filter: str = "(ip or ip6) and udp",
@@ -61,7 +112,7 @@ def auto_detect_interface(
     if len(interfaces) == 1:
         return interfaces[0]
 
-    for interface in interfaces:
+    for interface in rank_interfaces(interfaces):
         try:
             capture = pcapy.open_live(interface, snaplen, int(promisc), timeout_ms)
             if bpf_filter:

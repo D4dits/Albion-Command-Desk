@@ -8,7 +8,12 @@ import threading
 from collections.abc import Iterable
 from pathlib import Path
 
-from albion_dps.capture import auto_detect_interface, capture_backend_available, list_interfaces
+from albion_dps.capture import (
+    auto_detect_interface,
+    capture_backend_available,
+    list_interfaces,
+    rank_interfaces,
+)
 from albion_dps.capture.npcap_runtime import (
     RUNTIME_STATE_AVAILABLE,
     detect_npcap_runtime,
@@ -558,7 +563,7 @@ def _fallback_interface() -> str | None:
         return None
     if not interfaces:
         return None
-    for candidate in interfaces:
+    for candidate in rank_interfaces(interfaces):
         lowered = candidate.lower()
         if "loopback" in lowered or "npf_loopback" in lowered:
             continue
