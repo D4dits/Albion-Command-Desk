@@ -587,6 +587,8 @@ class PartyRegistry:
                 name = name_registry.lookup(source_id)
                 if not _looks_like_player_name(name):
                     return False
+                if not self._party_names:
+                    return True
                 if self._self_name_confirmed and self._self_name:
                     if name == self._self_name:
                         return True

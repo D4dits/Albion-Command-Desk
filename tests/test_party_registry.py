@@ -274,6 +274,14 @@ def test_allows_self_by_name_without_ids() -> None:
     assert registry.allows(101, names)
 
 
+def test_allows_known_player_during_strict_bootstrap_without_party_context() -> None:
+    registry = PartyRegistry(strict=True)
+    names = NameRegistry()
+    names.record(101, "D4dits")
+
+    assert registry.allows(101, names, timestamp=1.0)
+
+
 def test_sync_guids_populates_party_ids_from_id_guids() -> None:
     names = NameRegistry()
     names.observe(PhotonMessage(opcode=1, event_code=1, payload=bytes.fromhex(_GUID_LINK_PAYLOAD_HEX)))

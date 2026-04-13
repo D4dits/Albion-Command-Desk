@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from albion_dps.protocol.protocol16 import decode_event_data, decode_operation_request
 
 
@@ -12,6 +14,10 @@ _LIST_PAYLOAD_HEX = (
 _OP_REQUEST_PAYLOAD_HEX = (
     "010007006c08de4f767cdfd80e0179000266c2d54548c3a86591026641e9383503"
     "79000266c2cb9bbcc3a659be046640f6666605690001867cfd6b0015"
+)
+_PROTOCOL18_EVENT_PAYLOAD_HEX = (
+    "0109000ae4ba23010ae4ba23024502a075283d06ee9b400304330704099cffb208"
+    "05099cffb2080622071dfc041300"
 )
 
 
@@ -37,3 +43,12 @@ def test_decode_operation_request() -> None:
 
     assert request.code == 1
     assert request.parameters[5] == 99964
+
+
+def test_decode_event_data_protocol18_live_payload() -> None:
+    event = decode_event_data(bytes.fromhex(_PROTOCOL18_EVENT_PAYLOAD_HEX))
+
+    assert event.code == 1
+    assert event.parameters[0] == 580964
+    assert event.parameters[2] == pytest.approx([0.041127800941467285, 4.872805595397949])
+    assert event.parameters[252] == 19
