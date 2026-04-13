@@ -210,14 +210,10 @@ Item {
         border.color: theme.borderStrong
         clip: true
 
-        ScrollView {
+        ColumnLayout {
             anchors.fill: parent
             anchors.margins: theme.spacingSection
-            clip: true
-
-            ColumnLayout {
-                width: Math.max(parent.width, implicitWidth)
-                spacing: 10
+            spacing: 10
 
             ColumnLayout {
                 Layout.fillWidth: true
@@ -777,7 +773,6 @@ Item {
                     }
                 }
             }
-        }
         }
     }
 }
