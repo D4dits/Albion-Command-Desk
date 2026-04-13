@@ -35,7 +35,7 @@ class LootLogWriter:
         self._prune_old_files()
 
     def sync_events(self, events: list[LootEvent]) -> Path:
-        payload = loot_events_to_txt(events)
+        payload = loot_events_to_txt([event for event in events if not event.is_silver])
         if payload == self._last_payload and self._path.exists():
             self._prune_old_files()
             return self._path

@@ -915,15 +915,22 @@ ApplicationWindow {
                     importedLogActive: lootState.importedLogActive
                     searchQuery: lootState.searchQuery
                     sourceFilter: lootState.sourceFilter
+                    looterFilter: lootState.looterFilter
+                    categoryFilter: lootState.categoryFilter
                     kindFilter: lootState.kindFilter
                     sourceFilterOptions: lootState.sourceFilterOptions
+                    looterFilterOptions: lootState.looterFilterOptions
+                    categoryFilterOptions: lootState.categoryFilterOptions
                     kindFilterOptions: lootState.kindFilterOptions
                     eventsModel: lootState.eventsModel
                     topLootersModel: lootState.topLootersModel
                     topItemsModel: lootState.topItemsModel
+                    topSourcesModel: lootState.topSourcesModel
                     topSilverLootersModel: lootState.topSilverLootersModel
                     onSetSearchQuery: function(value) { lootState.setSearchQuery(value) }
                     onSetSourceFilter: function(value) { lootState.setSourceFilter(value) }
+                    onSetLooterFilter: function(value) { lootState.setLooterFilter(value) }
+                    onSetCategoryFilter: function(value) { lootState.setCategoryFilter(value) }
                     onSetKindFilter: function(value) { lootState.setKindFilter(value) }
                     onCopyLatestSummary: function() {
                         if (lootState.copyLatestSummary()) {

@@ -25,6 +25,18 @@ def test_loot_log_writer_creates_session_file_and_syncs_payload() -> None:
             is_silver=False,
             raw_event_code=1,
             raw_subtype=275,
+        ),
+        LootEvent(
+            timestamp=1.6,
+            looted_by=LootPlayer(player_name="Alice"),
+            looted_from=None,
+            source_name=None,
+            source_kind="silver",
+            item=LootItemRef(item_num_id=None, unique_name="SILVER", display_name="Silver"),
+            quantity=1500,
+            is_silver=True,
+            raw_event_code=1,
+            raw_subtype=275,
         )
     ]
 
@@ -34,6 +46,7 @@ def test_loot_log_writer_creates_session_file_and_syncs_payload() -> None:
     payload = path.read_text(encoding="utf-8")
     assert "timestamp_utc;looted_by__alliance;looted_by__guild;looted_by__name" in payload
     assert "Journeyman's Bag" in payload
+    assert "SILVER;Silver;1500" not in payload
 
     second_path = writer.sync_events(events)
     assert second_path == path

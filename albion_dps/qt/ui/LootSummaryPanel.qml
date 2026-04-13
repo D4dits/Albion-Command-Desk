@@ -37,6 +37,9 @@ Rectangle {
         if (accentMode === "silver") {
             return theme.stateWarning
         }
+        if (accentMode === "danger") {
+            return theme.stateDanger
+        }
         return theme.borderStrong
     }
 
@@ -46,6 +49,9 @@ Rectangle {
         }
         if (accentMode === "silver") {
             return "#221c0e"
+        }
+        if (accentMode === "danger") {
+            return theme.stateDangerBg
         }
         return theme.surfaceInteractive
     }
@@ -57,6 +63,9 @@ Rectangle {
         if (accentMode === "silver") {
             return "#6b5420"
         }
+        if (accentMode === "danger") {
+            return theme.stateDanger
+        }
         return theme.borderSubtle
     }
 
@@ -66,6 +75,9 @@ Rectangle {
         }
         if (accentMode === "silver") {
             return theme.brandWarmAccent
+        }
+        if (accentMode === "danger") {
+            return theme.stateDanger
         }
         return theme.textPrimary
     }

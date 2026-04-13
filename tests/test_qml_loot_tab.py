@@ -41,10 +41,10 @@ LootTab {
     compactLayout: false
     eventCount: 2
     totalQuantity: 3
-    itemEventCount: 1
-    itemTotalQuantity: 2
-    silverEventCount: 1
-    silverTotalQuantity: 1500
+    itemEventCount: 2
+    itemTotalQuantity: 3
+    silverEventCount: 0
+    silverTotalQuantity: 0
     uniqueLooters: 2
     uniqueItems: 2
     importedLogActive: false
@@ -53,9 +53,13 @@ LootTab {
     logDirectoryUrl: "file:///C:/Users/Users/Documents/DPS_Master/DPS_Meter_AO/artifacts/loot"
     searchQuery: ""
     sourceFilter: "all"
-    kindFilter: "all"
-    sourceFilterOptions: ["all", "player", "mob", "silver", "system"]
-    kindFilterOptions: ["all", "items", "silver"]
+    looterFilter: "all"
+    categoryFilter: "all"
+    kindFilter: "items"
+    sourceFilterOptions: ["all", "player", "mob", "system"]
+    looterFilterOptions: ["all", "Alice"]
+    categoryFilterOptions: ["all", "weapon", "armor", "bag", "cape", "mount", "consumable", "resource", "artifact", "other"]
+    kindFilterOptions: ["items"]
     eventsModel: ListModel {
         ListElement {
             timestampText: "01:01:01"
@@ -65,6 +69,7 @@ LootTab {
             itemId: "T3_BAG"
             itemName: "Journeyman's Bag"
             iconUrl: "https://render.albiononline.com/v1/item/T3_BAG?size=64"
+            category: "bag"
             quantity: 2
             sourceName: "Enemy"
             sourceKind: "player"
@@ -78,8 +83,10 @@ LootTab {
     topItemsModel: ListModel {
         ListElement { label: "Journeyman's Bag"; sublabel: "T3_BAG"; iconUrl: "https://render.albiononline.com/v1/item/T3_BAG?size=64"; quantity: 2; eventCount: 1 }
     }
+    topSourcesModel: ListModel {
+        ListElement { label: "Enemy"; sublabel: "looted from player"; iconUrl: ""; quantity: 2; eventCount: 1 }
+    }
     topSilverLootersModel: ListModel {
-        ListElement { label: "Alice"; sublabel: "Guild A"; iconUrl: ""; quantity: 1500; eventCount: 1 }
     }
 }
 """

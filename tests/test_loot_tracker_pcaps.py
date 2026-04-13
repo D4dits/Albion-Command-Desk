@@ -24,7 +24,7 @@ def _pcap_loot_summary(name: str) -> dict[str, object]:
     tracker = LootTracker(
         item_resolver=load_item_resolver(),
         party_registry=party,
-        include_silver=True,
+        include_silver=False,
         history_limit=5000,
     )
 
@@ -44,11 +44,9 @@ def _pcap_loot_summary(name: str) -> dict[str, object]:
 
     events = tracker.events(limit=5000)
     item_events = [event for event in events if not event.is_silver]
-    silver_events = [event for event in events if event.is_silver]
     return {
         "total": len(events),
         "items": len(item_events),
-        "silver": len(silver_events),
         "looters": len({event.looted_by.player_name for event in events}),
         "item_names": {
             event.item.display_name
@@ -59,35 +57,30 @@ def _pcap_loot_summary(name: str) -> dict[str, object]:
 
 
 @pytest.mark.parametrize(
-    ("pcap_name", "expected_total", "expected_items", "expected_silver", "expected_looters"),
+    ("pcap_name", "expected_items"),
     [
-        ("albion_combat_48_party_fight.pcap", 4, 0, 4, 2),
-        ("albion_combat_49_party_fight_all.pcap", 133, 2, 131, 19),
-        ("albion_combat_51_party.pcap", 0, 0, 0, 0),
-        ("albion_combat_52_party_full.pcap", 40, 1, 39, 7),
-        ("albion_combat_54_group_camps.pcap", 82, 2, 80, 17),
-        ("albion_combat_55_group_camps.pcap", 139, 3, 136, 19),
+        ("albion_combat_48_party_fight.pcap", 0),
+        ("albion_combat_49_party_fight_all.pcap", 2),
+        ("albion_combat_51_party.pcap", 0),
+        ("albion_combat_52_party_full.pcap", 1),
+        ("albion_combat_54_group_camps.pcap", 2),
+        ("albion_combat_55_group_camps.pcap", 3),
     ],
 )
-def test_loot_pcaps_match_expected_item_and_silver_counts(
+def test_loot_pcaps_match_expected_item_counts(
     pcap_name: str,
-    expected_total: int,
     expected_items: int,
-    expected_silver: int,
-    expected_looters: int,
 ) -> None:
     summary = _pcap_loot_summary(pcap_name)
 
-    assert summary["total"] == expected_total
+    assert summary["total"] == expected_items
     assert summary["items"] == expected_items
-    assert summary["silver"] == expected_silver
-    assert summary["looters"] == expected_looters
 
 
-def test_loot_pcap49_is_mostly_party_silver_distribution() -> None:
+def test_loot_pcap49_keeps_expected_item_drops_without_silver_noise() -> None:
     summary = _pcap_loot_summary("albion_combat_49_party_fight_all.pcap")
 
-    assert summary["silver"] > summary["items"]
+    assert summary["total"] == 2
     assert summary["item_names"] == {"Adept's Assassin Jacket", "Master's Rune"}
 
 

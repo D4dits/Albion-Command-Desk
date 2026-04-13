@@ -78,40 +78,6 @@ def _sample_events_with_silver() -> list[LootEvent]:
     ]
 
 
-def _sample_events_with_silver_outlier() -> list[LootEvent]:
-    events: list[LootEvent] = []
-    for idx in range(12):
-        events.append(
-            LootEvent(
-                timestamp=3600.0 - idx,
-                looted_by=LootPlayer(player_name=f"Player{idx}"),
-                looted_from=None,
-                source_name=None,
-                source_kind="silver",
-                item=LootItemRef(item_num_id=None, unique_name="SILVER", display_name="Silver"),
-                quantity=300000 + (idx * 1000),
-                is_silver=True,
-                raw_event_code=1,
-                raw_subtype=275,
-            )
-        )
-    events.append(
-        LootEvent(
-            timestamp=3590.0,
-            looted_by=LootPlayer(player_name="Whitesupasta"),
-            looted_from=None,
-            source_name=None,
-            source_kind="silver",
-            item=LootItemRef(item_num_id=None, unique_name="SILVER", display_name="Silver"),
-            quantity=620000000,
-            is_silver=True,
-            raw_event_code=1,
-            raw_subtype=275,
-        )
-    )
-    return events
-
-
 def test_loot_state_builds_model_and_export_text() -> None:
     state = LootState(history_limit=10)
     tracker = _FakeLootTracker(_sample_events())
@@ -130,6 +96,7 @@ def test_loot_state_builds_model_and_export_text() -> None:
     assert model.data(first, model.LootedByNameRole) == "Alice"
     assert model.data(first, model.ItemNameRole) == "Journeyman's Bag"
     assert model.data(first, model.IconUrlRole).endswith("/T3_BAG?size=64")
+    assert model.data(first, model.CategoryRole) == "bag"
     assert model.data(first, model.SourceKindRole) == "player"
     assert "timestamp_utc;looted_by__alliance;looted_by__guild;looted_by__name" in state.exportText
     assert "1970-01-01T01:01:00.000Z;;;Bob;T4_POTION;Adept's Potion;1;;;@MOB_KEEPER_DRUID_CHAMPION" in state.exportText
@@ -139,6 +106,10 @@ def test_loot_state_builds_model_and_export_text() -> None:
     assert looters.data(top_looter, looters.LabelRole) == "Alice"
     items = state.topItemsModel
     assert items.rowCount() == 2
+    sources = state.topSourcesModel
+    assert sources.rowCount() == 1
+    source = sources.index(0, 0)
+    assert sources.data(source, sources.LabelRole) == "Enemy"
 
 
 def test_loot_state_filters_and_rebuilds_aggregates() -> None:
@@ -162,6 +133,16 @@ def test_loot_state_filters_and_rebuilds_aggregates() -> None:
     assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"
 
     state.setSourceFilter("mob")
+    assert state.eventCount == 1
+    assert state.latestLootSummary == "Bob looted 1x Adept's Potion from @MOB_KEEPER_DRUID_CHAMPION"
+
+    state.setSourceFilter("all")
+    state.setLooterFilter("Alice")
+    assert state.eventCount == 1
+    assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"
+
+    state.setLooterFilter("all")
+    state.setCategoryFilter("consumable")
     assert state.eventCount == 1
     assert state.latestLootSummary == "Bob looted 1x Adept's Potion from @MOB_KEEPER_DRUID_CHAMPION"
 
@@ -218,30 +199,25 @@ def test_loot_state_copy_and_export_actions(monkeypatch) -> None:
     assert "Adept's Potion" in payload
 
 
-def test_loot_state_splits_items_and_silver_views() -> None:
+def test_loot_state_keeps_loot_view_item_only() -> None:
     state = LootState(history_limit=10)
     tracker = _FakeLootTracker(_sample_events_with_silver())
 
     state.update_from_tracker(tracker)
 
-    assert state.eventCount == 3
+    assert state.eventCount == 2
     assert state.itemEventCount == 2
     assert state.itemTotalQuantity == 3
-    assert state.silverEventCount == 1
-    assert state.silverTotalQuantity == 1500
-    assert state.kindFilterOptions == ["all", "items", "silver"]
-    assert state.topSilverLootersModel.rowCount() == 1
+    assert state.silverEventCount == 0
+    assert state.silverTotalQuantity == 0
+    assert state.kindFilter == "items"
+    assert state.kindFilterOptions == ["items"]
+    assert state.sourceFilterOptions == ["all", "player", "mob", "system"]
+    assert state.looterFilterOptions == ["all", "Alice", "Bob"]
+    assert state.topSilverLootersModel.rowCount() == 0
+    assert "SILVER;Silver;1500" not in state.exportText
 
     state.setKindFilter("silver")
-
-    assert state.eventCount == 1
-    assert state.totalQuantity == 1500
-    assert state.uniqueItems == 0
-    assert state.latestLootSummary == "Alice looted 1500 Silver"
-    assert "SILVER;Silver;1500" in state.exportText
-    assert "Journeyman's Bag" not in state.exportText
-
-    state.setKindFilter("items")
 
     assert state.eventCount == 2
     assert state.totalQuantity == 3
@@ -257,7 +233,8 @@ def test_loot_state_can_import_log_and_return_to_live(monkeypatch) -> None:
     import_path = tmp_dir / "loot-events-import.txt"
     import_path.write_text(
         "timestamp_utc;looted_by__alliance;looted_by__guild;looted_by__name;item_id;item_name;quantity;looted_from__alliance;looted_from__guild;looted_from__name\n"
-        "1970-01-01T01:02:03.000Z;;;Carol;SILVER;Silver;900;;;\n",
+        "1970-01-01T01:02:03.000Z;;;Carol;SILVER;Silver;900;;;\n"
+        "1970-01-01T01:02:04.000Z;;;Carol;T4_POTION;Adept's Potion;1;;;@MOB_KEEPER_DRUID_CHAMPION\n",
         encoding="utf-8",
     )
 
@@ -268,23 +245,12 @@ def test_loot_state_can_import_log_and_return_to_live(monkeypatch) -> None:
     assert imported == str(import_path.resolve())
     assert state.importedLogActive is True
     assert state.eventCount == 1
-    assert state.silverEventCount == 1
-    assert state.latestLootSummary == "Carol looted 900 Silver"
+    assert state.silverEventCount == 0
+    assert state.latestLootSummary == "Carol looted 1x Adept's Potion from @MOB_KEEPER_DRUID_CHAMPION"
+    assert "SILVER;Silver;900" not in state.exportText
 
     state.useLiveLog()
 
     assert state.importedLogActive is False
     assert state.eventCount == 2
     assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"
-
-
-def test_loot_state_filters_suspicious_silver_outliers_from_aggregates() -> None:
-    state = LootState(history_limit=30)
-    tracker = _FakeLootTracker(_sample_events_with_silver_outlier())
-
-    state.update_from_tracker(tracker)
-
-    assert state.silverEventCount == 12
-    assert state.eventCount == 12
-    assert state.totalQuantity < 10_000_000
-    assert "Whitesupasta" not in state.exportText

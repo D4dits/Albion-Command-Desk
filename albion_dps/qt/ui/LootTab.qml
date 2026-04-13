@@ -22,12 +22,17 @@ Item {
     property string logDirectoryUrl: ""
     property string searchQuery: ""
     property string sourceFilter: "all"
+    property string looterFilter: "all"
+    property string categoryFilter: "all"
     property string kindFilter: "all"
-    property var sourceFilterOptions: ["all", "player", "mob", "silver", "system"]
-    property var kindFilterOptions: ["all", "items", "silver"]
+    property var sourceFilterOptions: ["all", "player", "mob", "system"]
+    property var looterFilterOptions: ["all"]
+    property var categoryFilterOptions: ["all", "weapon", "armor", "bag", "cape", "mount", "consumable", "resource", "artifact", "other"]
+    property var kindFilterOptions: ["items"]
     property var eventsModel: null
     property var topLootersModel: null
     property var topItemsModel: null
+    property var topSourcesModel: null
     property var topSilverLootersModel: null
     property bool stackedControls: width < 1140
     property bool stackedSummary: width < 920
@@ -39,6 +44,8 @@ Item {
 
     signal setSearchQuery(string value)
     signal setSourceFilter(string value)
+    signal setLooterFilter(string value)
+    signal setCategoryFilter(string value)
     signal setKindFilter(string value)
     signal copyLatestSummary()
     signal copyCurrentView()
@@ -66,13 +73,20 @@ Item {
     }
 
     function kindLabel(value) {
-        if (value === "items") {
-            return "Items"
-        }
-        if (value === "silver") {
-            return "Silver"
-        }
-        return "All"
+        return categoryLabel(value)
+    }
+
+    function categoryLabel(value) {
+        if (value === "all") return "All items"
+        if (value === "weapon") return "Weapons"
+        if (value === "armor") return "Armor"
+        if (value === "bag") return "Bags"
+        if (value === "cape") return "Capes"
+        if (value === "mount") return "Mounts"
+        if (value === "consumable") return "Consumables"
+        if (value === "resource") return "Resources"
+        if (value === "artifact") return "Artifacts"
+        return "Other"
     }
 
     function sourceLabel(value) {
@@ -83,16 +97,59 @@ Item {
         return text.charAt(0).toUpperCase() + text.slice(1)
     }
 
-    function lootKindBadgeBg(isSilverValue) {
-        return isSilverValue ? theme.stateWarningBg : theme.stateSuccessBg
+    function categoryBadgeBg(category, sourceKindValue) {
+        if (sourceKindValue === "player") {
+            return theme.stateDangerBg
+        }
+        if (category === "resource" || category === "consumable") {
+            return theme.stateWarningBg
+        }
+        return theme.stateSuccessBg
     }
 
-    function lootKindBadgeBorder(isSilverValue) {
-        return isSilverValue ? theme.stateWarning : theme.stateSuccess
+    function categoryBadgeBorder(category, sourceKindValue) {
+        if (sourceKindValue === "player") {
+            return theme.stateDanger
+        }
+        if (category === "resource" || category === "consumable") {
+            return theme.stateWarning
+        }
+        return theme.stateSuccess
     }
 
-    function lootKindBadgeText(isSilverValue) {
-        return isSilverValue ? theme.stateWarning : theme.stateSuccess
+    function categoryBadgeText(category, sourceKindValue) {
+        if (sourceKindValue === "player") {
+            return theme.stateDanger
+        }
+        if (category === "resource" || category === "consumable") {
+            return theme.stateWarning
+        }
+        return theme.stateSuccess
+    }
+
+    function categoryBadgeLabel(category) {
+        if (category === "all") return "ITEM"
+        return root.categoryLabel(category).toUpperCase()
+    }
+
+    function rowBackground(sourceKindValue) {
+        if (sourceKindValue === "player") {
+            return theme.stateDangerBg
+        }
+        if (sourceKindValue === "mob") {
+            return "#171a13"
+        }
+        return theme.surfaceInteractive
+    }
+
+    function rowBorder(sourceKindValue) {
+        if (sourceKindValue === "player") {
+            return theme.stateDanger
+        }
+        if (sourceKindValue === "mob") {
+            return "#54451d"
+        }
+        return theme.borderSubtle
     }
 
     function sourceBadgeBg(kind) {
@@ -100,10 +157,7 @@ Item {
             return theme.stateWarningBg
         }
         if (kind === "player") {
-            return theme.stateInfoBg
-        }
-        if (kind === "silver") {
-            return "#33280d"
+            return theme.stateDangerBg
         }
         return theme.surfaceRaised
     }
@@ -113,10 +167,7 @@ Item {
             return theme.stateWarning
         }
         if (kind === "player") {
-            return theme.stateInfo
-        }
-        if (kind === "silver") {
-            return theme.brandWarmAccent
+            return theme.stateDanger
         }
         return theme.borderSubtle
     }
@@ -126,40 +177,28 @@ Item {
             return theme.stateWarning
         }
         if (kind === "player") {
-            return theme.stateInfo
-        }
-        if (kind === "silver") {
-            return theme.brandWarmAccent
+            return theme.stateDanger
         }
         return theme.textPrimary
     }
 
     function statCardBg(title) {
-        if (title === "Item Ev" || title === "Items") {
+        if (title === "Items" || title === "Unique") {
             return theme.stateSuccessBg
-        }
-        if (title === "Silver Ev") {
-            return theme.stateWarningBg
         }
         return theme.surfaceRaised
     }
 
     function statCardBorder(title) {
-        if (title === "Item Ev" || title === "Items") {
+        if (title === "Items" || title === "Unique") {
             return theme.stateSuccess
-        }
-        if (title === "Silver Ev") {
-            return theme.stateWarning
         }
         return theme.borderSubtle
     }
 
     function statCardValueColor(title) {
-        if (title === "Item Ev" || title === "Items") {
+        if (title === "Items" || title === "Unique") {
             return theme.stateSuccess
-        }
-        if (title === "Silver Ev") {
-            return theme.stateWarning
         }
         return theme.textPrimary
     }
@@ -203,11 +242,9 @@ Item {
                     Repeater {
                         model: [
                             { title: "Events", value: root.eventCount },
-                            { title: "Qty", value: root.totalQuantity },
+                            { title: "Items", value: root.totalQuantity },
                             { title: "Looters", value: root.uniqueLooters },
-                            { title: "Items", value: root.uniqueItems },
-                            { title: "Item Ev", value: root.itemEventCount },
-                            { title: "Silver Ev", value: root.silverEventCount }
+                            { title: "Unique", value: root.uniqueItems }
                         ]
 
                         delegate: Rectangle {
@@ -246,9 +283,10 @@ Item {
                 radius: theme.radiusLg
                 color: theme.cardLevel2
                 border.color: theme.borderStrong
-                implicitHeight: compactLayout ? 176 : 140
+                implicitHeight: filterContent.implicitHeight + 24
 
                 ColumnLayout {
+                    id: filterContent
                     anchors.fill: parent
                     anchors.margins: 12
                     spacing: 10
@@ -262,44 +300,41 @@ Item {
                             spacing: 8
 
                             Repeater {
-                                model: root.kindFilterOptions
+                                model: root.categoryFilterOptions
 
                                 delegate: AppButton {
-                                    text: root.kindLabel(modelData)
+                                    text: root.categoryLabel(modelData)
                                     compact: true
                                     checkable: true
-                                    checked: root.kindFilter === String(modelData)
+                                    checked: root.categoryFilter === String(modelData)
                                     variant: checked ? "primary" : "secondary"
-                                    onClicked: root.setKindFilter(String(modelData))
+                                    onClicked: root.setCategoryFilter(String(modelData))
                                 }
                             }
-                        }
-
-                        Text {
-                            text: "Item qty: " + root.cardValue(root.itemTotalQuantity)
-                            color: theme.textMuted
-                            font.pixelSize: 11
-                        }
-
-                        Text {
-                            text: "Silver qty: " + root.cardValue(root.silverTotalQuantity)
-                            color: theme.textMuted
-                            font.pixelSize: 11
                         }
                     }
 
                     GridLayout {
                         Layout.fillWidth: true
-                        columns: root.stackedControls ? 1 : 3
+                        columns: root.stackedControls ? 1 : 4
                         columnSpacing: 10
                         rowSpacing: 10
 
                         AppTextField {
                             Layout.fillWidth: true
                             Layout.columnSpan: root.stackedControls ? 1 : 2
-                            placeholderText: "Search looter, item, source..."
+                            placeholderText: "Search item, looter, victim, guild..."
                             text: root.searchQuery
                             onTextEdited: root.setSearchQuery(text)
+                        }
+
+                        AppComboBox {
+                            Layout.fillWidth: true
+                            model: root.looterFilterOptions
+                            currentIndex: Math.max(0, model.indexOf(root.looterFilter))
+                            onActivated: function(index) {
+                                root.setLooterFilter(String(model[index]))
+                            }
                         }
 
                         AppComboBox {
@@ -308,6 +343,45 @@ Item {
                             currentIndex: Math.max(0, model.indexOf(root.sourceFilter))
                             onActivated: function(index) {
                                 root.setSourceFilter(String(model[index]))
+                            }
+                        }
+                    }
+
+                    Flow {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        Rectangle {
+                            radius: 9
+                            color: theme.stateDangerBg
+                            border.color: theme.stateDanger
+                            implicitHeight: 20
+                            implicitWidth: corpseLegend.implicitWidth + 14
+
+                            Text {
+                                id: corpseLegend
+                                anchors.centerIn: parent
+                                text: "red = looted from player corpse"
+                                color: theme.stateDanger
+                                font.pixelSize: 10
+                                font.bold: true
+                            }
+                        }
+
+                        Rectangle {
+                            radius: 9
+                            color: theme.stateWarningBg
+                            border.color: theme.stateWarning
+                            implicitHeight: 20
+                            implicitWidth: mobLegend.implicitWidth + 14
+
+                            Text {
+                                id: mobLegend
+                                anchors.centerIn: parent
+                                text: "yellow = mob/container"
+                                color: theme.stateWarning
+                                font.pixelSize: 10
+                                font.bold: true
                             }
                         }
                     }
@@ -426,6 +500,18 @@ Item {
                                 color: theme.textMuted
                                 font.pixelSize: 11
                             }
+
+                            Text {
+                                text: root.looterFilter === "all" ? "All looters" : root.looterFilter
+                                color: theme.textMuted
+                                font.pixelSize: 11
+                            }
+
+                            Text {
+                                text: root.categoryLabel(root.categoryFilter)
+                                color: theme.textMuted
+                                font.pixelSize: 11
+                            }
                         }
 
                         RowLayout {
@@ -465,6 +551,7 @@ Item {
                                     required property string itemName
                                     required property string itemId
                                     required property string iconUrl
+                                    required property string category
                                     required property int quantity
                                     required property string sourceName
                                     required property string sourceKind
@@ -473,8 +560,8 @@ Item {
 
                                     width: lootList.width
                                     radius: theme.radiusLg
-                                    color: isSilver ? "#171d12" : theme.surfaceInteractive
-                                    border.color: isSilver ? "#4f431f" : theme.borderSubtle
+                                    color: root.rowBackground(sourceKind)
+                                    border.color: root.rowBorder(sourceKind)
                                     border.width: 1
                                     implicitHeight: compactLayout ? 68 : 72
 
@@ -534,7 +621,7 @@ Item {
                                                     Text {
                                                         Layout.fillWidth: true
                                                         text: itemName
-                                                        color: isSilver ? theme.brandWarmAccent : theme.textPrimary
+                                                        color: sourceKind === "player" ? theme.stateDanger : theme.textPrimary
                                                         font.pixelSize: 12
                                                         font.bold: true
                                                         elide: Text.ElideRight
@@ -542,16 +629,16 @@ Item {
 
                                                     Rectangle {
                                                         radius: 9
-                                                        color: root.lootKindBadgeBg(isSilver)
-                                                        border.color: root.lootKindBadgeBorder(isSilver)
+                                                        color: root.categoryBadgeBg(category, sourceKind)
+                                                        border.color: root.categoryBadgeBorder(category, sourceKind)
                                                         implicitHeight: 20
                                                         implicitWidth: kindBadgeText.implicitWidth + 14
 
                                                         Text {
                                                             id: kindBadgeText
                                                             anchors.centerIn: parent
-                                                            text: isSilver ? "SILVER" : "ITEM"
-                                                            color: root.lootKindBadgeText(isSilver)
+                                                            text: root.categoryBadgeLabel(category)
+                                                            color: root.categoryBadgeText(category, sourceKind)
                                                             font.pixelSize: 9
                                                             font.bold: true
                                                         }
@@ -567,8 +654,8 @@ Item {
                                                 }
                                             }
                                             Text {
-                                                text: isSilver ? String(quantity) : (String(quantity) + "x")
-                                                color: isSilver ? theme.brandWarmAccent : theme.textPrimary
+                                                text: String(quantity) + "x"
+                                                color: sourceKind === "player" ? theme.stateDanger : theme.textPrimary
                                                 font.pixelSize: 11
                                                 font.bold: true
                                                 horizontalAlignment: Text.AlignRight
@@ -584,7 +671,9 @@ Item {
 
                                                 Text {
                                                     anchors.centerIn: parent
-                                                    text: sourceKind === "silver" ? "Silver" : (sourceName.length > 0 ? sourceName : "System")
+                                                    text: sourceKind === "player"
+                                                        ? ("Corpse: " + (sourceName.length > 0 ? sourceName : "player"))
+                                                        : (sourceName.length > 0 ? sourceName : "System")
                                                     color: root.sourceBadgeText(sourceKind)
                                                     font.pixelSize: 10
                                                     elide: Text.ElideRight
@@ -619,9 +708,7 @@ Item {
 
                                     Text {
                                         anchors.horizontalCenter: parent.horizontalCenter
-                                        text: root.kindFilter === "silver"
-                                            ? "No silver events in this view"
-                                            : (root.kindFilter === "items" ? "No item drops in this view" : "No loot events in this view")
+                                        text: "No item drops in this view"
                                         color: theme.textSecondary
                                         font.pixelSize: 18
                                         font.bold: true
@@ -669,11 +756,10 @@ Item {
                     LootSummaryPanel {
                         Layout.fillWidth: true
                         theme: root.theme
-                        title: "Top Silver"
-                        emptyText: "No silver events in this view"
-                        accentMode: "silver"
-                        valueSuffix: ""
-                        model: root.topSilverLootersModel
+                        title: "Looted From Players"
+                        emptyText: "No player corpses in this view"
+                        accentMode: "danger"
+                        model: root.topSourcesModel
                     }
                 }
             }

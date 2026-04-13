@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 from pathlib import Path
-from statistics import median
 from typing import Any
 
 from PySide6.QtCore import (
@@ -31,6 +30,7 @@ class LootRow:
     item_id: str
     item_name: str
     icon_url: str
+    category: str
     quantity: int
     source_name: str
     source_kind: str
@@ -55,11 +55,12 @@ class LootEventsModel(QAbstractListModel):
     ItemIdRole = Qt.UserRole + 5
     ItemNameRole = Qt.UserRole + 6
     IconUrlRole = Qt.UserRole + 7
-    QuantityRole = Qt.UserRole + 8
-    SourceNameRole = Qt.UserRole + 9
-    SourceKindRole = Qt.UserRole + 10
-    IsSilverRole = Qt.UserRole + 11
-    SummaryRole = Qt.UserRole + 12
+    CategoryRole = Qt.UserRole + 8
+    QuantityRole = Qt.UserRole + 9
+    SourceNameRole = Qt.UserRole + 10
+    SourceKindRole = Qt.UserRole + 11
+    IsSilverRole = Qt.UserRole + 12
+    SummaryRole = Qt.UserRole + 13
 
     def __init__(self) -> None:
         super().__init__()
@@ -89,6 +90,8 @@ class LootEventsModel(QAbstractListModel):
             return item.item_name
         if role == self.IconUrlRole:
             return item.icon_url
+        if role == self.CategoryRole:
+            return item.category
         if role == self.QuantityRole:
             return item.quantity
         if role == self.SourceNameRole:
@@ -110,6 +113,7 @@ class LootEventsModel(QAbstractListModel):
             self.ItemIdRole: b"itemId",
             self.ItemNameRole: b"itemName",
             self.IconUrlRole: b"iconUrl",
+            self.CategoryRole: b"category",
             self.QuantityRole: b"quantity",
             self.SourceNameRole: b"sourceName",
             self.SourceKindRole: b"sourceKind",
@@ -184,13 +188,29 @@ class LootState(QObject):
         self._events_model = LootEventsModel()
         self._top_looters_model = LootAggregateModel()
         self._top_items_model = LootAggregateModel()
+        self._top_sources_model = LootAggregateModel()
         self._top_silver_looters_model = LootAggregateModel()
         self._live_events: list[LootEvent] = []
         self._imported_events: list[LootEvent] | None = None
         self._all_events: list[LootEvent] = []
         self._search_query = ""
         self._source_filter = "all"
-        self._kind_filter = "all"
+        self._looter_filter = "all"
+        self._category_filter = "all"
+        self._kind_filter = "items"
+        self._looter_filter_options: list[str] = ["all"]
+        self._category_filter_options: list[str] = [
+            "all",
+            "weapon",
+            "armor",
+            "bag",
+            "cape",
+            "mount",
+            "consumable",
+            "resource",
+            "artifact",
+            "other",
+        ]
         self._event_count = 0
         self._total_quantity = 0
         self._item_event_count = 0
@@ -216,6 +236,10 @@ class LootState(QObject):
     @Property(QObject, constant=True)
     def topItemsModel(self) -> LootAggregateModel:
         return self._top_items_model
+
+    @Property(QObject, constant=True)
+    def topSourcesModel(self) -> LootAggregateModel:
+        return self._top_sources_model
 
     @Property(QObject, constant=True)
     def topSilverLootersModel(self) -> LootAggregateModel:
@@ -287,16 +311,32 @@ class LootState(QObject):
         return self._source_filter
 
     @Property(str, notify=changed)
+    def looterFilter(self) -> str:
+        return self._looter_filter
+
+    @Property(str, notify=changed)
+    def categoryFilter(self) -> str:
+        return self._category_filter
+
+    @Property(str, notify=changed)
     def kindFilter(self) -> str:
         return self._kind_filter
 
     @Property("QVariantList", constant=True)
     def sourceFilterOptions(self) -> list[str]:
-        return ["all", "player", "mob", "silver", "system"]
+        return ["all", "player", "mob", "system"]
 
     @Property("QVariantList", constant=True)
     def kindFilterOptions(self) -> list[str]:
-        return ["all", "items", "silver"]
+        return ["items"]
+
+    @Property("QVariantList", notify=changed)
+    def looterFilterOptions(self) -> list[str]:
+        return list(self._looter_filter_options)
+
+    @Property("QVariantList", notify=changed)
+    def categoryFilterOptions(self) -> list[str]:
+        return list(self._category_filter_options)
 
     def set_log_path(self, value: str) -> None:
         next_value = str(value or "")
@@ -318,27 +358,45 @@ class LootState(QObject):
         if next_value == self._search_query:
             return
         self._search_query = next_value
-        self._refresh_models()
+        self._refresh_models(force_changed=True)
 
     @Slot(str)
     def setSourceFilter(self, value: str) -> None:
         next_value = str(value or "all").strip().lower() or "all"
-        if next_value not in {"all", "player", "mob", "silver", "system"}:
+        if next_value not in {"all", "player", "mob", "system"}:
             next_value = "all"
         if next_value == self._source_filter:
             return
         self._source_filter = next_value
-        self._refresh_models()
+        self._refresh_models(force_changed=True)
+
+    @Slot(str)
+    def setLooterFilter(self, value: str) -> None:
+        next_value = str(value or "all").strip() or "all"
+        if next_value not in self._looter_filter_options:
+            next_value = "all"
+        if next_value == self._looter_filter:
+            return
+        self._looter_filter = next_value
+        self._refresh_models(force_changed=True)
+
+    @Slot(str)
+    def setCategoryFilter(self, value: str) -> None:
+        next_value = str(value or "all").strip().lower() or "all"
+        if next_value not in self._category_filter_options:
+            next_value = "all"
+        if next_value == self._category_filter:
+            return
+        self._category_filter = next_value
+        self._refresh_models(force_changed=True)
 
     @Slot(str)
     def setKindFilter(self, value: str) -> None:
-        next_value = str(value or "all").strip().lower() or "all"
-        if next_value not in {"all", "items", "silver"}:
-            next_value = "all"
+        next_value = "items"
         if next_value == self._kind_filter:
             return
         self._kind_filter = next_value
-        self._refresh_models()
+        self._refresh_models(force_changed=True)
 
     @Slot(result=bool)
     def copyLatestSummary(self) -> bool:
@@ -405,24 +463,27 @@ class LootState(QObject):
         self._all_events = list(self._live_events)
         self._refresh_models()
 
-    def _refresh_models(self) -> None:
-        visible_events = _filter_suspicious_silver_events(self._all_events)
+    def _refresh_models(self, *, force_changed: bool = False) -> None:
+        visible_events = [event for event in self._all_events if not event.is_silver]
+        looter_options = _build_looter_options(visible_events)
+        if self._looter_filter not in looter_options:
+            self._looter_filter = "all"
         base_events = _filter_events(
             visible_events,
             search_query=self._search_query,
             source_filter=self._source_filter,
+            looter_filter=self._looter_filter,
+            category_filter=self._category_filter,
         )
         item_events = [event for event in base_events if not event.is_silver]
-        silver_events = [event for event in base_events if event.is_silver]
-        filtered_events = _filter_events_by_kind(base_events, kind_filter=self._kind_filter)
+        filtered_events = list(item_events)
         rows = [_loot_event_to_row(event) for event in filtered_events]
         item_rows = [_loot_event_to_row(event) for event in item_events]
-        silver_rows = [_loot_event_to_row(event) for event in silver_events]
         export_text = loot_events_to_txt(list(reversed(filtered_events)))
         latest_summary = rows[0].summary if rows else ""
         total_quantity = sum(row.quantity for row in rows)
         item_total_quantity = sum(row.quantity for row in item_rows)
-        silver_total_quantity = sum(row.quantity for row in silver_rows)
+        silver_total_quantity = 0
         unique_looters = len({row.looted_by_name for row in rows if row.looted_by_name})
         unique_items = len(
             {
@@ -433,30 +494,34 @@ class LootState(QObject):
         )
         top_looters = _build_top_looters(rows)
         top_items = _build_top_items(item_rows)
-        top_silver_looters = _build_top_looters(silver_rows)
-        changed = (
+        top_sources = _build_top_sources(rows)
+        top_silver_looters: list[LootAggregateRow] = []
+        changed = force_changed or (
             self._event_count != len(rows)
             or self._latest_summary != latest_summary
             or self._export_text != export_text
             or self._total_quantity != total_quantity
             or self._item_event_count != len(item_rows)
             or self._item_total_quantity != item_total_quantity
-            or self._silver_event_count != len(silver_rows)
+            or self._silver_event_count != 0
             or self._silver_total_quantity != silver_total_quantity
             or self._unique_looters != unique_looters
             or self._unique_items != unique_items
+            or self._looter_filter_options != looter_options
         )
         self._events_model.set_items(rows)
         self._top_looters_model.set_items(top_looters)
         self._top_items_model.set_items(top_items)
+        self._top_sources_model.set_items(top_sources)
         self._top_silver_looters_model.set_items(top_silver_looters)
+        self._looter_filter_options = looter_options
         self._event_count = len(rows)
         self._latest_summary = latest_summary
         self._export_text = export_text
         self._total_quantity = total_quantity
         self._item_event_count = len(item_rows)
         self._item_total_quantity = item_total_quantity
-        self._silver_event_count = len(silver_rows)
+        self._silver_event_count = 0
         self._silver_total_quantity = silver_total_quantity
         self._unique_looters = unique_looters
         self._unique_items = unique_items
@@ -627,11 +692,24 @@ def _filter_events(
     *,
     search_query: str,
     source_filter: str,
+    looter_filter: str,
+    category_filter: str,
 ) -> list[LootEvent]:
     query = search_query.strip().lower()
+    looter = str(looter_filter or "all").strip()
+    category = str(category_filter or "all").strip().lower()
     filtered: list[LootEvent] = []
     for event in events:
+        if event.is_silver:
+            continue
         if source_filter != "all" and event.source_kind != source_filter:
+            continue
+        if looter != "all" and event.looted_by.player_name != looter:
+            continue
+        event_category = _item_category(
+            event.item.unique_name if event.item is not None and event.item.unique_name else ""
+        )
+        if category != "all" and event_category != category:
             continue
         if query:
             haystack = " ".join(
@@ -653,11 +731,19 @@ def _filter_events(
 
 
 def _filter_events_by_kind(events: list[LootEvent], *, kind_filter: str) -> list[LootEvent]:
-    if kind_filter == "items":
-        return [event for event in events if not event.is_silver]
-    if kind_filter == "silver":
-        return [event for event in events if event.is_silver]
-    return list(events)
+    return [event for event in events if not event.is_silver]
+
+
+def _build_looter_options(events: list[LootEvent]) -> list[str]:
+    names = sorted(
+        {
+            event.looted_by.player_name
+            for event in events
+            if not event.is_silver and event.looted_by.player_name
+        },
+        key=str.lower,
+    )
+    return ["all", *names]
 
 
 def _build_top_looters(rows: list[LootRow]) -> list[LootAggregateRow]:
@@ -716,6 +802,33 @@ def _build_top_items(rows: list[LootRow]) -> list[LootAggregateRow]:
     ]
 
 
+def _build_top_sources(rows: list[LootRow]) -> list[LootAggregateRow]:
+    stats: dict[str, dict[str, int | str]] = {}
+    for row in rows:
+        if row.source_kind != "player" or not row.source_name:
+            continue
+        entry = stats.setdefault(
+            row.source_name,
+            {"quantity": 0, "events": 0, "sublabel": "looted from player"},
+        )
+        entry["quantity"] = int(entry["quantity"]) + row.quantity
+        entry["events"] = int(entry["events"]) + 1
+    ordered = sorted(
+        stats.items(),
+        key=lambda item: (-int(item[1]["events"]), -int(item[1]["quantity"]), item[0].lower()),
+    )
+    return [
+        LootAggregateRow(
+            label=name,
+            sublabel=str(values["sublabel"]),
+            icon_url="",
+            quantity=int(values["quantity"]),
+            event_count=int(values["events"]),
+        )
+        for name, values in ordered[:10]
+    ]
+
+
 def _loot_event_to_row(event: LootEvent) -> LootRow:
     item_name = ""
     item_id = ""
@@ -733,6 +846,7 @@ def _loot_event_to_row(event: LootEvent) -> LootRow:
         item_id=item_id,
         item_name=item_name,
         icon_url=_loot_icon_url(item_id),
+        category=_item_category(item_id),
         quantity=int(event.quantity),
         source_name=source_name,
         source_kind=event.source_kind,
@@ -770,17 +884,45 @@ def _loot_icon_url(item_id: str) -> str:
     return f"{base.rstrip('/')}/{unique}?size=64"
 
 
-def _filter_suspicious_silver_events(events: list[LootEvent]) -> list[LootEvent]:
-    silver_quantities = [int(event.quantity) for event in events if event.is_silver and int(event.quantity) > 0]
-    if len(silver_quantities) < 10:
-        return list(events)
-    baseline = int(median(silver_quantities))
-    threshold = max(5_000_000, baseline * 20)
-    return [
-        event
-        for event in events
-        if not (
-            event.is_silver
-            and int(event.quantity) > threshold
+def _item_category(item_id: str) -> str:
+    unique = str(item_id or "").upper()
+    if not unique:
+        return "other"
+    if "ARTEFACT" in unique:
+        return "artifact"
+    if "_BAG" in unique or unique.endswith("BAG"):
+        return "bag"
+    if "_CAPE" in unique or unique.endswith("CAPE"):
+        return "cape"
+    if "MOUNT" in unique or "RIDING" in unique:
+        return "mount"
+    if "POTION" in unique or "MEAL" in unique or "FISH" in unique or "FOOD" in unique:
+        return "consumable"
+    if any(
+        token in unique
+        for token in ("METALBAR", "PLANKS", "LEATHER", "CLOTH", "ORE", "WOOD", "FIBER", "ROCK", "HIDE")
+    ):
+        return "resource"
+    if any(token in unique for token in ("HEAD_", "ARMOR_", "SHOES_", "_HEAD_", "_ARMOR_", "_SHOES_")):
+        return "armor"
+    if any(
+        token in unique
+        for token in (
+            "SWORD",
+            "BOW",
+            "STAFF",
+            "DAGGER",
+            "AXE",
+            "MACE",
+            "HAMMER",
+            "SPEAR",
+            "CROSSBOW",
+            "KNUCKLES",
+            "ORB",
+            "TOTEM",
+            "SHIELD",
+            "BOOK",
         )
-    ]
+    ):
+        return "weapon"
+    return "other"

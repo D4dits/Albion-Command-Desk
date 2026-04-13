@@ -69,7 +69,7 @@ def run_qt(args: argparse.Namespace) -> int:
     loot_tracker = LootTracker(
         item_resolver=item_resolver,
         party_registry=party,
-        include_silver=True,
+        include_silver=False,
     )
     map_resolver = load_map_resolver(logger=logging.getLogger(__name__))
     meter.map_lookup = map_resolver.name_for_index
