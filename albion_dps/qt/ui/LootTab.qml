@@ -210,14 +210,18 @@ Item {
         border.color: theme.borderStrong
         clip: true
 
-        ColumnLayout {
+        ScrollView {
             anchors.fill: parent
             anchors.margins: theme.spacingSection
-            spacing: theme.spacingSection
+            clip: true
+
+            ColumnLayout {
+                width: Math.max(parent.width, implicitWidth)
+                spacing: 10
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 6
+                spacing: 5
 
                 Text {
                     text: "Loot"
@@ -236,7 +240,7 @@ Item {
                     wrapMode: Text.Wrap
                 }
 
-                Flow {
+                RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
 
@@ -249,32 +253,36 @@ Item {
                         ]
 
                         delegate: Rectangle {
-                            width: compactLayout ? 86 : 92
-                            height: 44
-                            radius: theme.radiusLg
+                            Layout.preferredWidth: compactLayout ? 78 : 92
+                            Layout.preferredHeight: 28
+                            radius: 8
                             color: root.statCardBg(modelData.title)
                             border.color: root.statCardBorder(modelData.title)
 
-                            Column {
+                            Row {
                                 anchors.centerIn: parent
-                                spacing: 2
+                                spacing: 5
 
                                 Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
                                     text: root.cardValue(modelData.value)
                                     color: root.statCardValueColor(modelData.title)
-                                    font.pixelSize: 15
+                                    font.pixelSize: 13
                                     font.bold: true
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
                                 Text {
-                                    anchors.horizontalCenter: parent.horizontalCenter
                                     text: modelData.title
                                     color: theme.textMuted
-                                    font.pixelSize: 10
+                                    font.pixelSize: 9
                                     font.letterSpacing: 0.4
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
                             }
                         }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
                     }
                 }
             }
@@ -450,13 +458,11 @@ Item {
 
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
                 spacing: 10
 
                 Rectangle {
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.minimumHeight: compactLayout ? 240 : 320
+                    Layout.preferredHeight: compactLayout ? 220 : 250
                     radius: theme.radiusLg
                     color: theme.surfacePanel
                     border.color: theme.borderStrong
@@ -539,7 +545,6 @@ Item {
                         Item {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            Layout.minimumHeight: compactLayout ? 180 : 240
                             clip: true
 
                             ListView {
@@ -736,12 +741,14 @@ Item {
                 GridLayout {
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
+                    Layout.bottomMargin: 2
                     columns: root.aggregateColumns
                     columnSpacing: theme.spacingSection
                     rowSpacing: theme.spacingSection
 
                     LootSummaryPanel {
                         Layout.fillWidth: true
+                        Layout.preferredHeight: compactLayout ? 132 : 146
                         theme: root.theme
                         title: "Top Looters"
                         emptyText: "No looters in this view"
@@ -751,6 +758,7 @@ Item {
 
                     LootSummaryPanel {
                         Layout.fillWidth: true
+                        Layout.preferredHeight: compactLayout ? 132 : 146
                         theme: root.theme
                         title: "Top Items"
                         emptyText: "No item drops in this view"
@@ -760,6 +768,7 @@ Item {
 
                     LootSummaryPanel {
                         Layout.fillWidth: true
+                        Layout.preferredHeight: compactLayout ? 132 : 146
                         theme: root.theme
                         title: "Looted From Players"
                         emptyText: "No player corpses in this view"
@@ -768,6 +777,7 @@ Item {
                     }
                 }
             }
+        }
         }
     }
 }
