@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from albion_dps.domain.item_resolver import ItemResolver
 from albion_dps.domain.party_registry import PartyRegistry
@@ -31,6 +31,7 @@ EV_DETACH_ITEM_CONTAINER = 100
 EV_CHARACTER_STATS = 143
 EV_OTHER_GRABBED_LOOT = 275
 OP_INVENTORY_MOVE_ITEM = 30
+OP_INVENTORY_MOVE_ITEMS = 39
 
 LOOT_OBJECT_SUBTYPES = {
     EV_NEW_SIMPLE_ITEM,
@@ -103,13 +104,19 @@ class LootTracker:
         except Protocol16Error:
             return
         operation_code = request.parameters.get(253, request.code)
-        if operation_code != OP_INVENTORY_MOVE_ITEM:
+        if operation_code == OP_INVENTORY_MOVE_ITEM:
+            self._observe_inventory_move_item(
+                request.parameters,
+                timestamp=timestamp,
+                raw_operation_code=int(operation_code),
+            )
             return
-        self._observe_inventory_move_item(
-            request.parameters,
-            timestamp=timestamp,
-            raw_operation_code=int(operation_code),
-        )
+        if operation_code == OP_INVENTORY_MOVE_ITEMS:
+            self._observe_inventory_move_items(
+                request.parameters,
+                timestamp=timestamp,
+                raw_operation_code=int(operation_code),
+            )
 
     def events(self, limit: int | None = None) -> list[LootEvent]:
         items = list(reversed(self._events))
@@ -282,6 +289,66 @@ class LootTracker:
         if len(self._events) > self.history_limit:
             self._events = self._events[-self.history_limit :]
 
+    def _observe_inventory_move_items(
+        self,
+        parameters: dict[int, object],
+        *,
+        timestamp: float,
+        raw_operation_code: int,
+    ) -> None:
+        from_uuid = _normalize_uuid(parameters.get(0))
+        to_uuid = _normalize_uuid(parameters.get(2))
+        if not from_uuid or not to_uuid or from_uuid == to_uuid:
+            return
+        container = self._containers_by_uuid.get(from_uuid)
+        if container is None:
+            return
+
+        object_ids = _coerce_int_list(parameters.get(4))
+        quantities = _coerce_int_list(parameters.get(5))
+        if not object_ids:
+            return
+
+        looted_by = self._upsert_player(self._local_looter_name())
+        source_name = container.owner_name or "Loot Chest"
+        source_kind = (
+            _classify_source_kind(container.owner_name)
+            if container.owner_name
+            else "system"
+        )
+        looted_from = None
+        if source_kind == "player":
+            looted_from = self._upsert_player(source_name)
+
+        moved_ids: list[int] = []
+        for index, object_id in enumerate(object_ids):
+            loot = container.items.get(object_id) or self._loot_objects.get(object_id)
+            if loot is None:
+                continue
+            quantity = quantities[index] if index < len(quantities) else loot.quantity
+            if not isinstance(quantity, int) or quantity <= 0:
+                continue
+            self._events.append(
+                LootEvent(
+                    timestamp=float(timestamp),
+                    looted_by=looted_by,
+                    looted_from=looted_from,
+                    source_name=source_name,
+                    source_kind=source_kind,
+                    item=loot.item,
+                    quantity=int(quantity),
+                    is_silver=False,
+                    raw_event_code=int(raw_operation_code),
+                    raw_subtype=int(raw_operation_code),
+                )
+            )
+            moved_ids.append(object_id)
+
+        for object_id in moved_ids:
+            self._remove_loot_from_container(container, object_id)
+        if len(self._events) > self.history_limit:
+            self._events = self._events[-self.history_limit :]
+
     def _remove_loot_from_container(self, container: LootContainer, object_id: int) -> None:
         container.items.pop(object_id, None)
         container.slot_items = {
@@ -372,8 +439,21 @@ class LootTracker:
         if self.party_registry is not None:
             self_name = self.party_registry.self_name()
             if self_name:
+                self._rename_local_looter(self_name)
                 return self_name
         return "You"
+
+    def _rename_local_looter(self, player_name: str) -> None:
+        if "You" not in self._players:
+            return
+        looted_by = self._upsert_player(player_name)
+        self._events = [
+            replace(event, looted_by=looted_by)
+            if event.looted_by.player_name == "You"
+            else event
+            for event in self._events
+        ]
+        self._players.pop("You", None)
 
     def _upsert_player(
         self,

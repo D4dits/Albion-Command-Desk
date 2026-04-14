@@ -66,6 +66,7 @@ def _pcap_loot_summary(name: str) -> dict[str, object]:
         ("albion_combat_54_group_camps.pcap", 2),
         ("albion_combat_55_group_camps.pcap", 3),
         ("albion_combat_56_nowy.pcap", 1),
+        ("albion_combat_57_nowy_grupa_roaming.pcap", 147),
     ],
 )
 def test_loot_pcaps_match_expected_item_counts(
@@ -95,3 +96,16 @@ def test_loot_pcaps_keep_expected_item_samples() -> None:
     assert summary54["item_names"] == {"Rotten Chocolate Egg", "Chocolate"}
     assert summary55["item_names"] == {"Chocolate"}
     assert summary56["item_names"] == {"Rotten Chocolate Egg"}
+
+
+def test_loot_pcap57_tracks_bulk_chest_moves() -> None:
+    summary = _pcap_loot_summary("albion_combat_57_nowy_grupa_roaming.pcap")
+
+    assert summary["total"] == 147
+    assert summary["looters"] == 1
+    assert {
+        "Novice's Bag of Silver",
+        "Expert's Soul",
+        "Adept's Avalonian Shard",
+        "Rotten Chocolate Egg",
+    }.issubset(summary["item_names"])

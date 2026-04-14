@@ -570,6 +570,8 @@ Item {
                                 clip: true
                                 spacing: 6
                                 model: root.eventsModel
+                                reuseItems: true
+                                cacheBuffer: 900
 
                                 delegate: Rectangle {
                                     required property string timestampText

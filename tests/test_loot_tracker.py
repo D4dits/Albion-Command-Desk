@@ -16,6 +16,7 @@ from albion_dps.domain.loot_tracker import (
     EV_OTHER_GRABBED_LOOT,
     LootTracker,
     OP_INVENTORY_MOVE_ITEM,
+    OP_INVENTORY_MOVE_ITEMS,
 )
 from albion_dps.models import PhotonMessage, RawPacket
 
@@ -379,6 +380,162 @@ def test_loot_tracker_uses_neutral_local_looter_when_self_name_unknown(monkeypat
     assert events[0].source_kind == "mob"
     assert events[0].item is not None
     assert events[0].item.display_name == "Rotten Chocolate Egg"
+
+
+def test_loot_tracker_renames_neutral_local_looter_when_self_name_resolves(monkeypatch) -> None:
+    party = PartyRegistry()
+    tracker = LootTracker(
+        party_registry=party,
+        item_resolver=ItemResolver(
+            index_to_unique={
+                3131: "UNIQUE_ROTTEN_CHOCOLATE_EGG",
+                3132: "UNIQUE_CHOCOLATE_EGG",
+            },
+            index_to_name={3131: "Rotten Chocolate Egg", 3132: "Chocolate Egg"},
+        ),
+    )
+
+    first_uuid = bytes.fromhex("f52922571799bd4ca728e95c7868ec6c")
+    second_uuid = bytes.fromhex("ecbf4d9ee08bfb419f6d2328364dc803")
+    inventory_uuid = bytes.fromhex("a8813ad2bf29b442900ced9b69c88034")
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_LOOT,
+        parameters={0: 184088, 3: "@MOB_T2_MOB_EVENT_EASTER_RESOURCE"},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_SIMPLE_ITEM,
+        parameters={0: 184090, 1: 3131, 2: 1},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_ATTACH_ITEM_CONTAINER,
+        parameters={0: 184088, 1: first_uuid, 3: [184090], 4: 1},
+    )
+    tracker.observe(_message())
+    monkeypatch.setattr(
+        loot_tracker_module,
+        "decode_operation_request",
+        lambda _payload: SimpleNamespace(
+            code=OP_INVENTORY_MOVE_ITEM,
+            parameters={
+                1: list(first_uuid),
+                2: 2,
+                4: list(inventory_uuid),
+                5: 2,
+                253: OP_INVENTORY_MOVE_ITEM,
+            },
+        ),
+    )
+    tracker.observe(_message(event_code=None), _packet(1.0))
+    assert tracker.events()[0].looted_by.player_name == "You"
+
+    party.set_self_name("D4dits", confirmed=True)
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_LOOT,
+        parameters={0: 184100, 3: "@MOB_T2_MOB_EVENT_EASTER_RESOURCE"},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_SIMPLE_ITEM,
+        parameters={0: 184102, 1: 3132, 2: 1},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_ATTACH_ITEM_CONTAINER,
+        parameters={0: 184100, 1: second_uuid, 3: [184102], 4: 1},
+    )
+    tracker.observe(_message())
+    monkeypatch.setattr(
+        loot_tracker_module,
+        "decode_operation_request",
+        lambda _payload: SimpleNamespace(
+            code=OP_INVENTORY_MOVE_ITEM,
+            parameters={
+                1: list(second_uuid),
+                2: 2,
+                4: list(inventory_uuid),
+                5: 2,
+                253: OP_INVENTORY_MOVE_ITEM,
+            },
+        ),
+    )
+    tracker.observe(_message(event_code=None), _packet(2.0))
+
+    assert {event.looted_by.player_name for event in tracker.events()} == {"D4dits"}
+
+
+def test_loot_tracker_records_bulk_inventory_move_from_container(monkeypatch) -> None:
+    party = PartyRegistry()
+    party.set_self_name("D4dits", confirmed=True)
+    tracker = LootTracker(
+        party_registry=party,
+        item_resolver=ItemResolver(
+            index_to_unique={514: "T1_SILVERBAG_NONTRADABLE", 1961: "T5_SOUL"},
+            index_to_name={514: "Novice's Bag of Silver", 1961: "Expert's Soul"},
+        ),
+    )
+
+    raw_uuid = bytes.fromhex("09ca252e9bd3cd40bcb9dfd04002c333")
+    inventory_uuid = bytes.fromhex("a8813ad2bf29b442900ced9b69c88034")
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_SIMPLE_ITEM,
+        parameters={0: 484464, 1: 514, 2: 28},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_SIMPLE_ITEM,
+        parameters={0: 484466, 1: 1961, 2: 23},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_ATTACH_ITEM_CONTAINER,
+        parameters={0: 483850, 1: raw_uuid, 3: [484464, 484466], 4: 2},
+    )
+    tracker.observe(_message())
+
+    monkeypatch.setattr(
+        loot_tracker_module,
+        "decode_operation_request",
+        lambda _payload: SimpleNamespace(
+            code=1,
+            parameters={
+                0: list(raw_uuid),
+                1: 2,
+                2: list(inventory_uuid),
+                3: 2,
+                4: [484464, 484466],
+                5: [28, 23],
+                253: OP_INVENTORY_MOVE_ITEMS,
+            },
+        ),
+    )
+    tracker.observe(_message(event_code=None), _packet(1776149175.528))
+
+    events = list(reversed(tracker.events()))
+    assert len(events) == 2
+    assert [event.looted_by.player_name for event in events] == ["D4dits", "D4dits"]
+    assert [event.item.display_name for event in events if event.item is not None] == [
+        "Novice's Bag of Silver",
+        "Expert's Soul",
+    ]
+    assert [event.quantity for event in events] == [28, 23]
+    assert {event.source_name for event in events} == {"Loot Chest"}
+    assert {event.source_kind for event in events} == {"system"}
+    assert {event.raw_event_code for event in events} == {OP_INVENTORY_MOVE_ITEMS}
+    assert tracker.loot_object(484464) is None
+    assert tracker.loot_object(484466) is None
 
 
 def test_loot_tracker_detaches_container_by_uuid(monkeypatch) -> None:

@@ -46,6 +46,7 @@ from albion_dps.versioning import resolve_app_version
 
 SnapshotQueue = queue.Queue[MeterSnapshot | None]
 _UPDATE_CHECK_LOCK = threading.Lock()
+LOOT_HISTORY_LIMIT = 500
 
 
 def run_qt(args: argparse.Namespace) -> int:
@@ -75,6 +76,7 @@ def run_qt(args: argparse.Namespace) -> int:
         item_resolver=item_resolver,
         party_registry=party,
         include_silver=False,
+        history_limit=LOOT_HISTORY_LIMIT,
     )
     map_resolver = load_map_resolver(logger=logging.getLogger(__name__))
     meter.map_lookup = map_resolver.name_for_index
@@ -178,7 +180,7 @@ def run_qt(args: argparse.Namespace) -> int:
         auto_refresh_prices=True,
     )
     app_settings = load_app_settings()
-    loot_state = LootState(history_limit=max(args.history, 1))
+    loot_state = LootState(history_limit=max(args.history, LOOT_HISTORY_LIMIT))
     loot_writer = LootLogWriter(keep_files=app_settings.loot_log_keep_files)
     loot_state.set_log_path(str(loot_writer.path))
     scanner_state.settingsChanged.connect(lambda: loot_writer.set_keep_files(scanner_state.lootLogKeepFiles))
