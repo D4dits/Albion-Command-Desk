@@ -13,3 +13,13 @@ def test_party_registry_allows_player_name_for_party_members_and_confirmed_self(
     assert party.allows_player_name("SelfGuy")
     assert not party.allows_player_name("EnemyGuy")
     assert not party.allows_player_name("@MOB_KEEPER")
+
+
+def test_party_registry_allows_player_names_until_party_roster_resolves() -> None:
+    party = PartyRegistry()
+    party.seed_self_ids([100])
+    party.set_self_name("SelfGuy", confirmed=True)
+
+    assert party.allows_player_name("Alice")
+    assert party.allows_player_name("Bob")
+    assert not party.allows_player_name("@MOB_KEEPER")

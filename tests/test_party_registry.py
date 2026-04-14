@@ -464,6 +464,15 @@ def test_party_registry_disallows_unknown_name_when_roster_is_known() -> None:
     assert not registry.allows(200, names)
 
 
+def test_party_registry_allows_player_name_fallback_when_only_self_id_is_known() -> None:
+    registry = PartyRegistry()
+    names = NameRegistry()
+    registry.seed_self_ids([100])
+    names.record(200, "PartyCandidate")
+
+    assert registry.allows(200, names)
+
+
 def test_party_registry_disallows_name_only_fallback_after_party_id_resolution() -> None:
     registry = PartyRegistry()
     registry.seed_self_ids([100])

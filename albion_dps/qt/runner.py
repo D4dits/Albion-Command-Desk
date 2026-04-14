@@ -532,13 +532,14 @@ def _allowed_display_names_for_snapshot(
         add_allowed_label(entity_id)
 
     if not non_self_party_ids:
-        allowed_names.update(
-            {
-                name
-                for name in party.snapshot_names()
-                if isinstance(name, str) and name
-            }
-        )
+        party_names = {
+            name
+            for name in party.snapshot_names()
+            if isinstance(name, str) and name
+        }
+        if not party_names:
+            return set()
+        allowed_names.update(party_names)
         return allowed_names
 
     active_ids = set(snapshot.totals.keys())
