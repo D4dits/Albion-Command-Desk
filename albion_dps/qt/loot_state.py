@@ -14,7 +14,6 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QGuiApplication
 
 from albion_dps.domain.loot_export import loot_events_to_txt
 from albion_dps.domain.loot_import import read_loot_events_txt
@@ -532,10 +531,10 @@ class LootState(QObject):
         text = str(value or "")
         if not text:
             return False
-        try:
-            clipboard = QGuiApplication.clipboard()
-        except Exception:
+        app = _qt_gui_application()
+        if app is None:
             return False
+        clipboard = app.clipboard()
         if clipboard is None:
             return False
         clipboard.setText(text)
@@ -596,7 +595,7 @@ class LootState(QObject):
             from PySide6.QtWidgets import QApplication, QFileDialog
         except Exception:
             return None
-        app = QGuiApplication.instance()
+        app = _qt_gui_application()
         if app is None or not isinstance(app, QApplication):
             return None
         if mode == "save":
@@ -927,3 +926,11 @@ def _item_category(item_id: str) -> str:
     ):
         return "weapon"
     return "other"
+
+
+def _qt_gui_application():
+    try:
+        from PySide6.QtGui import QGuiApplication
+    except Exception:
+        return None
+    return QGuiApplication.instance()
