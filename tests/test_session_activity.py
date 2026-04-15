@@ -32,3 +32,4 @@ def test_map_trail_tracker_records_unique_transitions(monkeypatch) -> None:
     assert [event.title for event in events] == ["Bridgewatch", "Adren's Hill"]
     assert events[0].detail == "Map changed"
     assert events[1].detail == "Map entered"
+    assert tracker.current_label() == "Bridgewatch"

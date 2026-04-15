@@ -48,3 +48,4 @@ class LootContainer:
     owner_kind: str = "unknown"
     items: dict[int, LootObject] = field(default_factory=dict)
     slot_items: dict[int, LootObject] = field(default_factory=dict)
+    index_items: dict[int, LootObject] = field(default_factory=dict)

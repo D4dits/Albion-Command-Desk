@@ -75,6 +75,7 @@ def run_qt(args: argparse.Namespace) -> int:
     loot_tracker = LootTracker(
         item_resolver=item_resolver,
         party_registry=party,
+        location_provider=map_trail.current_label,
         include_silver=False,
         history_limit=LOOT_HISTORY_LIMIT,
     )

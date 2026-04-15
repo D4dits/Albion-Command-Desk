@@ -55,3 +55,12 @@ class MapTrailTracker:
         if limit is None:
             return items
         return items[: max(limit, 0)]
+
+    def current_label(self) -> str | None:
+        if not self._current_map_index:
+            return None
+        if self.map_lookup is not None:
+            resolved = self.map_lookup(self._current_map_index)
+            if resolved:
+                return resolved
+        return self._current_map_index

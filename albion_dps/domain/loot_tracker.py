@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 
 from albion_dps.domain.item_resolver import ItemResolver
@@ -45,6 +46,7 @@ LOOT_OBJECT_SUBTYPES = {
 class LootTracker:
     item_resolver: ItemResolver | None = None
     party_registry: PartyRegistry | None = None
+    location_provider: Callable[[], str | None] | None = None
     include_silver: bool = False
     history_limit: int = 500
     _players: dict[str, LootPlayer] = field(default_factory=dict)
@@ -114,6 +116,8 @@ class LootTracker:
             return
         operation_code = request.parameters.get(253, request.code)
         if operation_code == OP_INVENTORY_MOVE_ITEM:
+            if self._inventory_move_blocked_by_location():
+                return
             self._observe_inventory_move_item(
                 request.parameters,
                 timestamp=timestamp,
@@ -121,6 +125,8 @@ class LootTracker:
             )
             return
         if operation_code == OP_INVENTORY_MOVE_ITEMS:
+            if self._inventory_move_blocked_by_location():
+                return
             self._observe_inventory_move_items(
                 request.parameters,
                 timestamp=timestamp,
@@ -243,6 +249,7 @@ class LootTracker:
         next_slot_items = _map_slot_items(inventory_ids, next_items, slot_base)
         container.items = next_items
         container.slot_items = next_slot_items
+        container.index_items = _map_index_items(inventory_ids, next_items)
 
     def _observe_detach_item_container(self, parameters: dict[int, object]) -> None:
         uuid_text = _normalize_uuid(parameters.get(0))
@@ -358,11 +365,25 @@ class LootTracker:
         if len(self._events) > self.history_limit:
             self._events = self._events[-self.history_limit :]
 
+    def _inventory_move_blocked_by_location(self) -> bool:
+        if self.location_provider is None:
+            return False
+        try:
+            location = self.location_provider()
+        except Exception:
+            return False
+        return _is_safe_loot_suppressed_location(location)
+
     def _remove_loot_from_container(self, container: LootContainer, object_id: int) -> None:
         container.items.pop(object_id, None)
         container.slot_items = {
             slot: loot
             for slot, loot in container.slot_items.items()
+            if loot.object_id != object_id
+        }
+        container.index_items = {
+            index: loot
+            for index, loot in container.index_items.items()
             if loot.object_id != object_id
         }
         self._loot_objects.pop(object_id, None)
@@ -522,11 +543,23 @@ def _map_slot_items(
         loot = items.get(object_id)
         if loot is None:
             continue
-        slot_items[index] = loot
         if slot_base is not None:
             slot_items[slot_base + index] = loot
-            slot_items[slot_base + index + 1] = loot
+        else:
+            slot_items[index] = loot
     return slot_items
+
+
+def _map_index_items(
+    inventory_ids: list[int],
+    items: dict[int, LootObject],
+) -> dict[int, LootObject]:
+    index_items: dict[int, LootObject] = {}
+    for index, object_id in enumerate(inventory_ids):
+        loot = items.get(object_id)
+        if loot is not None:
+            index_items[index] = loot
+    return index_items
 
 
 def _select_container_loot(
@@ -534,6 +567,9 @@ def _select_container_loot(
 ) -> LootObject | None:
     if slot is not None:
         loot = container.slot_items.get(slot)
+        if loot is not None:
+            return loot
+        loot = container.index_items.get(slot)
         if loot is not None:
             return loot
     if len(container.items) == 1:
@@ -576,3 +612,25 @@ def _classify_source_kind(source_name: str) -> str:
     if source_name.startswith("@"):
         return "system"
     return "player"
+
+
+def _is_safe_loot_suppressed_location(location: str | None) -> bool:
+    normalized = str(location or "").strip().lower()
+    if not normalized:
+        return False
+    safe_fragments = {
+        "thetford",
+        "lymhurst",
+        "bridgewatch",
+        "martlock",
+        "fort sterling",
+        "caerleon",
+        "brecilien",
+        "market",
+        "hideout",
+        "smuggler",
+        "island",
+        "bank",
+        "city",
+    }
+    return any(fragment in normalized for fragment in safe_fragments)

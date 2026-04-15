@@ -366,6 +366,224 @@ def test_loot_tracker_records_inventory_move_from_loot_container(monkeypatch) ->
     assert tracker.loot_object(184090) is None
 
 
+def test_loot_tracker_ignores_inventory_move_in_suppressed_location(monkeypatch) -> None:
+    party = PartyRegistry()
+    party.set_self_name("D4dits", confirmed=True)
+    tracker = LootTracker(
+        party_registry=party,
+        location_provider=lambda: "Fort Sterling",
+        item_resolver=ItemResolver(
+            index_to_unique={3131: "UNIQUE_ROTTEN_CHOCOLATE_EGG"},
+            index_to_name={3131: "Rotten Chocolate Egg"},
+        ),
+    )
+
+    raw_uuid = bytes.fromhex("f52922571799bd4ca728e95c7868ec6c")
+    inventory_uuid = bytes.fromhex("a8813ad2bf29b442900ced9b69c88034")
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_LOOT,
+        parameters={0: 184088, 3: "@MOB_T2_MOB_EVENT_EASTER_RESOURCE"},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_SIMPLE_ITEM,
+        parameters={0: 184090, 1: 3131, 2: 1},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_ATTACH_ITEM_CONTAINER,
+        parameters={0: 184088, 1: raw_uuid, 3: [184090], 4: 1},
+    )
+    tracker.observe(_message())
+
+    monkeypatch.setattr(
+        loot_tracker_module,
+        "decode_operation_request",
+        lambda _payload: SimpleNamespace(
+            code=OP_INVENTORY_MOVE_ITEM,
+            parameters={
+                1: list(raw_uuid),
+                2: 2,
+                4: list(inventory_uuid),
+                5: 2,
+                253: OP_INVENTORY_MOVE_ITEM,
+            },
+        ),
+    )
+    tracker.observe(_message(event_code=None), _packet(1776085534.558984))
+
+    assert tracker.events() == []
+    assert tracker.loot_object(184090) is not None
+
+
+def test_loot_tracker_ignores_unknown_container_move_in_suppressed_location(monkeypatch) -> None:
+    party = PartyRegistry()
+    party.set_self_name("D4dits", confirmed=True)
+    tracker = LootTracker(
+        party_registry=party,
+        location_provider=lambda: "Fort Sterling",
+        item_resolver=ItemResolver(
+            index_to_unique={3131: "UNIQUE_ROTTEN_CHOCOLATE_EGG"},
+            index_to_name={3131: "Rotten Chocolate Egg"},
+        ),
+    )
+
+    raw_uuid = bytes.fromhex("f52922571799bd4ca728e95c7868ec6c")
+    inventory_uuid = bytes.fromhex("a8813ad2bf29b442900ced9b69c88034")
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_SIMPLE_ITEM,
+        parameters={0: 184090, 1: 3131, 2: 1},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_ATTACH_ITEM_CONTAINER,
+        parameters={0: 184088, 1: raw_uuid, 3: [184090], 4: 1},
+    )
+    tracker.observe(_message())
+
+    monkeypatch.setattr(
+        loot_tracker_module,
+        "decode_operation_request",
+        lambda _payload: SimpleNamespace(
+            code=OP_INVENTORY_MOVE_ITEM,
+            parameters={
+                1: list(raw_uuid),
+                2: 2,
+                4: list(inventory_uuid),
+                5: 2,
+                253: OP_INVENTORY_MOVE_ITEM,
+            },
+        ),
+    )
+    tracker.observe(_message(event_code=None), _packet(1776085534.558984))
+
+    assert tracker.events() == []
+    assert tracker.loot_object(184090) is not None
+
+
+def test_loot_tracker_records_single_move_from_unknown_container_outside_safe_zone(
+    monkeypatch,
+) -> None:
+    party = PartyRegistry()
+    party.set_self_name("D4dits", confirmed=True)
+    tracker = LootTracker(
+        party_registry=party,
+        location_provider=lambda: "Open World",
+        item_resolver=ItemResolver(
+            index_to_unique={3131: "UNIQUE_ROTTEN_CHOCOLATE_EGG"},
+            index_to_name={3131: "Rotten Chocolate Egg"},
+        ),
+    )
+
+    raw_uuid = bytes.fromhex("f52922571799bd4ca728e95c7868ec6c")
+    inventory_uuid = bytes.fromhex("a8813ad2bf29b442900ced9b69c88034")
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_SIMPLE_ITEM,
+        parameters={0: 184090, 1: 3131, 2: 1},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_ATTACH_ITEM_CONTAINER,
+        parameters={0: 184088, 1: raw_uuid, 3: [184090], 4: 1},
+    )
+    tracker.observe(_message())
+
+    monkeypatch.setattr(
+        loot_tracker_module,
+        "decode_operation_request",
+        lambda _payload: SimpleNamespace(
+            code=OP_INVENTORY_MOVE_ITEM,
+            parameters={
+                1: list(raw_uuid),
+                2: 2,
+                4: list(inventory_uuid),
+                5: 2,
+                253: OP_INVENTORY_MOVE_ITEM,
+            },
+        ),
+    )
+    tracker.observe(_message(event_code=None), _packet(1776085534.558984))
+
+    events = tracker.events()
+    assert len(events) == 1
+    assert events[0].source_name is None
+    assert events[0].source_kind == "unknown"
+    assert events[0].item is not None
+    assert events[0].item.display_name == "Rotten Chocolate Egg"
+
+
+def test_loot_tracker_uses_exact_slot_for_single_move(monkeypatch) -> None:
+    party = PartyRegistry()
+    party.set_self_name("D4dits", confirmed=True)
+    tracker = LootTracker(
+        party_registry=party,
+        item_resolver=ItemResolver(
+            index_to_unique={1001: "T8_POTION_CLEANSE", 1002: "T8_POTION_ENERGY"},
+            index_to_name={1001: "Invisible Potion", 1002: "Elder's Focus Restoration Potion"},
+        ),
+    )
+
+    raw_uuid = bytes.fromhex("f52922571799bd4ca728e95c7868ec6c")
+    inventory_uuid = bytes.fromhex("a8813ad2bf29b442900ced9b69c88034")
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_LOOT,
+        parameters={0: 184088, 3: "@MOB_T2_MOB_EVENT_EASTER_RESOURCE"},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_SIMPLE_ITEM,
+        parameters={0: 184090, 1: 1001, 2: 2},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_SIMPLE_ITEM,
+        parameters={0: 184091, 1: 1002, 2: 1},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_ATTACH_ITEM_CONTAINER,
+        parameters={0: 184088, 1: raw_uuid, 3: [184090, 184091], 4: 1},
+    )
+    tracker.observe(_message())
+
+    monkeypatch.setattr(
+        loot_tracker_module,
+        "decode_operation_request",
+        lambda _payload: SimpleNamespace(
+            code=OP_INVENTORY_MOVE_ITEM,
+            parameters={
+                1: list(raw_uuid),
+                2: 1,
+                4: list(inventory_uuid),
+                5: 4,
+                253: OP_INVENTORY_MOVE_ITEM,
+            },
+        ),
+    )
+    tracker.observe(_message(event_code=None), _packet(1776085534.558984))
+
+    events = tracker.events()
+    assert len(events) == 1
+    assert events[0].item is not None
+    assert events[0].item.display_name == "Invisible Potion"
+    assert events[0].quantity == 2
+
+
 def test_loot_tracker_uses_neutral_local_looter_when_self_name_unknown(monkeypatch) -> None:
     party = PartyRegistry()
     tracker = LootTracker(
