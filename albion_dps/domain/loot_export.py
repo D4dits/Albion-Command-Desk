@@ -18,6 +18,7 @@ LOOT_EXPORT_HEADER = [
     "looted_from__alliance",
     "looted_from__guild",
     "looted_from__name",
+    "source_kind",
 ]
 
 
@@ -65,6 +66,7 @@ def _loot_event_to_row(event: LootEvent) -> list[str]:
         looted_from_alliance,
         looted_from_guild,
         looted_from_name,
+        event.source_kind,
     ]
 
 

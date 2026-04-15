@@ -37,7 +37,7 @@ Item {
     property bool stackedControls: width < 1140
     property bool stackedSummary: width < 920
     property bool summaryRail: width >= 1040
-    property int summaryRailWidth: compactLayout ? 300 : 320
+    property int summaryRailWidth: compactLayout ? 292 : 312
     property int aggregateColumns: width >= 1050 ? 3 : (width >= 720 ? 2 : 1)
     property int timeColumnWidth: compactLayout ? 50 : 58
     property int looterColumnWidth: compactLayout ? 112 : 136
@@ -384,7 +384,7 @@ Item {
                                     Text {
                                         id: corpseLegend
                                         anchors.centerIn: parent
-                                        text: "red = looted from player corpse"
+                                        text: "red = player corpse"
                                         color: theme.stateDanger
                                         font.pixelSize: 9
                                         font.bold: true
@@ -479,7 +479,7 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Layout.minimumHeight: root.summaryRail ? 330 : 220
-                    Layout.preferredHeight: root.summaryRail ? 420 : (compactLayout ? 220 : 250)
+                    Layout.preferredHeight: root.summaryRail ? 430 : (compactLayout ? 220 : 250)
                     radius: theme.radiusLg
                     color: theme.surfacePanel
                     border.color: theme.borderStrong
@@ -602,12 +602,12 @@ Item {
                                     color: root.rowBackground(sourceKind)
                                     border.color: root.rowBorder(sourceKind)
                                     border.width: 1
-                                    implicitHeight: compactLayout ? 52 : 56
+                                    implicitHeight: compactLayout ? 46 : 50
 
                                     ColumnLayout {
                                         anchors.fill: parent
-                                        anchors.margins: 7
-                                        spacing: 2
+                                        anchors.margins: 6
+                                        spacing: 1
 
                                         RowLayout {
                                             Layout.fillWidth: true
@@ -629,7 +629,7 @@ Item {
 
                                             Item {
                                                 Layout.preferredWidth: iconUrl.length > 0 ? 24 : 0
-                                                Layout.preferredHeight: 24
+                                                Layout.preferredHeight: 23
                                                 visible: iconUrl.length > 0
 
                                                 Rectangle {
@@ -652,7 +652,7 @@ Item {
                                             ColumnLayout {
                                                 Layout.fillWidth: true
                                                 Layout.minimumWidth: compactLayout ? 140 : 210
-                                                spacing: 1
+                                                spacing: 0
                                                 RowLayout {
                                                     Layout.fillWidth: true
                                                     spacing: 6
@@ -670,7 +670,7 @@ Item {
                                                         radius: 9
                                                         color: root.categoryBadgeBg(category, sourceKind)
                                                         border.color: root.categoryBadgeBorder(category, sourceKind)
-                                                        implicitHeight: 18
+                                                        implicitHeight: 16
                                                         implicitWidth: kindBadgeText.implicitWidth + 12
 
                                                         Text {
@@ -706,7 +706,7 @@ Item {
                                                 color: root.sourceBadgeBg(sourceKind)
                                                 border.color: root.sourceBadgeBorder(sourceKind)
                                                 border.width: 1
-                                                implicitHeight: 20
+                                                implicitHeight: 18
 
                                                 Text {
                                                     anchors.centerIn: parent
@@ -714,7 +714,7 @@ Item {
                                                         ? ("Corpse: " + (sourceName.length > 0 ? sourceName : "player"))
                                                         : (sourceName.length > 0 ? sourceName : "System")
                                                     color: root.sourceBadgeText(sourceKind)
-                                                    font.pixelSize: 9
+                                                    font.pixelSize: 8
                                                     elide: Text.ElideRight
                                                     width: parent.width - 12
                                                     horizontalAlignment: Text.AlignHCenter

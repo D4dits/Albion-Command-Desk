@@ -106,10 +106,14 @@ def test_loot_state_builds_model_and_export_text() -> None:
     assert looters.data(top_looter, looters.LabelRole) == "Alice"
     items = state.topItemsModel
     assert items.rowCount() == 2
+    first_item = items.index(0, 0)
+    assert items.data(first_item, items.LabelRole) == "Journeyman's Bag"
+    assert items.data(first_item, items.SublabelRole) == "T3_BAG"
     sources = state.topSourcesModel
     assert sources.rowCount() == 1
     source = sources.index(0, 0)
     assert sources.data(source, sources.LabelRole) == "Enemy"
+    assert sources.data(source, sources.SublabelRole) == ""
 
 
 def test_loot_state_filters_and_rebuilds_aggregates() -> None:

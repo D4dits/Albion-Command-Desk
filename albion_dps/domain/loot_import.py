@@ -31,7 +31,9 @@ def loot_events_from_txt(payload: str) -> list[LootEvent]:
 
         looted_from_name = str(row.get("looted_from__name", "") or "").strip()
         is_silver = item_id == "SILVER" or item_name.lower() == "silver"
-        source_kind = _infer_source_kind(looted_from_name, is_silver=is_silver)
+        source_kind = str(row.get("source_kind", "") or "").strip().lower()
+        if source_kind not in {"player", "mob", "system", "unknown", "silver"}:
+            source_kind = _infer_source_kind(looted_from_name, is_silver=is_silver)
         looted_from = None
         if looted_from_name and source_kind == "player":
             looted_from = LootPlayer(

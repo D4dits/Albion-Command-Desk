@@ -36,10 +36,10 @@ def test_loot_events_to_txt_matches_expected_header_and_rows() -> None:
     payload = loot_events_to_txt(events)
 
     assert payload.startswith(
-        "timestamp_utc;looted_by__alliance;looted_by__guild;looted_by__name;item_id;item_name;quantity;looted_from__alliance;looted_from__guild;looted_from__name\n"
+        "timestamp_utc;looted_by__alliance;looted_by__guild;looted_by__name;item_id;item_name;quantity;looted_from__alliance;looted_from__guild;looted_from__name;source_kind\n"
     )
-    assert "1970-01-01T00:00:01.500Z;AAA;Guild A;Alice;T3_BAG;Journeyman's Bag;2;EEE;Guild E;Enemy\n" in payload
-    assert "1970-01-01T00:00:02.000Z;;;Bob;T4_POTION;Adept's Potion;1;;;@MOB_KEEPER_DRUID_CHAMPION\n" in payload
+    assert "1970-01-01T00:00:01.500Z;AAA;Guild A;Alice;T3_BAG;Journeyman's Bag;2;EEE;Guild E;Enemy;player\n" in payload
+    assert "1970-01-01T00:00:02.000Z;;;Bob;T4_POTION;Adept's Potion;1;;;@MOB_KEEPER_DRUID_CHAMPION;mob\n" in payload
 
     tmp_path = mk_test_dir("loot_export")
     export_path = tmp_path / "loot-events.txt"

@@ -780,7 +780,8 @@ def _build_top_items(rows: list[LootRow]) -> list[LootAggregateRow]:
             {
                 "quantity": 0,
                 "events": 0,
-                "sublabel": row.item_id or row.source_kind,
+                "label": row.item_name or row.item_id or "Unknown item",
+                "sublabel": row.item_id if row.item_id and row.item_id != row.item_name else "",
                 "icon_url": row.icon_url,
             },
         )
@@ -792,7 +793,7 @@ def _build_top_items(rows: list[LootRow]) -> list[LootAggregateRow]:
     )
     return [
         LootAggregateRow(
-            label=name,
+            label=str(values.get("label") or name),
             sublabel=str(values["sublabel"]),
             icon_url=str(values.get("icon_url", "")),
             quantity=int(values["quantity"]),
@@ -809,7 +810,7 @@ def _build_top_sources(rows: list[LootRow]) -> list[LootAggregateRow]:
             continue
         entry = stats.setdefault(
             row.source_name,
-            {"quantity": 0, "events": 0, "sublabel": "looted from player"},
+            {"quantity": 0, "events": 0, "sublabel": ""},
         )
         entry["quantity"] = int(entry["quantity"]) + row.quantity
         entry["events"] = int(entry["events"]) + 1

@@ -90,8 +90,8 @@ Rectangle {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 9
-        spacing: 6
+        anchors.margins: 8
+        spacing: 5
 
         Text {
             text: root.title
@@ -108,7 +108,7 @@ Rectangle {
                 id: summaryList
                 anchors.fill: parent
                 clip: true
-                spacing: 5
+                spacing: 4
                 model: root.model
                 reuseItems: true
                 cacheBuffer: 360
@@ -121,7 +121,7 @@ Rectangle {
                     required property int eventCount
 
                     width: summaryList.width
-                    height: 48
+                    height: 44
                     radius: theme.radiusLg
                     color: root.rowBackground()
                     border.color: root.rowBorderColor()
@@ -129,12 +129,12 @@ Rectangle {
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.margins: 8
-                        spacing: 7
+                        anchors.margins: 7
+                        spacing: 6
 
                         Item {
-                            width: iconUrl.length > 0 ? 30 : 0
-                            height: 30
+                            width: iconUrl.length > 0 ? 28 : 0
+                            height: 28
                             visible: iconUrl.length > 0
 
                             Rectangle {
@@ -156,12 +156,12 @@ Rectangle {
 
                         ColumnLayout {
                             Layout.fillWidth: true
-                            spacing: 2
+                            spacing: 1
 
                             Text {
                                 text: label
                                 color: theme.textPrimary
-                                font.pixelSize: 11
+                                font.pixelSize: 10
                                 elide: Text.ElideRight
                             }
 
@@ -169,20 +169,20 @@ Rectangle {
                                 text: sublabel
                                 visible: sublabel.length > 0
                                 color: theme.textMuted
-                                font.pixelSize: 9
+                                font.pixelSize: 8
                                 elide: Text.ElideRight
                             }
                         }
 
                         ColumnLayout {
-                            Layout.preferredWidth: 70
+                            Layout.preferredWidth: 64
                             Layout.alignment: Qt.AlignRight
                             spacing: 1
 
                             Text {
                                 text: valueSuffix.length > 0 ? (root.formatValue(quantity) + valueSuffix) : root.formatValue(quantity)
                                 color: root.valueColor()
-                                font.pixelSize: 11
+                                font.pixelSize: 10
                                 font.bold: true
                                 horizontalAlignment: Text.AlignRight
                                 width: parent.width
@@ -191,7 +191,7 @@ Rectangle {
                             Text {
                                 text: eventCount + " ev"
                                 color: theme.textMuted
-                                font.pixelSize: 9
+                                font.pixelSize: 8
                                 horizontalAlignment: Text.AlignRight
                                 width: parent.width
                             }
