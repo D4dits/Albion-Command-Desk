@@ -4,16 +4,17 @@
 
 # Albion Command Desk
 
-External Albion Online companion app (Qt desktop UI):
-- DPS/HPS meter (live or PCAP replay)
-- party-focused combat stats
-- scanner helper tab
-- market crafting workspace (setup, inputs, outputs, results)
-- market presets plus shopping/selling/results CSV export
-- dedicated Settings and Help tabs for runtime, paths, updates, and troubleshooting
-- one-click diagnostics bundle export for support/debug handoff
+Albion Command Desk is a passive Albion Online desktop companion app built with PySide6/QML.
 
-No client hooks, no overlays, no memory editing.
+Current workspace:
+- DPS/HPS meter for live capture and PCAP replay.
+- Party-scoped combat filtering and fight history.
+- Loot logger for party item pickups, corpse/container source context, log import/export, and item/category filters.
+- Scanner helper tab for Albion Data Client workflow and diagnostics.
+- Market craft planner with setup, inputs, outputs, results, AO Data prices, CSV export, and crystallized recipe variants.
+- Settings and Help tabs for runtime status, game-data paths, update checks, and diagnostics bundle export.
+
+No client hooks, no overlays, no memory editing, no gameplay automation.
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white">
@@ -28,9 +29,42 @@ No client hooks, no overlays, no memory editing.
   <a href="https://buycoffee.to/ao-dps/"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?style=for-the-badge" alt="Buy Me a Coffee"></a>
 </p>
 
+## Key Features
+
+### Meter
+- Live and replay combat scoreboard.
+- Battle, zone, and manual session modes.
+- Party/self filtering to avoid attributing nearby unrelated players.
+- DPS, HPS, damage, heal, session history, fame/silver session gains, and map activity trail.
+- Replay regression coverage for current PCAP fixtures.
+
+### Loot
+- Native loot observer integrated into the same Photon pipeline as the meter.
+- Tracks party item pickups from player corpses, mobs, loot chests, and system/container flows.
+- Separates source types with UI colors:
+  - red: looted from player corpse,
+  - yellow: mob/container/system source,
+  - neutral: unknown source.
+- Silver pickup tracking is intentionally disabled in the live UI; the tab focuses on item loot.
+- Import/export uses a stable text format with `source_kind`, so imported logs preserve whether an item came from a player corpse, mob, container, or system flow.
+- Filters cover looter, source type, item search, and item categories such as weapons, armor, bags, capes, mounts, consumables, resources, artifacts, and other.
+
+### Market
+- Recipe setup, city/region settings, premium/tax/fee assumptions, daily bonus, run count, and focus-aware profit calculations.
+- Inputs, outputs, and result rows stay aligned with top-level investment/revenue/profit math.
+- AO Data price refresh with SQLite cache, stale-cache fallback, diagnostics, and manual overrides.
+- Shopping/selling/results CSV copy/export.
+- Crystallized recipe variants are available in craft search and setup and are marked with a dedicated badge. Their crystallized components are treated as non-returnable one-time inputs, not RRR materials.
+
+### Operations
+- Start dashboard exposes capture runtime, Git, game data, and update readiness.
+- Settings centralizes app paths, log retention, scanner/game-data setup, runtime checks, and update preferences.
+- Help exposes version, links, dependency guidance, troubleshooting, and diagnostics export.
+
 ## Install
 
 ### Windows (recommended, no Git required)
+
 Requires Python 3.10+ installed first. Git is not required for the release installer path.
 
 1. Open latest release: `https://github.com/D4dits/Albion-Command-Desk/releases/latest`
@@ -93,15 +127,16 @@ albion-command-desk replay .\path\to\capture.pcap
 
 ## Requirements
 
-- Python 3.10+ (3.11/3.12 recommended)
+- Python 3.10+ (3.11/3.12 recommended for release builds).
 - For `live` mode:
-  - Windows: Npcap Runtime (`https://npcap.com/#download`)
-  - Linux/macOS: libpcap/system capture libs
-- Git is required only for scanner repo sync/update actions
+  - Windows: Npcap Runtime (`https://npcap.com/#download`).
+  - Linux/macOS: libpcap/system capture libs.
+- Git is required only for scanner repo sync/update actions.
+- Local game-data extraction is recommended for best item/map labels.
 
-Npcap SDK is **not** required for normal end users.
+Npcap SDK is not required for normal end users.
 
-## Optional: game data extraction
+## Optional: Game Data Extraction
 
 For better item/map coverage:
 
@@ -116,6 +151,7 @@ Linux/macOS:
 ```
 
 ## Screenshots
+
 <p align="center">
   <img src="assets/ux-baseline/ph2-meter.png" alt="Meter tab" width="920">
 </p>
@@ -123,17 +159,31 @@ Linux/macOS:
   <img src="assets/ux-baseline/ph2-market.png" alt="Market tab" width="920">
 </p>
 
-## Docs
+The GitHub Pages site contains the current public feature summary and screenshot gallery:
+`https://d4dits.github.io/Albion-Command-Desk/`
 
-- `docs/TROUBLESHOOTING.md`
+## Documentation
+
 - `docs/ARCHITECTURE.md`
-- `docs/DELIVERY_BACKLOG.md`
+- `docs/TROUBLESHOOTING.md`
+- `docs/LOOT_LOGGER_PLAN.md`
+- `docs/MARKET_ARCHITECTURE.md`
+- `docs/MARKET_TROUBLESHOOTING.md`
+- `docs/MARKET_DATASET_UPDATE.md`
+- `docs/qa/QA_REGRESSION_PASS.md`
 - `docs/release/RELEASE_CHECKLIST.md`
 - `docs/release/RELEASE_RUNBOOK.md`
 - `CHANGELOG.md`
 
 ## Tests
 
+Default:
 ```powershell
 python -m pytest -q
+```
+
+Targeted checks before a release:
+```powershell
+python -m pytest -q tests/test_loot_tracker.py tests/test_loot_tracker_pcaps.py tests/test_qt_loot_state.py tests/test_market_catalog.py tests/test_market_qt_state.py
+python .\tools\qa\run_release_readiness.py
 ```

@@ -7,6 +7,24 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+### Added
+- Native Loot tab for party-scoped item loot review, including live log status, import/export actions, compact feed rows, top looters/items/source summaries, category filters, and source-color badges for player corpses versus mob/container/system sources.
+- Loot tracker now understands the current party-member loot pickup variant and inventory move flows, so replay/live logs can include party looters instead of only the local player when the packet stream contains the required party context.
+- Loot text export now persists `source_kind`, allowing future imports to distinguish player corpses, mobs, loot chests, system/container events, and unknown sources.
+- Market catalog now exposes crystallized recipe variants and marks them in craft search/setup with a dedicated badge.
+
+### Changed
+- Loot logger focuses the UI on item pickups; silver pickup tracking is no longer presented as a primary live view.
+- Loot summaries now prefer human-readable item names and avoid duplicated technical IDs when the label and ID are identical.
+- Looted-from-player summaries were cleaned up to avoid repeating the same explanatory sublabel on every row.
+- Loot tab density and right-side summary cards were tightened to fit more rows at the supported desktop window size.
+- Crystallized market inputs are treated as non-returnable one-time components, keeping RRR logic limited to returnable crafting materials.
+- Qt loot state no longer imports `PySide6.QtGui` during test collection, fixing Ubuntu CI environments without `libEGL.so.1`.
+
+### Fixed
+- Loot source classification no longer puts imported `Loot Chest` rows under player-corpse summaries when newer logs contain `source_kind=system`.
+- Shoes and other armor item IDs are categorized before resource-token matching, preventing armor rows from appearing as resources.
+
 ## [0.1.24] - 2026-04-02
 
 ### Changed

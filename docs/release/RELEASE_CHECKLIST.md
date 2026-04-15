@@ -8,6 +8,7 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
 
 - [ ] Update version in `pyproject.toml`.
 - [ ] Add release notes to `CHANGELOG.md` (move items from `[Unreleased]`).
+- [ ] Update `docs/release/NEXT_RELEASE_NOTES_DRAFT.md` or use it as the GitHub Release body.
 - [ ] Verify changelog links and release date format.
 
 ## 2) Local validation
@@ -18,6 +19,8 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
   - `python -m pytest -q --ignore=tests/test_qt_smoke.py`
 - [ ] Run update/settings tests:
   - `python -m pytest -q tests/test_update_checker.py tests/test_settings.py`
+- [ ] Run loot/market feature checks:
+  - `python -m pytest -q tests/test_loot_tracker.py tests/test_loot_tracker_pcaps.py tests/test_loot_export.py tests/test_loot_import.py tests/test_qt_loot_state.py tests/test_market_catalog.py tests/test_market_qt_state.py`
 - [ ] Verify version surfaces stay aligned:
   - `python -m pytest -q tests/test_versioning.py`
   - `python .\tools\qa\verify_version_surfaces.py`
@@ -100,6 +103,7 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
 - [ ] Verify diagnostics bundle export from app and validate bundle:
   - `python .\tools\qa\verify_diagnostics_bundle.py <bundle.zip>`
 - [ ] Validate docs are aligned (`README.md`, `docs/TROUBLESHOOTING.md`).
+- [ ] Validate product docs are aligned (`docs/ARCHITECTURE.md`, `docs/LOOT_LOGGER_PLAN.md`, `docs/MARKET_ARCHITECTURE.md`, `website/index.html`).
 
 ## 7) Rollback plan
 

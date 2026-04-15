@@ -904,6 +904,10 @@ Update status checkboxes and notes after each implemented ticket.
 
 ## Progress Log
 
+- 2026-04-15: Documentation refresh prepared for the next release. README, website copy, changelog, architecture, troubleshooting, loot logger status, market crystallized notes, QA regression notes, and release checklist now describe the current Loot/Market/Meter state.
+- 2026-04-15: Loot logger feature moved from plan-only documentation to implemented status. Current scope includes party item pickups, source-kind import/export, compact Loot UI, player-corpse highlighting, and PCAP regression coverage.
+- 2026-04-15: Market crystallized recipe support documented. Crystallized variants are badge-marked in UI and modeled as non-returnable one-time inputs outside RRR.
+
 - 2026-04-01: PH11-CAP-113 completed. Bootstrap smoke now has a Windows advisory job that builds a real capture wheel, forces the installer down the prebuilt-bundle path, and records evidence that the Windows live capture component was installed without SDK/build-tool fallback.
 - 2026-04-01: PH11-CAP-112 completed. Added `windows-capture-backend.yml`, introduced `build_capture_bundle.ps1`, extended release readiness to parse the new script, and updated manifest tooling/examples so Windows capture bundles are first-class release assets.
 - 2026-04-01: Phase 11 implementation moved into artifact flow. The Windows bootstrap builder now knows the `AlbionCommandDesk-WindowsCapture-vX.Y.Z.zip` sidecar contract, manifest tooling recognizes `capture-backend` assets, and release QA fixtures include the optional Windows capture bundle shape.

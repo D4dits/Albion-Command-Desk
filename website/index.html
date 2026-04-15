@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Albion Command Desk - Albion Online DPS Meter, Scanner, and Craft Planner</title>
-    <meta name="description" content="Albion Command Desk is a passive Albion Online desktop companion with a DPS/HPS meter, scanner workflow, settings/help dashboards, and a practical crafting profit planner." />
-    <meta name="keywords" content="Albion Online DPS meter, Albion Online combat parser, Albion crafting calculator, Albion market tool, Albion Command Desk" />
+    <title>Albion Command Desk - Albion Online DPS Meter, Loot Logger, Scanner, and Craft Planner</title>
+    <meta name="description" content="Albion Command Desk is a passive Albion Online desktop companion with a DPS/HPS meter, party loot logger, scanner workflow, settings/help dashboards, and a practical crafting profit planner." />
+    <meta name="keywords" content="Albion Online DPS meter, Albion Online combat parser, Albion loot logger, Albion crafting calculator, Albion market tool, Albion Command Desk" />
     <meta name="author" content="Albion Command Desk" />
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <link rel="canonical" href="https://d4dits.github.io/Albion-Command-Desk/" />
@@ -14,13 +14,13 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Albion Command Desk" />
     <meta property="og:title" content="Albion Command Desk - Passive Albion Online Companion" />
-    <meta property="og:description" content="Track DPS/HPS, review fights, manage scanner prerequisites, and optimize crafting profit in Albion Online with one desktop-first workspace." />
+    <meta property="og:description" content="Track DPS/HPS, review party loot, manage scanner prerequisites, and optimize crafting profit in Albion Online with one desktop-first workspace." />
     <meta property="og:url" content="https://d4dits.github.io/Albion-Command-Desk/" />
     <meta property="og:image" content="https://d4dits.github.io/Albion-Command-Desk/assets/logo.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Albion Command Desk" />
-    <meta name="twitter:description" content="Passive DPS meter, scanner tools, replay mode, and market crafting analytics for Albion Online." />
+    <meta name="twitter:description" content="Passive DPS meter, party loot logger, scanner tools, replay mode, and market crafting analytics for Albion Online." />
     <meta name="twitter:image" content="https://d4dits.github.io/Albion-Command-Desk/assets/logo.png" />
 
     <link rel="icon" type="image/png" href="assets/icon.png" />
@@ -38,7 +38,7 @@
         "name": "Albion Command Desk",
         "applicationCategory": "GameApplication",
         "operatingSystem": "Windows, Linux, macOS",
-        "description": "Passive Albion Online companion app with DPS/HPS meter, replay analysis, scanner controls, settings/help dashboards, and market crafting profitability workspace.",
+        "description": "Passive Albion Online companion app with DPS/HPS meter, party loot logging, replay analysis, scanner controls, settings/help dashboards, and market crafting profitability workspace.",
         "url": "https://d4dits.github.io/Albion-Command-Desk/",
         "downloadUrl": "https://github.com/D4dits/Albion-Command-Desk/releases/latest",
         "softwareVersion": "0.1.24",
@@ -67,6 +67,14 @@
             "acceptedAnswer": {
               "@type": "Answer",
               "text": "For end users, live mode requires Npcap Runtime. Npcap SDK is only needed when building optional capture-profile dependencies from source."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does the loot logger scan non-party players?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. Loot logging is designed around self and party context. If the required party context is unavailable, Albion Command Desk prefers incomplete or empty results over unsafe attribution."
             }
           },
           {
@@ -109,7 +117,8 @@
           <h1>Track fights, control scanner setup, and plan profitable crafting in one desktop workspace.</h1>
           <p class="lead">
             Albion Command Desk is a passive Albion Online desktop companion. It combines a live/replay combat meter,
-            scanner and runtime checks, and a market workspace for recipe planning, shopping, and profitability review.
+            party item loot logging, scanner and runtime checks, and a market workspace for recipe planning, shopping,
+            crystallized variants, and profitability review.
           </p>
           <div class="hero-cta">
             <a class="btn btn-primary" href="https://github.com/D4dits/Albion-Command-Desk/releases/latest" target="_blank" rel="noopener">Get Latest Release</a>
@@ -119,7 +128,8 @@
             <li>Windows bootstrap installer</li>
             <li>Qt desktop UI</li>
             <li>Live + replay meter</li>
-            <li>Craft planner + market diagnostics</li>
+            <li>Party loot logger</li>
+            <li>Craft planner + crystallized recipes</li>
           </ul>
         </div>
         <div class="hero-visual card">
@@ -129,7 +139,7 @@
 
       <section id="features" class="container section">
         <h2>What is in the app right now</h2>
-        <div class="grid four">
+        <div class="grid three">
           <article class="card feature">
             <h3>Start dashboard</h3>
             <p>One place to verify capture runtime, Git, game data, and update status before touching Scanner or Market.</p>
@@ -139,12 +149,20 @@
             <p>Live and replay scoreboard with battle, zone, and manual modes plus history, session gains, and party-aware filtering.</p>
           </article>
           <article class="card feature">
+            <h3>Loot Logger</h3>
+            <p>Party item pickups, corpse/container source colors, import/export, category filters, and compact top-loot summaries.</p>
+          </article>
+          <article class="card feature">
             <h3>Scanner Control</h3>
             <p>Repository sync, update checks, runtime diagnostics, and logs in one place, with clearer guards around scanner/process actions.</p>
           </article>
           <article class="card feature">
             <h3>Market Workspace</h3>
-            <p>Recipe setup, inputs/outputs/results, shopping workflow, journal handling, and profitability snapshots tuned for real crafting decisions.</p>
+            <p>Recipe setup, inputs/outputs/results, shopping workflow, journal handling, crystallized badges, and profitability snapshots.</p>
+          </article>
+          <article class="card feature">
+            <h3>Settings + Help</h3>
+            <p>Runtime status, log retention, game-data paths, update checks, dependency guidance, and diagnostics bundle export.</p>
           </article>
         </div>
       </section>
@@ -157,12 +175,12 @@
             <p>Open Start first. Confirm runtime, Git, game data, and app update status before running live scanner actions.</p>
           </article>
           <article class="card install-card">
-            <h3>2. Meter / Scanner</h3>
-            <p>Use Meter for live or replay combat review. Use Scanner for repo sync, build, and Albion Data Client control when needed.</p>
+            <h3>2. Meter / Loot</h3>
+            <p>Use Meter for combat review. Use Loot for party item pickups, player-corpse highlights, source filters, and imported log review.</p>
           </article>
           <article class="card install-card">
-            <h3>3. Market</h3>
-            <p>Build a craft plan, inspect upfront shopping requirements, review outputs and results, and work through the shopping list directly in the app.</p>
+            <h3>3. Scanner / Market</h3>
+            <p>Use Scanner for Albion Data workflow. Use Market to compare normal and crystallized craft paths, shopping requirements, outputs, and results.</p>
           </article>
         </div>
       </section>
@@ -194,7 +212,7 @@
 
       <section id="screenshots" class="container section">
         <h2>Current interface preview</h2>
-        <p class="section-copy">Click any screenshot to open a larger preview. The gallery reflects the current desktop layout: Start, Meter, Scanner, Market, Settings, and Help.</p>
+        <p class="section-copy">Click any screenshot to open a larger preview. The gallery reflects the desktop layout; a current Loot screenshot should be added with the next visual refresh.</p>
         <div class="grid three shots gallery-grid">
           <figure class="card shot gallery-item">
             <button class="shot-trigger" type="button" data-full="assets/start-dashboard-current.png" data-alt="Albion Command Desk start dashboard">
@@ -245,6 +263,10 @@
           <article class="card faq-item">
             <h3>Does it automate gameplay?</h3>
             <p>No. The tool is intended for passive analysis and planning.</p>
+          </article>
+          <article class="card faq-item">
+            <h3>Does Loot scan nearby non-party players?</h3>
+            <p>No. Loot logging is designed around party/self context. If party context is missing, the app prefers incomplete/empty results over unsafe attribution.</p>
           </article>
           <article class="card faq-item">
             <h3>Where are updates published?</h3>

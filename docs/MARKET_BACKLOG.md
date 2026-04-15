@@ -1,8 +1,10 @@
 # Market Module Backlog (AFM-like)
 
-## Status update (2026-02-10)
-- Sprint 1 (A+B): done in branch `market` (scaffold, AO Data client, cache SQLite, service, testy).
-- Sprint 2: in progress.
+## Status update (2026-04-15)
+- Market is implemented on `main` as the current crafting/profitability workspace.
+- Setup, Inputs, Outputs, Results, AO Data cache, CSV export, presets, diagnostics, and regression tests are active.
+- Crystallized recipe variants are now exposed as badge-marked craft rows and modeled as non-returnable one-time components.
+- Remaining work is polish/coverage, not MVP build-out.
   - Completed now: core kalkulacji dla Setup+Inputs (C1/C2/C4/C5/C6), walidacja Setup (D1/D2), generacja Inputs z manual override (E1/E3), testy.
   - Completed now: UI Market w `Main.qml` dla Setup + Inputs (formularz setup, tabela inputs, live total).
   - Completed now: preview Outputs + Results w `Main.qml` (tabela output + KPI net profit/margin/focus/SPF) podlaczone do `marketSetupState`.

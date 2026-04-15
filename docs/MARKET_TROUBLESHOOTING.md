@@ -22,6 +22,16 @@ Typical cause:
 The state layer tries to humanize ids, but some rare items can still appear as ids.
 If this appears frequently after dataset refresh, regenerate recipes from local game files.
 
+## Crystallized craft badge is missing
+Crystallized variants are separate recipe rows generated from the local recipe catalog.
+
+Checks:
+1. Search in Market using the final item family, not only the base artifact component.
+2. Confirm the recipe row has a `#CRYSTALLIZED` variant in the catalog:
+   - `python -m pytest -q tests/test_market_catalog.py -k crystallized`
+3. If no crystallized variants exist after a game patch, regenerate local game data and recipe dataset.
+4. Remember that crystallized inputs are non-returnable. They should appear as one-time components and should not be reduced by RRR.
+
 ## Inputs/Outputs are empty
 Most common reasons:
 1. No craft rows selected in Setup.

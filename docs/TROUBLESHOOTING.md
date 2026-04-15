@@ -138,6 +138,40 @@ Workarounds:
 - Start capture before forming the party.
 - For PCAPs, avoid port-only filters and capture all UDP so roster events are included.
 
+## Loot tab shows only my character
+This is expected if the log file only contains your exported rows or if capture missed party context.
+
+Checks:
+- Imported TXT logs are not raw captures. If a log was generated before a parser fix, it cannot recover party rows later.
+- Replay the original PCAP with the current code or record a new live session after starting capture before the party opens chests.
+- Make sure the packet stream contains party roster traffic and party loot pickup events.
+- Use complete captures for debugging; overly narrow capture filters can miss the context needed to map party looters.
+
+Useful tests:
+```
+python -m pytest -q tests/test_loot_tracker.py tests/test_loot_tracker_pcaps.py
+```
+
+## Loot source colors look wrong
+Current source colors:
+- red: item looted from a player corpse,
+- yellow: mob/container/system source,
+- neutral: unknown source.
+
+If `Loot Chest` appears as a player source after import, the file is probably an old export without `source_kind`.
+New exports include `source_kind` and preserve source classification during import.
+
+## Loot item names are technical ids
+Loot item names depend on local item databases.
+If you see values such as `TREASURE_TRIBAL_RARITY1` frequently:
+- regenerate local game data,
+- confirm `data/indexedItems.json` and `data/items.json` exist,
+- restart the app so the resolver reloads item names.
+
+## Loot logs grow too large
+Use Settings to configure how many loot TXT logs are retained.
+The default is intended to keep only the latest few logs and remove older generated text logs from `artifacts/loot/`.
+
 ## Cross-platform setup pitfalls (Windows/Linux/macOS)
 Common issues when running on a different OS or machine:
 

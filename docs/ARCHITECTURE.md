@@ -1,10 +1,14 @@
 # Architecture (high level)
 
-Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP replay), without any client modification.
+Goal: a stable, passive Albion Online desktop companion (Qt GUI, live + PCAP replay), without any client modification.
 
 ## Data flow
 
 `RawPacket` -> `PhotonMessage` -> `CombatEvent` -> `SessionMeter` -> `MeterSnapshot` -> Qt UI
+
+Loot uses the same passive capture path:
+
+`RawPacket` -> `PhotonMessage` -> `LootTracker` -> `LootEvent` -> `LootState` -> Qt UI / TXT export
 
 - Capture (live/replay) produces `RawPacket` (timestamp + UDP payload + src/dst metadata).
 - Protocol decoder parses Photon messages.
@@ -15,9 +19,14 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
   - `FameTracker`: fame counters (optional UI stat).
 - Item resolver enriches UI:
   - `ItemResolver`: maps equipment item IDs -> weapon subcategory for per-weapon colors.
+  - Loot and Market reuse item IDs/names where available; unknown/stale game data falls back to technical IDs.
 - Meter aggregates events and yields snapshots + session history:
   - `SessionMeter` owns session boundaries (`battle`/`zone`/`manual`) and history.
   - `RollingMeter` owns totals + rolling DPS/HPS window.
+- Loot aggregates item pickup events:
+  - `LootTracker` owns protocol/container state and emits `LootEvent` records.
+  - `LootLogWriter` persists the live session text log.
+  - `LootState` filters, imports, exports, and exposes QML models for feed and summary panels.
 - Map resolver enriches zone labels:
   - `MapResolver`: maps map indices to localized names (from `map_index.json`).
 
@@ -82,15 +91,33 @@ Goal: a stable, passive DPS/HPS meter for Albion Online (Qt GUI, live + PCAP rep
   - `row_margin = row_profit / allocated_cost * 100`
 - This keeps row math aligned with top-level KPIs while still showing fee/tax as separate columns.
 
+## Crystallized recipe handling
+- The recipe catalog builds crystallized variants from local recipe data where a crystallized component can replace an artifact/final-item craft path.
+- Crystallized variants are marked with `uses_crystallized=True` and receive a UI badge in Market search/setup rows.
+- Crystallized inputs are non-returnable. They are included one-to-one in upfront shopping requirements and are not reduced by RRR.
+- Normal returnable materials still use the existing upfront/economic quantity split.
+
+## Loot logger behavior
+- Loot tracking is party-scoped: if a `PartyRegistry` is available, the tracker accepts only known self/party looters.
+- Current item-focused UI excludes silver from live summaries; the domain tracker can still include silver when explicitly configured for tests or future views.
+- Supported source classes:
+  - `player`: player corpse, rendered as high-attention red in the Loot UI.
+  - `mob`: mob/container-like source.
+  - `system`: inventory/container/system operation flow, for example loot chest imports.
+  - `unknown`: event had an item/looter but insufficient source context.
+- Export/import format includes `source_kind` so newer logs preserve source classification. Older logs without that column are still accepted with best-effort inference.
+- Protocol assumptions are locked with unit tests plus local PCAP replay tests. If Albion changes loot packet shapes again, update `LootTracker` first, then refresh the replay fixture expectations.
+
 ## Module boundaries (intended)
 - Capture does not know parsing/UI.
 - Protocol parser does not know UI.
 - UI does not do parsing; it renders snapshots + history.
 
 ## Safety / privacy constraint
-The meter must never attribute damage/heal to unrelated nearby players:
-- only "self" and party members are allowed to enter aggregation.
-- if self/party is not resolved yet, the strict filter can keep results empty until it is.
+The app must not attribute combat or loot to unrelated nearby players:
+- Meter aggregation allows only self and party members once party context is known.
+- Loot logging accepts only party/self looters when party state is available.
+- If self/party is not resolved yet, strict filters can keep results empty until safe context exists.
 
 ## Useful entry points
 - Desktop launcher (Qt GUI): `albion_dps/cli.py`
@@ -103,7 +130,11 @@ The meter must never attribute damage/heal to unrelated nearby players:
 - Aggregation window: `albion_dps/meter/aggregate.py`
 - Party/self filtering: `albion_dps/domain/party_registry.py`
 - Item resolver + weapon colors: `albion_dps/domain/item_resolver.py`, `albion_dps/domain/weapon_colors.py`
+- Loot domain: `albion_dps/domain/loot_tracker.py`, `albion_dps/domain/loot_types.py`, `albion_dps/domain/loot_log_writer.py`
+- Loot UI state: `albion_dps/qt/loot_state.py`
 - Map resolver: `albion_dps/domain/map_resolver.py`
+- Market recipe catalog: `albion_dps/market/catalog.py`
+- Market Qt state: `albion_dps/qt/market/state.py`
 - Qt runner: `albion_dps/qt/runner.py`
 - Qt models: `albion_dps/qt/models.py`
 - Qt QML UI: `albion_dps/qt/ui/Main.qml`
