@@ -896,6 +896,8 @@ def _item_category(item_id: str) -> str:
         return "cape"
     if "MOUNT" in unique or "RIDING" in unique:
         return "mount"
+    if any(token in unique for token in ("HEAD_", "ARMOR_", "SHOES_", "_HEAD_", "_ARMOR_", "_SHOES_")):
+        return "armor"
     if "POTION" in unique or "MEAL" in unique or "FISH" in unique or "FOOD" in unique:
         return "consumable"
     if any(
@@ -903,8 +905,6 @@ def _item_category(item_id: str) -> str:
         for token in ("METALBAR", "PLANKS", "LEATHER", "CLOTH", "ORE", "WOOD", "FIBER", "ROCK", "HIDE")
     ):
         return "resource"
-    if any(token in unique for token in ("HEAD_", "ARMOR_", "SHOES_", "_HEAD_", "_ARMOR_", "_SHOES_")):
-        return "armor"
     if any(
         token in unique
         for token in (

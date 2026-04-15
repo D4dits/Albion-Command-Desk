@@ -30,6 +30,7 @@ EV_ATTACH_ITEM_CONTAINER = 99
 EV_DETACH_ITEM_CONTAINER = 100
 EV_CHARACTER_STATS = 143
 EV_OTHER_GRABBED_LOOT = 275
+EV_PARTY_MEMBER_GRABBED_LOOT = 277
 OP_INVENTORY_MOVE_ITEM = 30
 OP_INVENTORY_MOVE_ITEMS = 39
 
@@ -89,6 +90,14 @@ class LootTracker:
             self._observe_detach_item_container(event.parameters)
             return
         if subtype == EV_OTHER_GRABBED_LOOT:
+            self._observe_other_grabbed_loot(
+                event.parameters,
+                timestamp=packet.timestamp if packet is not None else 0.0,
+                raw_event_code=event.code,
+                raw_subtype=subtype,
+            )
+            return
+        if subtype == EV_PARTY_MEMBER_GRABBED_LOOT:
             self._observe_other_grabbed_loot(
                 event.parameters,
                 timestamp=packet.timestamp if packet is not None else 0.0,

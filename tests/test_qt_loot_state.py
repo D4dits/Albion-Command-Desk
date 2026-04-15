@@ -16,7 +16,7 @@ from albion_dps.domain.party_registry import PartyRegistry
 from albion_dps.domain.session_activity import MapTrailTracker
 from albion_dps.meter.session_meter import SessionMeter
 from albion_dps.models import MeterSnapshot
-from albion_dps.qt.loot_state import LootState
+from albion_dps.qt.loot_state import LootState, _item_category
 from albion_dps.qt.models import UiState
 from albion_dps.qt.runner import _drain_snapshots
 from tests.support_temp import mk_test_dir
@@ -222,6 +222,13 @@ def test_loot_state_keeps_loot_view_item_only() -> None:
     assert state.eventCount == 2
     assert state.totalQuantity == 3
     assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"
+
+
+def test_loot_state_classifies_armor_before_material_tokens() -> None:
+    assert _item_category("T6_SHOES_LEATHER_SET3@3") == "armor"
+    assert _item_category("T4_ARMOR_LEATHER_SET3@4") == "armor"
+    assert _item_category("T5_HEAD_LEATHER_SET3@2") == "armor"
+    assert _item_category("T4_LEATHER") == "resource"
 
 
 def test_loot_state_can_import_log_and_return_to_live(monkeypatch) -> None:

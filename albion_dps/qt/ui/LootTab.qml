@@ -37,12 +37,12 @@ Item {
     property bool stackedControls: width < 1140
     property bool stackedSummary: width < 920
     property bool summaryRail: width >= 1040
-    property int summaryRailWidth: 352
+    property int summaryRailWidth: compactLayout ? 300 : 320
     property int aggregateColumns: width >= 1050 ? 3 : (width >= 720 ? 2 : 1)
-    property int timeColumnWidth: compactLayout ? 56 : 64
-    property int looterColumnWidth: compactLayout ? 136 : 164
-    property int qtyColumnWidth: compactLayout ? 48 : 56
-    property int sourceColumnWidth: compactLayout ? 124 : 140
+    property int timeColumnWidth: compactLayout ? 50 : 58
+    property int looterColumnWidth: compactLayout ? 112 : 136
+    property int qtyColumnWidth: compactLayout ? 42 : 48
+    property int sourceColumnWidth: compactLayout ? 104 : 118
 
     signal setSearchQuery(string value)
     signal setSourceFilter(string value)
@@ -292,14 +292,14 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 columns: root.summaryRail ? 2 : 1
-                columnSpacing: 10
-                rowSpacing: 10
+                columnSpacing: 8
+                rowSpacing: 8
 
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.minimumWidth: root.summaryRail ? 620 : 0
-                    spacing: 10
+                    Layout.minimumWidth: root.summaryRail ? 560 : 0
+                    spacing: 8
 
                     Rectangle {
                         Layout.fillWidth: true
@@ -487,8 +487,8 @@ Item {
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 12
-                        spacing: 8
+                        anchors.margins: 10
+                        spacing: 6
 
                         RowLayout {
                             Layout.fillWidth: true
@@ -541,16 +541,26 @@ Item {
                             }
                         }
 
-                        RowLayout {
+                        Rectangle {
                             Layout.fillWidth: true
-                            spacing: 12
+                            Layout.preferredHeight: 26
                             visible: !root.stackedSummary
+                            radius: 8
+                            color: theme.cardLevel2
+                            border.color: theme.borderSubtle
 
-                            Text { text: "Time"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: root.timeColumnWidth }
-                            Text { text: "Looter"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: root.looterColumnWidth }
-                            Text { text: "Item"; color: theme.textMuted; font.pixelSize: 11; Layout.fillWidth: true }
-                            Text { text: "Qty"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: root.qtyColumnWidth }
-                            Text { text: "Source"; color: theme.textMuted; font.pixelSize: 11; Layout.preferredWidth: root.sourceColumnWidth }
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 8
+                                anchors.rightMargin: 8
+                                spacing: 8
+
+                                Text { text: "TIME"; color: theme.textMuted; font.pixelSize: 10; font.bold: true; Layout.preferredWidth: root.timeColumnWidth }
+                                Text { text: "LOOTER"; color: theme.textMuted; font.pixelSize: 10; font.bold: true; Layout.preferredWidth: root.looterColumnWidth }
+                                Text { text: "ITEM"; color: theme.textMuted; font.pixelSize: 10; font.bold: true; Layout.fillWidth: true }
+                                Text { text: "QTY"; color: theme.textMuted; font.pixelSize: 10; font.bold: true; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: root.qtyColumnWidth }
+                                Text { text: "SOURCE"; color: theme.textMuted; font.pixelSize: 10; font.bold: true; horizontalAlignment: Text.AlignHCenter; Layout.preferredWidth: root.sourceColumnWidth }
+                            }
                         }
 
                         Rectangle {
@@ -568,7 +578,7 @@ Item {
                                 id: lootList
                                 anchors.fill: parent
                                 clip: true
-                                spacing: 6
+                                spacing: 4
                                 model: root.eventsModel
                                 reuseItems: true
                                 cacheBuffer: 900
@@ -592,34 +602,34 @@ Item {
                                     color: root.rowBackground(sourceKind)
                                     border.color: root.rowBorder(sourceKind)
                                     border.width: 1
-                                    implicitHeight: compactLayout ? 68 : 72
+                                    implicitHeight: compactLayout ? 52 : 56
 
                                     ColumnLayout {
                                         anchors.fill: parent
-                                        anchors.margins: 10
-                                        spacing: 4
+                                        anchors.margins: 7
+                                        spacing: 2
 
                                         RowLayout {
                                             Layout.fillWidth: true
-                                            spacing: 10
+                                            spacing: 8
 
                                             Text {
                                                 text: timestampText
                                                 color: theme.textPrimary
-                                                font.pixelSize: 11
+                                                font.pixelSize: 10
                                                 Layout.preferredWidth: root.timeColumnWidth
                                             }
                                             Text {
                                                 text: lootedByGuild.length > 0 ? (lootedByName + " [" + lootedByGuild + "]") : lootedByName
                                                 color: theme.textPrimary
-                                                font.pixelSize: 11
+                                                font.pixelSize: 10
                                                 Layout.preferredWidth: root.looterColumnWidth
                                                 elide: Text.ElideRight
                                             }
 
                                             Item {
-                                                Layout.preferredWidth: iconUrl.length > 0 ? 28 : 0
-                                                Layout.preferredHeight: 28
+                                                Layout.preferredWidth: iconUrl.length > 0 ? 24 : 0
+                                                Layout.preferredHeight: 24
                                                 visible: iconUrl.length > 0
 
                                                 Rectangle {
@@ -641,7 +651,7 @@ Item {
 
                                             ColumnLayout {
                                                 Layout.fillWidth: true
-                                                Layout.minimumWidth: compactLayout ? 180 : 260
+                                                Layout.minimumWidth: compactLayout ? 140 : 210
                                                 spacing: 1
                                                 RowLayout {
                                                     Layout.fillWidth: true
@@ -651,7 +661,7 @@ Item {
                                                         Layout.fillWidth: true
                                                         text: itemName
                                                         color: sourceKind === "player" ? theme.stateDanger : theme.textPrimary
-                                                        font.pixelSize: 12
+                                                        font.pixelSize: 11
                                                         font.bold: true
                                                         elide: Text.ElideRight
                                                     }
@@ -660,15 +670,15 @@ Item {
                                                         radius: 9
                                                         color: root.categoryBadgeBg(category, sourceKind)
                                                         border.color: root.categoryBadgeBorder(category, sourceKind)
-                                                        implicitHeight: 20
-                                                        implicitWidth: kindBadgeText.implicitWidth + 14
+                                                        implicitHeight: 18
+                                                        implicitWidth: kindBadgeText.implicitWidth + 12
 
                                                         Text {
                                                             id: kindBadgeText
                                                             anchors.centerIn: parent
                                                             text: root.categoryBadgeLabel(category)
                                                             color: root.categoryBadgeText(category, sourceKind)
-                                                            font.pixelSize: 9
+                                                            font.pixelSize: 8
                                                             font.bold: true
                                                         }
                                                     }
@@ -677,7 +687,7 @@ Item {
                                                     Layout.fillWidth: true
                                                     text: itemId
                                                     color: theme.textDisabled
-                                                    font.pixelSize: 9
+                                                    font.pixelSize: 8
                                                     elide: Text.ElideRight
                                                     visible: itemId.length > 0
                                                 }
@@ -685,7 +695,7 @@ Item {
                                             Text {
                                                 text: String(quantity) + "x"
                                                 color: sourceKind === "player" ? theme.stateDanger : theme.textPrimary
-                                                font.pixelSize: 11
+                                                font.pixelSize: 10
                                                 font.bold: true
                                                 horizontalAlignment: Text.AlignRight
                                                 Layout.preferredWidth: root.qtyColumnWidth
@@ -696,7 +706,7 @@ Item {
                                                 color: root.sourceBadgeBg(sourceKind)
                                                 border.color: root.sourceBadgeBorder(sourceKind)
                                                 border.width: 1
-                                                implicitHeight: 22
+                                                implicitHeight: 20
 
                                                 Text {
                                                     anchors.centerIn: parent
@@ -704,7 +714,7 @@ Item {
                                                         ? ("Corpse: " + (sourceName.length > 0 ? sourceName : "player"))
                                                         : (sourceName.length > 0 ? sourceName : "System")
                                                     color: root.sourceBadgeText(sourceKind)
-                                                    font.pixelSize: 10
+                                                    font.pixelSize: 9
                                                     elide: Text.ElideRight
                                                     width: parent.width - 12
                                                     horizontalAlignment: Text.AlignHCenter
@@ -717,7 +727,7 @@ Item {
                                             Layout.fillWidth: true
                                             text: summary
                                             color: theme.textMuted
-                                            font.pixelSize: 10
+                                            font.pixelSize: 9
                                             elide: Text.ElideRight
                                             maximumLineCount: 1
                                         }
@@ -773,7 +783,7 @@ Item {
                     LootSummaryPanel {
                         Layout.fillWidth: true
                         Layout.fillHeight: root.summaryRail
-                        Layout.preferredHeight: root.summaryRail ? 130 : (compactLayout ? 132 : 146)
+                        Layout.preferredHeight: root.summaryRail ? 118 : (compactLayout ? 118 : 132)
                         theme: root.theme
                         title: "Top Looters"
                         emptyText: "No looters in this view"
@@ -784,7 +794,7 @@ Item {
                     LootSummaryPanel {
                         Layout.fillWidth: true
                         Layout.fillHeight: root.summaryRail
-                        Layout.preferredHeight: root.summaryRail ? 150 : (compactLayout ? 132 : 146)
+                        Layout.preferredHeight: root.summaryRail ? 138 : (compactLayout ? 118 : 132)
                         theme: root.theme
                         title: "Top Items"
                         emptyText: "No item drops in this view"
@@ -795,7 +805,7 @@ Item {
                     LootSummaryPanel {
                         Layout.fillWidth: true
                         Layout.fillHeight: root.summaryRail
-                        Layout.preferredHeight: root.summaryRail ? 130 : (compactLayout ? 132 : 146)
+                        Layout.preferredHeight: root.summaryRail ? 118 : (compactLayout ? 118 : 132)
                         theme: root.theme
                         title: "Looted From Players"
                         emptyText: "No player corpses in this view"

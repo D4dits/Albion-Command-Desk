@@ -14,6 +14,7 @@ from albion_dps.domain.loot_tracker import (
     EV_NEW_LOOT,
     EV_NEW_SIMPLE_ITEM,
     EV_OTHER_GRABBED_LOOT,
+    EV_PARTY_MEMBER_GRABBED_LOOT,
     LootTracker,
     OP_INVENTORY_MOVE_ITEM,
     OP_INVENTORY_MOVE_ITEMS,
@@ -96,6 +97,47 @@ def test_loot_tracker_records_loot_event_with_resolved_item(monkeypatch) -> None
     assert event.item.display_name == "Adept's Broadsword"
     assert event.quantity == 2
     assert event.is_silver is False
+
+
+def test_loot_tracker_records_party_member_loot_event_variant(monkeypatch) -> None:
+    tracker = LootTracker(
+        item_resolver=ItemResolver(
+            index_to_unique={495: "T4_SKILLBOOK_STANDARD"},
+            index_to_name={495: "Adept's Tome of Insight"},
+        )
+    )
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_PARTY_MEMBER_GRABBED_LOOT,
+        parameters={1: "McGyver", 2: "Alaulyu", 4: 495, 5: 2},
+    )
+    tracker.observe(_message(), _packet(1776238189.299222))
+
+    events = tracker.events()
+    assert len(events) == 1
+    event = events[0]
+    assert event.looted_by.player_name == "Alaulyu"
+    assert event.looted_from is not None
+    assert event.looted_from.player_name == "McGyver"
+    assert event.source_kind == "player"
+    assert event.item is not None
+    assert event.item.display_name == "Adept's Tome of Insight"
+    assert event.quantity == 2
+    assert event.raw_subtype == EV_PARTY_MEMBER_GRABBED_LOOT
+
+
+def test_loot_tracker_ignores_party_member_variant_without_item_payload(monkeypatch) -> None:
+    tracker = LootTracker()
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_PARTY_MEMBER_GRABBED_LOOT,
+        parameters={0: 471526, 2: "Nidzuma", 3: True, 5: 2000000000},
+    )
+    tracker.observe(_message(), _packet(1.0))
+
+    assert tracker.events() == []
 
 
 def test_loot_tracker_ignores_silver_by_default(monkeypatch) -> None:
