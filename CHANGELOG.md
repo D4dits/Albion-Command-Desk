@@ -7,6 +7,8 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.1.25] - 2026-04-15
+
 ### Added
 - Native Loot tab for party-scoped item loot review, including live log status, import/export actions, compact feed rows, top looters/items/source summaries, category filters, and source-color badges for player corpses versus mob/container/system sources.
 - Loot tracker now understands the current party-member loot pickup variant and inventory move flows, so replay/live logs can include party looters instead of only the local player when the packet stream contains the required party context.

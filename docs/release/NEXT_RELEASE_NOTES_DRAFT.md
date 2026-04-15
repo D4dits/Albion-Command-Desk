@@ -1,8 +1,8 @@
 # Next Release Notes Draft
 
-Use this as the first draft for the next GitHub Release body. Before publishing, replace `vX.Y.Z` with the actual tag and ensure `CHANGELOG.md` has the same content under a dated version section.
+Used for the `v0.1.25` GitHub Release body. Keep this file as the release-note source for the tag.
 
-## Albion Command Desk vX.Y.Z
+## Albion Command Desk v0.1.25
 
 ### Highlights
 
@@ -35,5 +35,5 @@ Use this as the first draft for the next GitHub Release body. Before publishing,
 
 ### Download
 
-- Windows: `AlbionCommandDesk-Setup-vX.Y.Z-x86_64.exe`
+- Windows: `AlbionCommandDesk-Setup-v0.1.25-x86_64.exe`
 - Latest release page: `https://github.com/D4dits/Albion-Command-Desk/releases/latest`
