@@ -1,8 +1,4 @@
-# Next Release Notes Draft
-
-Used for the `v0.1.25` GitHub Release body. Keep this file as the release-note source for the tag.
-
-## Albion Command Desk v0.1.25
+# Albion Command Desk v0.1.25
 
 ### Highlights
 
