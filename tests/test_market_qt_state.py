@@ -530,7 +530,7 @@ def test_need_quantity_with_safety_buffer_for_returnable_resources() -> None:
     assert market_state._need_quantity_with_safety_buffer(10.0, False) == 10
 
 
-def test_market_setup_state_input_preview_uses_full_upfront_returnable_quantity() -> None:
+def test_market_setup_state_input_preview_uses_expected_net_returnable_quantity() -> None:
     sword = ItemRef(
         unique_name="T4_MAIN_SWORD",
         display_name="Broadsword",
@@ -591,11 +591,11 @@ def test_market_setup_state_input_preview_uses_full_upfront_returnable_quantity(
     row = next(iter(preview_rows.values()))
 
     assert row["item_id"] == "T4_METALBAR"
-    assert float(row["quantity"]) == 30.0
-    assert float(row["total_cost"]) == 27000.0
+    assert float(row["quantity"]) == pytest.approx(25.6, rel=0.0, abs=0.01)
+    assert float(row["total_cost"]) == pytest.approx(23040.0, rel=0.0, abs=0.01)
 
 
-def test_market_setup_state_input_preview_uses_minimal_upfront_counts_for_two_component_weapon() -> None:
+def test_market_setup_state_input_preview_uses_expected_net_counts_for_two_component_weapon() -> None:
     weapon = ItemRef(
         unique_name="T4_2H_CROSSBOW_CANNON",
         display_name="Boltcasters",
@@ -681,12 +681,20 @@ def test_market_setup_state_input_preview_uses_minimal_upfront_counts_for_two_co
         runs=[run],
     )
 
-    assert float(preview_rows[("T4_PLANKS", "Bridgewatch", "buy_order", 280.0)]["quantity"]) == 38.0
-    assert float(preview_rows[("T4_METALBAR", "Bridgewatch", "buy_order", 380.0)]["quantity"]) == 24.0
+    assert float(preview_rows[("T4_PLANKS", "Bridgewatch", "buy_order", 280.0)]["quantity"]) == pytest.approx(
+        33.88,
+        rel=0.0,
+        abs=0.01,
+    )
+    assert float(preview_rows[("T4_METALBAR", "Bridgewatch", "buy_order", 380.0)]["quantity"]) == pytest.approx(
+        20.328,
+        rel=0.0,
+        abs=0.01,
+    )
     assert float(preview_rows[("T4_ARTEFACT_2H_DEMONIC_CROSSBOW", "Bridgewatch", "buy_order", 8500.0)]["quantity"]) == 2.0
 
 
-def test_market_setup_state_input_preview_matches_batch_return_behavior_for_oathkeepers() -> None:
+def test_market_setup_state_input_preview_matches_expected_net_return_behavior_for_oathkeepers() -> None:
     weapon = ItemRef(
         unique_name="T7_2H_ARCANE_RIFT",
         display_name="Grandmaster's Oathkeepers",
@@ -772,12 +780,20 @@ def test_market_setup_state_input_preview_matches_batch_return_behavior_for_oath
         runs=[run],
     )
 
-    assert float(preview_rows[("T7_METALBAR", "Martlock", "buy_order", 3800.0)]["quantity"]) == 162.0
-    assert float(preview_rows[("T7_CLOTH", "Martlock", "buy_order", 2800.0)]["quantity"]) == 98.0
+    assert float(preview_rows[("T7_METALBAR", "Martlock", "buy_order", 3800.0)]["quantity"]) == pytest.approx(
+        156.4,
+        rel=0.0,
+        abs=0.01,
+    )
+    assert float(preview_rows[("T7_CLOTH", "Martlock", "buy_order", 2800.0)]["quantity"]) == pytest.approx(
+        93.84,
+        rel=0.0,
+        abs=0.01,
+    )
     assert float(preview_rows[("T7_ARTEFACT_MAIN_ARCANE_RIFT", "Martlock", "buy_order", 85000.0)]["quantity"]) == 10.0
 
 
-def test_market_setup_state_real_recipe_preview_is_conservative_for_dawnsong_and_flamewalker() -> None:
+def test_market_setup_state_real_recipe_preview_uses_net_returnable_quantities_for_dawnsong_and_flamewalker() -> None:
     state = MarketSetupState(auto_refresh_prices=False)
     state.setCraftCity("Bridgewatch")
     state.setDefaultBuyCity("Bridgewatch")
@@ -796,8 +812,8 @@ def test_market_setup_state_real_recipe_preview_is_conservative_for_dawnsong_and
         item_id = str(state.inputsModel.data(model_index, state.inputsModel.ItemIdRole) or "")
         dawsong_quantities[item_id] = float(state.inputsModel.data(model_index, state.inputsModel.QuantityRole) or 0.0)
 
-    assert dawsong_quantities["T4_PLANKS_LEVEL1"] == pytest.approx(174.0, rel=0.0, abs=0.01)
-    assert dawsong_quantities["T4_METALBAR_LEVEL1"] == pytest.approx(105.0, rel=0.0, abs=0.01)
+    assert dawsong_quantities["T4_PLANKS_LEVEL1"] == pytest.approx(170.0, rel=0.0, abs=0.01)
+    assert dawsong_quantities["T4_METALBAR_LEVEL1"] == pytest.approx(102.0, rel=0.0, abs=0.01)
 
     state.clearCraftPlan()
     state.setRecipeId("T4_MAIN_FIRESTAFF_CRYSTAL@3")
@@ -812,8 +828,8 @@ def test_market_setup_state_real_recipe_preview_is_conservative_for_dawnsong_and
         item_id = str(state.inputsModel.data(model_index, state.inputsModel.ItemIdRole) or "")
         flamewalker_quantities[item_id] = float(state.inputsModel.data(model_index, state.inputsModel.QuantityRole) or 0.0)
 
-    assert flamewalker_quantities["T4_PLANKS_LEVEL3"] == pytest.approx(45.0, rel=0.0, abs=0.01)
-    assert flamewalker_quantities["T4_METALBAR_LEVEL3"] == pytest.approx(23.0, rel=0.0, abs=0.01)
+    assert flamewalker_quantities["T4_PLANKS_LEVEL3"] == pytest.approx(41.0, rel=0.0, abs=0.01)
+    assert flamewalker_quantities["T4_METALBAR_LEVEL3"] == pytest.approx(21.0, rel=0.0, abs=0.01)
 
 
 def test_market_setup_state_selected_input_total_uses_exact_expected_quantity() -> None:
