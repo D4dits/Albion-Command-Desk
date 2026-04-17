@@ -389,7 +389,7 @@ class PartyRegistry:
         if self._self_name_confirmed and self._self_name == player_name:
             return True
         if not self._party_names:
-            return not self.strict and self._allow_name_only_fallback()
+            return self._allow_name_only_fallback()
         return player_name in self._party_names
 
     def snapshot_ids(self) -> set[int]:
