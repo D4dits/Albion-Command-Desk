@@ -274,12 +274,23 @@ def test_allows_self_by_name_without_ids() -> None:
     assert registry.allows(101, names)
 
 
-def test_allows_known_player_during_strict_bootstrap_without_party_context() -> None:
+def test_rejects_known_player_during_strict_bootstrap_without_party_context() -> None:
     registry = PartyRegistry(strict=True)
     names = NameRegistry()
     names.record(101, "D4dits")
 
+    assert not registry.allows(101, names, timestamp=1.0)
+
+
+def test_allows_confirmed_self_name_during_strict_bootstrap() -> None:
+    registry = PartyRegistry(strict=True)
+    registry.set_self_name("D4dits", confirmed=True)
+    names = NameRegistry()
+    names.record(101, "D4dits")
+    names.record(202, "NearbyPlayer")
+
     assert registry.allows(101, names, timestamp=1.0)
+    assert not registry.allows(202, names, timestamp=1.0)
 
 
 def test_sync_guids_populates_party_ids_from_id_guids() -> None:
@@ -464,13 +475,13 @@ def test_party_registry_disallows_unknown_name_when_roster_is_known() -> None:
     assert not registry.allows(200, names)
 
 
-def test_party_registry_allows_player_name_fallback_when_only_self_id_is_known() -> None:
+def test_party_registry_rejects_player_name_fallback_when_only_self_id_is_known() -> None:
     registry = PartyRegistry()
     names = NameRegistry()
     registry.seed_self_ids([100])
     names.record(200, "PartyCandidate")
 
-    assert registry.allows(200, names)
+    assert not registry.allows(200, names)
 
 
 def test_party_registry_disallows_name_only_fallback_after_party_id_resolution() -> None:

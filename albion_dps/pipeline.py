@@ -186,14 +186,8 @@ def stream_snapshots(
                     if _allow_event(item, party_registry, name_registry):
                         meter.push(item)
                         continue
-                    if party_registry is not None and party_registry.strict:
-                        if (
-                            not party_registry.has_ids()
-                            or party_registry.has_unresolved_names()
-                        ):
-                            pending_events.append(item)
-                        elif name_registry is not None and name_registry.lookup(item.source_id) is None:
-                            pending_events.append(item)
+                    if _should_keep_pending_event(item, party_registry, name_registry):
+                        pending_events.append(item)
             else:
                 if (
                     party_registry is not None
@@ -204,14 +198,8 @@ def stream_snapshots(
                     party_registry.try_resolve_self_id(name_registry)
                 if _allow_event(event, party_registry, name_registry):
                     meter.push(event)
-                elif party_registry is not None and party_registry.strict:
-                    if (
-                        not party_registry.has_ids()
-                        or party_registry.has_unresolved_names()
-                    ):
-                        pending_events.append(event)
-                    elif name_registry is not None and name_registry.lookup(event.source_id) is None:
-                        pending_events.append(event)
+                elif _should_keep_pending_event(event, party_registry, name_registry):
+                    pending_events.append(event)
 
         for message in messages:
             combat_state = _decode_combat_state(message)
@@ -230,11 +218,10 @@ def stream_snapshots(
                 except TypeError:
                     pass
             elif (
-                party_registry is not None
-                and party_registry.strict
-                and (
-                    not party_registry.has_ids()
-                    or party_registry.has_unresolved_names()
+                _should_keep_pending_entity(
+                    combat_state[0],
+                    party_registry,
+                    name_registry,
                 )
             ):
                 pending_combat_states.append(
@@ -312,6 +299,26 @@ def _allow_combat_state(
     return party_registry.allows(entity_id, name_registry, timestamp=timestamp)
 
 
+def _should_keep_pending_event(
+    event: CombatEvent,
+    party_registry: PartyRegistry | None,
+    name_registry: NameRegistry | None,
+) -> bool:
+    return _should_keep_pending_entity(event.source_id, party_registry, name_registry)
+
+
+def _should_keep_pending_entity(
+    entity_id: int,
+    party_registry: PartyRegistry | None,
+    name_registry: NameRegistry | None,
+) -> bool:
+    if party_registry is None or not party_registry.strict:
+        return False
+    if not party_registry.has_ids() or party_registry.has_unresolved_names():
+        return True
+    return name_registry is not None and name_registry.lookup(entity_id) is None
+
+
 def _decode_combat_state(
     message: PhotonMessage,
 ) -> tuple[int, bool, bool] | None:
@@ -364,7 +371,7 @@ def _flush_or_trim_pending(
                     if hasattr(meter, "merge_event_into_history") and meter.merge_event_into_history(item):
                         continue
                     meter.push(item)
-                else:
+                elif _should_keep_pending_event(item, party_registry, name_registry):
                     remaining.append(item)
             pending_events[:] = remaining
         if pending_combat_states and hasattr(meter, "observe_combat_state"):
@@ -380,7 +387,7 @@ def _flush_or_trim_pending(
                         meter.observe_combat_state(entity_id, in_active, in_passive, ts)
                     except TypeError:
                         pass
-                else:
+                elif _should_keep_pending_entity(entity_id, party_registry, name_registry):
                     remaining_states.append((ts, entity_id, in_active, in_passive))
             pending_combat_states[:] = remaining_states
         return

@@ -388,8 +388,8 @@ class PartyRegistry:
             return False
         if self._self_name_confirmed and self._self_name == player_name:
             return True
-        if not self._party_names and self._allow_name_only_fallback():
-            return True
+        if not self._party_names:
+            return not self.strict and self._allow_name_only_fallback()
         return player_name in self._party_names
 
     def snapshot_ids(self) -> set[int]:
@@ -583,21 +583,25 @@ class PartyRegistry:
                 name = name_registry.lookup(source_id)
                 if not _looks_like_player_name(name):
                     return False
-                if not self._party_names:
-                    return True
                 if self._self_name_confirmed and self._self_name:
                     if name == self._self_name:
                         return True
+                    if not self._party_names:
+                        return False
                 if self._party_names:
                     if not allow_name_only_fallback:
                         return False
                     return name is not None and name in self._party_names
                 return False
             if not self._party_names:
-                if not allow_name_only_fallback or name_registry is None:
+                if name_registry is None:
                     return False
                 name = name_registry.lookup(source_id)
-                return _looks_like_player_name(name)
+                return (
+                    self._self_name_confirmed
+                    and self._self_name is not None
+                    and name == self._self_name
+                )
             if not allow_name_only_fallback or name_registry is None:
                 return False
             name = name_registry.lookup(source_id)

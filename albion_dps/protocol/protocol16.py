@@ -56,6 +56,7 @@ V18_TYPE_FLOAT_ZERO = 32
 V18_TYPE_DOUBLE_ZERO = 33
 V18_TYPE_BYTE_ZERO = 34
 V18_TYPE_ARRAY_FLAG = 0x40
+MAX_COLLECTION_LENGTH = 4096
 
 
 class Protocol16Error(ValueError):
@@ -151,6 +152,8 @@ def decode_operation_response(payload: bytes) -> OperationResponse:
 
 def _decode_parameter_table(payload: bytes, offset: int) -> tuple[dict[int, Any], int]:
     count, offset = _read_u16(payload, offset)
+    if count > (len(payload) - offset) // 2:
+        raise Protocol16Error(f"Invalid parameter count: {count}")
     parameters: dict[int, Any] = {}
     for _ in range(count):
         if offset + 2 > len(payload):
@@ -465,8 +468,8 @@ def _read_custom_v18(payload: bytes, offset: int) -> tuple[bytes, int]:
 
 def _read_array_v18(payload: bytes, offset: int, element_type: int) -> tuple[list[Any], int]:
     length, offset = _read_compressed_int_v18(payload, offset)
-    if length < 0:
-        raise Protocol16Error("Negative Protocol18 array length")
+    if length < 0 or length > MAX_COLLECTION_LENGTH:
+        raise Protocol16Error(f"Invalid Protocol18 array length: {length}")
     values: list[Any] = []
     for _ in range(length):
         value, offset = _decode_value_v18(payload, offset, element_type)
@@ -476,8 +479,8 @@ def _read_array_v18(payload: bytes, offset: int, element_type: int) -> tuple[lis
 
 def _read_object_array_v18(payload: bytes, offset: int) -> tuple[list[Any], int]:
     length, offset = _read_compressed_int_v18(payload, offset)
-    if length < 0:
-        raise Protocol16Error("Negative Protocol18 object array length")
+    if length < 0 or length > MAX_COLLECTION_LENGTH:
+        raise Protocol16Error(f"Invalid Protocol18 object array length: {length}")
     values: list[Any] = []
     for _ in range(length):
         type_code, offset = _read_u8(payload, offset)
@@ -490,8 +493,8 @@ def _read_dictionary_v18(payload: bytes, offset: int) -> tuple[dict[Any, Any], i
     key_type, offset = _read_u8(payload, offset)
     value_type, offset = _read_u8(payload, offset)
     length, offset = _read_compressed_int_v18(payload, offset)
-    if length < 0:
-        raise Protocol16Error("Negative Protocol18 dictionary length")
+    if length < 0 or length > MAX_COLLECTION_LENGTH:
+        raise Protocol16Error(f"Invalid Protocol18 dictionary length: {length}")
     output: dict[Any, Any] = {}
     for _ in range(length):
         key, offset = _decode_value_v18(payload, offset, key_type)
@@ -502,8 +505,8 @@ def _read_dictionary_v18(payload: bytes, offset: int) -> tuple[dict[Any, Any], i
 
 def _read_hashtable_v18(payload: bytes, offset: int) -> tuple[dict[Any, Any], int]:
     length, offset = _read_compressed_int_v18(payload, offset)
-    if length < 0:
-        raise Protocol16Error("Negative Protocol18 hashtable length")
+    if length < 0 or length > MAX_COLLECTION_LENGTH:
+        raise Protocol16Error(f"Invalid Protocol18 hashtable length: {length}")
     output: dict[Any, Any] = {}
     for _ in range(length):
         key_type, offset = _read_u8(payload, offset)
@@ -526,8 +529,8 @@ def _read_byte_array(payload: bytes, offset: int) -> tuple[bytes, int]:
 
 def _read_int_array(payload: bytes, offset: int) -> tuple[list[int], int]:
     length, offset = _read_i32(payload, offset)
-    if length < 0:
-        raise Protocol16Error("Negative int array length")
+    if length < 0 or length > MAX_COLLECTION_LENGTH:
+        raise Protocol16Error(f"Invalid int array length: {length}")
     values = []
     for _ in range(length):
         value, offset = _read_i32(payload, offset)
@@ -537,6 +540,8 @@ def _read_int_array(payload: bytes, offset: int) -> tuple[list[int], int]:
 
 def _read_string_array(payload: bytes, offset: int) -> tuple[list[str], int]:
     length, offset = _read_u16(payload, offset)
+    if length > MAX_COLLECTION_LENGTH:
+        raise Protocol16Error(f"Invalid string array length: {length}")
     values = []
     for _ in range(length):
         value, offset = _read_string(payload, offset)
@@ -546,6 +551,8 @@ def _read_string_array(payload: bytes, offset: int) -> tuple[list[str], int]:
 
 def _read_object_array(payload: bytes, offset: int) -> tuple[list[Any], int]:
     length, offset = _read_u16(payload, offset)
+    if length > MAX_COLLECTION_LENGTH:
+        raise Protocol16Error(f"Invalid object array length: {length}")
     values = []
     for _ in range(length):
         type_code, offset = _read_u8(payload, offset)
@@ -558,6 +565,8 @@ def _read_dictionary(payload: bytes, offset: int) -> tuple[dict[Any, Any], int]:
     key_type, offset = _read_u8(payload, offset)
     value_type, offset = _read_u8(payload, offset)
     size, offset = _read_u16(payload, offset)
+    if size > MAX_COLLECTION_LENGTH:
+        raise Protocol16Error(f"Invalid dictionary length: {size}")
     output: dict[Any, Any] = {}
     for _ in range(size):
         key_type_code = key_type
@@ -574,6 +583,8 @@ def _read_dictionary(payload: bytes, offset: int) -> tuple[dict[Any, Any], int]:
 
 def _read_array(payload: bytes, offset: int) -> tuple[list[Any], int]:
     length, offset = _read_u16(payload, offset)
+    if length > MAX_COLLECTION_LENGTH:
+        raise Protocol16Error(f"Invalid array length: {length}")
     type_code, offset = _read_u8(payload, offset)
 
     if type_code == TYPE_ARRAY:
@@ -608,6 +619,8 @@ def _read_dictionary_array(
     values: list[dict[Any, Any]] = []
     for _ in range(length):
         size, offset = _read_u16(payload, offset)
+        if size > MAX_COLLECTION_LENGTH:
+            raise Protocol16Error(f"Invalid dictionary length: {size}")
         dictionary: dict[Any, Any] = {}
         for _ in range(size):
             key_type_code = key_type

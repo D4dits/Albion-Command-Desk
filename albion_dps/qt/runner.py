@@ -539,7 +539,7 @@ def _allowed_display_names_for_snapshot(
             if isinstance(name, str) and name
         }
         if not party_names:
-            return set()
+            return allowed_names
         allowed_names.update(party_names)
         return allowed_names
 

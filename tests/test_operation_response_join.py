@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import pytest
+
 from albion_dps.domain import NameRegistry, PartyRegistry
 from albion_dps.models import PhotonMessage
-from albion_dps.protocol.protocol16 import decode_operation_response
+from albion_dps.protocol.protocol16 import Protocol16Error, decode_operation_response
 
 # Join response payload extracted from albion_combat_43_solo.pcap (operation response).
 JOIN_RESPONSE_HEX = (
@@ -39,6 +41,13 @@ def test_decode_operation_response_join() -> None:
     assert response.parameters.get(253) == 2
     assert response.parameters.get(0) == 41540
     assert response.parameters.get(2) == "D4dits"
+
+
+def test_decode_operation_response_rejects_impossible_parameter_count() -> None:
+    payload = bytes.fromhex("01000200780000040405250200215db495b56858")
+
+    with pytest.raises(Protocol16Error):
+        decode_operation_response(payload)
 
 
 def test_party_registry_join_seeds_self() -> None:
