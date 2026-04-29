@@ -170,12 +170,14 @@ def stream_snapshots(
             pending_max_age=pending_max_age,
             pending_max_count=pending_max_count,
         )
+        mapped_party_sources = False
         for message in messages:
             event = mapper(message, packet)
             if event is None:
                 continue
             if isinstance(event, list):
                 for item in event:
+                    mapped_party_sources = mapped_party_sources or party_registry is not None
                     if (
                         party_registry is not None
                         and party_registry.strict
@@ -189,6 +191,7 @@ def stream_snapshots(
                     if _should_keep_pending_event(item, party_registry, name_registry):
                         pending_events.append(item)
             else:
+                mapped_party_sources = mapped_party_sources or party_registry is not None
                 if (
                     party_registry is not None
                     and party_registry.strict
@@ -200,6 +203,9 @@ def stream_snapshots(
                     meter.push(event)
                 elif _should_keep_pending_event(event, party_registry, name_registry):
                     pending_events.append(event)
+
+        if mapped_party_sources and party_registry is not None and name_registry is not None:
+            party_registry.sync_names(name_registry)
 
         for message in messages:
             combat_state = _decode_combat_state(message)
@@ -314,9 +320,21 @@ def _should_keep_pending_entity(
 ) -> bool:
     if party_registry is None or not party_registry.strict:
         return False
+    if name_registry is not None:
+        name = name_registry.lookup(entity_id)
+        party_names = party_registry.snapshot_names()
+        self_name = party_registry.self_name()
+        if (
+            party_names
+            and isinstance(name, str)
+            and name
+            and name != self_name
+            and name not in party_names
+        ):
+            return False
     if not party_registry.has_ids() or party_registry.has_unresolved_names():
         return True
-    return name_registry is not None and name_registry.lookup(entity_id) is None
+    return False
 
 
 def _decode_combat_state(

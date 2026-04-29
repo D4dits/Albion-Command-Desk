@@ -97,6 +97,7 @@ class LootTracker:
                 timestamp=packet.timestamp if packet is not None else 0.0,
                 raw_event_code=event.code,
                 raw_subtype=subtype,
+                trusted_party_member=False,
             )
             return
         if subtype == EV_PARTY_MEMBER_GRABBED_LOOT:
@@ -105,6 +106,7 @@ class LootTracker:
                 timestamp=packet.timestamp if packet is not None else 0.0,
                 raw_event_code=event.code,
                 raw_subtype=subtype,
+                trusted_party_member=True,
             )
 
     def _observe_operation_request(
@@ -395,6 +397,7 @@ class LootTracker:
         timestamp: float,
         raw_event_code: int,
         raw_subtype: int,
+        trusted_party_member: bool = False,
     ) -> None:
         is_silver = bool(parameters.get(3))
         looted_from_name = parameters.get(1)
@@ -403,7 +406,11 @@ class LootTracker:
         quantity = parameters.get(5)
         if not isinstance(looted_by_name, str) or not looted_by_name:
             return
-        if self.party_registry is not None and not self.party_registry.allows_player_name(looted_by_name):
+        if (
+            self.party_registry is not None
+            and not trusted_party_member
+            and not self.party_registry.allows_player_name(looted_by_name)
+        ):
             return
         if not isinstance(quantity, int) or quantity <= 0:
             return

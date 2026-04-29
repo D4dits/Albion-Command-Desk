@@ -598,6 +598,44 @@ def test_party_registry_fallback_parses_unknown_join(monkeypatch) -> None:
     assert "SocialFur3" in registry.snapshot_names()
     assert _GUID_PARTY in registry.snapshot_guids()
 
+
+def test_party_registry_parses_subtype_230_flat_guid_roster(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    flat_guids = list(_GUID_SELF + _GUID_PARTY)
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(
+            parameters={252: 230, 12: flat_guids, 13: ["D4dits", "SocialFur3"]}
+        ),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_names() == {"D4dits", "SocialFur3"}
+    assert registry.snapshot_guids() == {_GUID_SELF, _GUID_PARTY}
+
+
+def test_party_registry_subtype_233_with_name_adds_member(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(
+            parameters={252: 233, 1: list(_GUID_PARTY), 2: "SocialFur3"}
+        ),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_names() == {"SocialFur3"}
+    assert registry.snapshot_guids() == {_GUID_PARTY}
+
+
 def test_party_registry_fallback_ignores_unknown_guid_without_join_name(monkeypatch) -> None:
     registry = PartyRegistry()
     registry._add_party_member(_GUID_PARTY, "SocialFur3")

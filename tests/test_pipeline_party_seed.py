@@ -5,7 +5,11 @@ from albion_dps.domain.party_registry import PartyRegistry
 from albion_dps.meter.aggregate import RollingMeter
 from albion_dps.meter.session_meter import SessionMeter
 from albion_dps.models import CombatEvent, PhotonMessage, RawPacket
-from albion_dps.pipeline import _allow_combat_state, stream_snapshots
+from albion_dps.pipeline import (
+    _allow_combat_state,
+    _should_keep_pending_entity,
+    stream_snapshots,
+)
 
 _TARGET_OP_REQUEST_PAYLOAD_HEX = (
     "010007006c08de534edbcc5e5d0179000266c316dbf3c3a4be9f026641e8b62403"
@@ -204,3 +208,14 @@ def test_allow_combat_state_rejects_non_local_party_id_after_local_party_observa
 
     assert _allow_combat_state(1002, party, names, timestamp=55.0)
     assert not _allow_combat_state(1003, party, names, timestamp=55.0)
+
+
+def test_pending_entity_drops_known_non_party_name_while_roster_unresolved() -> None:
+    party = PartyRegistry(strict=True)
+    names = NameRegistry()
+    party.seed_self_ids([1001])
+    party.seed_names(["D4dits", "PartyOne"])
+    names.record(1001, "D4dits")
+    names.record(1002, "RandomGuy")
+
+    assert not _should_keep_pending_entity(1002, party, names)

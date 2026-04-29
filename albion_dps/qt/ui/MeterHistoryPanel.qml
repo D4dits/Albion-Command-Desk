@@ -160,12 +160,14 @@ Item {
         Rectangle {
             visible: root.sessionCompareAvailable
             Layout.fillWidth: true
+            implicitHeight: sessionCompareContent.implicitHeight + 16
             radius: 6
             color: root.theme.cardLevel2
             border.color: root.theme.borderStrong
             border.width: 1
 
             ColumnLayout {
+                id: sessionCompareContent
                 anchors.fill: parent
                 anchors.margins: 8
                 spacing: 6

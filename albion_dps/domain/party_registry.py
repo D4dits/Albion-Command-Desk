@@ -28,6 +28,7 @@ PARTY_SUBTYPE_DISBAND = 213
 PARTY_SUBTYPE_PLAYER_LEFT = 216
 PARTY_SUBTYPE_PLAYER_JOINED = 214
 PARTY_SUBTYPE_MEMBER_REMOVED = 233
+PARTY_SUBTYPE_ROSTER_EXTENDED = 230
 SELF_SUBTYPE_NAME_KEYS = {
     228: 1,
     238: 0,
@@ -74,6 +75,7 @@ KNOWN_PARTY_SUBTYPES = (
         PARTY_SUBTYPE_PLAYER_LEFT,
         PARTY_SUBTYPE_PLAYER_JOINED,
         PARTY_SUBTYPE_MEMBER_REMOVED,
+        PARTY_SUBTYPE_ROSTER_EXTENDED,
         MATCH_ROSTER_SUBTYPE,
         COMBAT_TARGET_SUBTYPE,
     }
@@ -151,6 +153,10 @@ class PartyRegistry:
             guid = _coerce_guid(event.parameters.get(1))
             if guid is None:
                 return
+            names = _coerce_names(event.parameters.get(2))
+            if names:
+                self._add_party_member(guid, names[0])
+                return
             name = self._party_guid_names.get(guid)
             if (
                 name is not None
@@ -173,7 +179,7 @@ class PartyRegistry:
             if len(names) >= MATCH_ROSTER_MIN_SIZE:
                 self._set_match_roster(names)
             return
-        if subtype in PARTY_SUBTYPE_ROSTER:
+        if subtype in PARTY_SUBTYPE_ROSTER or subtype == PARTY_SUBTYPE_ROSTER_EXTENDED:
             guids, names = _extract_party_roster(event.parameters, subtype)
             if guids is not None:
                 self._set_party_roster(guids, names)
@@ -1042,6 +1048,13 @@ def _looks_like_party_disband(parameters: dict[int, object]) -> bool:
 def _coerce_guid(value: object) -> bytes | None:
     if isinstance(value, (bytes, bytearray)) and len(value) == 16:
         return bytes(value)
+    if isinstance(value, list) and len(value) == 16:
+        out = bytearray()
+        for item in value:
+            if not isinstance(item, int) or item < 0 or item > 255:
+                return None
+            out.append(item)
+        return bytes(out)
     return None
 
 
@@ -1049,6 +1062,10 @@ def _coerce_guid_list(value: object) -> list[bytes] | None:
     if _coerce_guid(value) is not None:
         return [bytes(value)]
     if isinstance(value, list) and value:
+        if all(isinstance(item, int) and 0 <= item <= 255 for item in value):
+            if len(value) % 16 != 0:
+                return None
+            return [bytes(value[index : index + 16]) for index in range(0, len(value), 16)]
         items = [bytes(item) for item in value if _coerce_guid(item) is not None]
         return items if items else None
     return None
@@ -1062,6 +1079,9 @@ def _extract_party_roster(
         guid_keys = (4, 3)
         name_key = 5
     elif subtype == 227:
+        guid_keys = (12,)
+        name_key = 13
+    elif subtype == 230:
         guid_keys = (12,)
         name_key = 13
     else:
