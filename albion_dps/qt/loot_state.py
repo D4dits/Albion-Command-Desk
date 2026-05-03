@@ -878,6 +878,8 @@ def _loot_icon_url(item_id: str) -> str:
     unique = str(item_id or "").strip()
     if not unique or unique == "SILVER":
         return ""
+    if unique.upper().endswith("_TRASH"):
+        return ""
     base = os.environ.get("ALBION_DPS_ICON_BASE", "https://render.albiononline.com/v1/item").strip()
     if not base:
         return ""

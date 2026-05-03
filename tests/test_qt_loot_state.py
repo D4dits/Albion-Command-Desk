@@ -16,7 +16,7 @@ from albion_dps.domain.party_registry import PartyRegistry
 from albion_dps.domain.session_activity import MapTrailTracker
 from albion_dps.meter.session_meter import SessionMeter
 from albion_dps.models import MeterSnapshot
-from albion_dps.qt.loot_state import LootState, _item_category
+from albion_dps.qt.loot_state import LootState, _item_category, _loot_icon_url
 from albion_dps.qt.models import UiState
 from albion_dps.qt.runner import _drain_snapshots
 from tests.support_temp import mk_test_dir
@@ -114,6 +114,12 @@ def test_loot_state_builds_model_and_export_text() -> None:
     source = sources.index(0, 0)
     assert sources.data(source, sources.LabelRole) == "Enemy"
     assert sources.data(source, sources.SublabelRole) == ""
+
+
+def test_loot_state_skips_missing_renderer_icons_for_trash_items() -> None:
+    assert _loot_icon_url("T5_TRASH") == ""
+    assert _loot_icon_url("T6_TRASH") == ""
+    assert _loot_icon_url("T3_BAG").endswith("/T3_BAG?size=64")
 
 
 def test_loot_state_filters_and_rebuilds_aggregates() -> None:
