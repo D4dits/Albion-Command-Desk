@@ -571,6 +571,7 @@ class ScannerState(QObject):
             return
 
         self._client_dir.parent.mkdir(parents=True, exist_ok=True)
+        repo_changed = False
         if not (self._client_dir / ".git").exists():
             self._append_log("Cloning albiondata-client repository...")
             result = self._run_command(
@@ -582,6 +583,7 @@ class ScannerState(QObject):
                 self._statusSignal.emit("clone failed")
                 return
             self._append_log("Repository cloned.")
+            repo_changed = True
         else:
             self._append_log("Fetching latest changes...")
             fetch_result = self._run_command(
@@ -617,6 +619,7 @@ class ScannerState(QObject):
                     self._statusSignal.emit("pull failed")
                     return
                 self._append_log("Repository updated (fast-forward).")
+                repo_changed = True
             else:
                 self._append_warn(
                     "Local scanner repository is ahead/diverged from upstream; forcing sync to remote HEAD."
@@ -630,6 +633,16 @@ class ScannerState(QObject):
                     self._statusSignal.emit("sync failed")
                     return
                 self._append_log("Repository reset to remote HEAD.")
+                repo_changed = True
+
+        if repo_changed:
+            if not self._build_client_binary(reason="repository update"):
+                self._statusSignal.emit("build failed")
+                return
+        elif not self._scanner_binary_path().exists():
+            if not self._build_client_binary(reason="missing binary"):
+                self._statusSignal.emit("build failed")
+                return
 
         self._check_for_updates_impl()
 
@@ -725,12 +738,7 @@ class ScannerState(QObject):
                 return
 
     def _resolve_start_command(self) -> list[str] | None:
-        binary_name = "albiondata-client.exe" if _is_windows() else "albiondata-client"
-        candidates = [
-            self._client_dir / binary_name,
-            self._client_dir / "bin" / binary_name,
-            self._client_dir / "dist" / binary_name,
-        ]
+        candidates = self._scanner_binary_candidates()
         for candidate in candidates:
             if candidate.exists():
                 return [str(candidate)]
@@ -738,6 +746,42 @@ class ScannerState(QObject):
         if go_path and self._client_dir.exists():
             return [go_path, "run", "."]
         return None
+
+    def _scanner_binary_candidates(self) -> list[Path]:
+        binary_name = "albiondata-client.exe" if _is_windows() else "albiondata-client"
+        return [
+            self._client_dir / binary_name,
+            self._client_dir / "bin" / binary_name,
+            self._client_dir / "dist" / binary_name,
+        ]
+
+    def _scanner_binary_path(self) -> Path:
+        return self._scanner_binary_candidates()[0]
+
+    def _build_client_binary(self, *, reason: str) -> bool:
+        go_path = shutil.which("go")
+        if not go_path:
+            self._append_error("Go is not available in PATH. Cannot build albiondata-client.")
+            return False
+
+        binary = self._scanner_binary_path()
+        self._append_log(f"Building albiondata-client binary ({reason})...")
+        result = self._run_command(
+            [go_path, "build", "-o", binary.name, "albiondata-client.go"],
+            cwd=self._client_dir,
+            timeout=240,
+        )
+        if result is None:
+            self._append_error("Scanner build failed.")
+            return False
+        self._append_log(f"Scanner binary ready: {binary}")
+        self._capability_hint_shown = False
+        if not _is_windows():
+            self._append_warn(
+                "Linux rebuild replaces the scanner binary. If capture later reports 'Operation not permitted', re-run setcap on this file."
+            )
+            self._append_warn(f"Run: sudo setcap cap_net_raw,cap_net_admin=eip {binary}")
+        return True
 
     def _start_scanner(self, *, use_sudo: bool) -> None:
         if self._op_lock.locked():

@@ -73,6 +73,100 @@ def test_scanner_update_check_is_blocked_while_running(monkeypatch) -> None:
     assert "Stop scanner before checking repository updates." in state.logText
 
 
+def test_scanner_sync_rebuilds_binary_after_repo_update(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_scanner_sync_rebuild_update")
+    state = ScannerState()
+    state._client_dir = tmp_path / "albiondata-client"
+    (state._client_dir / ".git").mkdir(parents=True)
+    state.clearLog()
+
+    commands: list[list[str]] = []
+    build_reasons: list[str] = []
+
+    monkeypatch.setattr("albion_dps.qt.scanner.shutil.which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(state, "refreshGitStatus", lambda: None)
+    monkeypatch.setattr(state, "_check_for_updates_impl", lambda: None)
+
+    def _fake_run(command: list[str], *, cwd, timeout, log_stdout=True, log_stderr=True):
+        commands.append(command)
+        if "rev-list" in command:
+            return "0\t1"
+        return ""
+
+    monkeypatch.setattr(state, "_run_command", _fake_run)
+    monkeypatch.setattr(
+        state,
+        "_build_client_binary",
+        lambda *, reason: build_reasons.append(reason) or True,
+    )
+
+    state._sync_client_repo_impl()
+
+    assert any("merge" in command for command in commands)
+    assert build_reasons == ["repository update"]
+
+
+def test_scanner_sync_rebuilds_binary_when_missing(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_scanner_sync_rebuild_missing")
+    state = ScannerState()
+    state._client_dir = tmp_path / "albiondata-client"
+    (state._client_dir / ".git").mkdir(parents=True)
+    state.clearLog()
+
+    build_reasons: list[str] = []
+
+    monkeypatch.setattr("albion_dps.qt.scanner.shutil.which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(state, "refreshGitStatus", lambda: None)
+    monkeypatch.setattr(state, "_check_for_updates_impl", lambda: None)
+
+    def _fake_run(command: list[str], *, cwd, timeout, log_stdout=True, log_stderr=True):
+        if "rev-list" in command:
+            return "0\t0"
+        return ""
+
+    monkeypatch.setattr(state, "_run_command", _fake_run)
+    monkeypatch.setattr(
+        state,
+        "_build_client_binary",
+        lambda *, reason: build_reasons.append(reason) or True,
+    )
+
+    state._sync_client_repo_impl()
+
+    assert build_reasons == ["missing binary"]
+
+
+def test_scanner_sync_skips_rebuild_when_binary_exists_and_repo_unchanged(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_scanner_sync_rebuild_skip")
+    state = ScannerState()
+    state._client_dir = tmp_path / "albiondata-client"
+    (state._client_dir / ".git").mkdir(parents=True)
+    state._scanner_binary_path().write_text("binary", encoding="utf-8")
+    state.clearLog()
+
+    build_reasons: list[str] = []
+
+    monkeypatch.setattr("albion_dps.qt.scanner.shutil.which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(state, "refreshGitStatus", lambda: None)
+    monkeypatch.setattr(state, "_check_for_updates_impl", lambda: None)
+
+    def _fake_run(command: list[str], *, cwd, timeout, log_stdout=True, log_stderr=True):
+        if "rev-list" in command:
+            return "0\t0"
+        return ""
+
+    monkeypatch.setattr(state, "_run_command", _fake_run)
+    monkeypatch.setattr(
+        state,
+        "_build_client_binary",
+        lambda *, reason: build_reasons.append(reason) or True,
+    )
+
+    state._sync_client_repo_impl()
+
+    assert build_reasons == []
+
+
 def test_scanner_runtime_reconciliation_when_runtime_added_late(monkeypatch) -> None:
     monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_scanner_runtime_reconcile")
     monkeypatch.setattr("albion_dps.qt.scanner._is_windows", lambda: True)
