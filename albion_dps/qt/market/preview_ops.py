@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable, Sequence
 
-from albion_dps.market.engine import compute_output_valuations
+from albion_dps.market.engine import compute_output_valuations, effective_return_fraction
 from albion_dps.market.models import CraftRun, CraftSetup, InputLine, ProfitBreakdown, Recipe
 from albion_dps.qt.market.list_models import BreakdownRow, CraftPlanRow, ResultItemRow
 from albion_dps.qt.market.state_types import _JournalTotals
@@ -106,9 +106,9 @@ def accumulate_input_preview_rows(
     minimal_upfront_quantity_for_batches: Callable[[Sequence[tuple[float, float]]], float],
     upfront_return_safety_units: Callable[[Sequence[tuple[float, float]]], int],
 ) -> dict[tuple[str, str, str, float], dict[str, object]]:
-    _ = minimal_upfront_quantity_for_batches, upfront_return_safety_units
     input_acc: dict[tuple[str, str, str, float], dict[str, object]] = {}
     for (_, recipe), run in zip(prepared_recipes, runs):
+        return_fraction = effective_return_fraction(setup=run.setup, recipe=recipe)
         for component, line in zip(recipe.components, run.inputs):
             key = (line.item.unique_name, line.city, line.price_type.value, float(line.unit_price))
             row = input_acc.get(key)
@@ -124,9 +124,23 @@ def accumulate_input_preview_rows(
                     "quantity": 0.0,
                     "total_cost": 0.0,
                     "returnable": bool(component.returnable),
+                    "return_batches": [],
                 }
                 row = input_acc[key]
-            preview_quantity = float(row.get("quantity", 0.0)) + float(line.quantity)
+            if component.returnable:
+                batches = row.setdefault("return_batches", [])
+                if isinstance(batches, list):
+                    batches.extend(
+                        [
+                            (float(component.quantity), float(return_fraction))
+                            for _ in range(int(run.quantity))
+                        ]
+                    )
+                effective_batches = batches if isinstance(batches, list) else []
+                preview_quantity = minimal_upfront_quantity_for_batches(effective_batches)
+                preview_quantity += float(upfront_return_safety_units(effective_batches))
+            else:
+                preview_quantity = float(row.get("quantity", 0.0)) + float(line.quantity)
             row["quantity"] = float(preview_quantity)
             row["total_cost"] = float(preview_quantity * float(line.unit_price))
             row["returnable"] = bool(row.get("returnable", False) or component.returnable)

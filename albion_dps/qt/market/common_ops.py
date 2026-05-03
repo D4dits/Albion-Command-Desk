@@ -161,23 +161,21 @@ def minimal_upfront_quantity_for_batches(batches: Sequence[tuple[float, float]])
         return 0.0
     required = 0.0
     gross_so_far = 0.0
-    expected_return_total = 0.0
+    returned_so_far = 0.0
     for gross_quantity, return_fraction in batches:
         gross = max(0.0, float(gross_quantity))
         fraction = max(0.0, min(1.0, float(return_fraction)))
         gross_so_far += gross
-        returned_so_far = float(max(0, int(math.floor(expected_return_total))))
         required = max(required, gross_so_far - returned_so_far)
-        expected_return_total += gross * fraction
+        returned_so_far += float(max(0, int(math.floor(gross * fraction))))
     return float(required)
 
 
 def upfront_return_safety_units(batches: Sequence[tuple[float, float]]) -> int:
-    if len(batches) <= 1:
-        return 0
-    if not any(max(0.0, float(gross)) > 0.0 and max(0.0, min(1.0, float(fraction))) > 0.0 for gross, fraction in batches):
-        return 0
-    return 1
+    # The per-craft floor in minimal_upfront_quantity_for_batches already keeps
+    # the shopping quantity conservative without adding arbitrary extra units.
+    _ = batches
+    return 0
 
 
 def input_preview_row_key(item_id: str, city: str, price_type: str) -> str:
