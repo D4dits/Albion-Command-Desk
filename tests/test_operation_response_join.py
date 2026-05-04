@@ -4,7 +4,15 @@ import pytest
 
 from albion_dps.domain import NameRegistry, PartyRegistry
 from albion_dps.models import PhotonMessage
-from albion_dps.protocol.protocol16 import Protocol16Error, decode_operation_response
+from albion_dps.protocol.protocol16 import (
+    Protocol16Error,
+    V18_TYPE_ARRAY_FLAG,
+    V18_TYPE_INT1,
+    V18_TYPE_STRING,
+    _read_dictionary_v18,
+    _read_hashtable_v18,
+    decode_operation_response,
+)
 
 # Join response payload extracted from albion_combat_43_solo.pcap (operation response).
 JOIN_RESPONSE_HEX = (
@@ -48,6 +56,26 @@ def test_decode_operation_response_rejects_impossible_parameter_count() -> None:
 
     with pytest.raises(Protocol16Error):
         decode_operation_response(payload)
+
+
+def test_protocol18_dictionary_allows_array_key() -> None:
+    key_type = V18_TYPE_ARRAY_FLAG | V18_TYPE_INT1
+    payload = bytes([key_type, V18_TYPE_STRING, 1, 2, 10, 11, 5]) + b"value"
+
+    value, offset = _read_dictionary_v18(payload, 0)
+
+    assert value == {(10, 11): "value"}
+    assert offset == len(payload)
+
+
+def test_protocol18_hashtable_allows_array_key() -> None:
+    key_type = V18_TYPE_ARRAY_FLAG | V18_TYPE_INT1
+    payload = bytes([1, key_type, 2, 10, 11, V18_TYPE_STRING, 5]) + b"value"
+
+    value, offset = _read_hashtable_v18(payload, 0)
+
+    assert value == {(10, 11): "value"}
+    assert offset == len(payload)
 
 
 def test_party_registry_join_seeds_self() -> None:

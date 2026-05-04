@@ -61,6 +61,57 @@ Item {
             onClicked: root.clearHistorySelection()
         }
 
+        Rectangle {
+            visible: root.sessionCompareAvailable
+            Layout.fillWidth: true
+            Layout.maximumHeight: 84
+            implicitHeight: Math.min(84, sessionCompareContent.implicitHeight + 14)
+            radius: 6
+            clip: true
+            color: root.theme.cardLevel2
+            border.color: root.theme.borderStrong
+            border.width: 1
+
+            ColumnLayout {
+                id: sessionCompareContent
+                anchors.fill: parent
+                anchors.margins: 7
+                spacing: 4
+
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Text {
+                        text: root.sessionCompareTitle
+                        Layout.fillWidth: true
+                        color: textColor
+                        font.pixelSize: 12
+                        font.bold: true
+                        elide: Text.ElideRight
+                    }
+
+                    AppButton {
+                        text: "Copy"
+                        compact: true
+                        implicitHeight: 24
+                        implicitWidth: 58
+                        onClicked: root.copySessionCompare()
+                    }
+                }
+
+                Text {
+                    text: root.sessionCompareText
+                    Layout.fillWidth: true
+                    color: root.theme.tableTextPrimary
+                    font.pixelSize: 10
+                    wrapMode: Text.WordWrap
+                    maximumLineCount: 3
+                    elide: Text.ElideRight
+                    clip: true
+                }
+            }
+        }
+
         ListView {
             id: historyList
             Layout.fillWidth: true
@@ -154,52 +205,6 @@ Item {
                 text: "No archived battles yet."
                 color: root.theme.textSecondary
                 font.pixelSize: 12
-            }
-        }
-
-        Rectangle {
-            visible: root.sessionCompareAvailable
-            Layout.fillWidth: true
-            implicitHeight: sessionCompareContent.implicitHeight + 16
-            radius: 6
-            color: root.theme.cardLevel2
-            border.color: root.theme.borderStrong
-            border.width: 1
-
-            ColumnLayout {
-                id: sessionCompareContent
-                anchors.fill: parent
-                anchors.margins: 8
-                spacing: 6
-
-                RowLayout {
-                    Layout.fillWidth: true
-
-                    Text {
-                        text: root.sessionCompareTitle
-                        Layout.fillWidth: true
-                        color: textColor
-                        font.pixelSize: 12
-                        font.bold: true
-                        elide: Text.ElideRight
-                    }
-
-                    AppButton {
-                        text: "Copy"
-                        compact: true
-                        implicitHeight: 26
-                        onClicked: root.copySessionCompare()
-                    }
-
-                }
-
-                Text {
-                    text: root.sessionCompareText
-                    Layout.fillWidth: true
-                    color: root.theme.tableTextPrimary
-                    font.pixelSize: 11
-                    wrapMode: Text.WordWrap
-                }
             }
         }
     }

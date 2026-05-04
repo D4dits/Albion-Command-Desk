@@ -499,7 +499,7 @@ def _read_dictionary_v18(payload: bytes, offset: int) -> tuple[dict[Any, Any], i
     for _ in range(length):
         key, offset = _decode_value_v18(payload, offset, key_type)
         value, offset = _decode_value_v18(payload, offset, value_type)
-        output[key] = value
+        output[_dictionary_key(key)] = value
     return output, offset
 
 
@@ -513,8 +513,27 @@ def _read_hashtable_v18(payload: bytes, offset: int) -> tuple[dict[Any, Any], in
         key, offset = _decode_value_v18(payload, offset, key_type)
         value_type, offset = _read_u8(payload, offset)
         value, offset = _decode_value_v18(payload, offset, value_type)
-        output[key] = value
+        output[_dictionary_key(key)] = value
     return output, offset
+
+
+def _dictionary_key(value: Any) -> Any:
+    if isinstance(value, list):
+        return tuple(_dictionary_key(item) for item in value)
+    if isinstance(value, dict):
+        return tuple(
+            (_dictionary_key(key), _dictionary_key(item))
+            for key, item in value.items()
+        )
+    if isinstance(value, bytearray):
+        return bytes(value)
+    try:
+        hash(value)
+    except TypeError as exc:
+        raise Protocol16Error(
+            f"Unhashable dictionary key: {type(value).__name__}"
+        ) from exc
+    return value
 
 
 def _read_byte_array(payload: bytes, offset: int) -> tuple[bytes, int]:
@@ -577,7 +596,7 @@ def _read_dictionary(payload: bytes, offset: int) -> tuple[dict[Any, Any], int]:
             value_type_code, offset = _read_u8(payload, offset)
         key, offset = _decode_value(payload, offset, key_type_code)
         value, offset = _decode_value(payload, offset, value_type_code)
-        output[key] = value
+        output[_dictionary_key(key)] = value
     return output, offset
 
 
@@ -631,6 +650,6 @@ def _read_dictionary_array(
                 value_type_code, offset = _read_u8(payload, offset)
             key, offset = _decode_value(payload, offset, key_type_code)
             value, offset = _decode_value(payload, offset, value_type_code)
-            dictionary[key] = value
+            dictionary[_dictionary_key(key)] = value
         values.append(dictionary)
     return values, offset
