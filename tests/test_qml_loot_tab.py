@@ -53,6 +53,7 @@ LootTab {
     logDirectoryUrl: "file:///C:/Users/Users/Documents/DPS_Master/DPS_Meter_AO/artifacts/loot"
     searchQuery: ""
     sourceFilter: "all"
+    sourceNameFilter: ""
     looterFilter: "all"
     categoryFilter: "all"
     kindFilter: "items"

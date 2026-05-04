@@ -171,6 +171,23 @@ def test_loot_tracker_can_include_silver(monkeypatch) -> None:
     assert events[0].looted_from is None
     assert events[0].source_kind == "silver"
     assert events[0].source_name is None
+    assert tracker.silver_total() == 1500
+
+
+def test_loot_tracker_normalizes_fixpoint_silver(monkeypatch) -> None:
+    tracker = LootTracker(include_silver=True)
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_OTHER_GRABBED_LOOT,
+        parameters={1: "Enemy", 2: "Alice", 3: True, 5: 2242236},
+    )
+    tracker.observe(_message(), _packet(1.0))
+
+    events = tracker.events()
+    assert len(events) == 1
+    assert events[0].quantity == 224
+    assert tracker.silver_total() == 224
 
 
 def test_loot_tracker_marks_mob_source_without_creating_fake_player(monkeypatch) -> None:

@@ -11,6 +11,7 @@ Rectangle {
     property string accentMode: "neutral"
     property var model: null
     property string valueSuffix: "x"
+    signal rowActivated(string label)
 
     function formatValue(value) {
         var number = Number(value)
@@ -126,6 +127,10 @@ Rectangle {
                     color: root.rowBackground()
                     border.color: root.rowBorderColor()
                     border.width: 1
+
+                    TapHandler {
+                        onTapped: root.rowActivated(label)
+                    }
 
                     RowLayout {
                         anchors.fill: parent

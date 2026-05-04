@@ -915,6 +915,7 @@ ApplicationWindow {
                     importedLogActive: lootState.importedLogActive
                     searchQuery: lootState.searchQuery
                     sourceFilter: lootState.sourceFilter
+                    sourceNameFilter: lootState.sourceNameFilter
                     looterFilter: lootState.looterFilter
                     categoryFilter: lootState.categoryFilter
                     kindFilter: lootState.kindFilter
@@ -929,6 +930,7 @@ ApplicationWindow {
                     topSilverLootersModel: lootState.topSilverLootersModel
                     onSetSearchQuery: function(value) { lootState.setSearchQuery(value) }
                     onSetSourceFilter: function(value) { lootState.setSourceFilter(value) }
+                    onSetSourceNameFilter: function(value) { lootState.setSourceNameFilter(value) }
                     onSetLooterFilter: function(value) { lootState.setLooterFilter(value) }
                     onSetCategoryFilter: function(value) { lootState.setCategoryFilter(value) }
                     onSetKindFilter: function(value) { lootState.setKindFilter(value) }

@@ -142,6 +142,15 @@ def test_loot_state_filters_and_rebuilds_aggregates() -> None:
     assert state.eventCount == 1
     assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"
 
+    state.setSourceNameFilter("Enemy")
+    assert state.sourceNameFilter == "Enemy"
+    assert state.sourceFilter == "player"
+    assert state.eventCount == 1
+    assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"
+
+    state.setSourceNameFilter("")
+    assert state.sourceNameFilter == ""
+
     state.setSourceFilter("mob")
     assert state.eventCount == 1
     assert state.latestLootSummary == "Bob looted 1x Adept's Potion from @MOB_KEEPER_DRUID_CHAMPION"

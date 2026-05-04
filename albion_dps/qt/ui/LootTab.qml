@@ -22,6 +22,7 @@ Item {
     property string logDirectoryUrl: ""
     property string searchQuery: ""
     property string sourceFilter: "all"
+    property string sourceNameFilter: ""
     property string looterFilter: "all"
     property string categoryFilter: "all"
     property string kindFilter: "all"
@@ -46,6 +47,7 @@ Item {
 
     signal setSearchQuery(string value)
     signal setSourceFilter(string value)
+    signal setSourceNameFilter(string value)
     signal setLooterFilter(string value)
     signal setCategoryFilter(string value)
     signal setKindFilter(string value)
@@ -523,9 +525,18 @@ Item {
                             }
 
                             Text {
-                                text: "Source: " + root.sourceLabel(root.sourceFilter)
+                                text: root.sourceNameFilter.length > 0
+                                    ? ("From: " + root.sourceNameFilter)
+                                    : ("Source: " + root.sourceLabel(root.sourceFilter))
                                 color: theme.textMuted
                                 font.pixelSize: 11
+                            }
+
+                            AppButton {
+                                visible: root.sourceNameFilter.length > 0
+                                text: "Clear source"
+                                compact: true
+                                onClicked: root.setSourceNameFilter("")
                             }
 
                             Text {
@@ -789,6 +800,7 @@ Item {
                         emptyText: "No looters in this view"
                         accentMode: "neutral"
                         model: root.topLootersModel
+                        onRowActivated: function(label) { root.setLooterFilter(label) }
                     }
 
                     LootSummaryPanel {
@@ -811,6 +823,7 @@ Item {
                         emptyText: "No player corpses in this view"
                         accentMode: "danger"
                         model: root.topSourcesModel
+                        onRowActivated: function(label) { root.setSourceNameFilter(label) }
                     }
                 }
             }

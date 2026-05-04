@@ -194,6 +194,7 @@ class LootState(QObject):
         self._all_events: list[LootEvent] = []
         self._search_query = ""
         self._source_filter = "all"
+        self._source_name_filter = ""
         self._looter_filter = "all"
         self._category_filter = "all"
         self._kind_filter = "items"
@@ -310,6 +311,10 @@ class LootState(QObject):
         return self._source_filter
 
     @Property(str, notify=changed)
+    def sourceNameFilter(self) -> str:
+        return self._source_name_filter
+
+    @Property(str, notify=changed)
     def looterFilter(self) -> str:
         return self._looter_filter
 
@@ -367,6 +372,18 @@ class LootState(QObject):
         if next_value == self._source_filter:
             return
         self._source_filter = next_value
+        if next_value != "player":
+            self._source_name_filter = ""
+        self._refresh_models(force_changed=True)
+
+    @Slot(str)
+    def setSourceNameFilter(self, value: str) -> None:
+        next_value = str(value or "").strip()
+        if next_value == self._source_name_filter:
+            return
+        self._source_name_filter = next_value
+        if next_value:
+            self._source_filter = "player"
         self._refresh_models(force_changed=True)
 
     @Slot(str)
@@ -471,6 +488,7 @@ class LootState(QObject):
             visible_events,
             search_query=self._search_query,
             source_filter=self._source_filter,
+            source_name_filter=self._source_name_filter,
             looter_filter=self._looter_filter,
             category_filter=self._category_filter,
         )
@@ -691,6 +709,7 @@ def _filter_events(
     *,
     search_query: str,
     source_filter: str,
+    source_name_filter: str,
     looter_filter: str,
     category_filter: str,
 ) -> list[LootEvent]:
@@ -702,6 +721,9 @@ def _filter_events(
         if event.is_silver:
             continue
         if source_filter != "all" and event.source_kind != source_filter:
+            continue
+        source_name = _event_source_name(event)
+        if source_name_filter and source_name != source_name_filter:
             continue
         if looter != "all" and event.looted_by.player_name != looter:
             continue
@@ -719,7 +741,7 @@ def _filter_events(
                     event.looted_by.alliance_name or "",
                     event.item.unique_name if event.item is not None and event.item.unique_name else "",
                     event.item.display_name if event.item is not None else "",
-                    event.source_name or "",
+                    source_name,
                 )
                 if part
             ).lower()
@@ -727,6 +749,12 @@ def _filter_events(
                 continue
         filtered.append(event)
     return filtered
+
+
+def _event_source_name(event: LootEvent) -> str:
+    if event.looted_from is not None:
+        return event.looted_from.player_name
+    return event.source_name or ""
 
 
 def _filter_events_by_kind(events: list[LootEvent], *, kind_filter: str) -> list[LootEvent]:

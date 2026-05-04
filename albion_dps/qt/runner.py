@@ -76,7 +76,7 @@ def run_qt(args: argparse.Namespace) -> int:
         item_resolver=item_resolver,
         party_registry=party,
         location_provider=map_trail.current_label,
-        include_silver=False,
+        include_silver=True,
         history_limit=LOOT_HISTORY_LIMIT,
     )
     map_resolver = load_map_resolver(logger=logging.getLogger(__name__))
@@ -477,8 +477,8 @@ def _drain_snapshots(
             zone=meter.zone_label(),
             fame_total=fame.total(),
             fame_per_hour=fame.per_hour(),
-            silver_total=fame.silver_total(),
-            silver_per_hour=fame.silver_per_hour(),
+            silver_total=_session_silver_total(fame, loot_tracker),
+            silver_per_hour=_session_silver_per_hour(fame, loot_tracker),
             activity=_combine_session_activity(
                 reward_events=fame.recent_events(limit=10),
                 map_events=map_trail.events(limit=10),
@@ -506,6 +506,23 @@ def _combine_session_activity(
         reverse=True,
     )
     return merged[: max(limit, 0)]
+
+
+def _session_silver_total(fame: FameTracker, loot_tracker: LootTracker) -> int:
+    fame_total = int(fame.silver_total())
+    silver_total = getattr(loot_tracker, "silver_total", None)
+    loot_total = int(silver_total()) if callable(silver_total) else 0
+    return max(fame_total, loot_total)
+
+
+def _session_silver_per_hour(fame: FameTracker, loot_tracker: LootTracker) -> float:
+    fame_total = int(fame.silver_total())
+    silver_total = getattr(loot_tracker, "silver_total", None)
+    loot_total = int(silver_total()) if callable(silver_total) else 0
+    if loot_total > fame_total:
+        silver_per_hour = getattr(loot_tracker, "silver_per_hour", None)
+        return float(silver_per_hour()) if callable(silver_per_hour) else 0.0
+    return float(fame.silver_per_hour())
 
 
 def _allowed_display_names_for_snapshot(

@@ -19,6 +19,7 @@ from albion_dps.protocol.protocol16 import (
     decode_operation_request,
 )
 
+SILVER_FIXPOINT_FACTOR = 10000.0
 LOOT_EVENT_CODE = 1
 LOOT_SUBTYPE_KEY = 252
 
@@ -406,11 +407,7 @@ class LootTracker:
         quantity = parameters.get(5)
         if not isinstance(looted_by_name, str) or not looted_by_name:
             return
-        if (
-            self.party_registry is not None
-            and not trusted_party_member
-            and not self.party_registry.allows_player_name(looted_by_name)
-        ):
+        if not self._allows_loot_player_name(looted_by_name):
             return
         if not isinstance(quantity, int) or quantity <= 0:
             return
@@ -425,6 +422,9 @@ class LootTracker:
             if not self.include_silver:
                 return
             source_kind = "silver"
+            quantity = _normalize_silver_quantity(quantity)
+            if quantity <= 0:
+                return
             item = LootItemRef(
                 item_num_id=None,
                 unique_name="SILVER",
@@ -457,6 +457,31 @@ class LootTracker:
         )
         if len(self._events) > self.history_limit:
             self._events = self._events[-self.history_limit :]
+
+    def _allows_loot_player_name(self, player_name: str) -> bool:
+        if self.party_registry is None:
+            return True
+        self_name = self.party_registry.self_name()
+        if self_name and player_name == self_name:
+            return True
+        party_names = self.party_registry.snapshot_names()
+        if party_names:
+            return player_name in party_names
+        if self_name:
+            return False
+        return self.party_registry.allows_player_name(player_name)
+
+    def silver_total(self) -> int:
+        return sum(int(event.quantity) for event in self._events if event.is_silver)
+
+    def silver_per_hour(self) -> float:
+        timestamps = [event.timestamp for event in self._events if event.is_silver]
+        if len(timestamps) < 2:
+            return 0.0
+        elapsed = max(timestamps) - min(timestamps)
+        if elapsed <= 0:
+            return 0.0
+        return self.silver_total() / (elapsed / 3600.0)
 
     def _resolve_item(self, item_num_id: int) -> LootItemRef:
         unique_name = None
@@ -619,6 +644,12 @@ def _classify_source_kind(source_name: str) -> str:
     if source_name.startswith("@"):
         return "system"
     return "player"
+
+
+def _normalize_silver_quantity(quantity: int) -> int:
+    if quantity >= SILVER_FIXPOINT_FACTOR:
+        return int(quantity / SILVER_FIXPOINT_FACTOR)
+    return int(quantity)
 
 
 def _is_safe_loot_suppressed_location(location: str | None) -> bool:
