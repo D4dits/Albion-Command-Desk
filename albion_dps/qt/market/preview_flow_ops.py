@@ -51,17 +51,20 @@ def compute_run_maps(
     prepared_recipes: list[tuple[CraftPlanRow, Recipe]],
     runs: list[CraftRun],
 ) -> tuple[dict[int, float], dict[int, float], dict[int, bool]]:
-    run_profit_by_row: dict[int, float] = {}
+    run_profit_by_row: dict[int, float | None] = {}
     run_rrr_by_row: dict[int, float] = {}
     run_fresh_by_row: dict[int, bool] = {}
     for (plan_row, recipe), run in zip(prepared_recipes, runs):
         breakdown = compute_run_profit(run)
-        run_profit_by_row[int(plan_row.row_id)] = float(breakdown.margin_percent)
+        has_fresh_component_prices = state._run_has_fresh_component_prices(run)
+        run_profit_by_row[int(plan_row.row_id)] = (
+            float(breakdown.margin_percent) if has_fresh_component_prices else None
+        )
         row_setup = state._setup_for_plan_row(setup, plan_row)
         run_rrr_by_row[int(plan_row.row_id)] = float(
             effective_return_fraction(setup=row_setup, recipe=recipe) * 100.0
         )
-        run_fresh_by_row[int(plan_row.row_id)] = state._run_has_fresh_component_prices(run)
+        run_fresh_by_row[int(plan_row.row_id)] = has_fresh_component_prices
     return run_profit_by_row, run_rrr_by_row, run_fresh_by_row
 
 

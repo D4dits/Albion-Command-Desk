@@ -1555,6 +1555,7 @@ def test_market_setup_state_hide_missing_adp_prices_filters_all_preview_tabs(
 
     craft_index = state.craftPlanModel.index(0, 0)
     assert state.craftPlanModel.data(craft_index, state.craftPlanModel.HasFreshComponentPricesRole) is False
+    assert state.craftPlanModel.data(craft_index, state.craftPlanModel.ProfitPercentRole) is None
 
     state.setHideRowsWithoutFreshPrices(True)
     assert state.hideRowsWithoutFreshPrices is True

@@ -31,7 +31,7 @@ def demand_proxy_percent(
 
 def set_plan_profit_map(
     state,
-    values: dict[int, float],
+    values: dict[int, float | None],
     *,
     return_rates: dict[int, float] | None = None,
     fresh_component_prices: dict[int, bool] | None = None,
