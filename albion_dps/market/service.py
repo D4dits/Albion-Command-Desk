@@ -97,6 +97,21 @@ class MarketDataService:
                     cache_key=cache_key,
                 )
                 return rows
+            partial_cached = self._get_cached_price_subset(
+                item_ids=item_ids,
+                locations=locations,
+                qualities=qualities or [1],
+                allow_stale=allow_stale,
+            )
+            if partial_cached is not None:
+                rows, source = partial_cached
+                self._last_prices_meta = MarketFetchMeta(
+                    source=source,
+                    record_count=len(rows),
+                    elapsed_ms=(time.perf_counter() - started) * 1000.0,
+                    cache_key=cache_key,
+                )
+                return rows
 
         if not allow_live:
             self._last_prices_meta = MarketFetchMeta(
@@ -229,6 +244,55 @@ class MarketDataService:
             source = "stale_cache" if entry.expired else "cache"
             return entry.payload, source
         return None
+
+    def _get_cached_price_subset(
+        self,
+        *,
+        item_ids: list[str],
+        locations: list[str],
+        qualities: list[int],
+        allow_stale: bool,
+    ) -> tuple[list[MarketPriceRecord], str] | None:
+        if self.cache is None:
+            return None
+        requested_items = {str(item_id) for item_id in item_ids}
+        requested_locations = {str(location) for location in locations}
+        requested_qualities = {int(quality) for quality in qualities}
+        if not requested_items or not requested_locations or not requested_qualities:
+            return None
+
+        entries = self.cache.get_entries_by_prefix(
+            "market:prices:",
+            allow_expired=allow_stale,
+        )
+        if not entries:
+            return None
+
+        matched: dict[tuple[str, str, int], MarketPriceRecord] = {}
+        saw_expired = False
+        for entry in entries:
+            if entry.expired:
+                saw_expired = True
+            if not isinstance(entry.payload, list):
+                continue
+            for row in entry.payload:
+                if not isinstance(row, dict):
+                    continue
+                price = _to_price(row)
+                key = (price.item_id, price.city, price.quality)
+                if key in matched:
+                    continue
+                if price.item_id not in requested_items:
+                    continue
+                if price.city not in requested_locations:
+                    continue
+                if price.quality not in requested_qualities:
+                    continue
+                matched[key] = price
+        if not matched:
+            return None
+        source = "partial_stale_cache" if saw_expired else "partial_cache"
+        return list(matched.values()), source
 
     def _put_cached(self, key: str, payload: list[object], *, ttl_seconds: float) -> None:
         if self.cache is None:

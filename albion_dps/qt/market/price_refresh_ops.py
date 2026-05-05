@@ -115,7 +115,7 @@ def refresh_price_index(
             region=setup.region,
             item_ids=item_ids,
             locations=locations,
-            qualities=[setup.quality],
+            qualities=list(state._price_qualities(setup)),
             ttl_seconds=120.0,
             allow_stale=not force,
             allow_cache=not force,
@@ -135,7 +135,7 @@ def refresh_price_index(
                 level="INFO",
             )
             if (
-                meta.source == "stale_cache"
+                meta.source in {"stale_cache", "partial_stale_cache"}
                 and not force
                 and QCoreApplication.instance() is not None
                 and state.refreshCooldownSeconds <= 0
@@ -268,7 +268,7 @@ def _live_batch_count(state, setup, item_ids: list[str], locations: list[str]) -
             base = client._base_url(setup.region)
             params = {
                 "locations": ",".join(locations),
-                "qualities": ",".join(str(x) for x in [setup.quality]),
+                "qualities": ",".join(str(x) for x in state._price_qualities(setup)),
             }
             batch_count = len(client._split_price_batches(base=base, item_ids=item_ids, params=params))
     except Exception:

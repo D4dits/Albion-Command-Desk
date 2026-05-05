@@ -18,7 +18,7 @@ def build_aodata_url(state) -> str | None:
     if not locations:
         state._set_list_action_text("No market locations selected.")
         return None
-    qualities = [setup.quality]
+    qualities = state._price_qualities(setup)
     params = urlencode(
         {
             "locations": ",".join(locations),

@@ -80,6 +80,36 @@ class SQLiteCache:
             return None
         return entry
 
+    def get_entries_by_prefix(
+        self,
+        prefix: str,
+        *,
+        allow_expired: bool = False,
+        limit: int = 25,
+    ) -> list[CacheEntry]:
+        rows = self._conn.execute(
+            """
+            SELECT cache_key, payload_json, expires_at, updated_at
+            FROM market_cache
+            WHERE cache_key LIKE ?
+            ORDER BY updated_at DESC
+            LIMIT ?
+            """,
+            (f"{prefix}%", max(1, int(limit))),
+        ).fetchall()
+        entries: list[CacheEntry] = []
+        for row in rows:
+            entry = CacheEntry(
+                key=row[0],
+                payload=json.loads(row[1]),
+                expires_at=float(row[2]),
+                updated_at=float(row[3]),
+            )
+            if entry.expired and not allow_expired:
+                continue
+            entries.append(entry)
+        return entries
+
     def delete(self, key: str) -> int:
         cur = self._conn.execute("DELETE FROM market_cache WHERE cache_key=?", (key,))
         self._conn.commit()

@@ -1972,12 +1972,16 @@ class MarketSetupState(QObject):
             return False
         return True
 
-    def _price_key(self, setup: CraftSetup) -> tuple[str, int, tuple[str, ...], tuple[str, ...]]:
+    def _price_key(self, setup: CraftSetup) -> tuple[str, tuple[int, ...], tuple[str, ...], tuple[str, ...]]:
         return pricing_ops.price_key(
             setup,
             item_ids=tuple(self._collect_pricing_item_ids()),
             locations=tuple(self._collect_locations(setup)),
         )
+
+    @staticmethod
+    def _price_qualities(setup: CraftSetup) -> tuple[int, ...]:
+        return pricing_ops.price_qualities(setup)
 
     @staticmethod
     def _default_market_tax_percent(premium: bool) -> float:

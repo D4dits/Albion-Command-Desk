@@ -228,3 +228,57 @@ def test_service_cache_only_mode_returns_empty_without_live_call() -> None:
     assert rows == []
     assert call_count["value"] == 0
     assert service.last_prices_meta.source == "cache_miss"
+
+
+def test_service_uses_partial_price_cache_on_exact_key_miss() -> None:
+    call_count = {"value": 0}
+
+    def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):
+        _ = (url, timeout_seconds, user_agent)
+        call_count["value"] += 1
+        return []
+
+    tmp_dir = _make_local_tmp_dir()
+    try:
+        client = AODataClient(fetch_json=fake_fetch_json)
+        with SQLiteCache(tmp_dir / "cache.sqlite3") as cache:
+            cache.set(
+                "market:prices:previous-thetford",
+                [
+                    {
+                        "item_id": "T4_METALBAR",
+                        "city": "Thetford",
+                        "quality": 1,
+                        "sell_price_min": 1200,
+                        "buy_price_max": 1000,
+                        "sell_price_min_date": "2026-05-05T10:00:00",
+                        "buy_price_max_date": "2026-05-05T10:01:00",
+                    },
+                    {
+                        "item_id": "T4_PLANKS",
+                        "city": "Martlock",
+                        "quality": 1,
+                        "sell_price_min": 800,
+                        "buy_price_max": 700,
+                        "sell_price_min_date": "2026-05-05T10:00:00",
+                        "buy_price_max_date": "2026-05-05T10:01:00",
+                    },
+                ],
+                ttl_seconds=120.0,
+            )
+            service = MarketDataService(client=client, cache=cache)
+            rows = service.get_prices(
+                region=MarketRegion.EUROPE,
+                item_ids=["T4_METALBAR", "T4_PLANKS"],
+                locations=["Thetford"],
+                allow_live=False,
+            )
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    assert call_count["value"] == 0
+    assert len(rows) == 1
+    assert rows[0].item_id == "T4_METALBAR"
+    assert rows[0].city == "Thetford"
+    assert rows[0].buy_price_max == 1000
+    assert service.last_prices_meta.source == "partial_cache"

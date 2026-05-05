@@ -9,8 +9,15 @@ def price_key(
     *,
     item_ids: tuple[str, ...],
     locations: tuple[str, ...],
-) -> tuple[str, int, tuple[str, ...], tuple[str, ...]]:
-    return (setup.region.value, int(setup.quality), item_ids, locations)
+) -> tuple[str, tuple[int, ...], tuple[str, ...], tuple[str, ...]]:
+    return (setup.region.value, price_qualities(setup), item_ids, locations)
+
+
+def price_qualities(setup: CraftSetup) -> tuple[int, ...]:
+    quality = max(1, min(6, int(setup.quality or 1)))
+    if quality == 1:
+        return (1,)
+    return (quality, 1)
 
 
 def default_market_tax_percent(premium: bool) -> float:
@@ -128,4 +135,5 @@ __all__ = [
     "is_market_location",
     "price_by_tier",
     "price_key",
+    "price_qualities",
 ]

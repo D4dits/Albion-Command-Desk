@@ -93,6 +93,36 @@ class _RateLimitedMarketService(_FakeMarketService):
         raise RuntimeError("AO Data prices request failed after 5 attempts: HTTP Error 429: Too Many Requests")
 
 
+class _RecordingQualityMarketService(_FakeMarketService):
+    def __init__(self) -> None:
+        super().__init__()
+        self.requested_qualities: list[int] = []
+
+    def get_price_index(
+        self,
+        *,
+        region: MarketRegion,
+        item_ids: list[str],
+        locations: list[str],
+        qualities: list[int] | None = None,
+        ttl_seconds: float = 120.0,
+        allow_stale: bool = True,
+        allow_cache: bool = True,
+        allow_live: bool = True,
+    ) -> dict[tuple[str, str, int], MarketPriceRecord]:
+        self.requested_qualities = [int(value) for value in (qualities or [])]
+        return super().get_price_index(
+            region=region,
+            item_ids=item_ids,
+            locations=locations,
+            qualities=qualities,
+            ttl_seconds=ttl_seconds,
+            allow_stale=allow_stale,
+            allow_cache=allow_cache,
+            allow_live=allow_live,
+        )
+
+
 def _enable_all_plan_rows(state: MarketSetupState) -> None:
     model = state.craftPlanModel
     for idx in range(model.rowCount()):
@@ -121,6 +151,18 @@ def test_market_setup_state_market_tax_defaults_follow_premium() -> None:
     assert state.marketTaxPercent == pytest.approx(6.5)
     state.setPremium(False)
     assert state.marketTaxPercent == pytest.approx(10.5)
+
+
+def test_market_setup_state_fetches_quality_one_with_selected_quality() -> None:
+    service = _RecordingQualityMarketService()
+    state = MarketSetupState(service=service, auto_refresh_prices=False)
+    state.setQuality(5)
+    state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
+
+    state.refreshPrices()
+
+    assert service.requested_qualities == [5, 1]
 
 
 def test_market_setup_state_daily_bonus_preset_rounding() -> None:
