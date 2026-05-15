@@ -3,6 +3,8 @@
 import json
 import logging
 import time
+import gzip
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
 from typing import Callable
@@ -56,14 +58,16 @@ class AODataClient:
         user_agent: str = "albion-command-desk-market/0.1",
         fetch_json: Callable[[str, float, str], object] | None = None,
         max_retries: int = 5,
+        max_price_retries: int | None = None,
         retry_backoff_initial_seconds: float = 1.0,
         retry_backoff_factor: float = 2.0,
         retry_backoff_max_seconds: float = 30.0,
-        max_prices_url_length: int = 3200,
+        max_prices_url_length: int = 4000,
         max_prices_items_per_batch: int = 100,
         max_prices_items_per_rate_limited_batch: int = 40,
-        batch_pause_seconds: float = 0.35,
+        batch_pause_seconds: float = 0.0,
         rate_limited_batch_pause_seconds: float = 1.25,
+        max_price_batch_workers: int | None = None,
         sleeper: Callable[[float], None] | None = None,
         logger: logging.Logger | None = None,
     ) -> None:
@@ -71,6 +75,7 @@ class AODataClient:
         self._user_agent = user_agent
         self._fetch_json = fetch_json or _default_fetch_json
         self._max_retries = max(0, int(max_retries))
+        self._max_price_retries = self._max_retries if max_price_retries is None else max(0, int(max_price_retries))
         self._retry_backoff_initial_seconds = max(0.0, float(retry_backoff_initial_seconds))
         self._retry_backoff_factor = max(1.0, float(retry_backoff_factor))
         self._retry_backoff_max_seconds = max(0.0, float(retry_backoff_max_seconds))
@@ -79,6 +84,9 @@ class AODataClient:
         self._max_prices_items_per_rate_limited_batch = max(1, int(max_prices_items_per_rate_limited_batch))
         self._batch_pause_seconds = max(0.0, float(batch_pause_seconds))
         self._rate_limited_batch_pause_seconds = max(0.0, float(rate_limited_batch_pause_seconds))
+        if max_price_batch_workers is None:
+            max_price_batch_workers = 1 if fetch_json is not None else 4
+        self._max_price_batch_workers = max(1, int(max_price_batch_workers))
         self._sleep = sleeper or time.sleep
         self._log = logger or logging.getLogger(__name__)
         self._last_request_stats = AODataRequestStats(
@@ -112,11 +120,21 @@ class AODataClient:
             "qualities": ",".join(str(x) for x in (qualities or [1])),
         }
         out: list[MarketPriceRecord] = []
-        for batch_index, item_batch in enumerate(self._split_price_batches(base=base, item_ids=item_ids, params=params)):
+        batches = self._split_price_batches(base=base, item_ids=item_ids, params=params)
+        if len(batches) > 1 and self._max_price_batch_workers > 1:
+            return self._fetch_price_batches_parallel(base=base, batches=batches, params=params)
+        errors: list[RuntimeError] = []
+        for batch_index, item_batch in enumerate(batches):
             if batch_index > 0 and self._batch_pause_seconds > 0:
                 self._sleep(self._batch_pause_seconds)
-            out.extend(self._fetch_prices_batch(base=base, item_ids=item_batch, params=params))
-        return out
+            try:
+                out.extend(self._fetch_prices_batch(base=base, item_ids=item_batch, params=params))
+            except RuntimeError as exc:
+                errors.append(exc)
+                self._log.warning("AO Data prices batch failed; continuing with partial prices: %s", exc)
+        if out or not errors:
+            return out
+        raise errors[0]
 
     def fetch_charts(
         self,
@@ -147,8 +165,15 @@ class AODataClient:
         host = REGION_HOSTS[region]
         return f"https://{host}"
 
-    def _fetch_with_retry(self, *, url: str, endpoint: str) -> object:
-        max_attempts = self._max_retries + 1
+    def _fetch_with_retry(
+        self,
+        *,
+        url: str,
+        endpoint: str,
+        max_retries: int | None = None,
+        retry_rate_limits: bool = True,
+    ) -> object:
+        max_attempts = (self._max_retries if max_retries is None else max(0, int(max_retries))) + 1
         started = time.perf_counter()
         attempt = 0
         last_error: Exception | None = None
@@ -169,6 +194,8 @@ class AODataClient:
                 return payload
             except Exception as exc:
                 last_error = exc
+                if _is_too_many_requests_error(exc) and not retry_rate_limits:
+                    break
                 if attempt >= max_attempts:
                     break
                 sleep_seconds = backoff_seconds
@@ -200,12 +227,12 @@ class AODataClient:
         self._last_request_stats = AODataRequestStats(
             endpoint=endpoint,
             url=url,
-            attempts=max_attempts,
+            attempts=attempt,
             elapsed_ms=(time.perf_counter() - started) * 1000.0,
             success=False,
             error=error_message,
         )
-        raise RuntimeError(f"AO Data {endpoint} request failed after {max_attempts} attempts: {error_message}")
+        raise RuntimeError(f"AO Data {endpoint} request failed after {attempt} attempts: {error_message}")
 
     def _split_price_batches(
         self,
@@ -238,7 +265,12 @@ class AODataClient:
     ) -> list[MarketPriceRecord]:
         url = self._build_prices_url(base=base, item_ids=item_ids, params=params)
         try:
-            data = self._fetch_with_retry(url=url, endpoint="prices")
+            data = self._fetch_with_retry(
+                url=url,
+                endpoint="prices",
+                max_retries=self._max_price_retries,
+                retry_rate_limits=False,
+            )
             return _normalize_prices(data)
         except RuntimeError as exc:
             if len(item_ids) <= 1:
@@ -266,6 +298,32 @@ class AODataClient:
                     out.extend(self._fetch_prices_batch(base=base, item_ids=chunk, params=params))
                 return out
             raise
+
+    def _fetch_price_batches_parallel(
+        self,
+        *,
+        base: str,
+        batches: list[list[str]],
+        params: dict[str, str],
+    ) -> list[MarketPriceRecord]:
+        results: list[list[MarketPriceRecord]] = [[] for _ in batches]
+        errors: list[RuntimeError] = []
+        worker_count = min(self._max_price_batch_workers, len(batches))
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            future_by_index = {
+                executor.submit(self._fetch_prices_batch, base=base, item_ids=batch, params=params): idx
+                for idx, batch in enumerate(batches)
+            }
+            for future, idx in future_by_index.items():
+                try:
+                    results[idx] = future.result()
+                except RuntimeError as exc:
+                    errors.append(exc)
+                    self._log.warning("AO Data prices batch failed; continuing with partial prices: %s", exc)
+        out = [row for batch_rows in results for row in batch_rows]
+        if out or not errors:
+            return out
+        raise errors[0]
 
     def _split_rate_limited_price_batches(self, *, item_ids: list[str]) -> list[list[str]]:
         chunk_size = self._max_prices_items_per_rate_limited_batch
@@ -331,9 +389,18 @@ def _as_int(value: object, *, default: int) -> int:
 
 
 def _default_fetch_json(url: str, timeout_seconds: float, user_agent: str) -> object:
-    request = Request(url, headers={"User-Agent": user_agent})
+    request = Request(
+        url,
+        headers={
+            "User-Agent": user_agent,
+            "Accept-Encoding": "gzip",
+        },
+    )
     with urlopen(request, timeout=timeout_seconds) as response:
-        payload = response.read().decode("utf-8")
+        payload_raw = response.read()
+        if str(response.headers.get("Content-Encoding") or "").lower() == "gzip":
+            payload_raw = gzip.decompress(payload_raw)
+        payload = payload_raw.decode("utf-8")
     return json.loads(payload)
 
 

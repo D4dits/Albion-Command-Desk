@@ -132,7 +132,15 @@ def journal_maps() -> tuple[dict[str, _JournalRule], dict[str, float]]:
     return journal_by_item, fame_factor_by_item
 
 
+@lru_cache(maxsize=1)
 def journal_rule_templates() -> dict[tuple[int, str], _JournalRule]:
+    journal_by_item, _ = journal_maps()
+    templates_from_rules: dict[tuple[int, str], _JournalRule] = {}
+    for rule in journal_by_item.values():
+        templates_from_rules.setdefault((int(rule.tier), str(rule.kind).upper()), rule)
+    if templates_from_rules:
+        return templates_from_rules
+
     items_path = Path(__file__).resolve().parents[3] / "data" / "items.json"
     try:
         payload = json.loads(items_path.read_text(encoding="utf-8"))

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -23,50 +24,55 @@ class SQLiteCache:
     def __init__(self, path: Path) -> None:
         self._path = path
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(path))
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._lock = threading.RLock()
+        self._conn = sqlite3.connect(str(path), check_same_thread=False)
+        with self._lock:
+            self._conn.execute("PRAGMA journal_mode=WAL")
+            self._conn.execute("PRAGMA synchronous=NORMAL")
         self._init_schema()
 
     def _init_schema(self) -> None:
-        self._conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS market_cache (
-                cache_key TEXT PRIMARY KEY,
-                payload_json TEXT NOT NULL,
-                expires_at REAL NOT NULL,
-                updated_at REAL NOT NULL
+        with self._lock:
+            self._conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS market_cache (
+                    cache_key TEXT PRIMARY KEY,
+                    payload_json TEXT NOT NULL,
+                    expires_at REAL NOT NULL,
+                    updated_at REAL NOT NULL
+                )
+                """
             )
-            """
-        )
-        self._conn.commit()
+            self._conn.commit()
 
     def set(self, key: str, payload: object, ttl_seconds: float) -> None:
         now = time.time()
         expires_at = now + max(0.0, ttl_seconds)
         payload_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-        self._conn.execute(
-            """
-            INSERT INTO market_cache(cache_key, payload_json, expires_at, updated_at)
-            VALUES(?, ?, ?, ?)
-            ON CONFLICT(cache_key) DO UPDATE SET
-              payload_json=excluded.payload_json,
-              expires_at=excluded.expires_at,
-              updated_at=excluded.updated_at
-            """,
-            (key, payload_json, expires_at, now),
-        )
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(
+                """
+                INSERT INTO market_cache(cache_key, payload_json, expires_at, updated_at)
+                VALUES(?, ?, ?, ?)
+                ON CONFLICT(cache_key) DO UPDATE SET
+                  payload_json=excluded.payload_json,
+                  expires_at=excluded.expires_at,
+                  updated_at=excluded.updated_at
+                """,
+                (key, payload_json, expires_at, now),
+            )
+            self._conn.commit()
 
     def get_entry(self, key: str, *, allow_expired: bool = False) -> CacheEntry | None:
-        row = self._conn.execute(
-            """
-            SELECT cache_key, payload_json, expires_at, updated_at
-            FROM market_cache
-            WHERE cache_key=?
-            """,
-            (key,),
-        ).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                """
+                SELECT cache_key, payload_json, expires_at, updated_at
+                FROM market_cache
+                WHERE cache_key=?
+                """,
+                (key,),
+            ).fetchone()
         if row is None:
             return None
         payload = json.loads(row[1])
@@ -87,16 +93,17 @@ class SQLiteCache:
         allow_expired: bool = False,
         limit: int = 25,
     ) -> list[CacheEntry]:
-        rows = self._conn.execute(
-            """
-            SELECT cache_key, payload_json, expires_at, updated_at
-            FROM market_cache
-            WHERE cache_key LIKE ?
-            ORDER BY updated_at DESC
-            LIMIT ?
-            """,
-            (f"{prefix}%", max(1, int(limit))),
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                """
+                SELECT cache_key, payload_json, expires_at, updated_at
+                FROM market_cache
+                WHERE cache_key LIKE ?
+                ORDER BY updated_at DESC
+                LIMIT ?
+                """,
+                (f"{prefix}%", max(1, int(limit))),
+            ).fetchall()
         entries: list[CacheEntry] = []
         for row in rows:
             entry = CacheEntry(
@@ -111,21 +118,24 @@ class SQLiteCache:
         return entries
 
     def delete(self, key: str) -> int:
-        cur = self._conn.execute("DELETE FROM market_cache WHERE cache_key=?", (key,))
-        self._conn.commit()
+        with self._lock:
+            cur = self._conn.execute("DELETE FROM market_cache WHERE cache_key=?", (key,))
+            self._conn.commit()
         return int(cur.rowcount)
 
     def clear_expired(self, *, now: float | None = None) -> int:
         timestamp = time.time() if now is None else now
-        cur = self._conn.execute(
-            "DELETE FROM market_cache WHERE expires_at <= ?",
-            (timestamp,),
-        )
-        self._conn.commit()
+        with self._lock:
+            cur = self._conn.execute(
+                "DELETE FROM market_cache WHERE expires_at <= ?",
+                (timestamp,),
+            )
+            self._conn.commit()
         return int(cur.rowcount)
 
     def close(self) -> None:
-        self._conn.close()
+        with self._lock:
+            self._conn.close()
 
     def __enter__(self) -> "SQLiteCache":
         return self

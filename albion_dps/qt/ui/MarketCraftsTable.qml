@@ -246,8 +246,8 @@ TableSurface {
                     anchors.bottom: parent.bottom
                     clip: true
                     spacing: 0
-                    reuseItems: false
-                    cacheBuffer: 0
+                    reuseItems: true
+                    cacheBuffer: Math.max(96, height * 2)
                     model: root.craftPlanModel
 
                     Connections {

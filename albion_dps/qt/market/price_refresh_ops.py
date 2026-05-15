@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import queue
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -90,6 +92,16 @@ def refresh_price_index(
             state._price_context_key = context_key
             return state._price_index
 
+    if _can_use_async_price_fetch(state):
+        return _start_async_price_fetch(
+            state,
+            setup,
+            item_ids=item_ids,
+            locations=locations,
+            context_key=context_key,
+            force=force,
+        )
+
     state._price_fetch_in_progress = True
     batch_count = _live_batch_count(state, setup, item_ids, locations)
     state._prices_source = "loading"
@@ -163,7 +175,6 @@ def refresh_price_index(
                 state._min_live_refresh_interval_seconds,
             )
             state._set_next_live_fetch_cooldown(cooldown)
-            state._schedule_deferred_price_refresh(cooldown + 0.1)
             state._set_prices_status(
                 "cooldown",
                 f"AO Data rate limit (429). Cooling down for {cooldown:.0f}s; using fallback prices.",
@@ -178,6 +189,249 @@ def refresh_price_index(
     state._price_index = state._build_fallback_price_index(setup)
     state._price_context_key = context_key
     return state._price_index
+
+
+def _can_use_async_price_fetch(state) -> bool:
+    if QCoreApplication.instance() is None:
+        return False
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return False
+    if state._service is None:
+        return False
+    if state._price_fetch_in_progress:
+        return False
+    return True
+
+
+def _start_async_price_fetch(
+    state,
+    setup,
+    *,
+    item_ids: list[str],
+    locations: list[str],
+    context_key,
+    force: bool,
+):
+    state._price_fetch_in_progress = True
+    state._pending_price_context_key = context_key
+    state._pending_price_force = bool(force)
+    batch_count = _live_batch_count(state, setup, item_ids, locations)
+    state._prices_source = "loading"
+    state._prices_status_text = (
+        f"Fetching live prices ({len(item_ids)} IDs"
+        + (f", ~{batch_count} batch(es)" if batch_count > 0 else "")
+        + f", {len(locations)} location(s))..."
+    )
+    state.pricesChanged.emit()
+    state._append_diag(
+        f"AO Data async fetch started: {len(item_ids)} item IDs across {len(locations)} locations.",
+        level="INFO",
+    )
+    if len(item_ids) >= 200:
+        state._append_diag(
+            "Large refresh is running in the background; the Market tab remains interactive.",
+            level="INFO",
+        )
+
+    cached_index = _cache_only_price_index(
+        state,
+        setup,
+        item_ids=item_ids,
+        locations=locations,
+    )
+
+    result_queue: queue.Queue[tuple[object, object, str]] = queue.Queue(maxsize=1)
+    thread = threading.Thread(
+        target=_run_price_fetch_worker,
+        kwargs={
+            "service": state._service,
+            "region": setup.region,
+            "item_ids": list(item_ids),
+            "locations": list(locations),
+            "qualities": list(state._price_qualities(setup)),
+            "force": bool(force),
+            "result_queue": result_queue,
+        },
+        name="AODataPriceFetch",
+        daemon=True,
+    )
+    state._price_fetch_result_queue = result_queue
+    state._price_fetch_thread = thread
+    thread.start()
+    state._price_fetch_result_timer.start()
+
+    if cached_index:
+        state._price_index = cached_index
+        state._price_context_key = context_key
+        meta = state._service.last_prices_meta
+        state._prices_source = meta.source
+        state._prices_status_text = (
+            f"{meta.source}: {meta.record_count} cached rows; live refresh running..."
+        )
+        state.pricesChanged.emit()
+        return state._price_index
+
+    if state._price_index:
+        return state._price_index
+    state._price_index = state._build_fallback_price_index(setup)
+    state._price_context_key = context_key
+    return state._price_index
+
+
+def _run_price_fetch_worker(
+    *,
+    service,
+    region,
+    item_ids: list[str],
+    locations: list[str],
+    qualities: list[int],
+    force: bool,
+    result_queue: "queue.Queue[tuple[object, object, str]]",
+) -> None:
+    try:
+        index = service.get_price_index(
+            region=region,
+            item_ids=item_ids,
+            locations=locations,
+            qualities=qualities,
+            ttl_seconds=120.0,
+            allow_stale=not force,
+            allow_cache=not force,
+            allow_live=True,
+        )
+        result_queue.put((index, service.last_prices_meta, ""))
+    except Exception as exc:
+        result_queue.put(({}, None, str(exc)))
+
+
+def _cache_only_price_index(
+    state,
+    setup,
+    *,
+    item_ids: list[str],
+    locations: list[str],
+):
+    try:
+        return state._service.get_price_index(
+            region=setup.region,
+            item_ids=item_ids,
+            locations=locations,
+            qualities=list(state._price_qualities(setup)),
+            ttl_seconds=120.0,
+            allow_stale=True,
+            allow_cache=True,
+            allow_live=False,
+        )
+    except Exception as exc:
+        state._log.debug("AO Data cache-only lookup failed: %s", exc)
+        return {}
+
+
+def poll_async_price_fetch(state) -> None:
+    result_queue = getattr(state, "_price_fetch_result_queue", None)
+    if result_queue is None:
+        state._price_fetch_result_timer.stop()
+        return
+    try:
+        index, meta, error = result_queue.get_nowait()
+    except queue.Empty:
+        thread = getattr(state, "_price_fetch_thread", None)
+        if thread is not None and not thread.is_alive():
+            state._price_fetch_result_timer.stop()
+            state._price_fetch_result_queue = None
+            on_async_price_fetch_finished(state, {}, None, "AO Data price worker stopped without a result.")
+        return
+
+    state._price_fetch_result_timer.stop()
+    thread = getattr(state, "_price_fetch_thread", None)
+    if thread is not None:
+        thread.join(timeout=0)
+    state._price_fetch_result_queue = None
+    on_async_price_fetch_finished(state, index, meta, error)
+
+
+def on_async_price_fetch_finished(state, index: object, meta: object, error: str) -> None:
+    state._price_fetch_in_progress = False
+    state._price_fetch_thread = None
+    context_key = state._pending_price_context_key
+    force = bool(state._pending_price_force)
+    state._pending_price_context_key = None
+    state._pending_price_force = False
+
+    error_text = str(error or "").strip()
+    if error_text:
+        state._log.warning("AO Data async fetch failed, using fallback prices: %s", error_text)
+        if "429" in error_text or "Too Many Requests" in error_text:
+            cooldown = max(
+                state._rate_limit_cooldown_seconds,
+                state._min_live_refresh_interval_seconds,
+            )
+            state._set_next_live_fetch_cooldown(cooldown)
+            state._set_prices_status(
+                "cooldown",
+                f"AO Data rate limit (429). Cooling down for {cooldown:.0f}s; using fallback prices.",
+            )
+        else:
+            state._set_fallback_status(f"AO Data fetch failed ({error_text}). Using bundled fallback prices.")
+        state._append_diag(f"AO Data fetch failed: {error_text}", level="ERROR")
+        state._price_index = state._build_fallback_price_index(state.to_setup())
+        state._price_context_key = context_key
+        state.pricesChanged.emit()
+        state._rebuild_preview(force_price_refresh=False)
+        return
+
+    price_index = index if isinstance(index, dict) else {}
+    if price_index:
+        state._price_index = price_index
+        state._price_context_key = context_key
+        source = str(getattr(meta, "source", "live") or "live")
+        record_count = int(getattr(meta, "record_count", len(price_index)) or 0)
+        elapsed_ms = float(getattr(meta, "elapsed_ms", 0.0) or 0.0)
+        if not force and source == "live":
+            state._set_next_live_fetch_cooldown(state._min_live_refresh_interval_seconds)
+        state._prices_source = source
+        state._prices_status_text = f"{source}: {record_count} rows in {elapsed_ms:.0f} ms"
+        state.pricesChanged.emit()
+        state._append_diag(
+            f"Prices loaded from {source} ({record_count} rows, {elapsed_ms:.0f} ms).",
+            level="INFO",
+        )
+        if (
+            source in {"stale_cache", "partial_stale_cache"}
+            and not force
+            and QCoreApplication.instance() is not None
+            and state.refreshCooldownSeconds <= 0
+            and not state._deferred_price_refresh_timer.isActive()
+            and not state._deferred_force_price_refresh
+        ):
+            state._append_diag(
+                "Stale cache shown first; scheduling background live refresh.",
+                level="INFO",
+            )
+            state._set_prices_status(
+                "refreshing_cache",
+                f"Showing stale cache ({record_count} rows); background live refresh queued.",
+            )
+            state._schedule_deferred_price_refresh(0.15, force=True)
+    else:
+        state._set_fallback_status("AO Data returned no price rows. Using bundled fallback prices.")
+        state._append_diag("AO Data returned no rows; using fallback prices.", level="WARN")
+        state._price_index = state._build_fallback_price_index(state.to_setup())
+        state._price_context_key = context_key
+
+    state._rebuild_preview(force_price_refresh=False)
+
+
+def shutdown_async_price_fetch(state) -> bool:
+    thread = getattr(state, "_price_fetch_thread", None)
+    if thread is None:
+        return True
+    state._price_fetch_result_timer.stop()
+    if thread.is_alive():
+        return False
+    state._price_fetch_thread = None
+    state._price_fetch_result_queue = None
+    return True
 
 
 def process_ui_events() -> None:

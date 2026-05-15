@@ -231,7 +231,7 @@ def test_fetch_prices_retries_with_smaller_batches_on_414() -> None:
     assert any("/stats/prices/T4_MAIN_SWORD.json" in url for url in called)
 
 
-def test_fetch_prices_does_not_split_batches_on_429_after_retry_exhaustion() -> None:
+def test_fetch_prices_fails_fast_on_small_429_batch() -> None:
     called: list[str] = []
 
     def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):
@@ -267,7 +267,7 @@ def test_fetch_prices_does_not_split_batches_on_429_after_retry_exhaustion() -> 
             item_ids=["T4_MAIN_SWORD", "T4_MAIN_AXE", "T4_MAIN_MACE"],
             locations=["Bridgewatch"],
         )
-    assert len(called) == 3
+    assert len(called) == 1
     assert any("/stats/prices/T4_MAIN_SWORD,T4_MAIN_AXE,T4_MAIN_MACE.json" in url for url in called)
     assert not any("/stats/prices/T4_MAIN_SWORD.json" in url for url in called)
 

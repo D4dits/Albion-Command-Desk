@@ -3,12 +3,13 @@ from __future__ import annotations
 import json
 import logging
 import math
+import os
 import time
 from math import ceil
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Sequence
-from PySide6.QtCore import QObject, Property, Qt, QTimer, Signal, Slot
+from PySide6.QtCore import QCoreApplication, QObject, Property, Qt, QTimer, Signal, Slot
 
 from albion_dps.market.aod_client import MarketPriceRecord
 from albion_dps.market.catalog import RecipeCatalog
@@ -116,6 +117,7 @@ class MarketSetupState(QObject):
         self._recipe = self._resolve_recipe(recipe_id)
         self._recipe_options_model.set_items(self._build_recipe_options())
         self._craft_plan_rows: list[CraftPlanRow] = []
+        self._craft_plan_recipe_ids: set[str] = set()
         self._next_plan_row_id = 1
         self._breakdown = ProfitBreakdown()
         self._base_input_total_cost = 0.0
@@ -142,6 +144,10 @@ class MarketSetupState(QObject):
         self._prices_source = "fallback"
         self._prices_status_text = "Using bundled fallback prices."
         self._price_fetch_in_progress = False
+        self._price_fetch_thread: Any | None = None
+        self._price_fetch_result_queue: Any | None = None
+        self._pending_price_context_key: Any | None = None
+        self._pending_price_force = False
         self._results_sort_key = "profit"
         self._shopping_csv = ""
         self._selling_csv = ""
@@ -168,6 +174,13 @@ class MarketSetupState(QObject):
         self._deferred_price_refresh_timer = QTimer(self)
         self._deferred_price_refresh_timer.setSingleShot(True)
         self._deferred_price_refresh_timer.timeout.connect(self._on_deferred_price_refresh_timeout)
+        self._price_fetch_result_timer = QTimer(self)
+        self._price_fetch_result_timer.setInterval(50)
+        self._price_fetch_result_timer.timeout.connect(self._on_async_price_fetch_poll)
+        self._deferred_preview_rebuild_timer = QTimer(self)
+        self._deferred_preview_rebuild_timer.setSingleShot(True)
+        self._deferred_preview_rebuild_timer.timeout.connect(self._on_deferred_preview_rebuild_timeout)
+        self._deferred_force_preview_rebuild = False
         self._refresh_cooldown_tick_timer = QTimer(self)
         self._refresh_cooldown_tick_timer.setInterval(1000)
         self._refresh_cooldown_tick_timer.timeout.connect(self._on_refresh_cooldown_tick)
@@ -685,6 +698,7 @@ class MarketSetupState(QObject):
         )
         if loaded_rows is not None:
             self._craft_plan_rows = loaded_rows
+            self._rebuild_craft_plan_recipe_index()
             self._next_plan_row_id = max((row.row_id for row in loaded_rows), default=0) + 1
             self._sync_craft_plan_model()
             for plan_row in self._craft_plan_rows:
@@ -769,13 +783,14 @@ class MarketSetupState(QObject):
             return
         added = 0
         for recipe_id in recipe_ids:
-            if self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=False):
+            if self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=False, sync_model=False):
                 added += 1
         if added <= 0:
             self._set_list_action_text("No new recipes were added.")
             return
+        self._sync_craft_plan_model()
         self._set_list_action_text(f"Added {added} recipes to craft plan (On = off).")
-        self._rebuild_preview(force_price_refresh=False)
+        self._request_preview_rebuild(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
@@ -796,13 +811,17 @@ class MarketSetupState(QObject):
             return
         added = 0
         for recipe_id in family_ids:
-            if self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=False):
+            if self._add_recipe_to_plan_internal(recipe_id, runs=self._craft_runs, enabled=False, sync_model=False):
                 added += 1
         if added <= 0:
             self._set_list_action_text("No new family recipes were added.")
             return
+        self._sync_craft_plan_model()
         self._set_list_action_text(f"Added {added} family recipes (On = off).")
-        self._rebuild_preview(force_price_refresh=False)
+        if self._craft_plan_rows:
+            self._request_preview_rebuild(force_price_refresh=False)
+        else:
+            self._rebuild_preview(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
@@ -813,7 +832,7 @@ class MarketSetupState(QObject):
             row = self._find_plan_row_by_recipe(_recipe_identity(self._recipe))
             if row is not None and row.runs != self._craft_runs:
                 self._update_plan_row(row.row_id, runs=self._craft_runs)
-        self._rebuild_preview(force_price_refresh=False)
+        self._request_preview_rebuild(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
@@ -824,7 +843,7 @@ class MarketSetupState(QObject):
             row = self._find_plan_row_by_recipe(recipe_id)
             if row is not None and row.runs != self._craft_runs:
                 self._update_plan_row(row.row_id, runs=self._craft_runs)
-        self._rebuild_preview(force_price_refresh=False)
+        self._request_preview_rebuild(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
@@ -841,13 +860,14 @@ class MarketSetupState(QObject):
         self._craft_plan_rows = [row for row in self._craft_plan_rows if int(row.row_id) != int(row_id)]
         if len(self._craft_plan_rows) == before:
             return
+        self._rebuild_craft_plan_recipe_index()
         self._sync_craft_plan_model()
         if not any(row.recipe_id == _recipe_identity(self._recipe) for row in self._craft_plan_rows):
             if self._craft_plan_rows:
                 self._recipe = self._resolve_recipe(self._craft_plan_rows[0].recipe_id)
                 self._craft_runs = max(1, int(self._craft_plan_rows[0].runs))
                 self._ensure_price_preferences_for_recipe(self._recipe)
-        self._rebuild_preview(force_price_refresh=False)
+        self._request_preview_rebuild(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
@@ -855,7 +875,7 @@ class MarketSetupState(QObject):
     def setPlanRowEnabled(self, row_id: int, enabled: bool) -> None:
         if not self._update_plan_row(row_id, enabled=bool(enabled)):
             return
-        self._rebuild_preview(force_price_refresh=False)
+        self._request_preview_rebuild(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
@@ -867,7 +887,7 @@ class MarketSetupState(QObject):
         row = self._find_plan_row(row_id)
         if row is not None and row.recipe_id == _recipe_identity(self._recipe):
             self._craft_runs = normalized
-        self._rebuild_preview(force_price_refresh=False)
+        self._request_preview_rebuild(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
@@ -878,7 +898,7 @@ class MarketSetupState(QObject):
             city_value = self._setup.craft_city
         if not self._update_plan_row(row_id, craft_city=city_value):
             return
-        self._rebuild_preview(force_price_refresh=False)
+        self._request_preview_rebuild(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
@@ -892,13 +912,14 @@ class MarketSetupState(QObject):
         normalized = float(self._normalize_daily_bonus_percent(parsed))
         if not self._update_plan_row(row_id, daily_bonus_percent=normalized):
             return
-        self._rebuild_preview(force_price_refresh=False)
+        self._request_preview_rebuild(force_price_refresh=False)
         self.setupChanged.emit()
         self.validationChanged.emit()
 
     @Slot()
     def clearCraftPlan(self) -> None:
         self._craft_plan_rows = []
+        self._craft_plan_recipe_ids.clear()
         self._next_plan_row_id = 1
         self._completed_input_item_ids.clear()
         self._completed_output_item_ids.clear()
@@ -1187,6 +1208,8 @@ class MarketSetupState(QObject):
         return sanitized_setup(self._setup)
 
     def close(self) -> None:
+        if not price_refresh_ops.shutdown_async_price_fetch(self):
+            return
         if self._service is not None:
             self._service.close()
 
@@ -1214,6 +1237,27 @@ class MarketSetupState(QObject):
 
     def _sync_craft_plan_model(self) -> None:
         self._craft_plan_model.set_items(self._sorted_craft_plan_rows(self._craft_plan_rows))
+
+    def _rebuild_craft_plan_recipe_index(self) -> None:
+        self._craft_plan_recipe_ids = {str(row.recipe_id) for row in self._craft_plan_rows if str(row.recipe_id)}
+
+    def _request_preview_rebuild(self, *, force_price_refresh: bool) -> None:
+        if self._should_defer_preview_rebuild():
+            self._deferred_force_preview_rebuild = bool(
+                self._deferred_force_preview_rebuild or force_price_refresh
+            )
+            self._deferred_preview_rebuild_timer.start(250)
+            return
+        self._rebuild_preview(force_price_refresh=force_price_refresh)
+
+    def _should_defer_preview_rebuild(self) -> bool:
+        if len(self._craft_plan_rows) < 8:
+            return False
+        if QCoreApplication.instance() is None:
+            return False
+        if os.environ.get("PYTEST_CURRENT_TEST"):
+            return False
+        return True
 
     def _family_recipe_ids(self, recipe_id: str) -> list[str]:
         return selection_ops.family_recipe_ids(
@@ -1262,18 +1306,26 @@ class MarketSetupState(QObject):
             reverse=bool(self._craft_plan_sort_desc),
         )
 
-    def _add_recipe_to_plan_internal(self, recipe_id: str, *, runs: int, enabled: bool) -> bool:
+    def _add_recipe_to_plan_internal(
+        self,
+        recipe_id: str,
+        *,
+        runs: int,
+        enabled: bool,
+        sync_model: bool = True,
+    ) -> bool:
         recipe = self._catalog.get(recipe_id)
         if recipe is None:
             return False
         if not _is_recipe_plan_candidate(recipe):
             return False
-        if self._find_plan_row_by_recipe(recipe_id) is not None:
+        resolved_recipe_id = _recipe_identity(recipe)
+        if resolved_recipe_id in self._craft_plan_recipe_ids:
             return False
         self._ensure_price_preferences_for_recipe(recipe)
         row = CraftPlanRow(
             row_id=self._next_plan_row_id,
-            recipe_id=_recipe_identity(recipe),
+            recipe_id=resolved_recipe_id,
             display_name=_recipe_display_label(recipe),
             tier=int(recipe.item.tier or 0),
             enchant=int(recipe.item.enchantment or 0),
@@ -1289,7 +1341,9 @@ class MarketSetupState(QObject):
         )
         self._next_plan_row_id += 1
         self._craft_plan_rows.append(row)
-        self._sync_craft_plan_model()
+        self._craft_plan_recipe_ids.add(resolved_recipe_id)
+        if sync_model:
+            self._sync_craft_plan_model()
         return True
 
     def _find_plan_row(self, row_id: int) -> CraftPlanRow | None:
@@ -1946,6 +2000,20 @@ class MarketSetupState(QObject):
     @Slot()
     def _on_deferred_price_refresh_timeout(self) -> None:
         price_refresh_ops.on_deferred_price_refresh_timeout(self)
+
+    @Slot()
+    def _on_deferred_preview_rebuild_timeout(self) -> None:
+        force_refresh = bool(self._deferred_force_preview_rebuild)
+        self._deferred_force_preview_rebuild = False
+        self._rebuild_preview(force_price_refresh=force_refresh)
+
+    @Slot(object, object, str)
+    def _on_async_price_fetch_finished(self, index: object, meta: object, error: str) -> None:
+        price_refresh_ops.on_async_price_fetch_finished(self, index, meta, error)
+
+    @Slot()
+    def _on_async_price_fetch_poll(self) -> None:
+        price_refresh_ops.poll_async_price_fetch(self)
 
     def _set_next_live_fetch_cooldown(self, seconds: float) -> None:
         price_refresh_ops.set_next_live_fetch_cooldown(self, seconds)

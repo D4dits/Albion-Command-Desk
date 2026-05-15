@@ -7,6 +7,13 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+- Market craft-plan updates now batch large additions and defer expensive preview rebuilds, making large recipe families such as multi-tier enchanted armor lists responsive instead of rebuilding after every row.
+- AO Data price refreshes now request only concrete recipe item ids, fetch price batches in the background with a GUI-polled worker queue, use cached/stale prices immediately when available, and fail fast on `429` rate limits without leaving the Market tab stuck in a queued loading state.
+
+### Fixed
+- Market live price refresh no longer uses Qt worker-thread signals for AO Data calls, avoiding a crash path where the app could close during price fetching.
+
 ## [0.1.25] - 2026-04-15
 
 ### Added

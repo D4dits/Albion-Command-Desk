@@ -14,7 +14,7 @@ It is isolated from DPS parsing/aggregation logic.
   - Uses AO Data client and local SQLite cache.
 - `albion_dps/market/aod_client.py`
   - Calls AO Data endpoints (`stats/prices`, `stats/charts`).
-  - Handles retry/backoff and request telemetry.
+  - Handles request batching, partial price results, rate-limit handling, and request telemetry.
 - `albion_dps/market/cache.py`
   - TTL cache (`data/market_cache.sqlite3`) with stale-read support.
 - `albion_dps/market/catalog.py`
@@ -27,16 +27,17 @@ It is isolated from DPS parsing/aggregation logic.
 
 ## Data flow
 1. User changes setup or selected crafts in QML.
-2. `MarketSetupState` computes required item ids/cities and refreshes price index.
+2. `MarketSetupState` computes required concrete recipe item ids/cities and refreshes price index.
 3. `MarketDataService` resolves data path:
    - cache hit -> `cache` or `stale_cache`
    - no usable cache -> live AO Data fetch -> cache write
    - fetch failure/no rows -> fallback synthetic price index
-4. `engine` calculates:
+4. In Qt runtime, live price fetches run in a Python worker thread. The worker returns through a queue polled by a GUI `QTimer`, so Qt objects are updated only on the GUI thread.
+5. `engine` calculates:
    - input lines (need, stock, buy qty, unit, total)
    - output lines (gross, fee, tax, net)
    - summary KPI and breakdown
-5. Qt list models are rebuilt and rendered in Market sub-tabs.
+6. Qt list models are rebuilt and rendered in Market sub-tabs.
 
 ## Price resolution rules
 - Inputs default mode: `buy_order`.
@@ -46,6 +47,12 @@ It is isolated from DPS parsing/aggregation logic.
   - `@N` enchant ids
   - `_LEVELN` material ids
   - quality fallback to `quality=1` when needed
+- Live AO Data requests use only concrete ids from recipes/journal rows. Alias expansion is reserved for matching returned/cache rows, which keeps large refreshes smaller.
+
+## AO Data refresh behavior
+- Cache and stale cache can be shown immediately while live refresh continues in the background.
+- Price requests are split into URL-safe batches and can return partial results when one batch fails.
+- `429 Too Many Requests` is treated as a cooldown signal for price fetches and does not perform long retry/backoff loops in the GUI workflow.
 
 ## Return-rate model
 - Return rate is derived from production bonus profile (location/city rules), focus toggle, and daily bonus.

@@ -4,13 +4,23 @@
 Symptoms:
 - Status line says fallback is used.
 - Many rows have `0` price.
+- Status line may show `cooldown` after AO Data returns `429 Too Many Requests`.
 
 Checks:
 1. Scanner must run and see market traffic in Albion.
 2. Verify internet access to AO Data endpoint for your region.
 3. In Market tab click `Refresh prices`.
-4. If still stale, remove cache and fetch again:
+4. If AO Data reports `429`, wait for the displayed cooldown before refreshing again. The app keeps cache/fallback prices visible while live prices are rate-limited.
+5. If still stale, remove cache and fetch again:
    - delete `data/market_cache.sqlite3`
+
+## App closes while fetching Market prices
+The Market refresh path should not close the app during live AO Data fetches. If it still happens:
+1. Start the app from a terminal so Python/Qt output remains visible.
+2. Reproduce the refresh.
+3. Capture the terminal output and Market diagnostics.
+4. Run:
+   - `python -m pytest -q tests/test_market_qt_state.py tests/test_market_aod_client.py tests/test_market_service.py`
 
 ## `ADP age` shows `--` / `n/a`
 This means AO Data has no valid timestamp for selected mode/item/city.
