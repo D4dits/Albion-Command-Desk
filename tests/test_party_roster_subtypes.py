@@ -96,6 +96,20 @@ def test_party_player_joined_subtype_maps_guid_name() -> None:
     assert "Carol" in party.snapshot_names()
 
 
+def test_party_roster_extended_accepts_name_only_roster() -> None:
+    params = [
+        _enc_param(252, TYPE_INTEGER, _enc_i32(230)),
+        _enc_param(13, TYPE_STRING_ARRAY, _enc_string_array(["Alice", "Bob", "Carol"])),
+    ]
+    payload = _build_event_payload(1, params)
+    message = PhotonMessage(opcode=1, event_code=1, payload=payload)
+
+    party = PartyRegistry()
+    party.observe(message)
+
+    assert party.snapshot_names() == {"Alice", "Bob", "Carol"}
+
+
 def test_party_player_left_removes_member() -> None:
     guid_a = b"\x01" * 16
     guid_b = b"\x02" * 16

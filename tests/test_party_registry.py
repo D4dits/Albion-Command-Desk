@@ -583,6 +583,25 @@ def test_party_registry_fallback_parses_unknown_roster_subtype(monkeypatch) -> N
     assert not registry.allows(303, names)
 
 
+def test_party_registry_fallback_parses_unknown_name_only_roster_subtype(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    params = {
+        252: 247,
+        8: ["D4dits", "SocialFur3", "SocialFur4"],
+    }
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters=params),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_names() == {"D4dits", "SocialFur3", "SocialFur4"}
+
+
 def test_party_registry_fallback_parses_unknown_join(monkeypatch) -> None:
     registry = PartyRegistry()
     message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")

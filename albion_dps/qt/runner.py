@@ -569,7 +569,9 @@ def _allowed_display_names_for_snapshot(
         )
     recent_local_party_ids = non_self_party_ids.intersection(recent_local_ids)
     if recent_local_party_ids:
-        display_party_ids = recent_local_party_ids.intersection(active_ids.union(recent_local_ids))
+        display_party_ids = non_self_party_ids.intersection(active_ids).union(
+            recent_local_party_ids
+        )
     else:
         display_party_ids = non_self_party_ids.intersection(active_ids.union(recent_local_ids))
     for entity_id in display_party_ids:

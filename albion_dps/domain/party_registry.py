@@ -184,6 +184,9 @@ class PartyRegistry:
             if guids is not None:
                 self._set_party_roster(guids, names)
                 return
+            if names and len(names) >= 2:
+                self._set_party_names_roster(names)
+                return
         if self._apply_unknown_party_fallback(subtype, event.parameters):
             return
         name_key = PARTY_SUBTYPE_NAME_KEYS.get(subtype)
@@ -349,9 +352,9 @@ class PartyRegistry:
 
         guid_list_fields = _extract_party_guid_list_fields(parameters)
         single_guid_fields = _extract_party_single_guid_fields(parameters)
-        if not guid_list_fields and not single_guid_fields:
-            return False
         name_fields = _extract_party_name_fields(parameters)
+        if not guid_list_fields and not single_guid_fields and not name_fields:
+            return False
 
         for guids in sorted(guid_list_fields, key=len, reverse=True):
             if len(guids) < 2:
@@ -361,6 +364,12 @@ class PartyRegistry:
                     continue
                 self._set_party_roster(guids, names)
                 return True
+
+        for names in sorted(name_fields, key=len, reverse=True):
+            if len(names) < 2:
+                continue
+            self._set_party_names_roster(names)
+            return True
 
         single_guid = single_guid_fields[0] if single_guid_fields else None
         if single_guid is None:
@@ -867,6 +876,24 @@ class PartyRegistry:
                 if name:
                     self._party_guid_names[guid] = name
                     self._party_names.add(name)
+        self._reset_party_ids_after_roster_change()
+        if changed:
+            self._membership_version += 1
+
+    def _set_party_names_roster(self, names: list[str]) -> None:
+        next_names = {
+            name
+            for name in names
+            if isinstance(name, str) and _looks_like_player_name(name)
+        }
+        if len(next_names) < 2:
+            return
+        changed = next_names != self._party_names or bool(
+            self._party_guids or self._party_guid_names
+        )
+        self._party_guids.clear()
+        self._party_guid_names.clear()
+        self._party_names = next_names
         self._reset_party_ids_after_roster_change()
         if changed:
             self._membership_version += 1
