@@ -27,6 +27,7 @@ NAME_EQUIPMENT_MIN_MATCHES = 3
 NAME_EQUIPMENT_MIN_RATIO = 2.0
 NAME_PARTY_JOINED_SUBTYPE = 212
 NAME_PARTY_PLAYER_JOINED_SUBTYPE = 214
+NAME_CURRENT_PARTY_PLAYER_JOINED_SUBTYPE = 233
 NAME_PARTY_JOINED_GUID_KEYS = (3, 4)
 NAME_PARTY_JOINED_NAME_KEYS = (5, 6)
 
@@ -125,6 +126,7 @@ class NameRegistry:
             entity_id = parameters.get(NAME_SUBTYPE_ENTITY_ID_KEY)
             if isinstance(name, str) and name:
                 self._store(entity_id, name)
+                self._store(parameters.get(7), name)
             items = parameters.get(NAME_UNIT_EQUIPMENT_LIST_KEY)
             if isinstance(entity_id, int) and isinstance(items, list):
                 filtered = [item for item in items if isinstance(item, int) and item > 0]
@@ -197,25 +199,24 @@ class NameRegistry:
                     weak_ids.intersection_update(strong_ids)
             self._names[entity_id] = name
             return
-        if isinstance(entity_id, int) and _is_guid(name):
-            self._id_guids[entity_id] = bytes(name)
-            return
-        if _is_guid(entity_id) and isinstance(name, str) and name:
-            self._guid_names[bytes(entity_id)] = name
+        guid_entity_id = _coerce_guid(entity_id)
+        if guid_entity_id is not None and isinstance(name, str) and name:
+            self._guid_names[guid_entity_id] = name
 
     def _apply_guid_link(self, parameters: dict[int, object]) -> None:
         guid = parameters.get(3)
         entity_id = parameters.get(1)
-        if not _is_guid(guid):
-            guid = None
+        guid = _coerce_guid(guid)
         if not isinstance(entity_id, int) or entity_id <= 0:
             entity_id = None
         if guid is not None and entity_id is not None:
-            self._id_guids[entity_id] = bytes(guid)
+            self._id_guids[entity_id] = guid
             return
 
         subtype = parameters.get(252)
         candidates: list[tuple[int, int]] = []
+        if subtype == NAME_PARTY_PLAYER_JOINED_SUBTYPE:
+            candidates.append((0, 1))
         if subtype in (11, 29):
             candidates.append((0, 7))
         if subtype == 308:
@@ -226,18 +227,22 @@ class NameRegistry:
             candidate_guid = parameters.get(guid_key)
             if not isinstance(candidate_id, int) or candidate_id <= 0:
                 continue
-            if not _is_guid(candidate_guid):
+            guid = _coerce_guid(candidate_guid)
+            if guid is None:
                 continue
-            self._id_guids[candidate_id] = bytes(candidate_guid)
+            self._id_guids[candidate_id] = guid
             return
 
     def _apply_party_roster(self, parameters: dict[int, object]) -> None:
         subtype = parameters.get(252)
-        if subtype == NAME_PARTY_PLAYER_JOINED_SUBTYPE:
-            guid = parameters.get(1)
+        if subtype in (
+            NAME_PARTY_PLAYER_JOINED_SUBTYPE,
+            NAME_CURRENT_PARTY_PLAYER_JOINED_SUBTYPE,
+        ):
+            guid = _coerce_guid(parameters.get(1))
             name = parameters.get(2)
-            if _is_guid(guid) and isinstance(name, str) and name:
-                self._guid_names[bytes(guid)] = name
+            if guid is not None and isinstance(name, str) and name:
+                self._guid_names[guid] = name
             return
 
         if subtype not in (227, 229, NAME_PARTY_JOINED_SUBTYPE):
@@ -261,8 +266,8 @@ class NameRegistry:
         if not guids or not names:
             return
         for guid, name in zip(guids, names):
-            if _is_guid(guid) and isinstance(name, str) and name:
-                self._guid_names[bytes(guid)] = name
+            if guid is not None and isinstance(name, str) and name:
+                self._guid_names[guid] = name
 
     def _infer_name_from_items(self, entity_id: int) -> None:
         items = self._entity_items.get(entity_id)
@@ -290,9 +295,36 @@ class NameRegistry:
 
 
 def _is_guid(value: object) -> bool:
+    return _coerce_guid(value) is not None
+
+
+def _coerce_guid(value: object) -> bytes | None:
     if isinstance(value, (bytes, bytearray)) and len(value) == 16:
-        return True
-    return False
+        return bytes(value)
+    if isinstance(value, list) and len(value) == 16:
+        out = bytearray()
+        for item in value:
+            if not isinstance(item, int) or item < 0 or item > 255:
+                return None
+            out.append(item)
+        return bytes(out)
+    return None
+
+
+def _coerce_guid_list(value: object) -> list[bytes] | None:
+    guid = _coerce_guid(value)
+    if guid is not None:
+        return [guid]
+    if not isinstance(value, list) or not value:
+        return None
+    if all(isinstance(item, int) and 0 <= item <= 255 for item in value):
+        if len(value) % 16 != 0:
+            return None
+        return [bytes(value[index : index + 16]) for index in range(0, len(value), 16)]
+    guids = [_coerce_guid(item) for item in value]
+    if any(guid is None for guid in guids):
+        return None
+    return [guid for guid in guids if guid is not None]
 
 
 def _extract_party_roster_lists(
@@ -302,10 +334,8 @@ def _extract_party_roster_lists(
     name_keys: tuple[int, ...],
 ) -> tuple[list[bytes] | None, list[str] | None]:
     for guid_key in guid_keys:
-        guid_values = parameters.get(guid_key)
-        if not isinstance(guid_values, list) or not guid_values:
-            continue
-        if not all(_is_guid(value) for value in guid_values):
+        guid_values = _coerce_guid_list(parameters.get(guid_key))
+        if not guid_values:
             continue
         for name_key in name_keys:
             name_values = parameters.get(name_key)

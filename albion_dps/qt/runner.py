@@ -491,7 +491,7 @@ def _drain_snapshots(
             loot_state.set_log_path(str(written_path))
 
 
-LOCAL_PARTY_VISIBILITY_SECONDS = 20.0
+LOCAL_PARTY_VISIBILITY_SECONDS = 120.0
 
 
 def _combine_session_activity(

@@ -29,6 +29,11 @@ PARTY_SUBTYPE_PLAYER_LEFT = 216
 PARTY_SUBTYPE_PLAYER_JOINED = 214
 PARTY_SUBTYPE_MEMBER_REMOVED = 233
 PARTY_SUBTYPE_ROSTER_EXTENDED = 230
+PARTY_CURRENT_SUBTYPE_DISBAND = 232
+PARTY_CURRENT_SUBTYPE_PLAYER_LEFT = 235
+PARTY_CURRENT_SUBTYPE_ON_CLUSTER_JOINED = 243
+PARTY_CURRENT_SUBTYPE_SET_ROLE_FLAG = 244
+PARTY_CURRENT_SUBTYPE_READY_CHECK_UPDATE = 246
 SELF_SUBTYPE_NAME_KEYS = {
     228: 1,
     238: 0,
@@ -37,7 +42,8 @@ MATCH_ROSTER_SUBTYPE = 120
 MATCH_ROSTER_NAME_KEY = 2
 MATCH_ROSTER_MIN_SIZE = 5
 MATCH_ROSTER_TTL_SECONDS = 120.0
-LOCAL_PARTY_VISIBILITY_SECONDS = 20.0
+LOCAL_PARTY_VISIBILITY_SECONDS = 120.0
+LOCAL_PARTY_NAME_SYNC_SECONDS = 30.0
 PARTY_FALLBACK_SUBTYPE_MIN = 200
 PARTY_FALLBACK_SUBTYPE_MAX = 260
 PARTY_FALLBACK_MAX_ROSTER_SIZE = 20
@@ -65,7 +71,7 @@ CHANGE_CLUSTER_OPERATION_CODE = 35
 JOIN_SELF_ID_KEY = 0
 JOIN_SELF_NAME_KEY = 2
 NON_PLAYER_NAME_PREFIXES = ("@", "MOB_", "NPC_")
-NON_PLAYER_NAMES = {"SYSTEM"}
+NON_PLAYER_NAMES = {"SYSTEM", "System", "owner", "friend", "user"}
 KNOWN_PARTY_SUBTYPES = (
     set(PARTY_SUBTYPE_NAME_KEYS)
     | set(PARTY_SUBTYPE_ROSTER)
@@ -76,6 +82,10 @@ KNOWN_PARTY_SUBTYPES = (
         PARTY_SUBTYPE_PLAYER_JOINED,
         PARTY_SUBTYPE_MEMBER_REMOVED,
         PARTY_SUBTYPE_ROSTER_EXTENDED,
+        PARTY_CURRENT_SUBTYPE_DISBAND,
+        PARTY_CURRENT_SUBTYPE_PLAYER_LEFT,
+        PARTY_CURRENT_SUBTYPE_ON_CLUSTER_JOINED,
+        PARTY_CURRENT_SUBTYPE_SET_ROLE_FLAG,
         MATCH_ROSTER_SUBTYPE,
         COMBAT_TARGET_SUBTYPE,
     }
@@ -137,18 +147,37 @@ class PartyRegistry:
         subtype = event.parameters.get(PARTY_SUBTYPE_KEY)
         if not isinstance(subtype, int):
             return
-        if subtype == PARTY_SUBTYPE_DISBAND:
+        if subtype in (PARTY_SUBTYPE_DISBAND, PARTY_CURRENT_SUBTYPE_DISBAND):
             if _looks_like_party_disband(event.parameters):
                 self._clear_party()
             return
         if subtype == COMBAT_TARGET_SUBTYPE:
             self._apply_target_link(event.parameters, packet)
             return
-        if subtype == PARTY_SUBTYPE_PLAYER_LEFT:
+        if subtype in (PARTY_SUBTYPE_PLAYER_LEFT, PARTY_CURRENT_SUBTYPE_PLAYER_LEFT):
             guid = _coerce_guid(event.parameters.get(1))
             if guid is not None:
                 self._remove_party_guid(guid)
             return
+        if subtype == PARTY_CURRENT_SUBTYPE_ON_CLUSTER_JOINED:
+            guids = _coerce_guid_list(event.parameters.get(0))
+            names = _coerce_names(event.parameters.get(2))
+            if guids and len(guids) <= PARTY_FALLBACK_MAX_ROSTER_SIZE:
+                self._add_party_guids(guids, names if len(names) == len(guids) else None)
+                return
+            if len(names) >= 2:
+                self._set_party_names_roster(names)
+            return
+        if subtype == PARTY_CURRENT_SUBTYPE_SET_ROLE_FLAG:
+            guid = _coerce_guid(event.parameters.get(1))
+            if guid is not None:
+                self._add_party_member(guid, None)
+            return
+        if subtype == PARTY_CURRENT_SUBTYPE_READY_CHECK_UPDATE:
+            guids = _coerce_guid_list(event.parameters.get(2))
+            if guids and len(guids) <= PARTY_FALLBACK_MAX_ROSTER_SIZE:
+                self._add_party_guids(guids)
+                return
         if subtype == PARTY_SUBTYPE_MEMBER_REMOVED:
             guid = _coerce_guid(event.parameters.get(1))
             if guid is None:
@@ -434,10 +463,21 @@ class PartyRegistry:
             return False
         return bool(self._party_names.difference(self._resolved_party_names))
 
-    def sync_names(self, name_registry: NameRegistry) -> None:
+    def sync_names(
+        self,
+        name_registry: NameRegistry,
+        *,
+        timestamp: float | None = None,
+    ) -> None:
         if not self._party_names:
             return
         snapshot = name_registry.snapshot()
+        recent_local_ids: set[int] = set()
+        if timestamp is not None:
+            recent_local_ids = name_registry.snapshot_recent_ids(
+                timestamp,
+                LOCAL_PARTY_NAME_SYNC_SECONDS,
+            )
         mapped_ids: set[int] = set()
         for entity_id, name in snapshot.items():
             if name not in self._party_names:
@@ -451,7 +491,11 @@ class PartyRegistry:
                 and name != self._self_name
             ):
                 continue
-            if entity_id not in self._combat_ids_seen and entity_id not in self._self_ids:
+            if (
+                entity_id not in self._combat_ids_seen
+                and entity_id not in self._self_ids
+                and entity_id not in recent_local_ids
+            ):
                 continue
             mapped_ids.add(entity_id)
             self._resolved_party_names.add(name)
@@ -605,7 +649,11 @@ class PartyRegistry:
                         return False
                 if self._party_names:
                     if not allow_name_only_fallback:
-                        return False
+                        return self._allows_party_name_fallback(
+                            source_id,
+                            name_registry,
+                            timestamp=timestamp,
+                        )
                     return name is not None and name in self._party_names
                 return False
             if not self._party_names:
@@ -617,8 +665,14 @@ class PartyRegistry:
                     and self._self_name is not None
                     and name == self._self_name
                 )
-            if not allow_name_only_fallback or name_registry is None:
+            if name_registry is None:
                 return False
+            if not allow_name_only_fallback:
+                return self._allows_party_name_fallback(
+                    source_id,
+                    name_registry,
+                    timestamp=timestamp,
+                )
             name = name_registry.lookup(source_id)
             return _looks_like_player_name(name) and name in self._party_names
         if self._party_ids:
@@ -656,6 +710,37 @@ class PartyRegistry:
             # drop party IDs that are no longer observed nearby.
             return True
         return source_id in recent_local_ids
+
+    def _allows_party_name_fallback(
+        self,
+        source_id: int,
+        name_registry: NameRegistry,
+        *,
+        timestamp: float | None,
+    ) -> bool:
+        name = name_registry.lookup(source_id)
+        if not _looks_like_player_name(name) or name not in self._party_names:
+            return False
+        mapped_party_ids_for_name = {
+            entity_id
+            for entity_id in self._party_ids
+            if entity_id not in self._self_ids and name_registry.lookup(entity_id) == name
+        }
+        if mapped_party_ids_for_name and source_id not in mapped_party_ids_for_name:
+            if timestamp is None:
+                return False
+            return source_id in name_registry.snapshot_recent_ids(
+                timestamp,
+                LOCAL_PARTY_VISIBILITY_SECONDS,
+            )
+        if name not in self._resolved_party_names:
+            return True
+        if timestamp is None:
+            return False
+        return source_id in name_registry.snapshot_recent_ids(
+            timestamp,
+            LOCAL_PARTY_VISIBILITY_SECONDS,
+        )
 
     def _allow_name_only_fallback(self) -> bool:
         if not self.strict:
@@ -862,6 +947,12 @@ class PartyRegistry:
             for guid, name in zip(guids, names):
                 if name:
                     next_guid_names[guid] = name
+        else:
+            next_guid_names = {
+                guid: name
+                for guid, name in self._party_guid_names.items()
+                if guid in next_guids
+            }
         next_names = set(next_guid_names.values())
         changed = (
             next_guids != self._party_guids
@@ -871,11 +962,8 @@ class PartyRegistry:
         self._party_guids = set(guids)
         self._party_guid_names.clear()
         self._party_names.clear()
-        if names:
-            for guid, name in zip(guids, names):
-                if name:
-                    self._party_guid_names[guid] = name
-                    self._party_names.add(name)
+        self._party_guid_names.update(next_guid_names)
+        self._party_names.update(next_names)
         self._reset_party_ids_after_roster_change()
         if changed:
             self._membership_version += 1
@@ -914,6 +1002,24 @@ class PartyRegistry:
             self._party_guid_names[guid] = name
         self._reset_party_ids_after_roster_change()
         if changed:
+            self._membership_version += 1
+
+    def _add_party_guids(self, guids: list[bytes], names: list[str] | None = None) -> None:
+        changed = False
+        for index, guid in enumerate(guids):
+            if guid not in self._party_guids:
+                changed = True
+                self._party_guids.add(guid)
+            name = names[index] if names is not None and index < len(names) else None
+            if name and _looks_like_player_name(name):
+                if name not in self._party_names:
+                    changed = True
+                    self._party_names.add(name)
+                if self._party_guid_names.get(guid) != name:
+                    changed = True
+                    self._party_guid_names[guid] = name
+        if changed:
+            self._reset_party_ids_after_roster_change()
             self._membership_version += 1
 
     def _remove_party_guid(self, guid: bytes) -> None:
@@ -1086,8 +1192,9 @@ def _coerce_guid(value: object) -> bytes | None:
 
 
 def _coerce_guid_list(value: object) -> list[bytes] | None:
-    if _coerce_guid(value) is not None:
-        return [bytes(value)]
+    guid = _coerce_guid(value)
+    if guid is not None:
+        return [guid]
     if isinstance(value, list) and value:
         if all(isinstance(item, int) and 0 <= item <= 255 for item in value):
             if len(value) % 16 != 0:
@@ -1134,8 +1241,8 @@ def _extract_party_guid_list_fields(parameters: dict[int, object]) -> list[list[
             continue
         if not isinstance(value, list):
             continue
-        guids = [bytes(item) for item in value if _coerce_guid(item) is not None]
-        if not guids or len(guids) != len(value):
+        guids = _coerce_guid_list(value)
+        if not guids:
             continue
         if len(guids) > PARTY_FALLBACK_MAX_ROSTER_SIZE:
             continue

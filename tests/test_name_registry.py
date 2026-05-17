@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+import albion_dps.domain.name_registry as name_registry_module
+
 from albion_dps.domain.name_registry import NameRegistry
 from albion_dps.models import PhotonMessage, RawPacket
 
@@ -86,3 +90,67 @@ def test_name_registry_tracks_recent_local_entity_ids() -> None:
 
     assert 120171 in registry.snapshot_recent_ids(42.0, 5.0)
     assert 120171 not in registry.snapshot_recent_ids(60.0, 5.0)
+
+
+def test_name_registry_accepts_list_int_guid_from_unit_info(monkeypatch) -> None:
+    registry = NameRegistry()
+    guid = bytes.fromhex("4bb4253238e88941ac4bedfb0647e578")
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+
+    monkeypatch.setattr(
+        name_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(
+            parameters={252: 29, 0: 996330, 1: "CascadeJP", 7: list(guid)}
+        ),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_id_guids()[996330] == guid
+    assert registry.snapshot_guid_names()[guid] == "CascadeJP"
+    assert registry.lookup(996330) == "CascadeJP"
+
+
+def test_name_registry_maps_current_party_player_joined_guid_name(monkeypatch) -> None:
+    registry = NameRegistry()
+    guid = bytes.fromhex("023247a635fd5d41a3b2985125b3b592")
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+
+    monkeypatch.setattr(
+        name_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(
+            parameters={252: 233, 1: list(guid), 2: "MERTLER"}
+        ),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_guid_names()[guid] == "MERTLER"
+
+
+def test_name_registry_ignores_generic_raw_id_guid_pairs(monkeypatch) -> None:
+    registry = NameRegistry()
+    good_guid = bytes.fromhex("4bb4253238e88941ac4bedfb0647e578")
+    unrelated_guid = bytes.fromhex("c34bfaa5efa52f46bd931adbbeef42a8")
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    events = iter(
+        [
+            SimpleNamespace(
+                parameters={252: 29, 0: 996330, 1: "CascadeJP", 7: list(good_guid)}
+            ),
+            SimpleNamespace(parameters={252: 666, 0: 996330, 1: list(unrelated_guid)}),
+        ]
+    )
+
+    monkeypatch.setattr(
+        name_registry_module,
+        "decode_event_data",
+        lambda _payload: next(events),
+    )
+
+    registry.observe(message)
+    registry.observe(message)
+
+    assert registry.snapshot_id_guids()[996330] == good_guid

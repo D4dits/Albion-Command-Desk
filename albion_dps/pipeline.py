@@ -132,7 +132,7 @@ def stream_snapshots(
                 party_registry.observe(message, packet)
                 if name_registry is not None:
                     party_registry.sync_guids(name_registry)
-                    party_registry.sync_names(name_registry)
+                    party_registry.sync_names(name_registry, timestamp=packet.timestamp)
                     party_registry.infer_self_name_from_targets(name_registry)
                 party_registry.try_resolve_self_id(name_registry)
                 if name_registry is not None:
@@ -205,7 +205,7 @@ def stream_snapshots(
                     pending_events.append(event)
 
         if mapped_party_sources and party_registry is not None and name_registry is not None:
-            party_registry.sync_names(name_registry)
+            party_registry.sync_names(name_registry, timestamp=packet.timestamp)
 
         for message in messages:
             combat_state = _decode_combat_state(message)

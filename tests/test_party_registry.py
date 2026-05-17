@@ -497,6 +497,30 @@ def test_party_registry_disallows_name_only_fallback_after_party_id_resolution()
     assert not registry.allows(300, names)
 
 
+def test_party_registry_allows_unresolved_party_name_after_partial_id_resolution() -> None:
+    registry = PartyRegistry()
+    registry.seed_self_ids([100])
+    registry.seed_names(["D4dits", "SocialFur3", "SocialFur4"])
+    registry.seed_ids([200])
+    names = NameRegistry()
+    names.record(200, "SocialFur3")
+    names.record(300, "SocialFur4")
+
+    assert registry.allows(300, names, timestamp=105.0)
+
+
+def test_party_registry_maps_recent_local_party_name_before_combat_seen() -> None:
+    registry = PartyRegistry()
+    registry.seed_self_ids([100])
+    registry.seed_names(["D4dits", "SocialFur3"])
+    names = NameRegistry()
+    names.record_local(200, "SocialFur3", 100.0)
+
+    registry.sync_names(names, timestamp=105.0)
+
+    assert 200 in registry.snapshot_ids()
+
+
 def test_party_registry_disallows_non_local_party_id_once_local_party_is_observed() -> None:
     registry = PartyRegistry()
     registry.seed_self_ids([100])
@@ -602,6 +626,27 @@ def test_party_registry_fallback_parses_unknown_name_only_roster_subtype(monkeyp
     assert registry.snapshot_names() == {"D4dits", "SocialFur3", "SocialFur4"}
 
 
+def test_party_registry_fallback_ignores_access_role_name_lists(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    params = {
+        252: 210,
+        4: ["@_Owner", "@_Guild", "@_Everyone"],
+        5: ["owner", "friend", "user"],
+        6: ["", "", ""],
+    }
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters=params),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_names() == set()
+
+
 def test_party_registry_fallback_parses_unknown_join(monkeypatch) -> None:
     registry = PartyRegistry()
     message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
@@ -653,6 +698,70 @@ def test_party_registry_subtype_233_with_name_adds_member(monkeypatch) -> None:
 
     assert registry.snapshot_names() == {"SocialFur3"}
     assert registry.snapshot_guids() == {_GUID_PARTY}
+
+
+def test_party_registry_current_on_cluster_joined_adds_flat_guid_roster(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    flat_guids = list(_GUID_SELF + _GUID_PARTY)
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters={252: 243, 0: flat_guids}),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_guids() == {_GUID_SELF, _GUID_PARTY}
+
+
+def test_party_registry_current_role_flag_adds_party_guid(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters={252: 244, 1: list(_GUID_PARTY)}),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_guids() == {_GUID_PARTY}
+
+
+def test_party_registry_current_ready_check_adds_guid_roster(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    flat_guids = list(_GUID_SELF + _GUID_PARTY)
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters={252: 246, 2: flat_guids}),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_guids() == {_GUID_SELF, _GUID_PARTY}
+
+
+def test_party_registry_current_player_left_removes_guid(monkeypatch) -> None:
+    registry = PartyRegistry()
+    registry._add_party_member(_GUID_PARTY, "SocialFur3")
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters={252: 235, 1: list(_GUID_PARTY)}),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_names() == set()
+    assert registry.snapshot_guids() == set()
 
 
 def test_party_registry_fallback_ignores_unknown_guid_without_join_name(monkeypatch) -> None:
