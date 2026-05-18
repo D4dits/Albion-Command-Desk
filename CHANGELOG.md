@@ -7,12 +7,31 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+## [0.1.26] - 2026-05-18
+
+### Added
+- Release documentation now includes a module-by-module change summary since `v0.1.25`, covering Meter, Loot, Market, Scanner, protocol parsing, and QA/release gates.
+- Market regressions now lock enchanted refined material price lookup for recipes such as `Master's Great Frost Staff T6.2`, including AO Data variants like `T6_METALBAR_LEVEL2@2` and `T6_PLANKS_LEVEL2@2`.
+
 ### Changed
 - Market craft-plan updates now batch large additions and defer expensive preview rebuilds, making large recipe families such as multi-tier enchanted armor lists responsive instead of rebuilding after every row.
 - AO Data price refreshes now request only concrete recipe item ids, fetch price batches in the background with a GUI-polled worker queue, use cached/stale prices immediately when available, and fail fast on `429` rate limits without leaving the Market tab stuck in a queued loading state.
+- Market price refresh now expands recipe item ids to their required AO Data alias variants during fetch, so enchanted refined materials whose live rows are keyed as `*_LEVELN@N` can be priced even when the recipe component id is `*_LEVELN`.
+- Market rows with missing fresh component prices are no longer ranked as profitable craft candidates, making the craft table safer when AO Data has partial or stale coverage.
+- Market Inputs now separate full upfront shopping quantities from net/economic material cost after expected returns, keeping shopping conservative while profit math reflects returned materials.
+- Meter/Loot party detection now handles active-party joins, current-party GUID mappings, and Protocol18 dictionary/list key shapes more defensively.
+- Meter history comparison UI was compacted so selected-history comparisons no longer cover the session-gains panel.
+- Scanner sync now rebuilds the bundled Albion Data Client binary when repository updates change the scanner source.
 
 ### Fixed
 - Market live price refresh no longer uses Qt worker-thread signals for AO Data calls, avoiding a crash path where the app could close during price fetching.
+- Meter no longer treats access-rights payloads as party rosters, preventing unrelated nearby/access-list names from entering party-scoped combat stats.
+- Meter session gains now reports personal silver (`self`/`You`) instead of summing silver picked up by the whole party.
+- Meter party filtering now keeps solo runs scoped to self and keeps party rows limited to confirmed party/local context instead of arbitrary nearby players.
+- Loot tracking no longer accepts arbitrary nearby loot/silver events before self or party context is known.
+- Loot inventory move filtering and trash icon handling were hardened so generated loot rows avoid known non-item noise.
+- Protocol18 operation-response decoding now tolerates list-like dictionary keys without terminating the live snapshot stream.
+- Linux Qt GUI smoke tests install the required Qt runtime libraries in CI.
 
 ## [0.1.25] - 2026-04-15
 

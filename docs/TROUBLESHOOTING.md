@@ -138,6 +138,16 @@ Workarounds:
 - Start capture before forming the party.
 - For PCAPs, avoid port-only filters and capture all UDP so roster events are included.
 
+Recent builds also reject access-rights and nearby-player payloads as party rosters. If a player is not in your party or is not locally observed after party IDs resolve, the meter should prefer missing rows over unsafe attribution.
+
+## Session gains silver looks too high
+Session gains is intended to show personal silver, not party-wide pickup totals.
+
+If the number still looks too high:
+1. Confirm you are running a build after the party-filter/session-silver fix.
+2. Replay the same PCAP and compare Loot silver by looter; the session card should use only `self` / `You`.
+3. If party-wide silver appears in session gains, capture the PCAP and diagnostics bundle.
+
 ## Loot tab shows only my character
 This is expected if the log file only contains your exported rows or if capture missed party context.
 
@@ -146,11 +156,28 @@ Checks:
 - Replay the original PCAP with the current code or record a new live session after starting capture before the party opens chests.
 - Make sure the packet stream contains party roster traffic and party loot pickup events.
 - Use complete captures for debugging; overly narrow capture filters can miss the context needed to map party looters.
+- The Loot tab still tracks party members when party context is known. It intentionally ignores unknown nearby loot events before self/party has been confirmed.
 
 Useful tests:
 ```
 python -m pytest -q tests/test_loot_tracker.py tests/test_loot_tracker_pcaps.py
 ```
+
+## Market scanned materials still show `price age n/a`
+For enchanted refined materials, AO Data may store the current price under the alias form `*_LEVELN@N`.
+Example for `Master's Great Frost Staff T6.2`:
+- recipe input: `T6_METALBAR_LEVEL2`
+- AO Data current row: `T6_METALBAR_LEVEL2@2`
+- recipe input: `T6_PLANKS_LEVEL2`
+- AO Data current row: `T6_PLANKS_LEVEL2@2`
+
+Current builds request these aliases automatically.
+If you still see `n/a`:
+1. Confirm the Market city is the city you scanned, for example Martlock.
+2. Confirm the region is correct.
+3. Click `Refresh prices`.
+4. Clear `data/market_cache.sqlite3` if old zero rows remain.
+5. See `docs/MARKET_TROUBLESHOOTING.md` for the detailed Market checklist.
 
 ## Loot source colors look wrong
 Current source colors:

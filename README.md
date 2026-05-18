@@ -34,8 +34,8 @@ No client hooks, no overlays, no memory editing, no gameplay automation.
 ### Meter
 - Live and replay combat scoreboard.
 - Battle, zone, and manual session modes.
-- Party/self filtering to avoid attributing nearby unrelated players.
-- DPS, HPS, damage, heal, session history, fame/silver session gains, and map activity trail.
+- Party/self filtering to avoid attributing nearby unrelated players, including stricter handling for solo captures and already-active parties.
+- DPS, HPS, damage, heal, session history, fame/personal-silver session gains, and map activity trail.
 - Replay regression coverage for current PCAP fixtures.
 
 ### Loot
@@ -46,18 +46,22 @@ No client hooks, no overlays, no memory editing, no gameplay automation.
   - yellow: mob/container/system source,
   - neutral: unknown source.
 - Silver pickup tracking is intentionally disabled in the live UI; the tab focuses on item loot.
+- The tracker accepts party loot only after self/party context is known, so nearby non-party players are not counted during bootstrap.
 - Import/export uses a stable text format with `source_kind`, so imported logs preserve whether an item came from a player corpse, mob, container, or system flow.
 - Filters cover looter, source type, item search, and item categories such as weapons, armor, bags, capes, mounts, consumables, resources, artifacts, and other.
 
 ### Market
 - Recipe setup, city/region settings, premium/tax/fee assumptions, daily bonus, run count, and focus-aware profit calculations.
 - Inputs, outputs, and result rows stay aligned with top-level investment/revenue/profit math.
-- AO Data price refresh with SQLite cache, stale-cache fallback, diagnostics, and manual overrides.
+- AO Data price refresh with SQLite cache, partial/stale-cache fallback, cooldown handling for rate limits, diagnostics, and manual overrides.
+- Enchanted refined materials fetch their AO Data alias variants, so scanned `T6.2` materials such as `Metal Bar` and `Planks` resolve price age from `*_LEVEL2@2` rows.
+- Craft rows with missing fresh component prices are kept out of profit ranking until valid data or manual prices exist.
 - Shopping/selling/results CSV copy/export.
 - Crystallized recipe variants are available in craft search and setup and are marked with a dedicated badge. Their crystallized components are treated as non-returnable one-time inputs, not RRR materials.
 
 ### Operations
 - Start dashboard exposes capture runtime, Git, game data, and update readiness.
+- Scanner sync rebuilds the local Albion Data Client binary when repository updates change scanner source files.
 - Settings centralizes app paths, log retention, scanner/game-data setup, runtime checks, and update preferences.
 - Help exposes version, links, dependency guidance, troubleshooting, and diagnostics export.
 
@@ -172,6 +176,7 @@ The GitHub Pages site contains the current public feature summary and screenshot
 - `docs/MARKET_DATASET_UPDATE.md`
 - `docs/qa/QA_REGRESSION_PASS.md`
 - `docs/release/RELEASE_CHECKLIST.md`
+- `docs/release/MODULE_CHANGES_SINCE_V0.1.25.md`
 - `docs/release/RELEASE_RUNBOOK.md`
 - `CHANGELOG.md`
 

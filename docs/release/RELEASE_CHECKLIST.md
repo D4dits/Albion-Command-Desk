@@ -9,6 +9,7 @@ Reference runbook: `docs/release/RELEASE_RUNBOOK.md`.
 - [ ] Update version in `pyproject.toml`.
 - [ ] Add release notes to `CHANGELOG.md` (move items from `[Unreleased]`).
 - [ ] Update `docs/release/NEXT_RELEASE_NOTES_DRAFT.md` or use it as the GitHub Release body.
+- [ ] Update `docs/release/MODULE_CHANGES_SINCE_V0.1.25.md` or replace it with the next release baseline.
 - [ ] Verify changelog links and release date format.
 
 ## 2) Local validation

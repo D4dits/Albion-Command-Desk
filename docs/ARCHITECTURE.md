@@ -10,12 +10,20 @@ Loot uses the same passive capture path:
 
 `RawPacket` -> `PhotonMessage` -> `LootTracker` -> `LootEvent` -> `LootState` -> Qt UI / TXT export
 
+Market uses a separate recipe/price path:
+
+`RecipeCatalog` + `CraftSetup` -> `MarketSetupState` -> `MarketDataService` / `SQLiteCache` -> `engine` -> Qt models
+
+Scanner uses a process/repository-management path:
+
+`ScannerState` -> Albion Data Client repository/binary checks -> scanner process logs -> Qt UI / diagnostics
+
 - Capture (live/replay) produces `RawPacket` (timestamp + UDP payload + src/dst metadata).
 - Protocol decoder parses Photon messages.
 - Mapper translates Photon messages into combat-domain events (damage/heal ticks).
 - Domain registries enrich/guard the stream:
   - `NameRegistry`: best-effort `entity_id -> name` mapping.
-  - `PartyRegistry`: "self + party only" filter and self/party inference; late IDs can be accepted once names resolve.
+  - `PartyRegistry`: "self + party only" filter and self/party inference; late IDs can be accepted once names resolve. Access-rights payloads and unrelated nearby names must not become party roster entries.
   - `FameTracker`: fame counters (optional UI stat).
 - Item resolver enriches UI:
   - `ItemResolver`: maps equipment item IDs -> weapon subcategory for per-weapon colors.
@@ -25,6 +33,7 @@ Loot uses the same passive capture path:
   - `RollingMeter` owns totals + rolling DPS/HPS window.
 - Loot aggregates item pickup events:
   - `LootTracker` owns protocol/container state and emits `LootEvent` records.
+  - If party context is unknown, `LootTracker` refuses unrelated party-member pickup events until self/party is known.
   - `LootLogWriter` persists the live session text log.
   - `LootState` filters, imports, exports, and exposes QML models for feed and summary panels.
 - Map resolver enriches zone labels:
@@ -91,6 +100,16 @@ Loot uses the same passive capture path:
   - `row_margin = row_profit / allocated_cost * 100`
 - This keeps row math aligned with top-level KPIs while still showing fee/tax as separate columns.
 
+## Market price lookup
+- Recipe item ids are expanded before AO Data fetch so equivalent Albion encodings are requested together.
+- Important aliases:
+  - `T6_METALBAR@2`
+  - `T6_METALBAR_LEVEL2`
+  - `T6_METALBAR_LEVEL2@2`
+- AO Data can return real prices only for the `*_LEVELN@N` form for enchanted refined materials, while zero rows may exist for the base `*_LEVELN` form.
+- Price matching still avoids falling back from enchanted materials to plain tier materials, so `T6_METALBAR_LEVEL2` never silently uses `T6_METALBAR`.
+- Cache and stale-cache data can be used before live fetch completes; missing fresh component prices prevent craft rows from being ranked as profitable.
+
 ## Crystallized recipe handling
 - The recipe catalog builds crystallized variants from local recipe data where a crystallized component can replace an artifact/final-item craft path.
 - Crystallized variants are marked with `uses_crystallized=True` and receive a UI badge in Market search/setup rows.
@@ -112,12 +131,14 @@ Loot uses the same passive capture path:
 - Capture does not know parsing/UI.
 - Protocol parser does not know UI.
 - UI does not do parsing; it renders snapshots + history.
+- Market pricing does not mutate recipe catalog data; it resolves prices through query aliases and price-index lookup.
+- Scanner process control does not alter Market calculations; it only feeds AO Data externally by running Albion Data Client.
 
 ## Safety / privacy constraint
 The app must not attribute combat or loot to unrelated nearby players:
 - Meter aggregation allows only self and party members once party context is known.
 - Loot logging accepts only party/self looters when party state is available.
-- If self/party is not resolved yet, strict filters can keep results empty until safe context exists.
+- If self/party is not resolved yet, strict filters can keep results empty until safe context exists. This is intentional for both Meter and Loot.
 
 ## Useful entry points
 - Desktop launcher (Qt GUI): `albion_dps/cli.py`
@@ -134,7 +155,10 @@ The app must not attribute combat or loot to unrelated nearby players:
 - Loot UI state: `albion_dps/qt/loot_state.py`
 - Map resolver: `albion_dps/domain/map_resolver.py`
 - Market recipe catalog: `albion_dps/market/catalog.py`
+- Market price service/cache/client: `albion_dps/market/service.py`, `albion_dps/market/cache.py`, `albion_dps/market/aod_client.py`
+- Market price alias and preview state: `albion_dps/qt/market/preview_state_ops.py`, `albion_dps/qt/market/recipe_ops.py`, `albion_dps/qt/market/quote_ops.py`
 - Market Qt state: `albion_dps/qt/market/state.py`
+- Scanner Qt state: `albion_dps/qt/scanner.py`
 - Qt runner: `albion_dps/qt/runner.py`
 - Qt models: `albion_dps/qt/models.py`
 - Qt QML UI: `albion_dps/qt/ui/Main.qml`

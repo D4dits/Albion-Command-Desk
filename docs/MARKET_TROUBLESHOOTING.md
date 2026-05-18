@@ -28,6 +28,17 @@ Typical cause:
 - price is `0` (no order on market)
 - API row has zero date (`0001-01-01...`)
 
+For enchanted refined materials such as `Metal Bar T6.2` or `Planks T6.2`, AO Data can expose the real market row under an alias:
+- recipe/component id: `T6_METALBAR_LEVEL2`
+- live AO Data price id: `T6_METALBAR_LEVEL2@2`
+
+Current builds request both forms. If `ADP age` still shows `n/a` after scanning the item in the correct city:
+1. Confirm the Market region and city match the scanner traffic, for example `europe` + `Martlock`.
+2. Click `Refresh prices`.
+3. Open `Show diagnostics` and confirm the request includes `*_LEVEL2@2` for T6.2 materials.
+4. Delete `data/market_cache.sqlite3` and refresh again if stale zero rows were cached.
+5. If the API still returns zero rows for every alias, scan the exact market item again and wait for AO Data ingestion.
+
 ## Some items show technical ids (example `_LEVEL1`)
 The state layer tries to humanize ids, but some rare items can still appear as ids.
 If this appears frequently after dataset refresh, regenerate recipes from local game files.
@@ -60,6 +71,7 @@ Checklist:
 3. Confirm station fee is configured as the game building fee.
 4. Confirm per-row craft city and daily bonus values.
 5. Check manual overrides in Inputs/Outputs (manual values override AO Data).
+6. Check whether the craft row is marked as missing ADP prices. Missing fresh component prices are not ranked as profitable candidates.
 
 ## QML loads but Market tabs do not refresh
 1. Open diagnostics panel in Market and check recent lines.

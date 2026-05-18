@@ -4,6 +4,15 @@ Goal: verify end-to-end update signaling between release metadata and in-app ban
 
 ## 1) Validate manifest contract + update checker behavior (local)
 
+Before running update-flow checks, confirm release text is current:
+- `CHANGELOG.md`
+- `docs/release/NEXT_RELEASE_NOTES_DRAFT.md`
+- `docs/release/MODULE_CHANGES_SINCE_V0.1.25.md`
+- `README.md`
+- `docs/ARCHITECTURE.md`
+- `docs/MARKET_ARCHITECTURE.md`
+- `docs/TROUBLESHOOTING.md`
+
 Run tests:
 ```
 .\venv\Scripts\python -m pytest -q tests/test_update_checker.py tests/test_release_manifest_contract.py tests/test_qt_update_banner.py
