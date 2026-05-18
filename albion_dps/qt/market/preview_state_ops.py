@@ -54,18 +54,28 @@ def collect_pricing_item_ids(
     item_id_query_candidates,
     journal_rule_for_item,
 ) -> list[str]:
-    _ = item_id_query_candidates
     item_ids: set[str] = set()
+
+    def add_item_id(item_id: str) -> None:
+        raw = str(item_id or "").strip()
+        if not raw:
+            return
+        candidates = item_id_query_candidates(raw)
+        if candidates:
+            item_ids.update(str(candidate) for candidate in candidates if str(candidate).strip())
+            return
+        item_ids.add(raw)
+
     for recipe in recipes_for_pricing():
         for component in recipe.components:
-            item_ids.add(str(component.item.unique_name))
+            add_item_id(str(component.item.unique_name))
         for output in recipe.outputs:
-            item_ids.add(str(output.item.unique_name))
+            add_item_id(str(output.item.unique_name))
         journal_rule = journal_rule_for_item(recipe.item.unique_name)
         if journal_rule is not None:
-            item_ids.add(journal_rule.empty_item_id)
-            item_ids.add(f"{journal_rule.empty_item_id}_EMPTY")
-            item_ids.add(journal_rule.full_item_id)
+            add_item_id(journal_rule.empty_item_id)
+            add_item_id(f"{journal_rule.empty_item_id}_EMPTY")
+            add_item_id(journal_rule.full_item_id)
     return sorted(item_ids)
 
 

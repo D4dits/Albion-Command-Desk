@@ -1575,6 +1575,22 @@ def test_item_id_query_candidates_include_enchant_variants_for_level_items() -> 
     assert "T4_METALBAR" not in candidates
 
 
+def test_market_setup_state_fetches_enchanted_refined_material_variants() -> None:
+    state = MarketSetupState(
+        auto_refresh_prices=False,
+        recipe_id="T6_2H_FROSTSTAFF@2",
+    )
+    state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
+
+    item_ids = set(state._collect_pricing_item_ids())
+
+    assert "T6_METALBAR_LEVEL2" in item_ids
+    assert "T6_METALBAR_LEVEL2@2" in item_ids
+    assert "T6_PLANKS_LEVEL2" in item_ids
+    assert "T6_PLANKS_LEVEL2@2" in item_ids
+
+
 def test_find_price_quote_does_not_fallback_to_plain_tier_for_enchanted_items() -> None:
     index = {
         ("T4_METALBAR", "Bridgewatch", 1): MarketPriceRecord(
