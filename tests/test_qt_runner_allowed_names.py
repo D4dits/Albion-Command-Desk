@@ -1,8 +1,14 @@
 from __future__ import annotations
 
-from albion_dps.domain import NameRegistry, PartyRegistry
+from types import SimpleNamespace
+
+from albion_dps.domain import FameTracker, NameRegistry, PartyRegistry
 from albion_dps.models import MeterSnapshot, PhotonMessage, RawPacket
-from albion_dps.qt.runner import _allowed_display_names_for_snapshot
+from albion_dps.qt.runner import (
+    _allowed_display_names_for_snapshot,
+    _session_silver_per_hour,
+    _session_silver_total,
+)
 
 
 _PORTAL_PAYLOAD_HEX = (
@@ -162,3 +168,43 @@ def test_allowed_display_names_keeps_active_party_member_without_recent_local_ev
     )
 
     assert allowed == {"D4dits", "SocialFur3", "SocialFur4"}
+
+
+def test_session_silver_uses_personal_loot_not_party_total() -> None:
+    fame = FameTracker()
+    loot_tracker = SimpleNamespace(
+        events=lambda: [
+            SimpleNamespace(
+                timestamp=1.0,
+                is_silver=True,
+                quantity=1000,
+                looted_by=SimpleNamespace(player_name="PartyMember"),
+            ),
+            SimpleNamespace(
+                timestamp=2.0,
+                is_silver=True,
+                quantity=250,
+                looted_by=SimpleNamespace(player_name="D4dits"),
+            ),
+        ]
+    )
+
+    assert _session_silver_total(fame, loot_tracker, player_name="D4dits") == 250
+    assert _session_silver_per_hour(fame, loot_tracker, player_name="D4dits") == 0.0
+
+
+def test_session_silver_keeps_fame_silver_as_authoritative() -> None:
+    fame = SimpleNamespace(silver_total=lambda: 500, silver_per_hour=lambda: 1800.0)
+    loot_tracker = SimpleNamespace(
+        events=lambda: [
+            SimpleNamespace(
+                timestamp=1.0,
+                is_silver=True,
+                quantity=250,
+                looted_by=SimpleNamespace(player_name="D4dits"),
+            )
+        ]
+    )
+
+    assert _session_silver_total(fame, loot_tracker, player_name="D4dits") == 500
+    assert _session_silver_per_hour(fame, loot_tracker, player_name="D4dits") == 1800.0

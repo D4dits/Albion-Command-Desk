@@ -63,11 +63,11 @@ def _pcap_loot_summary(name: str) -> dict[str, object]:
         ("albion_combat_49_party_fight_all.pcap", 2),
         ("albion_combat_51_party.pcap", 0),
         ("albion_combat_52_party_full.pcap", 1),
-        ("albion_combat_54_group_camps.pcap", 4),
+        ("albion_combat_54_group_camps.pcap", 2),
         ("albion_combat_55_group_camps.pcap", 3),
         ("albion_combat_56_nowy.pcap", 1),
-        ("albion_combat_57_nowy_grupa_roaming.pcap", 157),
-        ("albion_combat_58_nowy_all_roamingg.pcap", 107),
+        ("albion_combat_57_nowy_grupa_roaming.pcap", 167),
+        ("albion_combat_58_nowy_all_roamingg.pcap", 186),
     ],
 )
 def test_loot_pcaps_match_expected_item_counts(
@@ -102,8 +102,8 @@ def test_loot_pcaps_keep_expected_item_samples() -> None:
 def test_loot_pcap57_tracks_bulk_chest_moves() -> None:
     summary = _pcap_loot_summary("albion_combat_57_nowy_grupa_roaming.pcap")
 
-    assert summary["total"] == 157
-    assert summary["looters"] == 4
+    assert summary["total"] == 167
+    assert summary["looters"] == 7
     assert {
         "Novice's Bag of Silver",
         "Expert's Soul",
@@ -115,8 +115,8 @@ def test_loot_pcap57_tracks_bulk_chest_moves() -> None:
 def test_loot_pcap58_tracks_party_member_looters() -> None:
     summary = _pcap_loot_summary("albion_combat_58_nowy_all_roamingg.pcap")
 
-    assert summary["total"] == 107
-    assert summary["looters"] == 4
+    assert summary["total"] == 186
+    assert summary["looters"] == 12
     assert {
         "Adept's Tome of Insight",
         "Adept's Relic",

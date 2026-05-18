@@ -1,40 +1,48 @@
 {
   "names": {
     "59851": "S000000000000000",
-    "85883": "Matteowww",
-    "84474": "GermyWatson",
-    "75098": "TEKELCIMERT",
-    "84368": "Ebaka3000",
-    "80639": "DarkSharkk",
-    "80387": "winor",
-    "86082": "sandm1n",
     "60289": "M00000s",
+    "72923": "TEKELCIMERT",
+    "75098": "TEKELCIMERT",
+    "76183": "TEKELCIMERT",
+    "80009": "DarkSharkk",
+    "80349": "winor",
+    "80387": "winor",
+    "80639": "DarkSharkk",
+    "80827": "DarkSharkk",
+    "81736": "GermyWatson",
+    "81920": "GermyWatson",
+    "83470": "DarkSharkk",
+    "84368": "Ebaka3000",
+    "84375": "cooold",
+    "84474": "GermyWatson",
+    "85285": "GermyWatson",
+    "85883": "Matteowww",
+    "86082": "sandm1n",
+    "86107": "GermyWatson",
+    "86116": "Matteowww",
+    "86237": "M00000s",
     "86260": "LordCherepashka",
-    "84375": "cooold"
+    "86468": "LordCherepashka",
+    "86484": "Matteowww"
   },
   "timestamp": 1767959121.272104,
   "totals": {
-    "84367": {
-      "damage": 2455.0,
-      "heal": 168.0,
-      "dps": 109.2,
-      "hps": 16.8
-    },
-    "84584": {
-      "damage": 54.0,
-      "heal": 0.0,
+    "59851": {
+      "damage": 12.0,
+      "heal": 5.0,
       "dps": 0.0,
+      "hps": 0.0
+    },
+    "60289": {
+      "damage": 142.0,
+      "heal": 0.0,
+      "dps": 14.2,
       "hps": 0.0
     },
     "75098": {
       "damage": 351.0,
       "heal": 0.0,
-      "dps": 0.0,
-      "hps": 0.0
-    },
-    "59851": {
-      "damage": 12.0,
-      "heal": 5.0,
       "dps": 0.0,
       "hps": 0.0
     },
@@ -50,16 +58,22 @@
       "dps": 21.0,
       "hps": 0.0
     },
-    "60289": {
-      "damage": 142.0,
-      "heal": 0.0,
-      "dps": 14.2,
-      "hps": 0.0
-    },
     "84306": {
       "damage": 10.0,
       "heal": 0.0,
       "dps": 1.0,
+      "hps": 0.0
+    },
+    "84367": {
+      "damage": 2455.0,
+      "heal": 168.0,
+      "dps": 109.2,
+      "hps": 16.8
+    },
+    "84584": {
+      "damage": 54.0,
+      "heal": 0.0,
+      "dps": 0.0,
       "hps": 0.0
     }
   }

@@ -245,6 +245,21 @@ def test_loot_tracker_rejects_loot_from_non_party_player(monkeypatch) -> None:
     assert tracker.events() == []
 
 
+def test_loot_tracker_rejects_party_loot_until_party_is_known(monkeypatch) -> None:
+    party = PartyRegistry()
+    tracker = LootTracker(party_registry=party, include_silver=True)
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_PARTY_MEMBER_GRABBED_LOOT,
+        parameters={1: "Enemy", 2: "NearbyPlayer", 3: True, 5: 1500},
+    )
+    tracker.observe(_message(), _packet(2.0))
+
+    assert tracker.events() == []
+    assert tracker.silver_total() == 0
+
+
 def test_loot_tracker_accepts_loot_from_party_player(monkeypatch) -> None:
     party = PartyRegistry()
     party.seed_names(["Alice", "Bob"])

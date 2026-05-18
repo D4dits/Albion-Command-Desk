@@ -477,8 +477,16 @@ def _drain_snapshots(
             zone=meter.zone_label(),
             fame_total=fame.total(),
             fame_per_hour=fame.per_hour(),
-            silver_total=_session_silver_total(fame, loot_tracker),
-            silver_per_hour=_session_silver_per_hour(fame, loot_tracker),
+            silver_total=_session_silver_total(
+                fame,
+                loot_tracker,
+                player_name=party.self_name(),
+            ),
+            silver_per_hour=_session_silver_per_hour(
+                fame,
+                loot_tracker,
+                player_name=party.self_name(),
+            ),
             activity=_combine_session_activity(
                 reward_events=fame.recent_events(limit=10),
                 map_events=map_trail.events(limit=10),
@@ -508,21 +516,69 @@ def _combine_session_activity(
     return merged[: max(limit, 0)]
 
 
-def _session_silver_total(fame: FameTracker, loot_tracker: LootTracker) -> int:
+def _session_silver_total(
+    fame: FameTracker,
+    loot_tracker: LootTracker,
+    *,
+    player_name: str | None = None,
+) -> int:
     fame_total = int(fame.silver_total())
-    silver_total = getattr(loot_tracker, "silver_total", None)
-    loot_total = int(silver_total()) if callable(silver_total) else 0
-    return max(fame_total, loot_total)
+    if fame_total > 0:
+        return fame_total
+    return _loot_silver_total_for_player(loot_tracker, player_name)
 
 
-def _session_silver_per_hour(fame: FameTracker, loot_tracker: LootTracker) -> float:
+def _session_silver_per_hour(
+    fame: FameTracker,
+    loot_tracker: LootTracker,
+    *,
+    player_name: str | None = None,
+) -> float:
     fame_total = int(fame.silver_total())
-    silver_total = getattr(loot_tracker, "silver_total", None)
-    loot_total = int(silver_total()) if callable(silver_total) else 0
-    if loot_total > fame_total:
-        silver_per_hour = getattr(loot_tracker, "silver_per_hour", None)
-        return float(silver_per_hour()) if callable(silver_per_hour) else 0.0
-    return float(fame.silver_per_hour())
+    if fame_total > 0:
+        return float(fame.silver_per_hour())
+    events = _loot_silver_events_for_player(loot_tracker, player_name)
+    timestamps = [event.timestamp for event in events]
+    if len(timestamps) < 2:
+        return 0.0
+    elapsed = max(timestamps) - min(timestamps)
+    if elapsed <= 0:
+        return 0.0
+    return _loot_silver_total_from_events(events) / (elapsed / 3600.0)
+
+
+def _loot_silver_total_for_player(
+    loot_tracker: LootTracker,
+    player_name: str | None,
+) -> int:
+    return _loot_silver_total_from_events(
+        _loot_silver_events_for_player(loot_tracker, player_name)
+    )
+
+
+def _loot_silver_total_from_events(events: list[object]) -> int:
+    return sum(int(getattr(event, "quantity", 0)) for event in events)
+
+
+def _loot_silver_events_for_player(
+    loot_tracker: LootTracker,
+    player_name: str | None,
+) -> list[object]:
+    events = getattr(loot_tracker, "events", None)
+    if not callable(events):
+        return []
+    allowed_names = {"You"}
+    if player_name:
+        allowed_names.add(player_name)
+    output = []
+    for event in events():
+        if not getattr(event, "is_silver", False):
+            continue
+        looted_by = getattr(event, "looted_by", None)
+        looter_name = getattr(looted_by, "player_name", None)
+        if looter_name in allowed_names:
+            output.append(event)
+    return output
 
 
 def _allowed_display_names_for_snapshot(

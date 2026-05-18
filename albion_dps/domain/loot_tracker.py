@@ -467,9 +467,7 @@ class LootTracker:
         party_names = self.party_registry.snapshot_names()
         if party_names:
             return player_name in party_names
-        if self_name:
-            return False
-        return self.party_registry.allows_player_name(player_name)
+        return False
 
     def silver_total(self) -> int:
         return sum(int(event.quantity) for event in self._events if event.is_silver)
