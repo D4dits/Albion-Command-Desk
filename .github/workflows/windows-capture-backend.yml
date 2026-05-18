@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Release tag used for bundle naming, for example v0.1.25"
+        description: "Release tag used for bundle naming, for example v0.1.26"
         required: true
-        default: "v0.1.25"
+        default: "v0.1.26"
       npcap_sdk_url:
         description: "Direct Npcap SDK zip URL used for wheel builds"
         required: true
