@@ -81,9 +81,10 @@ ApplicationWindow {
     property bool meterView: viewTabs.currentIndex === 1
     property bool scannerView: viewTabs.currentIndex === 2
     property bool marketView: viewTabs.currentIndex === 3
-    property bool lootView: viewTabs.currentIndex === 4
-    property bool settingsView: viewTabs.currentIndex === 5
-    property bool helpView: viewTabs.currentIndex === 6
+    property bool flipperView: viewTabs.currentIndex === 4
+    property bool lootView: viewTabs.currentIndex === 5
+    property bool settingsView: viewTabs.currentIndex === 6
+    property bool helpView: viewTabs.currentIndex === 7
     property bool marketDiagnosticsVisible: false
     property bool marketStatusExpanded: false
     property bool marketBreakdownExpanded: false
@@ -320,6 +321,7 @@ ApplicationWindow {
             meterView: root.meterView
             scannerView: root.scannerView
             marketView: root.marketView
+            flipperView: root.flipperView
             lootView: root.lootView
             settingsView: root.settingsView
             helpView: root.helpView
@@ -341,6 +343,9 @@ ApplicationWindow {
             marketCraftPlanCount: marketSetupState.craftPlanCount
             marketInputsTotalCost: marketSetupState.selectedInputsTotalCost
             marketNetProfitValue: marketSetupState.selectedNetProfitValue
+            flipperValidCount: marketFlipperState.validCount
+            flipperSelectedProfit: marketFlipperState.selectedTotalProfit
+            flipperSourceCity: marketFlipperState.sourceCity
             lootEventCount: lootState.eventCount
             lootLatestSummary: lootState.latestLootSummary
             updateBannerVisible: uiState.updateBannerVisible
@@ -427,6 +432,17 @@ ApplicationWindow {
                 ShellTabButton {
                     id: marketTabButton
                     text: "Market"
+                    activeColor: accentColor
+                    inactiveColor: shellTabIdleBackground
+                    activeTextColor: shellTabActiveText
+                    inactiveTextColor: textColor
+                    borderColor: borderColor
+                    cornerRadius: shellTabRadius
+                    labelPixelSize: 13
+                }
+                ShellTabButton {
+                    id: flipperTabButton
+                    text: "Flipper"
                     activeColor: accentColor
                     inactiveColor: shellTabIdleBackground
                     activeTextColor: shellTabActiveText
@@ -884,8 +900,73 @@ ApplicationWindow {
             }
 
             Item {
-                id: lootTabContainer
+                id: flipperTabContainer
                 opacity: viewTabs.currentIndex === 4 ? 1.0 : 0.0
+                visible: true
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: Utils.AnimationUtils.durationNormal
+                        easing.type: Utils.AnimationUtils.easingOut
+                    }
+                }
+
+                FlipperTab {
+                    id: flipperTab
+                    anchors.fill: parent
+                    theme: root.theme
+                    region: marketFlipperState.region
+                    sourceCity: marketFlipperState.sourceCity
+                    quality: marketFlipperState.quality
+                    minProfit: marketFlipperState.minProfit
+                    minRoiPercent: marketFlipperState.minRoiPercent
+                    riskBufferPercent: marketFlipperState.riskBufferPercent
+                    saleTaxPercent: marketFlipperState.saleTaxPercent
+                    searchQuery: marketFlipperState.searchQuery.length > 0 ? marketFlipperState.searchQuery : marketSetupState.recipeSearchQuery
+                    refreshInProgress: marketFlipperState.refreshInProgress
+                    refreshStatusText: marketFlipperState.refreshStatusText
+                    pricesSource: marketFlipperState.pricesSource
+                    resultsCount: marketFlipperState.resultsCount
+                    validCount: marketFlipperState.validCount
+                    missingCount: marketFlipperState.missingCount
+                    selectedTotalProfit: marketFlipperState.selectedTotalProfit
+                    resultsModel: marketFlipperState.resultsModel
+                    onSetRegion: function(region) { marketFlipperState.setRegion(region) }
+                    onSetSourceCity: function(city) { marketFlipperState.setSourceCity(city) }
+                    onSetQuality: function(quality) { marketFlipperState.setQuality(quality) }
+                    onSetMinProfit: function(value) { marketFlipperState.setMinProfit(value) }
+                    onSetMinRoiPercent: function(value) { marketFlipperState.setMinRoiPercent(value) }
+                    onSetRiskBufferPercent: function(value) { marketFlipperState.setRiskBufferPercent(value) }
+                    onSetSaleTaxPercent: function(value) { marketFlipperState.setSaleTaxPercent(value) }
+                    onSetSearchQuery: function(value) { marketFlipperState.setSearchQuery(value) }
+                    onRefreshFlips: function() {
+                        if (marketFlipperState.searchQuery.length === 0 && marketSetupState.recipeSearchQuery.length > 0) {
+                            marketFlipperState.setSearchQuery(marketSetupState.recipeSearchQuery)
+                        }
+                        marketFlipperState.refreshFlips()
+                        toastManager.showInfo("Refreshing flips", "Checking city sell orders against Black Market buys")
+                    }
+                    onSetRowChecked: function(rowKey, checked) { marketFlipperState.setRowChecked(rowKey, checked) }
+                    onCopySelectedCsv: function() {
+                        if (marketFlipperState.copySelectedCsv()) {
+                            toastManager.showInfo("Flips CSV", "Copied selected flips")
+                        } else {
+                            toastManager.showWarning("Flips CSV", "No selected profitable flips")
+                        }
+                    }
+                    onExportSelectedCsv: function() {
+                        var exportPath = marketFlipperState.exportSelectedCsvInteractive()
+                        if (exportPath && exportPath.length > 0) {
+                            toastManager.showSuccess("Flips exported", exportPath)
+                        }
+                    }
+                }
+            }
+
+            Item {
+                id: lootTabContainer
+                opacity: viewTabs.currentIndex === 5 ? 1.0 : 0.0
                 visible: true
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -977,7 +1058,7 @@ ApplicationWindow {
 
             Item {
                 id: settingsTabContainer
-                opacity: viewTabs.currentIndex === 5 ? 1.0 : 0.0
+                opacity: viewTabs.currentIndex === 6 ? 1.0 : 0.0
                 visible: true
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -1059,7 +1140,7 @@ ApplicationWindow {
 
             Item {
                 id: helpTabContainer
-                opacity: viewTabs.currentIndex === 6 ? 1.0 : 0.0
+                opacity: viewTabs.currentIndex === 7 ? 1.0 : 0.0
                 visible: true
                 Layout.fillWidth: true
                 Layout.fillHeight: true

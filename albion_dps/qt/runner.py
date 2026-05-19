@@ -66,6 +66,7 @@ def run_qt(args: argparse.Namespace) -> int:
         return 1
 
     from albion_dps.qt.models import UiState
+    from albion_dps.qt.flipper_state import MarketFlipperState
     from albion_dps.qt.market import MarketSetupState
     from albion_dps.qt.scanner import ScannerState
 
@@ -180,6 +181,10 @@ def run_qt(args: argparse.Namespace) -> int:
         logger=logging.getLogger(__name__),
         auto_refresh_prices=True,
     )
+    market_flipper_state = MarketFlipperState(
+        service=market_service,
+        logger=logging.getLogger(__name__),
+    )
     app_settings = load_app_settings()
     loot_state = LootState(history_limit=max(args.history, LOOT_HISTORY_LIMIT))
     loot_writer = LootLogWriter(keep_files=app_settings.loot_log_keep_files)
@@ -188,6 +193,7 @@ def run_qt(args: argparse.Namespace) -> int:
     engine.rootContext().setContextProperty("uiState", state)
     engine.rootContext().setContextProperty("scannerState", scanner_state)
     engine.rootContext().setContextProperty("marketSetupState", market_setup_state)
+    engine.rootContext().setContextProperty("marketFlipperState", market_flipper_state)
     engine.rootContext().setContextProperty("lootState", loot_state)
     engine.load(str(qml_path))
     if not engine.rootObjects():

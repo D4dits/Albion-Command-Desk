@@ -27,6 +27,7 @@ Rectangle {
     property bool meterView: false
     property bool scannerView: false
     property bool marketView: false
+    property bool flipperView: false
     property bool lootView: false
     property bool settingsView: false
     property bool helpView: false
@@ -54,6 +55,9 @@ Rectangle {
     property int marketCraftPlanCount: 0
     property int marketInputsTotalCost: 0
     property int marketNetProfitValue: 0
+    property int flipperValidCount: 0
+    property int flipperSelectedProfit: 0
+    property string flipperSourceCity: ""
     property int lootEventCount: 0
     property string lootLatestSummary: ""
 
@@ -98,6 +102,10 @@ Rectangle {
                 + (root.gitAvailable ? "ready" : "missing")
         } else if (root.scannerView) {
             base = "Scanner status: " + root.scannerStatusText + "  |  Updates: " + root.scannerUpdateText
+        } else if (root.flipperView) {
+            base = "Market Flipper  |  Buy: " + root.flipperSourceCity
+                + "  |  Flips: " + root.flipperValidCount
+                + "  |  Checked profit: " + formatInt(root.flipperSelectedProfit)
         } else if (root.lootView) {
             base = "Loot log  |  Events: " + root.lootEventCount + "  |  Latest: "
                 + (root.lootLatestSummary.length > 0 ? root.lootLatestSummary : "waiting for loot")
