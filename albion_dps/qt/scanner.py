@@ -827,6 +827,7 @@ class ScannerState(QObject):
             command = self._sudo_prefix() + command
 
         self._client_dir.mkdir(parents=True, exist_ok=True)
+        self._ensure_local_websocket_config()
         self._append_log(f"Starting scanner: {' '.join(command)}")
         try:
             popen_kwargs = {
@@ -863,6 +864,48 @@ class ScannerState(QObject):
         self._append_warn("No TTY detected; using sudo -n (non-interactive).")
         self._append_warn("If sudo fails, run `sudo -v` in a terminal and try again.")
         return ["sudo", "-n"]
+
+    def _ensure_local_websocket_config(self) -> None:
+        config_path = self._client_dir / "config.yaml"
+        desired_lines = {
+            "EnableWebsockets": "EnableWebsockets: true",
+            "AllowedWebsocketHosts": "AllowedWebsocketHosts:",
+            "localhost": "  - localhost",
+            "127.0.0.1": "  - 127.0.0.1",
+        }
+        try:
+            existing = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+            lines = existing.splitlines()
+            filtered: list[str] = []
+            skip_allowed = False
+            for line in lines:
+                stripped = line.strip()
+                if stripped.startswith("EnableWebsockets:"):
+                    filtered.append(desired_lines["EnableWebsockets"])
+                    skip_allowed = False
+                    continue
+                if stripped.startswith("AllowedWebsocketHosts:"):
+                    skip_allowed = True
+                    continue
+                if skip_allowed and (line.startswith(" ") or line.startswith("\t") or stripped.startswith("-")):
+                    continue
+                skip_allowed = False
+                filtered.append(line)
+            if not any(line.strip().startswith("EnableWebsockets:") for line in filtered):
+                filtered.append(desired_lines["EnableWebsockets"])
+            filtered.extend(
+                [
+                    desired_lines["AllowedWebsocketHosts"],
+                    desired_lines["localhost"],
+                    desired_lines["127.0.0.1"],
+                ]
+            )
+            next_text = "\n".join(line for line in filtered if line is not None).strip() + "\n"
+            if next_text != existing:
+                config_path.write_text(next_text, encoding="utf-8")
+                self._append_log("Enabled local scanner websocket for market cache capture.")
+        except Exception as exc:
+            self._append_warn(f"Could not enable local scanner websocket: {exc}")
 
     def _maybe_log_capability_hint(self, command: list[str]) -> None:
         if self._capability_hint_shown:

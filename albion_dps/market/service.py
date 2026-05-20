@@ -10,6 +10,7 @@ from pathlib import Path
 from albion_dps.market.aod_client import AODataClient, MarketChartPoint, MarketPriceRecord
 from albion_dps.market.cache import SQLiteCache
 from albion_dps.market.models import MarketRegion
+from albion_dps.market.price_store import LocalMarketPriceStore
 
 
 @dataclass(frozen=True)
@@ -26,9 +27,11 @@ class MarketDataService:
         *,
         client: AODataClient | None = None,
         cache: SQLiteCache | None = None,
+        price_store: LocalMarketPriceStore | None = None,
     ) -> None:
         self.client = client or AODataClient()
         self.cache = cache
+        self.price_store = price_store
         self._last_prices_meta = MarketFetchMeta(
             source="none",
             record_count=0,
@@ -56,12 +59,15 @@ class MarketDataService:
         *,
         cache_path: Path,
         client: AODataClient | None = None,
+        price_store: LocalMarketPriceStore | None = None,
     ) -> "MarketDataService":
-        return cls(client=client, cache=SQLiteCache(cache_path))
+        return cls(client=client, cache=SQLiteCache(cache_path), price_store=price_store)
 
     def close(self) -> None:
         if self.cache is not None:
             self.cache.close()
+        if self.price_store is not None:
+            self.price_store.close()
 
     def get_prices(
         self,
@@ -114,6 +120,20 @@ class MarketDataService:
                 return rows
 
         if not allow_live:
+            stored = self._get_stored_price_subset(
+                region=region,
+                item_ids=item_ids,
+                locations=locations,
+                qualities=qualities or [1],
+            )
+            if stored:
+                self._last_prices_meta = MarketFetchMeta(
+                    source="local_db",
+                    record_count=len(stored),
+                    elapsed_ms=(time.perf_counter() - started) * 1000.0,
+                    cache_key=cache_key,
+                )
+                return stored
             self._last_prices_meta = MarketFetchMeta(
                 source="cache_miss",
                 record_count=0,
@@ -128,6 +148,8 @@ class MarketDataService:
             locations=locations,
             qualities=qualities,
         )
+        if self.price_store is not None:
+            self.price_store.upsert_aodata_prices(region=region, rows=rows)
         self._put_cached(
             cache_key,
             [x.__dict__ for x in rows],
@@ -293,6 +315,24 @@ class MarketDataService:
             return None
         source = "partial_stale_cache" if saw_expired else "partial_cache"
         return list(matched.values()), source
+
+    def _get_stored_price_subset(
+        self,
+        *,
+        region: MarketRegion,
+        item_ids: list[str],
+        locations: list[str],
+        qualities: list[int],
+    ) -> list[MarketPriceRecord]:
+        if self.price_store is None:
+            return []
+        index = self.price_store.get_price_index(
+            region=region,
+            item_ids=item_ids,
+            locations=locations,
+            qualities=qualities,
+        )
+        return list(index.values())
 
     def _put_cached(self, key: str, payload: list[object], *, ttl_seconds: float) -> None:
         if self.cache is None:

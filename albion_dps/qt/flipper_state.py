@@ -25,6 +25,7 @@ from albion_dps.market.flipper import (
 )
 from albion_dps.market.catalog import RecipeCatalog
 from albion_dps.market.models import MarketRegion
+from albion_dps.market.price_store import DEFAULT_QUOTE_MAX_AGE_SECONDS, LocalMarketPriceStore
 from albion_dps.market.service import MarketDataService
 from albion_dps.qt.market.recipe_ops import item_id_query_candidates
 
@@ -173,11 +174,13 @@ class MarketFlipperState(QObject):
         self,
         *,
         service: MarketDataService | None = None,
+        price_store: LocalMarketPriceStore | None = None,
         catalog: RecipeCatalog | None = None,
         logger: logging.Logger | None = None,
     ) -> None:
         super().__init__()
         self._service = service
+        self._price_store = price_store or getattr(service, "price_store", None)
         self._catalog = catalog or RecipeCatalog.from_default()
         self._log = logger or logging.getLogger(__name__)
         self._all_candidates = collect_flip_candidates(self._catalog)
@@ -360,8 +363,8 @@ class MarketFlipperState(QObject):
     def refreshFlips(self) -> None:
         if self._refresh_in_progress:
             return
-        if self._service is None:
-            self._refresh_status_text = "Market data service is not available."
+        if self._service is None and self._price_store is None:
+            self._refresh_status_text = "Market data is not available."
             self._prices_source = "error"
             self.refreshChanged.emit()
             return
@@ -434,16 +437,29 @@ class MarketFlipperState(QObject):
     ) -> None:
         try:
             query_ids = _expanded_query_ids(candidates)
-            price_index = self._service.get_price_index(
-                region=region,
-                item_ids=query_ids,
-                locations=[source_city, BLACK_MARKET_CITY],
-                qualities=list(FLIP_QUALITIES),
-                ttl_seconds=30.0,
-                allow_stale=False,
-                allow_cache=True,
-                allow_live=True,
-            )
+            price_index = {}
+            source = "none"
+            if self._price_store is not None:
+                price_index = self._price_store.get_price_index(
+                    region=region,
+                    item_ids=query_ids,
+                    locations=[source_city, BLACK_MARKET_CITY],
+                    qualities=list(FLIP_QUALITIES),
+                    max_age_seconds=DEFAULT_QUOTE_MAX_AGE_SECONDS,
+                )
+                source = "local_db"
+            if not price_index and self._price_store is None and self._service is not None:
+                price_index = self._service.get_price_index(
+                    region=region,
+                    item_ids=query_ids,
+                    locations=[source_city, BLACK_MARKET_CITY],
+                    qualities=list(FLIP_QUALITIES),
+                    ttl_seconds=30.0,
+                    allow_stale=False,
+                    allow_cache=True,
+                    allow_live=True,
+                )
+                source = self._service.last_prices_meta.source
             rows = build_flip_opportunities(
                 candidates=candidates,
                 price_index=price_index,
@@ -457,9 +473,8 @@ class MarketFlipperState(QObject):
                 buy_freshness_minutes=self._buy_freshness_minutes,
                 item_id_candidates=item_id_query_candidates,
             )
-            meta = self._service.last_prices_meta
-            status = f"{len(rows)} flips checked ({scan_label}) from {source_city} to Black Market. Source: {meta.source}."
-            self._result_queue.put((rows, meta.source, status))
+            status = f"{len(rows)} flips checked ({scan_label}) from {source_city} to Black Market. Source: {source}."
+            self._result_queue.put((rows, source, status))
         except Exception as exc:  # pragma: no cover - surfaced through UI
             self._log.exception("Market flipper refresh failed")
             self._result_queue.put(exc)
@@ -519,13 +534,22 @@ class MarketFlipperState(QObject):
             out.append(candidate)
         self._last_candidate_total = len(out)
         if query:
+            if self._price_store is not None:
+                return out
             return self._limit_candidates_by_query_ids(out, limit=self._query_id_limit)
+        if self._price_store is not None:
+            return self._balanced_broad_candidates(out, limit=None)
         return self._balanced_broad_candidates(out)
 
     def _effective_source_city(self) -> str:
         return self._source_city if self._source_city in SOURCE_CITIES else SAFE_SOURCE_CITY
 
-    def _balanced_broad_candidates(self, candidates: list[FlipCandidate]) -> list[FlipCandidate]:
+    def _balanced_broad_candidates(
+        self,
+        candidates: list[FlipCandidate],
+        *,
+        limit: int | None = BROAD_QUERY_ID_LIMIT,
+    ) -> list[FlipCandidate]:
         groups: dict[tuple[int, int], list[FlipCandidate]] = {}
         for candidate in candidates:
             item = candidate.item
@@ -545,7 +569,9 @@ class MarketFlipperState(QObject):
                     next_keys.append(key)
             keys = next_keys
             index += 1
-        return self._limit_candidates_by_query_ids(ordered, limit=self._broad_query_id_limit)
+        if limit is None:
+            return ordered
+        return self._limit_candidates_by_query_ids(ordered, limit=limit)
 
     def _limit_candidates_by_query_ids(self, candidates: list[FlipCandidate], *, limit: int) -> list[FlipCandidate]:
         limited: list[FlipCandidate] = []

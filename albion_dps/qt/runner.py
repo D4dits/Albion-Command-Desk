@@ -31,6 +31,7 @@ from albion_dps.domain import (
 )
 from albion_dps.domain.item_db import ensure_game_databases
 from albion_dps.domain.map_resolver import load_map_resolver
+from albion_dps.market.price_store import LocalMarketPriceStore
 from albion_dps.market.service import MarketDataService
 from albion_dps.meter.session_meter import SessionMeter
 from albion_dps.models import MeterSnapshot
@@ -68,6 +69,7 @@ def run_qt(args: argparse.Namespace) -> int:
     from albion_dps.qt.models import UiState
     from albion_dps.qt.flipper_state import MarketFlipperState
     from albion_dps.qt.market import MarketSetupState
+    from albion_dps.qt.market_ws import MarketScannerWebSocketBridge
     from albion_dps.qt.scanner import ScannerState
 
     names, party, fame, meter, map_trail, decoder, mapper = _build_runtime(args)
@@ -175,7 +177,17 @@ def run_qt(args: argparse.Namespace) -> int:
     scanner_state = ScannerState(app_mode=args.qt_command)
     market_cache_path = Path("data") / "market_cache.sqlite3"
     market_cache_path.parent.mkdir(parents=True, exist_ok=True)
-    market_service = MarketDataService.with_default_cache(cache_path=market_cache_path)
+    market_price_store = LocalMarketPriceStore(Path("data") / "market_prices.sqlite3")
+    market_price_store.clear_old_quotes()
+    market_service = MarketDataService.with_default_cache(
+        cache_path=market_cache_path,
+        price_store=market_price_store,
+    )
+    market_ws_bridge = MarketScannerWebSocketBridge(
+        store=market_price_store,
+        logger=logging.getLogger(__name__),
+    )
+    market_ws_bridge.start()
     market_setup_state = MarketSetupState(
         service=market_service,
         logger=logging.getLogger(__name__),
@@ -183,6 +195,7 @@ def run_qt(args: argparse.Namespace) -> int:
     )
     market_flipper_state = MarketFlipperState(
         service=market_service,
+        price_store=market_price_store,
         logger=logging.getLogger(__name__),
     )
     app_settings = load_app_settings()
@@ -229,6 +242,7 @@ def run_qt(args: argparse.Namespace) -> int:
     timer.setInterval(100)
     timer.timeout.connect(drain_queue)
     timer.start()
+    app.aboutToQuit.connect(market_ws_bridge.stop)
     app.aboutToQuit.connect(scanner_state.shutdown)
     app.aboutToQuit.connect(market_setup_state.close)
     app.aboutToQuit.connect(stop_event.set)

@@ -8,6 +8,7 @@ from pathlib import Path
 from albion_dps.market.aod_client import AODataClient
 from albion_dps.market.cache import SQLiteCache
 from albion_dps.market.models import MarketRegion
+from albion_dps.market.price_store import LocalMarketPriceStore
 from albion_dps.market.service import MarketDataService
 
 
@@ -228,6 +229,37 @@ def test_service_cache_only_mode_returns_empty_without_live_call() -> None:
     assert rows == []
     assert call_count["value"] == 0
     assert service.last_prices_meta.source == "cache_miss"
+
+
+def test_service_cache_only_mode_reads_local_price_store() -> None:
+    tmp_dir = _make_local_tmp_dir()
+    try:
+        store = LocalMarketPriceStore(tmp_dir / "prices.sqlite3")
+        store.upsert_quote(
+            region="europe",
+            location="Caerleon",
+            item_id="T4_MAIN_SWORD",
+            quality=1,
+            side="sell",
+            price=1200,
+            amount=1,
+            source="test",
+        )
+        cache = SQLiteCache(tmp_dir / "cache.sqlite3")
+        service = MarketDataService(cache=cache, price_store=store)
+        rows = service.get_prices(
+            region=MarketRegion.EUROPE,
+            item_ids=["T4_MAIN_SWORD"],
+            locations=["Caerleon"],
+            allow_live=False,
+        )
+        service.close()
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    assert len(rows) == 1
+    assert rows[0].sell_price_min == 1200
+    assert service.last_prices_meta.source == "local_db"
 
 
 def test_service_uses_partial_price_cache_on_exact_key_miss() -> None:

@@ -11,6 +11,7 @@ from PySide6.QtGui import QGuiApplication
 from albion_dps.market.aod_client import MarketPriceRecord
 from albion_dps.market.catalog import RecipeCatalog
 from albion_dps.market.models import ItemRef, Recipe, RecipeOutput
+from albion_dps.market.price_store import LocalMarketPriceStore
 from albion_dps.qt.flipper_state import MarketFlipperState
 
 
@@ -101,6 +102,47 @@ def test_flipper_state_refresh_builds_profitable_rows() -> None:
     assert service.calls[0]["ttl_seconds"] == 30.0
 
 
+def test_flipper_state_prefers_local_price_store(tmp_path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    _ = QGuiApplication.instance() or QGuiApplication([])
+    store = LocalMarketPriceStore(tmp_path / "prices.sqlite3")
+    try:
+        store.upsert_quote(
+            region="europe",
+            location="Caerleon",
+            item_id="T4_MAIN_SWORD",
+            quality=1,
+            side="sell",
+            price=10_000,
+            amount=1,
+            source="test",
+        )
+        store.upsert_quote(
+            region="europe",
+            location="Black Market",
+            item_id="T4_MAIN_SWORD",
+            quality=1,
+            side="buy",
+            price=30_000,
+            amount=1,
+            source="test",
+        )
+        service = FakeService({})
+        state = MarketFlipperState(service=service, price_store=store, catalog=_catalog())
+        state.setSearchQuery("sword")
+        state.setMinProfit(0)
+        state.setMinRoiPercent(0)
+
+        state.refreshFlips()
+        _wait_for(lambda: not state.refreshInProgress)
+    finally:
+        store.close()
+
+    assert service.calls == []
+    assert state.validCount == 1
+    assert state.pricesSource == "local_db"
+
+
 def test_flipper_state_uses_selected_source_city() -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     _ = QGuiApplication.instance() or QGuiApplication([])
@@ -161,6 +203,21 @@ def test_flipper_state_empty_search_runs_broad_scan() -> None:
     queried = service.calls[0]["item_ids"]
     assert any(item_id.startswith("T4_") for item_id in queried)
     assert any(item_id.startswith("T8_") for item_id in queried)
+
+
+def test_flipper_state_local_db_empty_search_checks_full_catalog(tmp_path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    _ = QGuiApplication.instance() or QGuiApplication([])
+    store = LocalMarketPriceStore(tmp_path / "prices.sqlite3")
+    try:
+        state = MarketFlipperState(price_store=store, catalog=_many_bow_catalog(count=1500))
+        state.refreshFlips()
+        _wait_for(lambda: not state.refreshInProgress)
+    finally:
+        store.close()
+
+    assert state.resultsModel.rowCount() == 1500
+    assert state.pricesSource == "local_db"
 
 
 def test_flipper_state_search_scans_beyond_first_t4_page() -> None:
