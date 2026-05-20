@@ -3,6 +3,7 @@ from __future__ import annotations
 from albion_dps.models import MeterSnapshot
 from albion_dps.qt.models import UiState
 from albion_dps.qt.models import _build_player_rows, _is_player_label
+from albion_dps.meter.session_meter import SessionEntry, SessionSummary
 
 
 def test_build_player_rows_respects_allowed_player_names() -> None:
@@ -54,3 +55,49 @@ def test_ui_state_update_populates_live_rows() -> None:
     )
 
     assert state.playersModel.rowCount() == 1
+
+
+def test_ui_state_selected_history_uses_session_dps_not_expired_rolling_dps() -> None:
+    state = UiState(sort_key="dps", top_n=10, history_limit=20)
+    history = [
+        SessionSummary(
+            mode="battle",
+            start_ts=10.0,
+            end_ts=60.0,
+            duration=50.0,
+            label=None,
+            entries=[
+                SessionEntry(
+                    label="D4dits",
+                    damage=12_101.0,
+                    heal=0.0,
+                    dps=242.02,
+                    hps=0.0,
+                    source_id=101,
+                )
+            ],
+            total_damage=12_101.0,
+            total_heal=0.0,
+            reason="combat_state",
+            totals_by_id={101: {"damage": 12_101.0, "heal": 0.0, "dps": 0.0, "hps": 0.0}},
+        )
+    ]
+    snapshot = MeterSnapshot(timestamp=61.0, totals={})
+
+    state.update(
+        snapshot,
+        names={101: "D4dits"},
+        history=history,
+        mode="battle",
+        zone="-",
+        fame_total=0,
+        fame_per_hour=0.0,
+        silver_total=0,
+        silver_per_hour=0.0,
+    )
+    state.selectHistory(0)
+
+    model = state.playersModel
+    idx = model.index(0, 0)
+    assert model.data(idx, model.DpsRole) == 242.02
+    assert model.data(idx, model.BarRole) == 1.0

@@ -673,30 +673,14 @@ class UiState(QObject):
     def _refresh_player_table(self) -> None:
         if self._selected_history_index >= 0 and self._selected_history_index < len(self._last_history):
             summary = self._last_history[self._selected_history_index]
-            if summary.totals_by_id:
-                label_overrides = {
-                    int(entry.source_id): entry.label
-                    for entry in summary.entries
-                    if entry.source_id is not None and entry.label
-                }
-                self._players.set_items(
-                    _build_player_rows(
-                        summary.totals_by_id,
-                        names=self._last_names,
-                        sort_key=self._sort_key,
-                        top_n=self._top_n,
-                        role_lookup=self._role_lookup,
-                        weapon_lookup=self._weapon_lookup,
-                        label_overrides=label_overrides,
-                    )
-                )
-                return
             self._players.set_items(
                 _build_player_rows_from_entries(
                     summary.entries,
                     sort_key=self._sort_key,
                     top_n=self._top_n,
                     names=self._last_names,
+                    role_lookup=self._role_lookup,
+                    weapon_lookup=self._weapon_lookup,
                 )
             )
             return
@@ -1196,6 +1180,8 @@ def _build_player_rows_from_entries(
     top_n: int,
     names: dict[int, str],
     allowed_player_names: set[str] | None = None,
+    role_lookup: Callable[[int], str | None] | None = None,
+    weapon_lookup: Callable[[int], object | None] | None = None,
 ) -> list[PlayerRow]:
     metric = SORT_KEY_MAP.get(sort_key, "dps")
     max_damage = max((entry.damage for entry in entries), default=0.0)
@@ -1207,7 +1193,24 @@ def _build_player_rows_from_entries(
             continue
         if allowed_player_names is not None and label not in allowed_player_names:
             continue
-        role = _infer_role(entry.damage, entry.heal, max_damage=max_damage, max_heal=max_heal) or ""
+        role = None
+        if role_lookup is not None and entry.source_id is not None:
+            role = role_lookup(entry.source_id)
+        role = role or _infer_role(entry.damage, entry.heal, max_damage=max_damage, max_heal=max_heal) or ""
+        weapon_name = ""
+        weapon_tier = ""
+        weapon_icon = ""
+        if weapon_lookup is not None and entry.source_id is not None:
+            info = weapon_lookup(entry.source_id)
+            if info is not None:
+                weapon_name = str(getattr(info, "name", "") or getattr(info, "unique", "") or "")
+                tier = getattr(info, "tier", None)
+                enchant = getattr(info, "enchant", None)
+                if isinstance(tier, int):
+                    if not isinstance(enchant, int):
+                        enchant = 0
+                    weapon_tier = f"{tier}.{enchant}"
+                weapon_icon = str(getattr(info, "icon_url", "") or "")
         rows.append(
             PlayerRow(
                 name=label,
@@ -1218,9 +1221,9 @@ def _build_player_rows_from_entries(
                 bar_ratio=0.0,
                 role=role,
                 color=_color_for_label(label, role),
-                weapon_name="",
-                weapon_tier="",
-                weapon_icon="",
+                weapon_name=weapon_name,
+                weapon_tier=weapon_tier,
+                weapon_icon=weapon_icon,
             )
         )
     rows = _collapse_player_rows(rows)

@@ -120,32 +120,57 @@ class ItemResolver:
         return None
 
     def weapon_info_for_items(self, item_ids: Iterable[int]) -> "WeaponInfo | None":
+        fallback_id: int | None = None
+        fallback_unique: str | None = None
         for item_id in item_ids:
             if not isinstance(item_id, int) or item_id <= 0:
                 continue
             unique = self.index_to_unique.get(item_id)
             if not unique:
                 continue
-            name = self.index_to_name.get(item_id)
-            tier, enchant = _parse_tier_enchant(unique)
-            icon = _build_icon_url(unique)
-            return WeaponInfo(
-                unique=unique,
-                name=name,
-                tier=tier,
-                enchant=enchant,
-                icon_url=icon,
-            )
+            if fallback_id is None:
+                fallback_id = item_id
+                fallback_unique = unique
+            if not self._is_weapon_unique(unique):
+                continue
+            return self._weapon_info(item_id, unique)
+        if fallback_id is not None and fallback_unique is not None:
+            return self._weapon_info(fallback_id, fallback_unique)
         return None
 
+    def _weapon_info(self, item_id: int, unique: str) -> "WeaponInfo":
+        name = self.index_to_name.get(item_id)
+        tier, enchant = _parse_tier_enchant(unique)
+        icon = _build_icon_url(unique)
+        return WeaponInfo(
+            unique=unique,
+            name=name,
+            tier=tier,
+            enchant=enchant,
+            icon_url=icon,
+        )
+
     def _mainhand_unique(self, item_ids: Iterable[int]) -> str | None:
+        fallback: str | None = None
         for item_id in item_ids:
             if not isinstance(item_id, int) or item_id <= 0:
                 continue
             unique = self.index_to_unique.get(item_id)
-            if unique:
+            if not unique:
+                continue
+            if fallback is None:
+                fallback = unique
+            if self._is_weapon_unique(unique):
                 return unique
-        return None
+        return fallback
+
+    def _is_weapon_unique(self, unique: str) -> bool:
+        subcategory = self.unique_to_subcategory.get(unique)
+        if not subcategory:
+            subcategory = self.unique_to_category.get(unique)
+        if not subcategory:
+            subcategory = _infer_subcategory_from_unique(unique)
+        return bool(subcategory and subcategory.lower() in WEAPON_CATEGORIES)
 
 
 def load_item_resolver(
