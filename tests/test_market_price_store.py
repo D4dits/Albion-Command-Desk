@@ -80,6 +80,62 @@ def test_price_store_ingests_scanner_market_orders(tmp_path: Path) -> None:
     assert index[("T4_MAIN_BOW", "Black Market", 1)].buy_price_max == 7000
 
 
+def test_price_store_keeps_best_scanner_orders_per_payload(tmp_path: Path) -> None:
+    store = LocalMarketPriceStore(tmp_path / "prices.sqlite3")
+    try:
+        stored = store.upsert_scanner_payload(
+            region=MarketRegion.EUROPE,
+            payload={
+                "Orders": [
+                    {
+                        "ItemTypeId": "T6_2H_BOW_KEEPER@1",
+                        "LocationId": "3005",
+                        "QualityLevel": 2,
+                        "UnitPriceSilver": 2_909_890_000,
+                        "Amount": 1,
+                        "AuctionType": "offer",
+                    },
+                    {
+                        "ItemTypeId": "T6_2H_BOW_KEEPER@1",
+                        "LocationId": "3005",
+                        "QualityLevel": 2,
+                        "UnitPriceSilver": 3_000_000_000,
+                        "Amount": 1,
+                        "AuctionType": "offer",
+                    },
+                    {
+                        "ItemTypeId": "T6_2H_BOW_KEEPER@1",
+                        "LocationId": "3003",
+                        "QualityLevel": 2,
+                        "UnitPriceSilver": 94_740_000,
+                        "Amount": 1,
+                        "AuctionType": "request",
+                    },
+                    {
+                        "ItemTypeId": "T6_2H_BOW_KEEPER@1",
+                        "LocationId": "3003",
+                        "QualityLevel": 2,
+                        "UnitPriceSilver": 50_520_000,
+                        "Amount": 1,
+                        "AuctionType": "request",
+                    },
+                ]
+            },
+        )
+        index = store.get_price_index(
+            region=MarketRegion.EUROPE,
+            item_ids=["T6_2H_BOW_KEEPER@1"],
+            locations=["Caerleon", "Black Market"],
+            qualities=[2],
+        )
+    finally:
+        store.close()
+
+    assert stored == 2
+    assert index[("T6_2H_BOW_KEEPER@1", "Caerleon", 2)].sell_price_min == 290_989
+    assert index[("T6_2H_BOW_KEEPER@1", "Black Market", 2)].buy_price_max == 9_474
+
+
 def test_price_store_ignores_tiny_scanner_market_orders(tmp_path: Path) -> None:
     store = LocalMarketPriceStore(tmp_path / "prices.sqlite3")
     try:

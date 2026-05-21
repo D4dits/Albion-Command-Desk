@@ -137,8 +137,8 @@ class LocalMarketPriceStore:
         orders = payload.get("Orders")
         if not isinstance(orders, list):
             return 0
-        count = 0
         observed_at = time.time()
+        best_quotes: dict[tuple[str, str, int, str], tuple[int, int]] = {}
         for order in orders:
             if not isinstance(order, dict):
                 continue
@@ -155,6 +155,16 @@ class LocalMarketPriceStore:
                 or price < MIN_SCANNER_QUOTE_PRICE
             ):
                 continue
+            key = (location, item_id, max(1, int(quality or 1)), side)
+            current = best_quotes.get(key)
+            if current is None:
+                best_quotes[key] = (price, amount)
+            elif side == _SIDE_SELL and price < current[0]:
+                best_quotes[key] = (price, amount)
+            elif side == _SIDE_BUY and price > current[0]:
+                best_quotes[key] = (price, amount)
+        count = 0
+        for (location, item_id, quality, side), (price, amount) in best_quotes.items():
             count += self.upsert_quote(
                 region=region.value,
                 location=location,
