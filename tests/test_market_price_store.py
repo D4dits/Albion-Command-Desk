@@ -49,17 +49,17 @@ def test_price_store_ingests_scanner_market_orders(tmp_path: Path) -> None:
                 "Orders": [
                     {
                         "ItemTypeId": "T4_MAIN_BOW",
-                        "LocationId": "Caerleon",
+                        "LocationId": "3005",
                         "QualityLevel": 2,
-                        "UnitPriceSilver": 5000,
+                        "UnitPriceSilver": 50_000_000,
                         "Amount": 3,
                         "AuctionType": "offer",
                     },
                     {
                         "ItemTypeId": "T4_MAIN_BOW",
-                        "LocationId": "BLACKBANK-3003",
+                        "LocationId": "3003",
                         "QualityLevel": 1,
-                        "UnitPriceSilver": 7000,
+                        "UnitPriceSilver": 70_000_000,
                         "Amount": 1,
                         "AuctionType": "request",
                     },
@@ -78,6 +78,70 @@ def test_price_store_ingests_scanner_market_orders(tmp_path: Path) -> None:
     assert stored == 2
     assert index[("T4_MAIN_BOW", "Caerleon", 2)].sell_price_min == 5000
     assert index[("T4_MAIN_BOW", "Black Market", 1)].buy_price_max == 7000
+
+
+def test_price_store_migrates_existing_raw_scanner_quotes(tmp_path: Path) -> None:
+    path = tmp_path / "prices.sqlite3"
+    store = LocalMarketPriceStore(path)
+    try:
+        store.upsert_quote(
+            region="europe",
+            location="3005",
+            item_id="T4_MAIN_BOW",
+            quality=1,
+            side="sell",
+            price=12_340_000,
+            amount=1,
+            source="scanner_ws",
+        )
+    finally:
+        store.close()
+
+    reopened = LocalMarketPriceStore(path)
+    try:
+        index = reopened.get_price_index(
+            region=MarketRegion.EUROPE,
+            item_ids=["T4_MAIN_BOW"],
+            locations=["Caerleon"],
+            qualities=[1],
+        )
+    finally:
+        reopened.close()
+
+    assert index[("T4_MAIN_BOW", "Caerleon", 1)].sell_price_min == 1234
+
+
+def test_price_store_migration_is_idempotent(tmp_path: Path) -> None:
+    path = tmp_path / "prices.sqlite3"
+    store = LocalMarketPriceStore(path)
+    try:
+        store.upsert_quote(
+            region="europe",
+            location="3005",
+            item_id="T4_MAIN_BOW",
+            quality=1,
+            side="sell",
+            price=12_340_000,
+            amount=1,
+            source="scanner_ws",
+        )
+    finally:
+        store.close()
+
+    first = LocalMarketPriceStore(path)
+    first.close()
+    second = LocalMarketPriceStore(path)
+    try:
+        index = second.get_price_index(
+            region=MarketRegion.EUROPE,
+            item_ids=["T4_MAIN_BOW"],
+            locations=["Caerleon"],
+            qualities=[1],
+        )
+    finally:
+        second.close()
+
+    assert index[("T4_MAIN_BOW", "Caerleon", 1)].sell_price_min == 1234
 
 
 def test_price_store_cleanup_removes_old_quotes(tmp_path: Path) -> None:
@@ -104,5 +168,6 @@ def test_price_store_cleanup_removes_old_quotes(tmp_path: Path) -> None:
 
 
 def test_normalize_market_location_handles_black_market() -> None:
-    assert normalize_market_location("BLACKBANK-3003") == "Black Market"
+    assert normalize_market_location("3003") == "Black Market"
+    assert normalize_market_location("3005") == "Caerleon"
     assert normalize_market_location("Fort-Sterling-Auction2") == "Fort Sterling"

@@ -69,6 +69,7 @@ class LocalMarketPriceStore:
                 "CREATE INDEX IF NOT EXISTS idx_market_quotes_lookup ON market_quotes(region, location, item_id, quality)"
             )
             self._conn.commit()
+        self._normalize_existing_scanner_quotes()
 
     def upsert_aodata_prices(
         self,
@@ -143,7 +144,7 @@ class LocalMarketPriceStore:
             item_id = str(order.get("ItemTypeId") or "").strip()
             location = normalize_market_location(str(order.get("LocationId") or "").strip())
             side = _auction_side(order.get("AuctionType"))
-            price = _as_int(order.get("UnitPriceSilver"))
+            price = _normalize_scanner_price(_as_int(order.get("UnitPriceSilver")))
             quality = _as_int(order.get("QualityLevel"), default=1)
             amount = _as_int(order.get("Amount"))
             if not item_id or not location or side not in {_SIDE_SELL, _SIDE_BUY} or price <= 0:
@@ -299,8 +300,60 @@ class LocalMarketPriceStore:
         with self._lock:
             self._conn.close()
 
+    def _normalize_existing_scanner_quotes(self) -> None:
+        with self._lock:
+            rows = self._conn.execute(
+                """
+                SELECT region, location, item_id, quality, side, price, amount, observed_at, source
+                FROM market_quotes
+                WHERE source='scanner_ws'
+                """
+            ).fetchall()
+            if not rows:
+                return
+            self._conn.execute("DELETE FROM market_quotes WHERE source='scanner_ws'")
+            for region, location, item_id, quality, side, price, amount, observed_at, source in rows:
+                raw_location = str(location or "").strip()
+                normalized_price = _normalize_existing_scanner_price(
+                    int(price or 0),
+                    raw_location=raw_location,
+                )
+                normalized_location = normalize_market_location(location)
+                if normalized_price <= 0 or not normalized_location:
+                    continue
+                self._conn.execute(
+                    """
+                    INSERT INTO market_quotes(region, location, item_id, quality, side, price, amount, observed_at, source)
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(region, location, item_id, quality, side) DO UPDATE SET
+                        price=excluded.price,
+                        amount=excluded.amount,
+                        observed_at=excluded.observed_at,
+                        source=excluded.source
+                    """,
+                    (
+                        str(region),
+                        normalized_location,
+                        str(item_id),
+                        int(quality or 1),
+                        str(side),
+                        normalized_price,
+                        int(amount or 0),
+                        float(observed_at or time.time()),
+                        str(source or "scanner_ws"),
+                    ),
+                )
+            self._conn.commit()
+
 
 _LOCATION_ALIASES = {
+    "0007": "Thetford",
+    "1002": "Lymhurst",
+    "2004": "Bridgewatch",
+    "3003": "Black Market",
+    "3005": "Caerleon",
+    "3008": "Martlock",
+    "4002": "Fort Sterling",
     "black market": "Black Market",
     "blackmarket": "Black Market",
     "caerleon": "Caerleon",
@@ -341,6 +394,33 @@ def _as_int(value: object, *, default: int = 0) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _normalize_scanner_price(value: int) -> int:
+    price = int(value or 0)
+    if price <= 0:
+        return 0
+    if price >= 10_000 and price % 10_000 == 0:
+        return max(1, price // 10_000)
+    if price > 10_000:
+        return max(1, round(price / 10_000))
+    return price
+
+
+def _normalize_existing_scanner_price(value: int, *, raw_location: str) -> int:
+    price = int(value or 0)
+    if price <= 0:
+        return 0
+    location_was_raw = str(raw_location or "").strip() in _LOCATION_ALIASES
+    if location_was_raw and price >= 10_000 and price % 10_000 == 0:
+        return max(1, price // 10_000)
+    if location_was_raw and price > 10_000:
+        return max(1, round(price / 10_000))
+    if price >= 10_000_000 and price % 10_000 == 0:
+        return max(1, price // 10_000)
+    if price > 10_000_000:
+        return max(1, round(price / 10_000))
+    return price
 
 
 def _parse_observed_at(raw: str) -> float:
