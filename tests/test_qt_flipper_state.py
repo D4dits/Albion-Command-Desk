@@ -216,7 +216,36 @@ def test_flipper_state_local_db_empty_search_checks_full_catalog(tmp_path) -> No
     finally:
         store.close()
 
-    assert state.resultsModel.rowCount() == 1500
+    assert state.resultsModel.rowCount() == 0
+    assert state.pricesSource == "local_db"
+
+
+def test_flipper_state_local_db_hides_unscanned_catalog_rows(tmp_path) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    _ = QGuiApplication.instance() or QGuiApplication([])
+    store = LocalMarketPriceStore(tmp_path / "prices.sqlite3")
+    try:
+        store.upsert_quote(
+            region="europe",
+            location="Black Market",
+            item_id="T4_2H_BOW_0",
+            quality=1,
+            side="buy",
+            price=30_000,
+            amount=1,
+            source="scanner_ws",
+        )
+        state = MarketFlipperState(price_store=store, catalog=_many_bow_catalog(count=20))
+        state.setSearchQuery("bow")
+        state.refreshFlips()
+        _wait_for(lambda: not state.refreshInProgress)
+    finally:
+        store.close()
+
+    assert state.resultsModel.rowCount() == 1
+    model = state.resultsModel
+    assert model.data(model.index(0, 0), model.ItemIdRole) == "T4_2H_BOW_0"
+    assert state.missingCount == 1
     assert state.pricesSource == "local_db"
 
 

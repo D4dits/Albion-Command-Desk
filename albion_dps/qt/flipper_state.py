@@ -473,6 +473,8 @@ class MarketFlipperState(QObject):
                 buy_freshness_minutes=self._buy_freshness_minutes,
                 item_id_candidates=item_id_query_candidates,
             )
+            if source == "local_db":
+                rows = [row for row in rows if row.source_sell_price > 0 or row.target_buy_price > 0]
             status = f"{len(rows)} flips checked ({scan_label}) from {source_city} to Black Market. Source: {source}."
             self._result_queue.put((rows, source, status))
         except Exception as exc:  # pragma: no cover - surfaced through UI

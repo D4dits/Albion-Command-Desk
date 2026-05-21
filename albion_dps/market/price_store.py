@@ -15,6 +15,7 @@ from albion_dps.market.models import MarketRegion
 
 DEFAULT_QUOTE_MAX_AGE_SECONDS = 120 * 60
 DEFAULT_QUOTE_RETENTION_SECONDS = 180 * 60
+MIN_SCANNER_QUOTE_PRICE = 1_000
 
 _SIDE_SELL = "sell"
 _SIDE_BUY = "buy"
@@ -147,7 +148,12 @@ class LocalMarketPriceStore:
             price = _normalize_scanner_price(_as_int(order.get("UnitPriceSilver")))
             quality = _as_int(order.get("QualityLevel"), default=1)
             amount = _as_int(order.get("Amount"))
-            if not item_id or not location or side not in {_SIDE_SELL, _SIDE_BUY} or price <= 0:
+            if (
+                not item_id
+                or not location
+                or side not in {_SIDE_SELL, _SIDE_BUY}
+                or price < MIN_SCANNER_QUOTE_PRICE
+            ):
                 continue
             count += self.upsert_quote(
                 region=region.value,
@@ -239,8 +245,16 @@ class LocalMarketPriceStore:
                       AND item_id IN ({",".join("?" for _ in item_chunk)})
                       AND location IN ({",".join("?" for _ in location_list)})
                       AND quality IN ({",".join("?" for _ in quality_list)})
+                      AND (source!='scanner_ws' OR price>=?)
                 """
-                params: list[object] = [region.value, cutoff, *item_chunk, *location_list, *quality_list]
+                params: list[object] = [
+                    region.value,
+                    cutoff,
+                    *item_chunk,
+                    *location_list,
+                    *quality_list,
+                    MIN_SCANNER_QUOTE_PRICE,
+                ]
                 rows.extend(self._conn.execute(sql, params).fetchall())
         combined: dict[tuple[str, str, int], dict[str, object]] = {}
         for item_id, location, quality, side, price, observed_at in rows:
@@ -319,7 +333,7 @@ class LocalMarketPriceStore:
                     raw_location=raw_location,
                 )
                 normalized_location = normalize_market_location(location)
-                if normalized_price <= 0 or not normalized_location:
+                if normalized_price < MIN_SCANNER_QUOTE_PRICE or not normalized_location:
                     continue
                 self._conn.execute(
                     """
