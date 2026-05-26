@@ -903,9 +903,29 @@ class ScannerState(QObject):
         self._capability_hint_shown = True
 
     def _build_runtime_command(self, command: list[str]) -> list[str]:
+        self._ensure_websocket_config()
         args = list(command)
         args.extend(["-i", DEFAULT_PUBLIC_INGEST_URL])
         return args
+
+    def _ensure_websocket_config(self) -> None:
+        config_path = self._client_dir / "config.yaml"
+        managed_block = (
+            "\n# Albion Command Desk local market ingest\n"
+            "EnableWebsockets: true\n"
+            "AllowedWebsocketHosts:\n"
+            "  - 127.0.0.1\n"
+            "  - localhost\n"
+        )
+        try:
+            current = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+            if "EnableWebsockets: true" in current and "127.0.0.1" in current:
+                return
+            config_path.parent.mkdir(parents=True, exist_ok=True)
+            config_path.write_text(current.rstrip() + managed_block, encoding="utf-8")
+            self._append_log("Enabled scanner WebSocket relay for local market ingest.")
+        except OSError as exc:
+            self._append_warn(f"Could not update scanner WebSocket config; local market ingest may be unavailable: {exc}")
 
     def _git_local_head(self) -> str | None:
         if not (self._client_dir / ".git").exists():

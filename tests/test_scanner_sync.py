@@ -73,6 +73,20 @@ def test_scanner_update_check_is_blocked_while_running(monkeypatch) -> None:
     assert "Stop scanner before checking repository updates." in state.logText
 
 
+def test_scanner_runtime_command_enables_websocket_config(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_scanner_ws_config")
+    state = ScannerState()
+    state._client_dir = tmp_path / "albiondata-client"
+
+    command = state._build_runtime_command(["albiondata-client"])
+    config_text = (state._client_dir / "config.yaml").read_text(encoding="utf-8")
+
+    assert command == ["albiondata-client", "-i", "https+pow://albion-online-data.com"]
+    assert "EnableWebsockets: true" in config_text
+    assert "127.0.0.1" in config_text
+    assert "localhost" in config_text
+
+
 def test_scanner_sync_rebuilds_binary_after_repo_update(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", "artifacts/tmp/test_scanner_sync_rebuild_update")
     state = ScannerState()
