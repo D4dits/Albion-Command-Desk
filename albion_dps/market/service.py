@@ -4,11 +4,12 @@ import hashlib
 import json
 import time
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from albion_dps.market.aod_client import AODataClient, MarketChartPoint, MarketPriceRecord
 from albion_dps.market.cache import SQLiteCache
+from albion_dps.market.local_store import LocalMarketStore
 from albion_dps.market.models import MarketRegion
 from albion_dps.market.price_store import LocalMarketPriceStore
 
@@ -19,6 +20,8 @@ class MarketFetchMeta:
     record_count: int
     elapsed_ms: float
     cache_key: str
+    local_record_count: int = 0
+    remote_record_count: int = 0
 
 
 class MarketDataService:
@@ -28,10 +31,14 @@ class MarketDataService:
         client: AODataClient | None = None,
         cache: SQLiteCache | None = None,
         price_store: LocalMarketPriceStore | None = None,
+        local_store: LocalMarketStore | None = None,
+        local_fresh_seconds: float = 3600.0,
     ) -> None:
         self.client = client or AODataClient()
         self.cache = cache
         self.price_store = price_store
+        self.local_store = local_store
+        self.local_fresh_seconds = max(0.0, float(local_fresh_seconds))
         self._last_prices_meta = MarketFetchMeta(
             source="none",
             record_count=0,
@@ -60,14 +67,22 @@ class MarketDataService:
         cache_path: Path,
         client: AODataClient | None = None,
         price_store: LocalMarketPriceStore | None = None,
+        local_store: LocalMarketStore | None = None,
     ) -> "MarketDataService":
-        return cls(client=client, cache=SQLiteCache(cache_path), price_store=price_store)
+        return cls(
+            client=client,
+            cache=SQLiteCache(cache_path),
+            price_store=price_store,
+            local_store=local_store,
+        )
 
     def close(self) -> None:
         if self.cache is not None:
             self.cache.close()
         if self.price_store is not None:
             self.price_store.close()
+        if self.local_store is not None:
+            self.local_store.close()
 
     def get_prices(
         self,
@@ -82,84 +97,79 @@ class MarketDataService:
         allow_live: bool = True,
     ) -> list[MarketPriceRecord]:
         started = time.perf_counter()
+        qualities = qualities or [1]
         cache_key = _cache_key(
             prefix="prices",
             payload={
                 "region": region.value,
                 "item_ids": sorted(item_ids),
                 "locations": sorted(locations),
-                "qualities": sorted(qualities or [1]),
+                "qualities": sorted(qualities),
             },
         )
-        if allow_cache:
-            cached = self._get_cached(cache_key, allow_stale=allow_stale)
-            if cached is not None:
-                payload_raw, source = cached
-                rows = [_to_price(x) for x in payload_raw if isinstance(x, dict)]
-                self._last_prices_meta = MarketFetchMeta(
-                    source=source,
-                    record_count=len(rows),
-                    elapsed_ms=(time.perf_counter() - started) * 1000.0,
-                    cache_key=cache_key,
-                )
-                return rows
-            partial_cached = self._get_cached_price_subset(
-                item_ids=item_ids,
-                locations=locations,
-                qualities=qualities or [1],
-                allow_stale=allow_stale,
-            )
-            if partial_cached is not None:
-                rows, source = partial_cached
-                self._last_prices_meta = MarketFetchMeta(
-                    source=source,
-                    record_count=len(rows),
-                    elapsed_ms=(time.perf_counter() - started) * 1000.0,
-                    cache_key=cache_key,
-                )
-                return rows
-
-        if not allow_live:
-            stored = self._get_stored_price_subset(
-                region=region,
-                item_ids=item_ids,
-                locations=locations,
-                qualities=qualities or [1],
-            )
-            if stored:
-                self._last_prices_meta = MarketFetchMeta(
-                    source="local_db",
-                    record_count=len(stored),
-                    elapsed_ms=(time.perf_counter() - started) * 1000.0,
-                    cache_key=cache_key,
-                )
-                return stored
-            self._last_prices_meta = MarketFetchMeta(
-                source="cache_miss",
-                record_count=0,
-                elapsed_ms=(time.perf_counter() - started) * 1000.0,
-                cache_key=cache_key,
-            )
-            return []
-
-        rows = self.client.fetch_prices(
+        local_store_rows = self._get_local_store_prices(
             region=region,
             item_ids=item_ids,
             locations=locations,
             qualities=qualities,
         )
-        if self.price_store is not None:
-            self.price_store.upsert_aodata_prices(region=region, rows=rows)
-        self._put_cached(
-            cache_key,
-            [x.__dict__ for x in rows],
-            ttl_seconds=ttl_seconds,
+        price_store_rows = self._get_price_store_prices(
+            region=region,
+            item_ids=item_ids,
+            locations=locations,
+            qualities=qualities,
+        )
+        local_rows = _merge_price_rows(local_store_rows, price_store_rows)
+        local_source = _local_source(
+            local_store_count=len(local_store_rows),
+            price_store_count=len(price_store_rows),
+        )
+        requested_keys = {
+            (str(item_id), str(location), int(quality))
+            for item_id in item_ids
+            for location in locations
+            for quality in qualities
+        }
+        local_index = {(row.item_id, row.city, row.quality): row for row in local_rows}
+        remote_needed = True
+        if local_rows:
+            remote_needed = bool(requested_keys - set(local_index)) or any(
+                _price_record_stale(row, max_age_seconds=self.local_fresh_seconds) for row in local_rows
+            )
+
+        remote_rows: list[MarketPriceRecord] = []
+        remote_source = "none"
+        if remote_needed:
+            remote_rows, remote_source = self._get_remote_prices(
+                cache_key=cache_key,
+                region=region,
+                item_ids=item_ids,
+                locations=locations,
+                qualities=qualities,
+                ttl_seconds=ttl_seconds,
+                allow_stale=allow_stale,
+                allow_cache=allow_cache,
+                allow_live=allow_live,
+            )
+        if self.price_store is not None and remote_rows:
+            self.price_store.upsert_aodata_prices(region=region, rows=remote_rows)
+
+        rows = _merge_price_rows(local_rows, remote_rows)
+        source = _combined_source(
+            local_source=local_source,
+            local_count=len(local_rows),
+            remote_count=len(remote_rows),
+            remote_source=remote_source,
+            remote_needed=remote_needed,
+            allow_live=allow_live,
         )
         self._last_prices_meta = MarketFetchMeta(
-            source="live",
+            source=source,
             record_count=len(rows),
             elapsed_ms=(time.perf_counter() - started) * 1000.0,
             cache_key=cache_key,
+            local_record_count=len(local_rows),
+            remote_record_count=len(remote_rows),
         )
         return rows
 
@@ -316,7 +326,24 @@ class MarketDataService:
         source = "partial_stale_cache" if saw_expired else "partial_cache"
         return list(matched.values()), source
 
-    def _get_stored_price_subset(
+    def _get_local_store_prices(
+        self,
+        *,
+        region: MarketRegion,
+        item_ids: list[str],
+        locations: list[str],
+        qualities: list[int],
+    ) -> list[MarketPriceRecord]:
+        if self.local_store is None:
+            return []
+        return self.local_store.get_prices(
+            region=region,
+            item_ids=item_ids,
+            locations=locations,
+            qualities=qualities,
+        )
+
+    def _get_price_store_prices(
         self,
         *,
         region: MarketRegion,
@@ -333,6 +360,50 @@ class MarketDataService:
             qualities=qualities,
         )
         return list(index.values())
+
+    def _get_remote_prices(
+        self,
+        *,
+        cache_key: str,
+        region: MarketRegion,
+        item_ids: list[str],
+        locations: list[str],
+        qualities: list[int],
+        ttl_seconds: float,
+        allow_stale: bool,
+        allow_cache: bool,
+        allow_live: bool,
+    ) -> tuple[list[MarketPriceRecord], str]:
+        if allow_cache:
+            cached = self._get_cached(cache_key, allow_stale=allow_stale)
+            if cached is not None:
+                payload_raw, source = cached
+                return [_to_price(x) for x in payload_raw if isinstance(x, dict)], source
+            partial_cached = self._get_cached_price_subset(
+                item_ids=item_ids,
+                locations=locations,
+                qualities=qualities,
+                allow_stale=allow_stale,
+            )
+            if partial_cached is not None:
+                rows, source = partial_cached
+                return rows, source
+
+        if not allow_live:
+            return [], "cache_miss"
+
+        rows = self.client.fetch_prices(
+            region=region,
+            item_ids=item_ids,
+            locations=locations,
+            qualities=qualities,
+        )
+        self._put_cached(
+            cache_key,
+            [x.__dict__ for x in rows],
+            ttl_seconds=ttl_seconds,
+        )
+        return rows, "live"
 
     def _put_cached(self, key: str, payload: list[object], *, ttl_seconds: float) -> None:
         if self.cache is None:
@@ -356,6 +427,124 @@ def _to_price(row: dict[str, object]) -> MarketPriceRecord:
         sell_price_min_date=str(row.get("sell_price_min_date") or ""),
         buy_price_max_date=str(row.get("buy_price_max_date") or ""),
     )
+
+
+def _merge_price_rows(
+    local_rows: list[MarketPriceRecord],
+    remote_rows: list[MarketPriceRecord],
+) -> list[MarketPriceRecord]:
+    merged: dict[tuple[str, str, int], MarketPriceRecord] = {}
+    for row in remote_rows:
+        merged[(row.item_id, row.city, row.quality)] = row
+    for row in local_rows:
+        key = (row.item_id, row.city, row.quality)
+        existing = merged.get(key)
+        merged[key] = row if existing is None else _merge_price_record(local=row, remote=existing)
+    return list(merged.values())
+
+
+def _merge_price_record(*, local: MarketPriceRecord, remote: MarketPriceRecord) -> MarketPriceRecord:
+    sell_price, sell_date = (
+        (local.sell_price_min, local.sell_price_min_date)
+        if _date_newer_or_equal(local.sell_price_min_date, remote.sell_price_min_date)
+        else (remote.sell_price_min, remote.sell_price_min_date)
+    )
+    if local.sell_price_min <= 0:
+        sell_price, sell_date = remote.sell_price_min, remote.sell_price_min_date
+    elif remote.sell_price_min <= 0:
+        sell_price, sell_date = local.sell_price_min, local.sell_price_min_date
+
+    buy_price, buy_date = (
+        (local.buy_price_max, local.buy_price_max_date)
+        if _date_newer_or_equal(local.buy_price_max_date, remote.buy_price_max_date)
+        else (remote.buy_price_max, remote.buy_price_max_date)
+    )
+    if local.buy_price_max <= 0:
+        buy_price, buy_date = remote.buy_price_max, remote.buy_price_max_date
+    elif remote.buy_price_max <= 0:
+        buy_price, buy_date = local.buy_price_max, local.buy_price_max_date
+
+    return MarketPriceRecord(
+        item_id=local.item_id,
+        city=local.city,
+        quality=local.quality,
+        sell_price_min=sell_price,
+        buy_price_max=buy_price,
+        sell_price_min_date=sell_date,
+        buy_price_max_date=buy_date,
+    )
+
+
+def _combined_source(
+    *,
+    local_source: str,
+    local_count: int,
+    remote_count: int,
+    remote_source: str,
+    remote_needed: bool,
+    allow_live: bool,
+) -> str:
+    if local_count and remote_count:
+        return f"{local_source}+{remote_source}"
+    if local_count:
+        return local_source
+    if remote_count:
+        return remote_source
+    if remote_needed and not allow_live:
+        return "cache_miss"
+    return remote_source if remote_source != "none" else "none"
+
+
+def _local_source(*, local_store_count: int, price_store_count: int) -> str:
+    if local_store_count and price_store_count:
+        return "local+local_db"
+    if local_store_count:
+        return "local"
+    if price_store_count:
+        return "local_db"
+    return "none"
+
+
+def _price_record_stale(row: MarketPriceRecord, *, max_age_seconds: float) -> bool:
+    if max_age_seconds <= 0:
+        return False
+    dates = [
+        parsed
+        for parsed in (
+            _parse_timestamp(row.sell_price_min_date),
+            _parse_timestamp(row.buy_price_max_date),
+        )
+        if parsed is not None
+    ]
+    latest = max(dates) if dates else None
+    if latest is None:
+        return True
+    return (datetime.now(timezone.utc) - latest).total_seconds() > max_age_seconds
+
+
+def _date_newer_or_equal(left: str, right: str) -> bool:
+    left_dt = _parse_timestamp(left)
+    right_dt = _parse_timestamp(right)
+    if left_dt is None:
+        return right_dt is None
+    if right_dt is None:
+        return True
+    return left_dt >= right_dt
+
+
+def _parse_timestamp(value: str) -> datetime | None:
+    text = str(value or "").strip()
+    if not text or text.startswith("0001-01-01"):
+        return None
+    try:
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def _to_chart(row: dict[str, object]) -> MarketChartPoint:

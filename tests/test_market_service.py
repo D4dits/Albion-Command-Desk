@@ -3,10 +3,12 @@ from __future__ import annotations
 import shutil
 import time
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 from albion_dps.market.aod_client import AODataClient
 from albion_dps.market.cache import SQLiteCache
+from albion_dps.market.local_store import LocalMarketStore
 from albion_dps.market.models import MarketRegion
 from albion_dps.market.price_store import LocalMarketPriceStore
 from albion_dps.market.service import MarketDataService
@@ -314,3 +316,103 @@ def test_service_uses_partial_price_cache_on_exact_key_miss() -> None:
     assert rows[0].city == "Thetford"
     assert rows[0].buy_price_max == 1000
     assert service.last_prices_meta.source == "partial_cache"
+
+
+def test_service_uses_fresh_local_prices_without_live_call() -> None:
+    call_count = {"value": 0}
+
+    def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):
+        _ = (url, timeout_seconds, user_agent)
+        call_count["value"] += 1
+        return []
+
+    tmp_dir = _make_local_tmp_dir()
+    try:
+        local_store = LocalMarketStore(tmp_dir / "local.sqlite3")
+        local_store.upsert_market_upload(
+            {
+                "Orders": [
+                    {
+                        "Id": 100,
+                        "ItemTypeId": "T4_MAIN_SWORD",
+                        "LocationId": "Caerleon",
+                        "QualityLevel": 1,
+                        "UnitPriceSilver": 1234,
+                        "Amount": 1,
+                        "AuctionType": "offer",
+                    }
+                ]
+            }
+        )
+        client = AODataClient(fetch_json=fake_fetch_json)
+        with SQLiteCache(tmp_dir / "cache.sqlite3") as cache:
+            service = MarketDataService(client=client, cache=cache, local_store=local_store)
+            rows = service.get_prices(
+                region=MarketRegion.EUROPE,
+                item_ids=["T4_MAIN_SWORD"],
+                locations=["Caerleon"],
+                qualities=[1],
+            )
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    assert call_count["value"] == 0
+    assert len(rows) == 1
+    assert rows[0].sell_price_min == 1234
+    assert service.last_prices_meta.source == "local"
+
+
+def test_service_merges_stale_local_with_live_fresher_record() -> None:
+    call_count = {"value": 0}
+
+    def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):
+        _ = (url, timeout_seconds, user_agent)
+        call_count["value"] += 1
+        return [
+            {
+                "item_id": "T4_MAIN_SWORD",
+                "city": "Caerleon",
+                "quality": 1,
+                "sell_price_min": 2000,
+                "buy_price_max": 1600,
+                "sell_price_min_date": "2026-05-22T11:00:00",
+                "buy_price_max_date": "2026-05-22T11:00:00",
+            }
+        ]
+
+    tmp_dir = _make_local_tmp_dir()
+    try:
+        local_store = LocalMarketStore(tmp_dir / "local.sqlite3")
+        local_store.upsert_market_upload(
+            {
+                "Orders": [
+                    {
+                        "Id": 101,
+                        "ItemTypeId": "T4_MAIN_SWORD",
+                        "LocationId": "Caerleon",
+                        "QualityLevel": 1,
+                        "UnitPriceSilver": 1200,
+                        "Amount": 1,
+                        "AuctionType": "offer",
+                    }
+                ]
+            },
+            observed_at=datetime(2020, 1, 1, 0, 0),
+        )
+        client = AODataClient(fetch_json=fake_fetch_json)
+        with SQLiteCache(tmp_dir / "cache.sqlite3") as cache:
+            service = MarketDataService(client=client, cache=cache, local_store=local_store)
+            rows = service.get_prices(
+                region=MarketRegion.EUROPE,
+                item_ids=["T4_MAIN_SWORD"],
+                locations=["Caerleon"],
+                qualities=[1],
+            )
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    assert call_count["value"] == 1
+    assert len(rows) == 1
+    assert rows[0].sell_price_min == 2000
+    assert rows[0].buy_price_max == 1600
+    assert service.last_prices_meta.source == "local+live"

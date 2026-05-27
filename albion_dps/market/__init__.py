@@ -8,6 +8,7 @@ from albion_dps.market.aod_client import (
 )
 from albion_dps.market.cache import CacheEntry, SQLiteCache
 from albion_dps.market.catalog import CatalogIssue, DEFAULT_RECIPES_PATH, RecipeCatalog
+from albion_dps.market.local_store import LocalMarketStats, LocalMarketStore
 from albion_dps.market.engine import (
     BatchCraftRequest,
     OutputValuation,
@@ -82,6 +83,8 @@ __all__ = [
     "ItemRef",
     "load_display_names",
     "LocalMarketPriceStore",
+    "LocalMarketStats",
+    "LocalMarketStore",
     "MarketChartPoint",
     "MarketDataService",
     "MarketFetchMeta",

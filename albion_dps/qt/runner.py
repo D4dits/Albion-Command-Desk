@@ -31,6 +31,8 @@ from albion_dps.domain import (
 )
 from albion_dps.domain.item_db import ensure_game_databases
 from albion_dps.domain.map_resolver import load_map_resolver
+from albion_dps.market.local_ingest import MarketWebSocketIngestor
+from albion_dps.market.local_store import LocalMarketStore
 from albion_dps.market.price_store import LocalMarketPriceStore
 from albion_dps.market.service import MarketDataService
 from albion_dps.meter.session_meter import SessionMeter
@@ -179,9 +181,16 @@ def run_qt(args: argparse.Namespace) -> int:
     market_cache_path.parent.mkdir(parents=True, exist_ok=True)
     market_price_store = LocalMarketPriceStore(Path("data") / "market_prices.sqlite3")
     market_price_store.clear_old_quotes()
+    local_market_store = LocalMarketStore(Path("data") / "local_market.sqlite3")
+    local_market_ingestor = MarketWebSocketIngestor(
+        store=local_market_store,
+        logger=logging.getLogger(__name__),
+    )
+    local_market_ingestor.start()
     market_service = MarketDataService.with_default_cache(
         cache_path=market_cache_path,
         price_store=market_price_store,
+        local_store=local_market_store,
     )
     market_ws_bridge = MarketScannerWebSocketBridge(
         store=market_price_store,
@@ -244,6 +253,7 @@ def run_qt(args: argparse.Namespace) -> int:
     timer.start()
     app.aboutToQuit.connect(market_ws_bridge.stop)
     app.aboutToQuit.connect(scanner_state.shutdown)
+    app.aboutToQuit.connect(local_market_ingestor.stop)
     app.aboutToQuit.connect(market_setup_state.close)
     app.aboutToQuit.connect(stop_event.set)
     app.exec()
