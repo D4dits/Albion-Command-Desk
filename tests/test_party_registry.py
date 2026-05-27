@@ -682,8 +682,27 @@ def test_party_registry_parses_subtype_230_flat_guid_roster(monkeypatch) -> None
     assert registry.snapshot_guids() == {_GUID_SELF, _GUID_PARTY}
 
 
-def test_party_registry_subtype_233_with_name_adds_member(monkeypatch) -> None:
+def test_party_registry_subtype_233_with_name_does_not_add_unknown_member(monkeypatch) -> None:
     registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(
+            parameters={252: 233, 1: list(_GUID_PARTY), 2: "SocialFur3"}
+        ),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_names() == set()
+    assert registry.snapshot_guids() == set()
+
+
+def test_party_registry_subtype_233_with_name_updates_existing_member(monkeypatch) -> None:
+    registry = PartyRegistry()
+    registry._add_party_member(_GUID_PARTY, "SocialFur3")
     message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
 
     monkeypatch.setattr(
@@ -716,8 +735,24 @@ def test_party_registry_current_on_cluster_joined_adds_flat_guid_roster(monkeypa
     assert registry.snapshot_guids() == {_GUID_SELF, _GUID_PARTY}
 
 
-def test_party_registry_current_role_flag_adds_party_guid(monkeypatch) -> None:
+def test_party_registry_current_role_flag_does_not_add_unknown_party_guid(monkeypatch) -> None:
     registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters={252: 244, 1: list(_GUID_PARTY)}),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_guids() == set()
+
+
+def test_party_registry_current_role_flag_keeps_existing_party_guid(monkeypatch) -> None:
+    registry = PartyRegistry()
+    registry._add_party_member(_GUID_PARTY, "SocialFur3")
     message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
 
     monkeypatch.setattr(

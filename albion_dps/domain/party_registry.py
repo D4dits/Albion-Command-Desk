@@ -171,7 +171,7 @@ class PartyRegistry:
             return
         if subtype == PARTY_CURRENT_SUBTYPE_SET_ROLE_FLAG:
             guid = _coerce_guid(event.parameters.get(1))
-            if guid is not None:
+            if guid is not None and guid in self._party_guids:
                 self._add_party_member(guid, None)
             return
         if subtype == PARTY_CURRENT_SUBTYPE_READY_CHECK_UPDATE:
@@ -184,7 +184,7 @@ class PartyRegistry:
             if guid is None:
                 return
             names = _coerce_names(event.parameters.get(2))
-            if names:
+            if names and guid in self._party_guids:
                 self._add_party_member(guid, names[0])
                 return
             name = self._party_guid_names.get(guid)
