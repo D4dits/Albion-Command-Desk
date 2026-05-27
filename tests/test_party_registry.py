@@ -484,7 +484,7 @@ def test_party_registry_rejects_player_name_fallback_when_only_self_id_is_known(
     assert not registry.allows(200, names)
 
 
-def test_party_registry_disallows_name_only_fallback_after_party_id_resolution() -> None:
+def test_party_registry_allows_party_name_after_entity_id_changes() -> None:
     registry = PartyRegistry()
     registry.seed_self_ids([100])
     registry.seed_names(["D4dits", "SocialFur3"])
@@ -494,7 +494,7 @@ def test_party_registry_disallows_name_only_fallback_after_party_id_resolution()
     names.record(300, "SocialFur3")
 
     assert registry.allows(200, names)
-    assert not registry.allows(300, names)
+    assert registry.allows(300, names)
 
 
 def test_party_registry_allows_unresolved_party_name_after_partial_id_resolution() -> None:
@@ -521,7 +521,7 @@ def test_party_registry_maps_recent_local_party_name_before_combat_seen() -> Non
     assert 200 in registry.snapshot_ids()
 
 
-def test_party_registry_disallows_non_local_party_id_once_local_party_is_observed() -> None:
+def test_party_registry_allows_named_party_id_without_recent_local_observation() -> None:
     registry = PartyRegistry()
     registry.seed_self_ids([100])
     registry.seed_names(["D4dits", "SocialFur3", "SocialFur4"])
@@ -532,7 +532,7 @@ def test_party_registry_disallows_non_local_party_id_once_local_party_is_observe
     names.record(300, "SocialFur4")
 
     assert registry.allows(200, names, timestamp=105.0)
-    assert not registry.allows(300, names, timestamp=105.0)
+    assert registry.allows(300, names, timestamp=105.0)
 
 
 def test_party_registry_keeps_bootstrap_permissive_until_non_self_local_party_exists() -> None:

@@ -647,6 +647,18 @@ def _allowed_display_names_for_snapshot(
         return allowed_names
 
     active_ids = set(snapshot.totals.keys())
+    party_names = {
+        name
+        for name in party.snapshot_names()
+        if isinstance(name, str) and name
+    }
+    active_party_names = {
+        name
+        for entity_id in active_ids
+        for name in (names.get(entity_id), name_registry.lookup(entity_id) if name_registry is not None else None)
+        if isinstance(name, str) and name in party_names
+    }
+    allowed_names.update(active_party_names)
     recent_local_ids: set[int] = set()
     if name_registry is not None:
         recent_local_ids = name_registry.snapshot_recent_ids(

@@ -170,6 +170,34 @@ def test_allowed_display_names_keeps_active_party_member_without_recent_local_ev
     assert allowed == {"D4dits", "SocialFur3", "SocialFur4"}
 
 
+def test_allowed_display_names_keeps_active_party_name_after_entity_id_changes() -> None:
+    party = PartyRegistry()
+    party.seed_self_ids([100])
+    party.seed_names(["D4dits", "SocialFur3"])
+    party.seed_ids([200])
+    names = NameRegistry()
+    names.record(100, "D4dits")
+    names.record(200, "SocialFur3")
+    names.record(450, "SocialFur3")
+    snapshot = MeterSnapshot(
+        timestamp=180.0,
+        totals={
+            100: {"damage": 50.0},
+            450: {"damage": 125.0},
+        },
+        names={100: "D4dits", 450: "SocialFur3"},
+    )
+
+    allowed = _allowed_display_names_for_snapshot(
+        snapshot=snapshot,
+        names=snapshot.names or {},
+        party=party,
+        name_registry=names,
+    )
+
+    assert allowed == {"D4dits", "SocialFur3"}
+
+
 def test_session_silver_uses_personal_loot_not_party_total() -> None:
     fame = FameTracker()
     loot_tracker = SimpleNamespace(

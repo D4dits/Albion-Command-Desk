@@ -25,6 +25,7 @@ COMBAT_STATE_SUBTYPE_VALUES = {257, 274}
 COMBAT_STATE_ID_KEY = 0
 COMBAT_STATE_ACTIVE_KEY = 1
 COMBAT_STATE_PASSIVE_KEY = 2
+COMBAT_STATE_LOCAL_VISIBILITY_SECONDS = 120.0
 
 
 def replay_snapshots(
@@ -302,7 +303,28 @@ def _allow_combat_state(
 ) -> bool:
     if party_registry is None:
         return True
-    return party_registry.allows(entity_id, name_registry, timestamp=timestamp)
+    if not party_registry.allows(entity_id, name_registry, timestamp=timestamp):
+        return False
+    if name_registry is None or timestamp is None:
+        return True
+    self_ids = party_registry.snapshot_self_ids()
+    if entity_id in self_ids:
+        return True
+    party_ids = party_registry.snapshot_ids()
+    non_self_party_ids = party_ids.difference(self_ids)
+    if entity_id not in non_self_party_ids:
+        return True
+    party_names = party_registry.snapshot_names()
+    name = name_registry.lookup(entity_id)
+    if not party_names or name not in party_names:
+        return True
+    recent_local_ids = name_registry.snapshot_recent_ids(
+        timestamp,
+        COMBAT_STATE_LOCAL_VISIBILITY_SECONDS,
+    )
+    if not recent_local_ids.intersection(non_self_party_ids):
+        return True
+    return entity_id in recent_local_ids
 
 
 def _should_keep_pending_event(
