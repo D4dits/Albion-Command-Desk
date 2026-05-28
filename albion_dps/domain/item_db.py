@@ -48,14 +48,20 @@ def ensure_game_databases(*, logger, interactive: bool = True) -> bool:
     has_items = _has_indexed_items()
     has_catalog = _has_items_catalog()
     has_maps = _has_map_index()
+    game_root = _resolve_game_root(logger)
     if has_items and has_catalog and has_maps:
-        return True
+        if game_root is None or not _databases_stale(game_root):
+            return True
+        logger.info("Local game databases are older than Albion game data; rebuilding.")
+        return _run_extractor(game_root, logger=logger)
+
     if not interactive:
+        if game_root is not None and not os.environ.get(PROMPT_DISABLE_ENV):
+            return _run_extractor(game_root, logger=logger)
         return False
     if os.environ.get(PROMPT_DISABLE_ENV):
         return False
 
-    game_root = _resolve_game_root(logger)
     if game_root is None:
         game_root = _prompt_game_root(logger)
         if game_root is None:
@@ -77,7 +83,6 @@ def get_game_database_health(*, logger=None) -> dict[str, str | bool]:
     has_items = _has_indexed_items()
     has_catalog = _has_items_catalog()
     has_maps = _has_map_index()
-    ready = has_items and has_catalog and has_maps
 
     missing: list[str] = []
     if not has_items:
@@ -90,10 +95,16 @@ def get_game_database_health(*, logger=None) -> dict[str, str | bool]:
     logger_obj = logger or _NullLogger()
     resolved_root = _resolve_game_root(logger_obj)
     root_text = str(resolved_root) if resolved_root is not None else ""
+    stale = bool(resolved_root is not None and has_items and has_catalog and has_maps and _databases_stale(resolved_root))
+    ready = has_items and has_catalog and has_maps and not stale
 
     if ready:
         detail = "All local game databases are present."
         hint = "No action required."
+        action_label = "Rebuild data"
+    elif stale:
+        detail = "Local game databases are older than the Albion game files."
+        hint = "Rebuild data to refresh item, enchantment, and map indexes."
         action_label = "Rebuild data"
     else:
         detail = "Missing local game databases: " + ", ".join(missing)
@@ -143,6 +154,23 @@ def _has_items_catalog() -> bool:
     env_val = os.environ.get("ALBION_DPS_ITEMS_JSON")
     if env_val and Path(env_val).exists():
         return True
+    return False
+
+
+def _databases_stale(game_root: Path) -> bool:
+    game_folder = _resolve_game_folder(game_root)
+    if game_folder is None:
+        return False
+    source_files = [
+        game_folder / "Albion-Online_Data" / "StreamingAssets" / "GameData" / "items.bin",
+        game_folder / "Albion-Online_Data" / "StreamingAssets" / "GameData" / "localization.bin",
+    ]
+    source_mtime = max((path.stat().st_mtime for path in source_files if path.exists()), default=0.0)
+    if source_mtime <= 0:
+        return False
+    for path in (DATA_DIR / "indexedItems.json", DATA_DIR / "items.json", DATA_DIR / "map_index.json"):
+        if not path.exists() or path.stat().st_mtime < source_mtime:
+            return True
     return False
 
 
