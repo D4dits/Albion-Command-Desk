@@ -53,10 +53,11 @@ It is isolated from DPS parsing/aggregation logic.
 - Alias matching does not fall back from enchanted materials to plain tier materials. `T6_METALBAR_LEVEL2` must not use `T6_METALBAR` as a silent substitute.
 
 ## Freshness and ranking rules
-- `price_age_text` uses the timestamp for the selected mode:
+- `price_age_text` uses the app-observed price timestamp for the selected mode:
   - input `sell_order` rows use `sell_price_min_date`,
   - input `buy_order` rows use `buy_price_max_date`,
   - average/other modes use the newest valid buy/sell timestamp.
+- Live AO Data price rows are stamped with the application's fetch time before cache/local-db storage, so the UI shows refresh freshness rather than an old upstream order timestamp.
 - AO Data zero dates such as `0001-01-01T00:00:00` are treated as missing and render as `n/a`.
 - Craft rows missing fresh component prices are not ranked as profitable candidates.
 - The `Hide missing ADP prices` option filters affected rows from setup/inputs/outputs/results preview tables.

@@ -7,6 +7,9 @@ and this project uses semantic versioning.
 
 ## [Unreleased]
 
+### Fixed
+- Market AO Data refresh now records live price rows with the application's fetch time before caching/storing them, so refreshed prices no longer stay red just because AO Data returned an old order timestamp.
+
 ## [0.1.26] - 2026-05-18
 
 ### Added

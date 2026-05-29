@@ -28,6 +28,8 @@ Typical cause:
 - price is `0` (no order on market)
 - API row has zero date (`0001-01-01...`)
 
+When live AO Data returns a valid price, the Market tab stores that row with the application's fetch time. After a successful `Refresh prices`, valid rows should therefore move back to a fresh age instead of staying red because the upstream order timestamp was old.
+
 For enchanted refined materials such as `Metal Bar T6.2` or `Planks T6.2`, AO Data can expose the real market row under an alias:
 - recipe/component id: `T6_METALBAR_LEVEL2`
 - live AO Data price id: `T6_METALBAR_LEVEL2@2`

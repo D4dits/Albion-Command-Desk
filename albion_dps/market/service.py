@@ -398,6 +398,7 @@ class MarketDataService:
             locations=locations,
             qualities=qualities,
         )
+        rows = _mark_live_price_rows_observed(rows)
         self._put_cached(
             cache_key,
             [x.__dict__ for x in rows],
@@ -473,6 +474,26 @@ def _merge_price_record(*, local: MarketPriceRecord, remote: MarketPriceRecord) 
         sell_price_min_date=sell_date,
         buy_price_max_date=buy_date,
     )
+
+
+def _mark_live_price_rows_observed(rows: list[MarketPriceRecord]) -> list[MarketPriceRecord]:
+    if not rows:
+        return []
+    observed_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    out: list[MarketPriceRecord] = []
+    for row in rows:
+        out.append(
+            MarketPriceRecord(
+                item_id=row.item_id,
+                city=row.city,
+                quality=row.quality,
+                sell_price_min=row.sell_price_min,
+                buy_price_max=row.buy_price_max,
+                sell_price_min_date=observed_at if int(row.sell_price_min or 0) > 0 else "",
+                buy_price_max_date=observed_at if int(row.buy_price_max or 0) > 0 else "",
+            )
+        )
+    return out
 
 
 def _combined_source(

@@ -3,7 +3,7 @@ from __future__ import annotations
 import shutil
 import time
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from albion_dps.market.aod_client import AODataClient
@@ -151,6 +151,52 @@ def test_service_allow_cache_false_forces_live_refresh() -> None:
     assert first[0].sell_price_min != second[0].sell_price_min
     assert call_count["value"] == 2
     assert service.last_prices_meta.source == "live"
+
+
+def test_service_live_prices_use_fetch_time_for_display_age() -> None:
+    def fake_fetch_json(url: str, timeout_seconds: float, user_agent: str):
+        _ = (url, timeout_seconds, user_agent)
+        return [
+            {
+                "item_id": "T4_MAIN_SWORD",
+                "city": "Bridgewatch",
+                "quality": 1,
+                "sell_price_min": 1200,
+                "buy_price_max": 1000,
+                "sell_price_min_date": "2026-01-01T00:00:00",
+                "buy_price_max_date": "2026-01-01T00:00:00",
+            }
+        ]
+
+    tmp_dir = _make_local_tmp_dir()
+    before = datetime.now(timezone.utc)
+    try:
+        client = AODataClient(fetch_json=fake_fetch_json)
+        store = LocalMarketPriceStore(tmp_dir / "prices.sqlite3")
+        with SQLiteCache(tmp_dir / "cache.sqlite3") as cache:
+            service = MarketDataService(client=client, cache=cache, price_store=store)
+            rows = service.get_prices(
+                region=MarketRegion.EUROPE,
+                item_ids=["T4_MAIN_SWORD"],
+                locations=["Bridgewatch"],
+            )
+            cached_rows = service.get_prices(
+                region=MarketRegion.EUROPE,
+                item_ids=["T4_MAIN_SWORD"],
+                locations=["Bridgewatch"],
+            )
+            service.close()
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    assert len(rows) == 1
+    assert len(cached_rows) == 1
+    sell_dt = datetime.fromisoformat(rows[0].sell_price_min_date)
+    buy_dt = datetime.fromisoformat(rows[0].buy_price_max_date)
+    assert sell_dt >= before - timedelta(seconds=1)
+    assert buy_dt >= before - timedelta(seconds=1)
+    assert cached_rows[0].sell_price_min_date == rows[0].sell_price_min_date
+    assert service.last_prices_meta.source == "local_db"
 
 
 def test_service_charts_cache_and_stale_behavior() -> None:
