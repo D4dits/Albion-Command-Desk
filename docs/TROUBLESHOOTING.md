@@ -202,7 +202,7 @@ The default is intended to keep only the latest few logs and remove older genera
 ## Cross-platform setup pitfalls (Windows/Linux/macOS)
 Common issues when running on a different OS or machine:
 
-- **.NET SDK version (extractor):** the item/map extractor targets .NET 10. Make sure `dotnet --info` shows SDK `10.x`.
+- **.NET SDK version (extractor):** the item/map extractor targets .NET 8 LTS. Make sure `dotnet --info` shows SDK `8.x` or newer.
 - **`dotnet` on PATH:** if multiple SDKs exist (system vs user), ensure `DOTNET_ROOT` and `PATH` point to the SDK you want.
 - **NuGet restore blocked:** extractor build needs access to `https://api.nuget.org`. If you're offline or blocked, restore/build will fail.
 - **Permissions on build/artifacts:** if `tools/extract_items/obj` or `artifacts/` were created as root, `dotnet` may fail to write. Fix with:
@@ -289,4 +289,3 @@ This usually means Qt's DLLs are not found:
   - Windows: `%APPDATA%\\AlbionCommandDesk\\settings.json`
   - macOS: `~/Library/Application Support/AlbionCommandDesk/settings.json`
   - Linux: `~/.config/albion-command-desk/settings.json`
-

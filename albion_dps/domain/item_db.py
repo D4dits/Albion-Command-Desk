@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -28,6 +30,7 @@ DEFAULT_MAP_INDEX_PATHS = (
     Path("data/map_index.json"),
     Path("map_index.json"),
 )
+MIN_EXTRACTOR_DOTNET_SDK_MAJOR = 8
 
 
 class _NullLogger:
@@ -322,6 +325,10 @@ def _run_extractor(game_root: Path, *, logger) -> bool:
     if resolved_root is None:
         logger.error("Invalid game root: %s", game_root)
         return False
+    dotnet_ok, dotnet_detail = _dotnet_sdk_supported(min_major=MIN_EXTRACTOR_DOTNET_SDK_MAJOR)
+    if not dotnet_ok:
+        logger.error("Cannot rebuild local game databases: %s", dotnet_detail)
+        return False
     env = os.environ.copy()
     env["DOTNET_CLI_HOME"] = str(repo_root / "artifacts" / "dotnet")
     env["DOTNET_CLI_UI_LANGUAGE"] = "en"
@@ -365,3 +372,42 @@ def _run_extractor(game_root: Path, *, logger) -> bool:
         logger.error("Extractor failed with code %s", result.returncode)
         return False
     return _has_indexed_items() and _has_items_catalog() and _has_map_index()
+
+
+def _dotnet_sdk_supported(*, min_major: int) -> tuple[bool, str]:
+    dotnet = shutil.which("dotnet")
+    if not dotnet:
+        return False, f".NET SDK {min_major}.0 or newer is required, but dotnet is not available in PATH."
+    try:
+        result = subprocess.run(
+            [dotnet, "--list-sdks"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=10,
+            check=False,
+        )
+    except Exception as exc:
+        return False, f"failed to inspect .NET SDKs: {exc}"
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        return False, f"failed to inspect .NET SDKs: {detail or 'unknown dotnet error'}"
+    majors = _dotnet_sdk_major_versions(result.stdout or "")
+    if any(major >= int(min_major) for major in majors):
+        return True, ""
+    found = ", ".join(str(major) for major in sorted(majors)) or "none"
+    return False, f".NET SDK {min_major}.0 or newer is required; installed SDK major versions: {found}."
+
+
+def _dotnet_sdk_major_versions(output: str) -> set[int]:
+    majors: set[int] = set()
+    for line in str(output or "").splitlines():
+        match = re.match(r"\s*(\d+)\.", line)
+        if match is None:
+            continue
+        try:
+            majors.add(int(match.group(1)))
+        except ValueError:
+            continue
+    return majors
