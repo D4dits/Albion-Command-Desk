@@ -27,6 +27,25 @@ def test_build_player_rows_respects_allowed_player_names() -> None:
     assert [row.name for row in rows] == ["D4dits"]
 
 
+def test_build_player_rows_adds_zero_rows_for_allowed_party_names() -> None:
+    totals = {
+        101: {"damage": 1000.0, "heal": 0.0, "dps": 50.0, "hps": 0.0},
+    }
+    names = {101: "D4dits"}
+
+    rows = _build_player_rows(
+        totals,
+        names=names,
+        sort_key="dps",
+        top_n=10,
+        allowed_player_names={"D4dits", "PartyOne", "PartyTwo"},
+    )
+
+    assert [row.name for row in rows] == ["D4dits", "PartyOne", "PartyTwo"]
+    assert rows[1].damage == 0
+    assert rows[2].dps == 0
+
+
 def test_is_player_label_rejects_mob_prefix_without_at() -> None:
     assert not _is_player_label("MOB_MORGANA_CULTIST")
     assert not _is_player_label("NPC_VENDOR")

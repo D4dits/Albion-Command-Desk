@@ -866,6 +866,26 @@ def _build_player_rows(
                 weapon_icon=weapon_icon,
             )
         )
+    if allowed_player_names is not None:
+        existing_labels = {row.name for row in rows}
+        for label in sorted(allowed_player_names, key=str.lower):
+            if label in existing_labels or not _is_player_label(label):
+                continue
+            rows.append(
+                PlayerRow(
+                    name=label,
+                    damage=0.0,
+                    heal=0.0,
+                    dps=0.0,
+                    hps=0.0,
+                    bar_ratio=0.0,
+                    role="",
+                    color=_color_for_label(label, None),
+                    weapon_name="",
+                    weapon_tier="",
+                    weapon_icon="",
+                )
+            )
     rows = _collapse_player_rows(rows)
     rows.sort(key=lambda item: _metric_value(item, metric), reverse=True)
     rows = rows[: max(top_n, 1)]

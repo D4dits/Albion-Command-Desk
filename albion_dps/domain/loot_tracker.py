@@ -407,7 +407,13 @@ class LootTracker:
         quantity = parameters.get(5)
         if not isinstance(looted_by_name, str) or not looted_by_name:
             return
-        if not self._allows_loot_player_name(looted_by_name):
+        allow_pending_party_loot = (
+            trusted_party_member
+            and self.party_registry is not None
+            and not self.party_registry.snapshot_names()
+            and not self.party_registry.self_name()
+        )
+        if not allow_pending_party_loot and not self._allows_loot_player_name(looted_by_name):
             return
         if not isinstance(quantity, int) or quantity <= 0:
             return
