@@ -277,7 +277,7 @@ def test_loot_tracker_accepts_trusted_party_loot_before_roster_is_known(monkeypa
     assert tracker.silver_total() == 1500
 
 
-def test_loot_tracker_seeds_multiple_pending_party_looters(monkeypatch) -> None:
+def test_loot_tracker_keeps_pending_party_looters_out_of_meter_roster(monkeypatch) -> None:
     party = PartyRegistry()
     tracker = LootTracker(
         party_registry=party,
@@ -304,7 +304,7 @@ def test_loot_tracker_seeds_multiple_pending_party_looters(monkeypatch) -> None:
         "PartyOne",
         "PartyTwo",
     }
-    assert party.snapshot_names() == {"PartyOne", "PartyTwo"}
+    assert party.snapshot_names() == set()
 
 
 def test_loot_tracker_accepts_loot_from_party_player(monkeypatch) -> None:

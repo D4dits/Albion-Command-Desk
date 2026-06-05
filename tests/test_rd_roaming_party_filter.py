@@ -15,8 +15,8 @@ from albion_dps.qt.models import _build_player_rows
 from albion_dps.qt.runner import _allowed_display_names_for_snapshot
 
 
-def test_full_wb_keeps_party_loot_and_party_meter_rows() -> None:
-    pcap_path = Path("full_WB..pcap")
+def test_rd_roaming_does_not_show_nearby_looters_before_party_resolves() -> None:
+    pcap_path = Path("rd__roaming.pcap")
     if not pcap_path.exists():
         pytest.skip(f"Missing PCAP fixture: {pcap_path}")
 
@@ -27,7 +27,10 @@ def test_full_wb_keeps_party_loot_and_party_meter_rows() -> None:
     decoder = PhotonDecoder(registry=default_registry())
     mapper = CombatEventMapper(clamp_overkill=True)
 
-    for packet in replay_pcap(pcap_path):
+    rows_before_self: list[str] = []
+    rows_after_roster: set[str] = set()
+
+    for packet_count, packet in enumerate(replay_pcap(pcap_path), start=1):
         party.observe_packet(packet)
         messages = decoder.decode_all(packet)
         for message in messages:
@@ -53,31 +56,47 @@ def test_full_wb_keeps_party_loot_and_party_meter_rows() -> None:
                     meter.push(item)
         party.sync_names(names, timestamp=packet.timestamp)
 
-    assert not any("@" in name for name in party.snapshot_names())
-    assert not any("-" in name and len(name) == 36 for name in party.snapshot_names())
-    assert {"D4dits", "TangaDeSeda", "sugerdaddy", "kenAce1"}.issubset(
-        party.snapshot_names()
-    )
-    loot_events = loot.events(limit=5000)
-    assert len(loot_events) >= 490
-    assert sum(1 for event in loot_events if not event.is_silver) > 100
-    assert {"D4dits", "TangaDeSeda", "kenAce1"}.issubset(
-        {event.looted_by.player_name for event in loot_events}
-    )
+        if packet_count == 10_000:
+            snapshot = meter.snapshot()
+            allowed_names = _allowed_display_names_for_snapshot(
+                snapshot=snapshot,
+                names=names.snapshot(),
+                party=party,
+                name_registry=names,
+            )
+            rows_before_self = [
+                row.name
+                for row in _build_player_rows(
+                    snapshot.totals,
+                    names=names.snapshot(),
+                    sort_key="dps",
+                    top_n=30,
+                    allowed_player_names=allowed_names,
+                )
+            ]
+        if packet_count == 100_000:
+            snapshot = meter.snapshot()
+            allowed_names = _allowed_display_names_for_snapshot(
+                snapshot=snapshot,
+                names=names.snapshot(),
+                party=party,
+                name_registry=names,
+            )
+            rows_after_roster = {
+                row.name
+                for row in _build_player_rows(
+                    snapshot.totals,
+                    names=names.snapshot(),
+                    sort_key="dps",
+                    top_n=30,
+                    allowed_player_names=allowed_names,
+                )
+            }
+            break
 
-    snapshot = meter.snapshot()
-    allowed_display_names = _allowed_display_names_for_snapshot(
-        snapshot=snapshot,
-        names=names.snapshot(),
-        party=party,
-        name_registry=names,
-    )
-    rows = _build_player_rows(
-        snapshot.totals,
-        names=names.snapshot(),
-        sort_key="dps",
-        top_n=50,
-        allowed_player_names=allowed_display_names or None,
-    )
-    row_names = {row.name for row in rows}
-    assert {"D4dits", "TangaDeSeda", "kenAce1"}.issubset(row_names)
+    assert rows_before_self == []
+    assert party.self_name() == "D4dits"
+    assert "D4dits" in rows_after_roster
+    assert "Selling opium" not in party.snapshot_names()
+    assert "The Highlanders Tavern" not in party.snapshot_names()
+    assert not any(" " in name for name in party.snapshot_names())

@@ -55,7 +55,9 @@ class LootTracker:
     _containers_by_id: dict[int, LootContainer] = field(default_factory=dict)
     _containers_by_uuid: dict[str, LootContainer] = field(default_factory=dict)
     _events: list[LootEvent] = field(default_factory=list)
-    _trusted_party_loot_names: set[str] = field(default_factory=set)
+    _pending_party_loot_names: set[str] = field(default_factory=set)
+    _pending_party_loot_keys_by_name: dict[str, set[int]] = field(default_factory=dict)
+    _self_party_loot_keys: dict[int, float] = field(default_factory=dict)
 
     def observe(self, message: PhotonMessage, packet: RawPacket | None = None) -> None:
         if message.event_code is None:
@@ -158,7 +160,9 @@ class LootTracker:
         self._containers_by_id.clear()
         self._containers_by_uuid.clear()
         self._events.clear()
-        self._trusted_party_loot_names.clear()
+        self._pending_party_loot_names.clear()
+        self._pending_party_loot_keys_by_name.clear()
+        self._self_party_loot_keys.clear()
 
     def _observe_new_character(self, parameters: dict[int, object]) -> None:
         player_name = parameters.get(1)
@@ -409,8 +413,11 @@ class LootTracker:
         quantity = parameters.get(5)
         if not isinstance(looted_by_name, str) or not looted_by_name:
             return
+        self._prune_pending_party_loot_events()
         allow_pending_party_loot = self._accepts_pending_party_loot(
             looted_by_name,
+            loot_key=parameters.get(0),
+            timestamp=timestamp,
             trusted_party_member=trusted_party_member,
         )
         if not allow_pending_party_loot and not self._allows_loot_player_name(looted_by_name):
@@ -463,6 +470,7 @@ class LootTracker:
         )
         if len(self._events) > self.history_limit:
             self._events = self._events[-self.history_limit :]
+        self._prune_pending_party_loot_events()
 
     def _allows_loot_player_name(self, player_name: str) -> bool:
         if self.party_registry is None:
@@ -479,18 +487,79 @@ class LootTracker:
         self,
         player_name: str,
         *,
+        loot_key: object,
+        timestamp: float,
         trusted_party_member: bool,
     ) -> bool:
         if not trusted_party_member or self.party_registry is None:
             return False
-        if self.party_registry.self_name():
+        self_name = self.party_registry.self_name()
+        if self_name:
+            key = loot_key if isinstance(loot_key, int) and loot_key > 0 else None
+            self._prune_self_party_loot_keys(timestamp)
+            if player_name == self_name:
+                if key is not None:
+                    self._self_party_loot_keys[key] = float(timestamp)
+                return True
+            if key is not None and key in self._self_party_loot_keys:
+                self.party_registry.seed_names([player_name])
+                return True
             return False
         party_names = self.party_registry.snapshot_names()
-        if party_names and not party_names.issubset(self._trusted_party_loot_names):
+        if party_names:
             return False
-        self._trusted_party_loot_names.add(player_name)
-        self.party_registry.seed_names([player_name])
+        self._pending_party_loot_names.add(player_name)
+        if isinstance(loot_key, int) and loot_key > 0:
+            self._pending_party_loot_keys_by_name.setdefault(player_name, set()).add(loot_key)
         return True
+
+    def _prune_self_party_loot_keys(self, timestamp: float) -> None:
+        cutoff = float(timestamp) - 15.0
+        for key, seen_ts in list(self._self_party_loot_keys.items()):
+            if seen_ts < cutoff:
+                self._self_party_loot_keys.pop(key, None)
+
+    def _prune_pending_party_loot_events(self) -> None:
+        if self.party_registry is None or not self._pending_party_loot_names:
+            return
+        if not self.party_registry.self_name() and not self.party_registry.snapshot_names():
+            return
+        self._promote_pending_party_loot_from_self_keys()
+
+        allowed_pending_names: set[str] = set()
+        pruned_events: list[LootEvent] = []
+        for event in self._events:
+            player_name = event.looted_by.player_name
+            if player_name not in self._pending_party_loot_names:
+                pruned_events.append(event)
+                continue
+            if self._allows_loot_player_name(player_name):
+                allowed_pending_names.add(player_name)
+                pruned_events.append(event)
+        self._events = pruned_events
+        self._pending_party_loot_names.intersection_update(allowed_pending_names)
+        self._pending_party_loot_keys_by_name = {
+            name: keys
+            for name, keys in self._pending_party_loot_keys_by_name.items()
+            if name in self._pending_party_loot_names
+        }
+
+    def _promote_pending_party_loot_from_self_keys(self) -> None:
+        if self.party_registry is None:
+            return
+        self_name = self.party_registry.self_name()
+        if not self_name:
+            return
+        self_keys = self._pending_party_loot_keys_by_name.get(self_name)
+        if not self_keys:
+            return
+        promoted_names = [
+            name
+            for name, keys in self._pending_party_loot_keys_by_name.items()
+            if keys.intersection(self_keys)
+        ]
+        if promoted_names:
+            self.party_registry.seed_names(promoted_names)
 
     def silver_total(self) -> int:
         return sum(int(event.quantity) for event in self._events if event.is_silver)

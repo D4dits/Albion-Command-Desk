@@ -15,8 +15,8 @@ from albion_dps.qt.models import _build_player_rows
 from albion_dps.qt.runner import _allowed_display_names_for_snapshot
 
 
-def test_full_wb_keeps_party_loot_and_party_meter_rows() -> None:
-    pcap_path = Path("full_WB..pcap")
+def test_rz_chects_keeps_party_before_self_is_confirmed() -> None:
+    pcap_path = Path("rz_chects.pcap")
     if not pcap_path.exists():
         pytest.skip(f"Missing PCAP fixture: {pcap_path}")
 
@@ -26,6 +26,9 @@ def test_full_wb_keeps_party_loot_and_party_meter_rows() -> None:
     meter = SessionMeter(mode="battle", history_limit=100, name_lookup=names.lookup)
     decoder = PhotonDecoder(registry=default_registry())
     mapper = CombatEventMapper(clamp_overkill=True)
+
+    false_self_names: list[str] = []
+    allowed_names_seen: set[str] = set()
 
     for packet in replay_pcap(pcap_path):
         party.observe_packet(packet)
@@ -41,6 +44,8 @@ def test_full_wb_keeps_party_loot_and_party_meter_rows() -> None:
             party.sync_id_names(names)
             loot.observe(message, packet)
             meter.observe_message(message, packet)
+        if party.self_name() not in (None, "D4dits"):
+            false_self_names.append(str(party.self_name()))
         for message in messages:
             event = mapper.map(message, packet)
             if event is None:
@@ -49,19 +54,26 @@ def test_full_wb_keeps_party_loot_and_party_meter_rows() -> None:
                 if party.strict and not party.has_ids():
                     party.observe_combat_event(item, names)
                     party.try_resolve_self_id(names)
+                name = names.lookup(item.source_id)
                 if _allow_event(item, party, names):
+                    if name:
+                        allowed_names_seen.add(name)
                     meter.push(item)
         party.sync_names(names, timestamp=packet.timestamp)
 
-    assert not any("@" in name for name in party.snapshot_names())
-    assert not any("-" in name and len(name) == 36 for name in party.snapshot_names())
-    assert {"D4dits", "TangaDeSeda", "sugerdaddy", "kenAce1"}.issubset(
+    assert false_self_names == []
+    assert party.self_name() == "D4dits"
+    assert names.lookup(next(iter(party.snapshot_self_ids()))) == "D4dits"
+    assert {"D4dits", "FiressnakeTH", "AthenaLarc", "PalacinkaNutela"}.issubset(
         party.snapshot_names()
     )
+    assert {"AthenaLarc", "FiressnakeTH", "PalacinkaNutela"}.issubset(
+        allowed_names_seen
+    )
+
     loot_events = loot.events(limit=5000)
-    assert len(loot_events) >= 490
-    assert sum(1 for event in loot_events if not event.is_silver) > 100
-    assert {"D4dits", "TangaDeSeda", "kenAce1"}.issubset(
+    assert len(loot_events) >= 100
+    assert {"D4dits", "FiressnakeTH", "Lozetobg"}.issubset(
         {event.looted_by.player_name for event in loot_events}
     )
 
@@ -76,8 +88,8 @@ def test_full_wb_keeps_party_loot_and_party_meter_rows() -> None:
         snapshot.totals,
         names=names.snapshot(),
         sort_key="dps",
-        top_n=50,
+        top_n=80,
         allowed_player_names=allowed_display_names or None,
     )
     row_names = {row.name for row in rows}
-    assert {"D4dits", "TangaDeSeda", "kenAce1"}.issubset(row_names)
+    assert {"D4dits", "FiressnakeTH", "PalacinkaNutela"}.issubset(row_names)

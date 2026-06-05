@@ -51,7 +51,7 @@ def test_allowed_display_names_filters_nonlocal_party_ids_after_resolution() -> 
     assert allowed == {"D4dits"}
 
 
-def test_allowed_display_names_keeps_self_id_label_when_name_unresolved() -> None:
+def test_allowed_display_names_hides_unconfirmed_self_id_when_name_unresolved() -> None:
     party = PartyRegistry()
     party.seed_self_ids([744616])
     snapshot = MeterSnapshot(timestamp=50.0, totals={744616: {"damage": 267.0}}, names={})
@@ -63,7 +63,7 @@ def test_allowed_display_names_keeps_self_id_label_when_name_unresolved() -> Non
         name_registry=None,
     )
 
-    assert allowed == {"744616"}
+    assert allowed == set()
 
 
 def test_allowed_display_names_keeps_self_when_roster_is_unresolved_after_self_id() -> None:

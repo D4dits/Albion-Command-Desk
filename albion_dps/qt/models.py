@@ -597,7 +597,7 @@ class UiState(QObject):
         self._last_history = list(history)
         self._allowed_player_names = (
             {name for name in allowed_player_names if isinstance(name, str) and name}
-            if allowed_player_names
+            if allowed_player_names is not None
             else None
         )
         self._set_mode(mode)

@@ -67,6 +67,20 @@ def test_party_registry_rejects_uuid_and_at_labels_as_player_names() -> None:
     assert registry.snapshot_names() == {"D4dits"}
 
 
+def test_party_registry_discards_self_candidate_that_resolves_to_party_member() -> None:
+    registry = PartyRegistry()
+    names = NameRegistry()
+    registry.seed_self_ids([101])
+    registry.seed_names(["PartyOne", "D4dits"])
+    names.record(101, "PartyOne")
+
+    registry.sync_self_name(names)
+
+    assert registry.self_name() is None
+    assert registry.snapshot_self_ids() == set()
+    assert 101 not in registry.snapshot_ids()
+
+
 def test_party_registry_detects_self_subtype_238() -> None:
     registry = PartyRegistry()
     message = PhotonMessage(opcode=1, event_code=1, payload=bytes.fromhex(_SELF_238_PAYLOAD_HEX))
@@ -638,6 +652,28 @@ def test_party_registry_fallback_parses_unknown_name_only_roster_subtype(monkeyp
     registry.observe(message)
 
     assert registry.snapshot_names() == {"D4dits", "SocialFur3", "SocialFur4"}
+
+
+def test_party_registry_parses_subtype_229_names_from_roster_field(monkeypatch) -> None:
+    registry = PartyRegistry()
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    params = {
+        252: 229,
+        6: "Selling opium",
+        12: [_GUID_SELF, _GUID_PARTY],
+        13: ["D4dits", "SocialFur3"],
+    }
+
+    monkeypatch.setattr(
+        party_registry_module,
+        "decode_event_data",
+        lambda _payload: SimpleNamespace(parameters=params),
+    )
+
+    registry.observe(message)
+
+    assert registry.snapshot_names() == {"D4dits", "SocialFur3"}
+    assert "Selling opium" not in registry.snapshot_names()
 
 
 def test_party_registry_fallback_ignores_access_role_name_lists(monkeypatch) -> None:

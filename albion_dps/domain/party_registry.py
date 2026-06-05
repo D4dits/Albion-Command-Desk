@@ -20,7 +20,7 @@ PARTY_SUBTYPE_KEY = 252
 PARTY_SUBTYPE_NAME_KEYS = {
     212: 5,
     227: 13,
-    229: 6,
+    229: 13,
     214: 2,
     221: 0,
 }
@@ -322,6 +322,14 @@ class PartyRegistry:
                 return
 
         best_id, best_score = max(self._self_candidate_scores.items(), key=lambda item: item[1])
+        if (
+            name_registry is not None
+            and self._party_names
+            and not self._self_name_confirmed
+        ):
+            best_name = name_registry.lookup(best_id)
+            if best_name in self._party_names and best_name != self._self_name:
+                return
         second_score = max(
             (score for entity_id, score in self._self_candidate_scores.items() if entity_id != best_id),
             default=0.0,
@@ -586,6 +594,16 @@ class PartyRegistry:
             for entity_id in self._self_ids:
                 mapped = name_registry.lookup(entity_id)
                 if mapped:
+                    if (
+                        not self._self_name_confirmed
+                        and self._party_names
+                        and mapped in self._party_names
+                        and mapped != self._self_name
+                    ):
+                        self._discard_self_id_candidate(entity_id)
+                        return
+                    if not self._self_name_confirmed and self._self_name is None:
+                        continue
                     if self._self_name_confirmed and self._self_name and mapped != self._self_name:
                         continue
                     if self._self_name != mapped or not self._self_name_confirmed:
@@ -762,6 +780,18 @@ class PartyRegistry:
             return
         self._self_ids.add(candidate_id)
         self._party_ids.add(candidate_id)
+
+    def _discard_self_id_candidate(self, candidate_id: int) -> None:
+        if candidate_id not in self._self_ids:
+            return
+        self._self_ids.discard(candidate_id)
+        self._party_ids.discard(candidate_id)
+        self._self_candidate_scores.pop(candidate_id, None)
+        self._self_candidate_last_ts.pop(candidate_id, None)
+        self._self_candidate_link_hits.pop(candidate_id, None)
+        self._self_candidate_combat_hits.pop(candidate_id, None)
+        if self._primary_self_id == candidate_id:
+            self._primary_self_id = next(iter(self._self_ids), None)
 
     def _add_self_candidate_score(self, candidate_id: int, ts: float, *, weight: float) -> None:
         if not isinstance(candidate_id, int):
@@ -1165,10 +1195,16 @@ def _extract_party_roster(
     if subtype == 212:
         guid_keys = (4, 3)
         name_key = 5
-    elif subtype == 227:
-        guid_keys = (12,)
-        name_key = 13
-    elif subtype == 230:
+    elif subtype == 229:
+        for guid_key, name_key in ((12, 13), (5, 6)):
+            guids = _coerce_guid_list(parameters.get(guid_key))
+            names = _coerce_names(parameters.get(name_key))
+            if not guids or not names:
+                continue
+            if len(names) == len(guids):
+                return guids, names
+        return None, None
+    elif subtype in (227, 230):
         guid_keys = (12,)
         name_key = 13
     else:
@@ -1232,6 +1268,8 @@ def _looks_like_player_name(name: str | None) -> bool:
     if not isinstance(name, str) or not name:
         return False
     if "@" in name:
+        return False
+    if any(char.isspace() for char in name):
         return False
     if name in NON_PLAYER_NAMES:
         return False

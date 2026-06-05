@@ -521,7 +521,7 @@ def _drain_snapshots(
                 reward_events=fame.recent_events(limit=10),
                 map_events=map_trail.events(limit=10),
             ),
-            allowed_player_names=allowed_names or None,
+            allowed_player_names=allowed_names,
         )
         loot_state.update_from_tracker(loot_tracker)
         if loot_writer is not None:
@@ -632,8 +632,13 @@ def _allowed_display_names_for_snapshot(
             return
         allowed_names.add(str(entity_id))
 
+    self_name = party.self_name()
     for entity_id in self_ids:
-        add_allowed_label(entity_id)
+        resolved = names.get(entity_id)
+        if not resolved and name_registry is not None:
+            resolved = name_registry.lookup(entity_id)
+        if self_name or resolved:
+            add_allowed_label(entity_id)
 
     if not non_self_party_ids:
         party_names = {
