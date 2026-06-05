@@ -277,6 +277,36 @@ def test_loot_tracker_accepts_trusted_party_loot_before_roster_is_known(monkeypa
     assert tracker.silver_total() == 1500
 
 
+def test_loot_tracker_seeds_multiple_pending_party_looters(monkeypatch) -> None:
+    party = PartyRegistry()
+    tracker = LootTracker(
+        party_registry=party,
+        item_resolver=ItemResolver(
+            index_to_unique={3130: "T3_BAG", 3131: "T4_BAG"},
+            index_to_name={3130: "Journeyman's Bag", 3131: "Adept's Bag"},
+        ),
+    )
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_PARTY_MEMBER_GRABBED_LOOT,
+        parameters={1: "@MOB_KEEPER_DRUID_CHAMPION", 2: "PartyOne", 4: 3130, 5: 1},
+    )
+    tracker.observe(_message(), _packet(2.0))
+    _set_event(
+        monkeypatch,
+        subtype=EV_PARTY_MEMBER_GRABBED_LOOT,
+        parameters={1: "@MOB_KEEPER_DRUID_CHAMPION", 2: "PartyTwo", 4: 3131, 5: 1},
+    )
+    tracker.observe(_message(), _packet(3.0))
+
+    assert {event.looted_by.player_name for event in tracker.events()} == {
+        "PartyOne",
+        "PartyTwo",
+    }
+    assert party.snapshot_names() == {"PartyOne", "PartyTwo"}
+
+
 def test_loot_tracker_accepts_loot_from_party_player(monkeypatch) -> None:
     party = PartyRegistry()
     party.seed_names(["Alice", "Bob"])

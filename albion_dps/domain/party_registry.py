@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass, field
 from collections.abc import Iterable
+from uuid import UUID
 
 from albion_dps.domain.name_registry import NameRegistry
 from albion_dps.models import CombatEvent, PhotonMessage, RawPacket
@@ -332,7 +333,7 @@ class PartyRegistry:
 
     def seed_names(self, names: Iterable[str]) -> None:
         for name in names:
-            if isinstance(name, str) and name:
+            if _looks_like_player_name(name):
                 self._party_names.add(name)
 
     def seed_ids(self, ids: Iterable[int]) -> None:
@@ -897,7 +898,7 @@ class PartyRegistry:
         next_guid_names: dict[bytes, str] = {}
         if names:
             for guid, name in zip(guids, names):
-                if name:
+                if _looks_like_player_name(name):
                     next_guid_names[guid] = name
         else:
             next_guid_names = {
@@ -1230,9 +1231,17 @@ def _extract_party_name_fields(parameters: dict[int, object]) -> list[list[str]]
 def _looks_like_player_name(name: str | None) -> bool:
     if not isinstance(name, str) or not name:
         return False
+    if "@" in name:
+        return False
     if name in NON_PLAYER_NAMES:
         return False
     if name.startswith(NON_PLAYER_NAME_PREFIXES):
+        return False
+    try:
+        UUID(name)
+    except (TypeError, ValueError):
+        pass
+    else:
         return False
     return True
 

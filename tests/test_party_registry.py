@@ -53,6 +53,20 @@ def test_party_registry_extracts_names_subtype_227() -> None:
     assert registry.snapshot_names() == {"D4dits"}
 
 
+def test_party_registry_rejects_uuid_and_at_labels_as_player_names() -> None:
+    registry = PartyRegistry()
+
+    registry.seed_names(
+        [
+            "D4dits",
+            "95e2aff4-61e6-40ee-bb75-16b159f69625",
+            "2356@15364",
+        ]
+    )
+
+    assert registry.snapshot_names() == {"D4dits"}
+
+
 def test_party_registry_detects_self_subtype_238() -> None:
     registry = PartyRegistry()
     message = PhotonMessage(opcode=1, event_code=1, payload=bytes.fromhex(_SELF_238_PAYLOAD_HEX))
