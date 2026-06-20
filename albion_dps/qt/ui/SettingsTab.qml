@@ -13,6 +13,8 @@ CardPanel {
     property string scannerRepoDir: ""
     property string scannerRepoUrl: ""
     property string appLogLevel: "INFO"
+    property int meterTopN: 20
+    property int meterHistoryLimit: 20
     property int lootLogKeepFiles: 5
     property string configDir: ""
 
@@ -50,6 +52,8 @@ CardPanel {
     signal resetScannerRepoDir()
     signal setScannerRepoUrl(string urlText)
     signal setAppLogLevel(string value)
+    signal setMeterTopN(int value)
+    signal setMeterHistoryLimit(int value)
     signal setLootLogKeepFiles(int value)
     signal refreshCaptureRuntimeStatus()
     signal openCaptureRuntimeAction()
@@ -96,7 +100,7 @@ CardPanel {
                     Text { text: "Settings"; color: root.textColor; font.pixelSize: 14; font.bold: true }
                     Text {
                         width: parent.width
-                        text: "Update behavior, logging, scanner repository, and game data paths. Status checks stay on Start."
+                        text: "Update behavior, meter display, logging, scanner repository, and game data paths. Status checks stay on Start."
                         color: root.mutedColor
                         font.pixelSize: 11
                         wrapMode: Text.WordWrap
@@ -223,6 +227,46 @@ CardPanel {
                                 font.pixelSize: 11
                                 anchors.verticalCenter: parent.verticalCenter
                             }
+                        }
+                    }
+                }
+
+                TableSurface {
+                    Layout.fillWidth: true
+                    height: 154
+                    level: 1
+
+                    Column {
+                        anchors.fill: parent
+                        anchors.margins: 10
+                        spacing: 8
+
+                        Text { text: "Meter"; color: root.textColor; font.pixelSize: 12; font.bold: true }
+                        Text { width: parent.width; text: "Display limits for live meter and saved fight history."; color: root.mutedColor; font.pixelSize: 11; wrapMode: Text.WordWrap }
+                        Row {
+                            width: parent.width
+                            spacing: 8
+                            Text { text: "Rows"; color: root.mutedColor; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
+                            AppComboBox {
+                                width: 86
+                                model: [10, 15, 20, 25, 30, 40]
+                                currentIndex: Math.max(0, model.indexOf(root.meterTopN))
+                                onActivated: root.setMeterTopN(Number(currentText))
+                            }
+                            Text { text: "History"; color: root.mutedColor; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter }
+                            AppComboBox {
+                                width: 86
+                                model: [10, 20, 50, 100, 200]
+                                currentIndex: Math.max(0, model.indexOf(root.meterHistoryLimit))
+                                onActivated: root.setMeterHistoryLimit(Number(currentText))
+                            }
+                        }
+                        Text {
+                            width: parent.width
+                            text: "20 rows covers a full Albion party. Higher values are available for diagnostics."
+                            color: root.mutedColor
+                            font.pixelSize: 11
+                            wrapMode: Text.WordWrap
                         }
                     }
                 }

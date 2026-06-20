@@ -34,3 +34,4 @@ class MeterSnapshot:
     timestamp: float
     totals: dict[int, dict[str, float]]
     names: dict[int, str] | None = None
+    duration: float = 0.0

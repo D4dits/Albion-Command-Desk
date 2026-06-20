@@ -262,6 +262,9 @@ class UiState(QObject):
     timeChanged = Signal()
     fameChanged = Signal()
     sortChanged = Signal()
+    meterDisplayChanged = Signal()
+    durationChanged = Signal()
+    historyLimitChanged = Signal()
     historySelectionChanged = Signal()
     updateBannerChanged = Signal()
     updateControlChanged = Signal()
@@ -277,6 +280,7 @@ class UiState(QObject):
         top_n: int,
         history_limit: int,
         set_mode_callback: Callable[[str], None] | None = None,
+        set_history_limit_callback: Callable[[int], None] | None = None,
         role_lookup: Callable[[int], str | None] | None = None,
         weapon_lookup: Callable[[int], object | None] | None = None,
         update_auto_check: bool = True,
@@ -285,6 +289,7 @@ class UiState(QObject):
         self._mode = "battle"
         self._zone = "-"
         self._time_text = "-"
+        self._duration_text = "00:00"
         self._fame_text = "0"
         self._fame_per_hour_text = "0.0"
         self._silver_text = "0"
@@ -293,6 +298,7 @@ class UiState(QObject):
         self._top_n = top_n
         self._history_limit = history_limit
         self._set_mode_callback = set_mode_callback
+        self._set_history_limit_callback = set_history_limit_callback
         self._players = PlayerModel()
         self._history = HistoryModel()
         self._activity = ActivityModel()
@@ -329,6 +335,10 @@ class UiState(QObject):
     def timeText(self) -> str:
         return self._time_text
 
+    @Property(str, notify=durationChanged)
+    def durationText(self) -> str:
+        return self._duration_text
+
     @Property(str, notify=fameChanged)
     def fameText(self) -> str:
         return self._fame_text
@@ -361,7 +371,11 @@ class UiState(QObject):
     def sessionActivityModel(self) -> QObject:
         return self._activity
 
-    @Property(int, constant=True)
+    @Property(int, notify=meterDisplayChanged)
+    def meterTopN(self) -> int:
+        return self._top_n
+
+    @Property(int, notify=historyLimitChanged)
     def historyLimit(self) -> int:
         return self._history_limit
 
@@ -414,6 +428,36 @@ class UiState(QObject):
         self._sort_key = key
         self.sortChanged.emit()
         self._refresh_player_table()
+
+    @Slot(int)
+    def setMeterTopN(self, value: int) -> None:
+        try:
+            top_n = int(value)
+        except (TypeError, ValueError):
+            return
+        top_n = max(1, min(40, top_n))
+        if top_n == self._top_n:
+            return
+        self._top_n = top_n
+        self.meterDisplayChanged.emit()
+        self._persist_app_settings()
+        self._refresh_player_table()
+
+    @Slot(int)
+    def setHistoryLimit(self, value: int) -> None:
+        try:
+            limit = int(value)
+        except (TypeError, ValueError):
+            return
+        limit = max(1, min(200, limit))
+        if limit == self._history_limit:
+            return
+        self._history_limit = limit
+        if self._set_history_limit_callback is not None:
+            self._set_history_limit_callback(limit)
+        self.historyLimitChanged.emit()
+        self._persist_app_settings()
+        self._refresh_history_table()
 
     @Slot(str)
     def setMode(self, mode: str) -> None:
@@ -603,6 +647,7 @@ class UiState(QObject):
         self._set_mode(mode)
         self._set_zone(zone or "-")
         self._set_time(snapshot.timestamp)
+        self._set_duration(getattr(snapshot, "duration", 0.0))
         self._set_meter_gains(
             fame_total,
             fame_per_hour,
@@ -629,6 +674,12 @@ class UiState(QObject):
         if text != self._time_text:
             self._time_text = text
             self.timeChanged.emit()
+
+    def _set_duration(self, seconds: float) -> None:
+        text = _format_duration(seconds)
+        if text != self._duration_text:
+            self._duration_text = text
+            self.durationChanged.emit()
 
     def _set_meter_gains(
         self,
@@ -673,6 +724,7 @@ class UiState(QObject):
     def _refresh_player_table(self) -> None:
         if self._selected_history_index >= 0 and self._selected_history_index < len(self._last_history):
             summary = self._last_history[self._selected_history_index]
+            self._set_duration(summary.duration)
             self._players.set_items(
                 _build_player_rows_from_entries(
                     summary.entries,
@@ -685,8 +737,10 @@ class UiState(QObject):
             )
             return
         if self._last_snapshot is None:
+            self._set_duration(0.0)
             self._players.set_items([])
             return
+        self._set_duration(getattr(self._last_snapshot, "duration", 0.0))
         self._players.set_items(
             _build_player_rows(
                 self._last_snapshot.totals,
@@ -793,6 +847,9 @@ class UiState(QObject):
                 market_selected_preset=self._app_settings.market_selected_preset,
                 market_export_dir=self._app_settings.market_export_dir,
                 meter_export_dir=self._meter_export_dir,
+                meter_top_n=self._top_n,
+                meter_history_limit=self._history_limit,
+                loot_log_keep_files=self._app_settings.loot_log_keep_files,
                 scanner_repo_dir=self._app_settings.scanner_repo_dir,
                 scanner_repo_url=self._app_settings.scanner_repo_url,
                 log_level=self._app_settings.log_level,
@@ -980,8 +1037,11 @@ def _build_history_rows(
 def _format_duration(seconds: float) -> str:
     if seconds < 0:
         seconds = 0
+    hours = int(seconds // 3600)
     minutes = int(seconds // 60)
     secs = int(seconds % 60)
+    if hours:
+        return f"{hours}:{minutes % 60:02d}:{secs:02d}"
     return f"{minutes:02d}:{secs:02d}"
 
 

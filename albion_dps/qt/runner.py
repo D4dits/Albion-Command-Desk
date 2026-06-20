@@ -57,6 +57,14 @@ def run_qt(args: argparse.Namespace) -> int:
         for interface in list_interfaces():
             print(interface)
         return 0
+    app_settings = load_app_settings()
+    raw_top = getattr(args, "top", None)
+    raw_history = getattr(args, "history", None)
+    args.top = max(int(raw_top if raw_top is not None else app_settings.meter_top_n), 1)
+    args.history = max(
+        int(raw_history if raw_history is not None else app_settings.meter_history_limit),
+        1,
+    )
     _ensure_pyside6_paths()
     try:
         from PySide6.QtCore import QObject, QTimer, Signal
@@ -163,9 +171,10 @@ def run_qt(args: argparse.Namespace) -> int:
         top_n=args.top,
         history_limit=max(args.history, 1),
         set_mode_callback=meter.set_mode,
+        set_history_limit_callback=meter.set_history_limit,
         role_lookup=role_lookup,
         weapon_lookup=weapon_lookup,
-        update_auto_check=load_app_settings().update_auto_check,
+        update_auto_check=app_settings.update_auto_check,
     )
     class _UpdateNotifier(QObject):
         updateReady = Signal(bool, str, str, str, str)

@@ -12,6 +12,8 @@ class AppSettings:
     market_selected_preset: str = ""
     market_export_dir: str = ""
     meter_export_dir: str = ""
+    meter_top_n: int = 20
+    meter_history_limit: int = 20
     loot_log_keep_files: int = 5
     scanner_repo_dir: str = ""
     scanner_repo_url: str = ""
@@ -46,6 +48,8 @@ def load_app_settings() -> AppSettings:
             market_selected_preset=str(raw.get("market_selected_preset", "") or ""),
             market_export_dir=str(raw.get("market_export_dir", "") or ""),
             meter_export_dir=str(raw.get("meter_export_dir", "") or ""),
+            meter_top_n=_normalize_meter_top_n(raw.get("meter_top_n", 20)),
+            meter_history_limit=_normalize_meter_history_limit(raw.get("meter_history_limit", 20)),
             loot_log_keep_files=_normalize_keep_files(raw.get("loot_log_keep_files", 5)),
             scanner_repo_dir=str(raw.get("scanner_repo_dir", "") or ""),
             scanner_repo_url=str(raw.get("scanner_repo_url", "") or ""),
@@ -63,6 +67,8 @@ def save_app_settings(settings: AppSettings) -> None:
         "market_selected_preset": str(settings.market_selected_preset or ""),
         "market_export_dir": str(settings.market_export_dir or ""),
         "meter_export_dir": str(settings.meter_export_dir or ""),
+        "meter_top_n": _normalize_meter_top_n(settings.meter_top_n),
+        "meter_history_limit": _normalize_meter_history_limit(settings.meter_history_limit),
         "loot_log_keep_files": _normalize_keep_files(settings.loot_log_keep_files),
         "scanner_repo_dir": str(settings.scanner_repo_dir or ""),
         "scanner_repo_url": str(settings.scanner_repo_url or ""),
@@ -77,6 +83,12 @@ def update_app_settings(**changes) -> AppSettings:
         changes["log_level"] = _normalize_log_level(changes["log_level"])
     if "loot_log_keep_files" in changes:
         changes["loot_log_keep_files"] = _normalize_keep_files(changes["loot_log_keep_files"])
+    if "meter_top_n" in changes:
+        changes["meter_top_n"] = _normalize_meter_top_n(changes["meter_top_n"])
+    if "meter_history_limit" in changes:
+        changes["meter_history_limit"] = _normalize_meter_history_limit(
+            changes["meter_history_limit"]
+        )
     updated = replace(current, **changes)
     save_app_settings(updated)
     return updated
@@ -99,3 +111,19 @@ def _normalize_keep_files(value) -> int:
     except (TypeError, ValueError):
         return 5
     return min(50, max(1, keep))
+
+
+def _normalize_meter_top_n(value) -> int:
+    try:
+        top_n = int(value)
+    except (TypeError, ValueError):
+        return 20
+    return min(40, max(1, top_n))
+
+
+def _normalize_meter_history_limit(value) -> int:
+    try:
+        limit = int(value)
+    except (TypeError, ValueError):
+        return 20
+    return min(200, max(1, limit))

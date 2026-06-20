@@ -44,6 +44,27 @@ def test_manual_mode_toggle_creates_history() -> None:
     assert history[0].total_damage == 25.0
 
 
+def test_snapshot_reports_active_session_duration() -> None:
+    meter = SessionMeter(history_limit=5, mode="zone")
+    meter.observe_packet(_packet(10.0, ip="1.1.1.1", port=5056))
+    meter.push(CombatEvent(12.0, 1, 2, 50, "damage"))
+    meter.observe_packet(_packet(72.0, ip="1.1.1.1", port=5056))
+
+    assert meter.snapshot().duration == 62.0
+
+
+def test_set_history_limit_resizes_history_deques() -> None:
+    meter = SessionMeter(battle_timeout_seconds=1.0, history_limit=1, mode="battle")
+    meter.set_history_limit(3)
+
+    for idx in range(3):
+        ts = float(idx * 10)
+        meter.push(CombatEvent(ts, 1, 2, 10, "damage"))
+        meter.observe_packet(_packet(ts + 2.0))
+
+    assert len(meter.history()) == 3
+
+
 def test_zone_mode_archives_on_zone_change() -> None:
     meter = SessionMeter(history_limit=5, mode="zone")
     meter.observe_packet(_packet(0.0, ip="1.1.1.1", port=5056))

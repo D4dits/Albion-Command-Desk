@@ -1399,6 +1399,47 @@ def test_market_setup_state_add_recipe_family_keeps_crystallized_final_variants(
     assert all("_ARTEFACT_" not in recipe_id for recipe_id in recipe_ids)
 
 
+def test_market_setup_state_add_filtered_keeps_both_duskweaver_variants() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.setRecipeSearchQuery("duskweaver armor")
+    state.setRecipeTierFilters([6])
+    state.setRecipeEnchantFilters([1])
+    state.addFilteredRecipeOptions()
+
+    recipe_ids = {row.recipe_id for row in state._craft_plan_rows}
+
+    assert "T6_ARMOR_PLATE_FEY@1" in recipe_ids
+    assert "T6_ARMOR_PLATE_FEY@1#CRYSTALLIZED" in recipe_ids
+
+    row = next(row for row in state._craft_plan_rows if row.recipe_id == "T6_ARMOR_PLATE_FEY@1")
+    state.setPlanRowEnabled(row.row_id, True)
+    input_item_ids = {
+        str(state.inputsOnModel.data(state.inputsOnModel.index(idx, 0), state.inputsOnModel.ItemIdRole) or "")
+        for idx in range(state.inputsOnModel.rowCount())
+    }
+
+    assert "T6_ARTEFACT_ARMOR_PLATE_FEY" in input_item_ids
+    assert "T6_ARTEFACT_TOKEN_FAVOR_3" not in input_item_ids
+
+
+def test_market_setup_state_inputs_follow_enabled_crystallized_recipe() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.setRecipeSearchQuery("duskweaver armor")
+    state.setRecipeTierFilters([6])
+    state.setRecipeEnchantFilters([1])
+    state.addFilteredRecipeOptions()
+
+    row = next(row for row in state._craft_plan_rows if row.recipe_id == "T6_ARMOR_PLATE_FEY@1#CRYSTALLIZED")
+    state.setPlanRowEnabled(row.row_id, True)
+    input_item_ids = {
+        str(state.inputsOnModel.data(state.inputsOnModel.index(idx, 0), state.inputsOnModel.ItemIdRole) or "")
+        for idx in range(state.inputsOnModel.rowCount())
+    }
+
+    assert "T6_ARTEFACT_TOKEN_FAVOR_3" in input_item_ids
+    assert "T6_ARTEFACT_ARMOR_PLATE_FEY" not in input_item_ids
+
+
 def test_market_setup_state_new_plan_rows_default_to_disabled() -> None:
     state = MarketSetupState(auto_refresh_prices=False)
     state.setRecipeSearchQuery("curse")

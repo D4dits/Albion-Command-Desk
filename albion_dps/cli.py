@@ -57,12 +57,12 @@ def main(argv: list[str] | None = None) -> int:
 
 def _add_common_gui_args(subparser: argparse.ArgumentParser) -> None:
     subparser.add_argument("--sort", choices=["dmg", "dps", "heal", "hps"], default="dps")
-    subparser.add_argument("--top", type=int, default=10)
+    subparser.add_argument("--top", type=int)
     subparser.add_argument("--snapshot")
     subparser.add_argument("--self-name")
     subparser.add_argument("--self-id", type=int)
     subparser.add_argument("--mode", choices=["battle", "zone", "manual"], default="battle")
-    subparser.add_argument("--history", type=int, default=5)
+    subparser.add_argument("--history", type=int)
     subparser.add_argument("--battle-timeout", type=float, default=20.0)
 
 

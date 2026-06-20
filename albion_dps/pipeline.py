@@ -260,7 +260,12 @@ def stream_snapshots(
         if last_emit is None or snapshot_interval <= 0 or packet.timestamp - last_emit >= snapshot_interval:
             snapshot = meter.snapshot()
             names = name_registry.snapshot() if name_registry is not None else None
-            yield MeterSnapshot(timestamp=packet.timestamp, totals=snapshot.totals, names=names)
+            yield MeterSnapshot(
+                timestamp=packet.timestamp,
+                totals=snapshot.totals,
+                names=names,
+                duration=snapshot.duration,
+            )
             last_emit = packet.timestamp
 
     if hasattr(meter, "finalize"):
@@ -271,7 +276,12 @@ def stream_snapshots(
         fallback_ts = last_timestamp or 0.0
         snapshot = meter.snapshot()
         names = name_registry.snapshot() if name_registry is not None else None
-        yield MeterSnapshot(timestamp=fallback_ts, totals=snapshot.totals, names=names)
+        yield MeterSnapshot(
+            timestamp=fallback_ts,
+            totals=snapshot.totals,
+            names=names,
+            duration=snapshot.duration,
+        )
         return
 
     if last_emit is None:

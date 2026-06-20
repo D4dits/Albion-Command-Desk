@@ -284,13 +284,31 @@ class SessionMeter:
         if not self._active:
             return MeterSnapshot(timestamp=self._last_seen_ts or 0.0, totals={})
         now = self._last_seen_ts or self._last_event_ts
-        return self._meter.snapshot(now=now)
+        snapshot = self._meter.snapshot(now=now)
+        duration = 0.0
+        if self._session_start is not None:
+            duration = max(snapshot.timestamp - self._session_start, 0.0)
+        return MeterSnapshot(
+            timestamp=snapshot.timestamp,
+            totals=snapshot.totals,
+            names=snapshot.names,
+            duration=duration,
+        )
 
     def history(self, limit: int | None = None) -> list[SessionSummary]:
         entries = list(reversed(self._history.get(self.mode, deque())))
         if limit is None or limit <= 0:
             return entries
         return entries[:limit]
+
+    def set_history_limit(self, limit: int) -> None:
+        normalized = max(1, int(limit))
+        if normalized == self.history_limit:
+            return
+        self.history_limit = normalized
+        for key, entries in list(self._history.items()):
+            if entries.maxlen != normalized:
+                self._history[key] = deque(entries, maxlen=normalized)
 
     def merge_event_into_history(self, event: CombatEvent) -> bool:
         history = self._history.get(self.mode)

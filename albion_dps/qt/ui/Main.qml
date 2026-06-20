@@ -585,6 +585,7 @@ ApplicationWindow {
                     sortKey: uiState.sortKey
                     selectedHistoryIndex: uiState.selectedHistoryIndex
                     timeText: uiState.timeText
+                    durationText: uiState.durationText
                     fameText: uiState.fameText
                     famePerHourText: uiState.famePerHourText
                     silverText: uiState.silverText
@@ -1075,6 +1076,8 @@ ApplicationWindow {
                     compactLayout: root.compactLayout
                     updateCheckStatus: uiState.updateCheckStatus
                     updateAutoCheck: uiState.updateAutoCheck
+                    meterTopN: uiState.meterTopN
+                    meterHistoryLimit: uiState.historyLimit
                     scannerRepoDir: scannerState.scannerRepoDir
                     scannerRepoUrl: scannerState.scannerRepoUrl
                     appLogLevel: scannerState.appLogLevel
@@ -1117,6 +1120,14 @@ ApplicationWindow {
                     onSetAppLogLevel: function(levelText) {
                         scannerState.setAppLogLevel(levelText)
                         toastManager.showInfo("Log level saved", "Applies on next launch: " + scannerState.appLogLevel)
+                    }
+                    onSetMeterTopN: function(count) {
+                        uiState.setMeterTopN(count)
+                        toastManager.showInfo("Meter rows", "Showing up to " + uiState.meterTopN + " players")
+                    }
+                    onSetMeterHistoryLimit: function(count) {
+                        uiState.setHistoryLimit(count)
+                        toastManager.showInfo("Meter history", "Keeping latest " + uiState.historyLimit + " sessions")
                     }
                     onSetLootLogKeepFiles: function(count) {
                         scannerState.setLootLogKeepFiles(count)

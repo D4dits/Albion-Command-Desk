@@ -76,6 +76,43 @@ def test_ui_state_update_populates_live_rows() -> None:
     assert state.playersModel.rowCount() == 1
 
 
+def test_ui_state_updates_meter_limits_and_duration(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("ALBION_COMMAND_DESK_CONFIG_DIR", str(tmp_path))
+    captured_limits: list[int] = []
+    state = UiState(
+        sort_key="dps",
+        top_n=10,
+        history_limit=20,
+        set_history_limit_callback=captured_limits.append,
+    )
+    snapshot = MeterSnapshot(
+        timestamp=1.0,
+        totals={idx: {"damage": float(idx), "heal": 0.0, "dps": float(idx), "hps": 0.0} for idx in range(30)},
+        names={idx: f"Player{idx}" for idx in range(30)},
+        duration=65.0,
+    )
+
+    state.setMeterTopN(20)
+    state.setHistoryLimit(50)
+    state.update(
+        snapshot,
+        names={idx: f"Player{idx}" for idx in range(30)},
+        history=[],
+        mode="battle",
+        zone="-",
+        fame_total=0,
+        fame_per_hour=0.0,
+        silver_total=0,
+        silver_per_hour=0.0,
+    )
+
+    assert state.meterTopN == 20
+    assert state.historyLimit == 50
+    assert captured_limits == [50]
+    assert state.durationText == "01:05"
+    assert state.playersModel.rowCount() == 20
+
+
 def test_ui_state_selected_history_uses_session_dps_not_expired_rolling_dps() -> None:
     state = UiState(sort_key="dps", top_n=10, history_limit=20)
     history = [

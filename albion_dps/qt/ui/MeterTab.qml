@@ -12,6 +12,7 @@ Item {
     property string sortKey: "dps"
     property int selectedHistoryIndex: -1
     property string timeText: ""
+    property string durationText: ""
     property string fameText: ""
     property string famePerHourText: ""
     property string silverText: ""
@@ -126,8 +127,8 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: root.selectedHistoryIndex >= 0
-                    ? "Scoreboard (history #" + (root.selectedHistoryIndex + 1) + ", sorted by " + root.sortKey + ")"
-                    : "Scoreboard (live, sorted by " + root.sortKey + ")"
+                    ? "Scoreboard (history #" + (root.selectedHistoryIndex + 1) + ", " + root.durationText + ", sorted by " + root.sortKey + ")"
+                    : "Scoreboard (live " + root.durationText + ", sorted by " + root.sortKey + ")"
                 color: root.textColor
                 font.pixelSize: 14
                 font.bold: true
