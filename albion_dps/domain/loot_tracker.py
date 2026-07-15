@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
+from uuid import uuid4
 
 from albion_dps.domain.item_resolver import ItemResolver
 from albion_dps.domain.party_registry import PartyRegistry
@@ -17,6 +18,7 @@ from albion_dps.protocol.protocol16 import (
     Protocol16Error,
     decode_event_data,
     decode_operation_request,
+    decode_operation_response,
 )
 
 SILVER_FIXPOINT_FACTOR = 10000.0
@@ -31,7 +33,10 @@ EV_NEW_LOOT = 98
 EV_ATTACH_ITEM_CONTAINER = 99
 EV_DETACH_ITEM_CONTAINER = 100
 EV_CHARACTER_STATS = 143
-EV_OTHER_GRABBED_LOOT = 275
+# Central protocol event IDs shifted in July 2026. Keep the legacy code for
+# old captures and installations that have not received the shifted table yet.
+EV_LEGACY_OTHER_GRABBED_LOOT = 275
+EV_OTHER_GRABBED_LOOT = 279
 EV_PARTY_MEMBER_GRABBED_LOOT = 277
 OP_INVENTORY_MOVE_ITEM = 30
 OP_INVENTORY_MOVE_ITEMS = 39
@@ -55,12 +60,22 @@ class LootTracker:
     _containers_by_id: dict[int, LootContainer] = field(default_factory=dict)
     _containers_by_uuid: dict[str, LootContainer] = field(default_factory=dict)
     _events: list[LootEvent] = field(default_factory=list)
+    _observations: list[LootEvent] = field(default_factory=list)
     _pending_party_loot_names: set[str] = field(default_factory=set)
     _pending_party_loot_keys_by_name: dict[str, set[int]] = field(default_factory=dict)
     _self_party_loot_keys: dict[int, float] = field(default_factory=dict)
+    _self_guild_name: str | None = None
+    _self_alliance_name: str | None = None
+    _self_guild_override: str | None = None
+    _self_alliance_override: str | None = None
+    _run_id: str = field(default_factory=lambda: uuid4().hex)
+    _next_event_sequence: int = 1
 
     def observe(self, message: PhotonMessage, packet: RawPacket | None = None) -> None:
         if message.event_code is None:
+            if message.message_type == "operation_response":
+                self._observe_operation_response(message)
+                return
             self._observe_operation_request(
                 message,
                 timestamp=packet.timestamp if packet is not None else 0.0,
@@ -95,7 +110,7 @@ class LootTracker:
         if subtype == EV_DETACH_ITEM_CONTAINER:
             self._observe_detach_item_container(event.parameters)
             return
-        if subtype == EV_OTHER_GRABBED_LOOT:
+        if subtype in {EV_LEGACY_OTHER_GRABBED_LOOT, EV_OTHER_GRABBED_LOOT}:
             self._observe_other_grabbed_loot(
                 event.parameters,
                 timestamp=packet.timestamp if packet is not None else 0.0,
@@ -112,6 +127,28 @@ class LootTracker:
                 raw_subtype=subtype,
                 trusted_party_member=True,
             )
+
+    def _observe_operation_response(self, message: PhotonMessage) -> None:
+        try:
+            response = decode_operation_response(message.payload)
+        except Protocol16Error:
+            return
+        operation_code = response.parameters.get(253, response.code)
+        if operation_code != 2:
+            return
+        player_name = response.parameters.get(2)
+        if not isinstance(player_name, str) or not player_name:
+            return
+        guild_name = _first_nonempty_string(response.parameters, (58, 57))
+        alliance_name = _first_nonempty_string(response.parameters, (79, 78))
+        self._self_guild_name = guild_name or self._self_guild_name
+        self._self_alliance_name = alliance_name or self._self_alliance_name
+        self._upsert_player(
+            player_name,
+            guild_name=guild_name,
+            alliance_name=alliance_name,
+        )
+        self._refresh_eligibility()
 
     def _observe_operation_request(
         self, message: PhotonMessage, *, timestamp: float
@@ -145,6 +182,32 @@ class LootTracker:
             return items
         return items[: max(0, int(limit))]
 
+    def observations(self, limit: int | None = None) -> list[LootEvent]:
+        items = list(reversed(self._observations))
+        if limit is None:
+            return items
+        return items[: max(0, int(limit))]
+
+    def pending_scope_count(self) -> int:
+        return sum(
+            1
+            for event in self._observations
+            if event.eligibility_reason in {"unknown", "party_pending"}
+        )
+
+    def set_self_affiliation(
+        self, *, guild_name: str | None = None, alliance_name: str | None = None
+    ) -> None:
+        self._self_guild_override = str(guild_name or "").strip() or None
+        self._self_alliance_override = str(alliance_name or "").strip() or None
+        self._refresh_eligibility()
+
+    def self_affiliation(self) -> tuple[str | None, str | None]:
+        return (
+            self._self_guild_override or self._self_guild_name,
+            self._self_alliance_override or self._self_alliance_name,
+        )
+
     def player(self, player_name: str) -> LootPlayer | None:
         return self._players.get(player_name)
 
@@ -160,6 +223,7 @@ class LootTracker:
         self._containers_by_id.clear()
         self._containers_by_uuid.clear()
         self._events.clear()
+        self._observations.clear()
         self._pending_party_loot_names.clear()
         self._pending_party_loot_keys_by_name.clear()
         self._self_party_loot_keys.clear()
@@ -170,11 +234,15 @@ class LootTracker:
         alliance_name = parameters.get(51)
         if not isinstance(player_name, str) or not player_name:
             return
-        self._upsert_player(
+        player = self._upsert_player(
             player_name,
             guild_name=guild_name if isinstance(guild_name, str) and guild_name else None,
             alliance_name=alliance_name if isinstance(alliance_name, str) and alliance_name else None,
         )
+        if self.party_registry is not None and player_name == self.party_registry.self_name():
+            self._self_guild_name = player.guild_name or self._self_guild_name
+            self._self_alliance_name = player.alliance_name or self._self_alliance_name
+        self._refresh_eligibility()
 
     def _observe_character_stats(self, parameters: dict[int, object]) -> None:
         player_name = parameters.get(1)
@@ -182,11 +250,15 @@ class LootTracker:
         alliance_name = parameters.get(4)
         if not isinstance(player_name, str) or not player_name:
             return
-        self._upsert_player(
+        player = self._upsert_player(
             player_name,
             guild_name=guild_name if isinstance(guild_name, str) and guild_name else None,
             alliance_name=alliance_name if isinstance(alliance_name, str) and alliance_name else None,
         )
+        if self.party_registry is not None and player_name == self.party_registry.self_name():
+            self._self_guild_name = player.guild_name or self._self_guild_name
+            self._self_alliance_name = player.alliance_name or self._self_alliance_name
+        self._refresh_eligibility()
 
     def _observe_new_item_object(self, parameters: dict[int, object]) -> None:
         object_id = parameters.get(0)
@@ -199,6 +271,9 @@ class LootTracker:
         if not isinstance(quantity, int) or quantity < 0:
             return
         item_ref = self._resolve_item(item_num_id)
+        quality = parameters.get(6)
+        if isinstance(quality, int) and 1 <= quality <= 5:
+            item_ref = replace(item_ref, quality=quality)
         loot = self._loot_objects.get(object_id)
         if loot is None:
             self._loot_objects[object_id] = LootObject(
@@ -296,7 +371,7 @@ class LootTracker:
         if source_name and source_kind == "player":
             looted_from = self._upsert_player(source_name)
 
-        self._events.append(
+        self._record_observation(
             LootEvent(
                 timestamp=float(timestamp),
                 looted_by=self._upsert_player(looted_by_name),
@@ -308,11 +383,10 @@ class LootTracker:
                 is_silver=False,
                 raw_event_code=int(raw_operation_code),
                 raw_subtype=int(raw_operation_code),
+                eligibility_reason="self",
             )
         )
         self._remove_loot_from_container(container, loot.object_id)
-        if len(self._events) > self.history_limit:
-            self._events = self._events[-self.history_limit :]
 
     def _observe_inventory_move_items(
         self,
@@ -353,7 +427,7 @@ class LootTracker:
             quantity = quantities[index] if index < len(quantities) else loot.quantity
             if not isinstance(quantity, int) or quantity <= 0:
                 continue
-            self._events.append(
+            self._record_observation(
                 LootEvent(
                     timestamp=float(timestamp),
                     looted_by=looted_by,
@@ -365,14 +439,13 @@ class LootTracker:
                     is_silver=False,
                     raw_event_code=int(raw_operation_code),
                     raw_subtype=int(raw_operation_code),
+                    eligibility_reason="self",
                 )
             )
             moved_ids.append(object_id)
 
         for object_id in moved_ids:
             self._remove_loot_from_container(container, object_id)
-        if len(self._events) > self.history_limit:
-            self._events = self._events[-self.history_limit :]
 
     def _inventory_move_blocked_by_location(self) -> bool:
         if self.location_provider is None:
@@ -420,8 +493,6 @@ class LootTracker:
             timestamp=timestamp,
             trusted_party_member=trusted_party_member,
         )
-        if not allow_pending_party_loot and not self._allows_loot_player_name(looted_by_name):
-            return
         if not isinstance(quantity, int) or quantity <= 0:
             return
 
@@ -454,7 +525,10 @@ class LootTracker:
                 looted_from = self._upsert_player(looted_from_name)
             item = self._resolve_item(item_num_id)
 
-        self._events.append(
+        reason = self._eligibility_reason(looted_by_name)
+        if allow_pending_party_loot and reason == "unknown":
+            reason = "party_pending"
+        self._record_observation(
             LootEvent(
                 timestamp=float(timestamp),
                 looted_by=looted_by,
@@ -466,22 +540,40 @@ class LootTracker:
                 is_silver=is_silver,
                 raw_event_code=int(raw_event_code),
                 raw_subtype=int(raw_subtype),
+                eligibility_reason=reason,
             )
         )
-        if len(self._events) > self.history_limit:
-            self._events = self._events[-self.history_limit :]
         self._prune_pending_party_loot_events()
 
     def _allows_loot_player_name(self, player_name: str) -> bool:
+        return self._eligibility_reason(player_name) != "unknown"
+
+    def _eligibility_reason(self, player_name: str) -> str:
         if self.party_registry is None:
-            return True
+            return "visible"
         self_name = self.party_registry.self_name()
         if self_name and player_name == self_name:
-            return True
+            return "self"
         party_names = self.party_registry.snapshot_names()
-        if party_names:
-            return player_name in party_names
-        return False
+        if player_name in party_names:
+            return "party"
+        player = self._players.get(player_name)
+        if player is not None:
+            self_guild = self._self_guild_override or self._self_guild_name
+            self_alliance = self._self_alliance_override or self._self_alliance_name
+            if (
+                self_guild
+                and player.guild_name
+                and player.guild_name.casefold() == self_guild.casefold()
+            ):
+                return "guild"
+            if (
+                self_alliance
+                and player.alliance_name
+                and player.alliance_name.casefold() == self_alliance.casefold()
+            ):
+                return "alliance"
+        return "unknown"
 
     def _accepts_pending_party_loot(
         self,
@@ -526,23 +618,18 @@ class LootTracker:
             return
         self._promote_pending_party_loot_from_self_keys()
 
-        allowed_pending_names: set[str] = set()
-        pruned_events: list[LootEvent] = []
-        for event in self._events:
-            player_name = event.looted_by.player_name
-            if player_name not in self._pending_party_loot_names:
-                pruned_events.append(event)
-                continue
-            if self._allows_loot_player_name(player_name):
-                allowed_pending_names.add(player_name)
-                pruned_events.append(event)
-        self._events = pruned_events
+        allowed_pending_names = {
+            name
+            for name in self._pending_party_loot_names
+            if self._eligibility_reason(name) != "unknown"
+        }
         self._pending_party_loot_names.intersection_update(allowed_pending_names)
         self._pending_party_loot_keys_by_name = {
             name: keys
             for name, keys in self._pending_party_loot_keys_by_name.items()
             if name in self._pending_party_loot_names
         }
+        self._refresh_eligibility()
 
     def _promote_pending_party_loot_from_self_keys(self) -> None:
         if self.party_registry is None:
@@ -605,6 +692,12 @@ class LootTracker:
             else event
             for event in self._events
         ]
+        self._observations = [
+            replace(event, looted_by=looted_by)
+            if event.looted_by.player_name == "You"
+            else event
+            for event in self._observations
+        ]
         self._players.pop("You", None)
 
     def _upsert_player(
@@ -630,6 +723,41 @@ class LootTracker:
         self._players[player_name] = current
         return current
 
+    def _record_observation(self, event: LootEvent) -> None:
+        if not event.event_id:
+            event = replace(
+                event,
+                event_id=f"{self._run_id}:{self._next_event_sequence}",
+            )
+            self._next_event_sequence += 1
+        self._observations.append(event)
+        observation_limit = self.history_limit + min(5000, self.history_limit * 3)
+        if len(self._observations) > observation_limit:
+            self._observations = self._observations[-observation_limit:]
+        self._refresh_eligibility()
+
+    def _refresh_eligibility(self) -> None:
+        resolved: list[LootEvent] = []
+        visible: list[LootEvent] = []
+        roster_known = bool(
+            self.party_registry is not None
+            and (self.party_registry.self_name() or self.party_registry.snapshot_names())
+        )
+        for event in self._observations:
+            player_name = event.looted_by.player_name
+            player = self._players.get(player_name, event.looted_by)
+            reason = self._eligibility_reason(player_name)
+            if event.eligibility_reason == "self":
+                reason = "self"
+            if reason == "unknown" and event.eligibility_reason == "party_pending" and not roster_known:
+                reason = "party_pending"
+            updated = replace(event, looted_by=player, eligibility_reason=reason)
+            resolved.append(updated)
+            if reason != "unknown":
+                visible.append(updated)
+        self._observations = resolved
+        self._events = visible[-self.history_limit :]
+
 
 def _coerce_int_list(value: object) -> list[int]:
     if not isinstance(value, list):
@@ -639,6 +767,16 @@ def _coerce_int_list(value: object) -> list[int]:
         if isinstance(item, int) and item > 0:
             out.append(item)
     return out
+
+
+def _first_nonempty_string(
+    parameters: dict[int, object], keys: tuple[int, ...]
+) -> str | None:
+    for key in keys:
+        value = parameters.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
 
 
 def _coerce_slot(value: object) -> int | None:

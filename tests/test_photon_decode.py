@@ -18,6 +18,7 @@ def test_decode_event_payload_hex() -> None:
     assert message.event_code == 0x10
     assert message.opcode == 0x10
     assert message.payload == bytes.fromhex("10AABB")
+    assert message.message_type == "event"
 
 
 def test_decode_operation_payload_hex() -> None:
@@ -29,3 +30,4 @@ def test_decode_operation_payload_hex() -> None:
     assert message.event_code is None
     assert message.opcode == 0x03
     assert message.payload == bytes.fromhex("03CAFE")
+    assert message.message_type == "operation_request"

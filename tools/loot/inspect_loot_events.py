@@ -18,7 +18,8 @@ KNOWN_LOOT_SUBTYPES = {
     99: "EvAttachItemContainer",
     100: "EvDetachItemContainer",
     143: "EvCharacterStats",
-    275: "EvOtherGrabbedLoot",
+    275: "EvOtherGrabbedLoot (legacy)",
+    279: "EvOtherGrabbedLoot",
 }
 
 

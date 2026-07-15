@@ -1010,12 +1010,51 @@ ApplicationWindow {
                     topItemsModel: lootState.topItemsModel
                     topSourcesModel: lootState.topSourcesModel
                     topSilverLootersModel: lootState.topSilverLootersModel
+                    sessionActive: lootState.sessionActive
+                    sessionTitle: lootState.sessionTitle
+                    sessionDurationText: lootState.sessionDurationText
+                    sessionOptions: lootState.sessionOptions
+                    selectedSessionId: lootState.selectedSessionId
+                    pendingScopeCount: lootState.pendingScopeCount
+                    totalMarketValue: lootState.totalMarketValue
+                    totalLiquidationValue: lootState.totalLiquidationValue
+                    outstandingMarketValue: lootState.outstandingMarketValue
+                    pricingStatus: lootState.pricingStatus
+                    priceRegion: lootState.priceRegion
+                    priceCity: lootState.priceCity
+                    bufferSeconds: lootState.bufferSeconds
+                    selfGuild: lootState.selfGuild
+                    selfAlliance: lootState.selfAlliance
                     onSetSearchQuery: function(value) { lootState.setSearchQuery(value) }
                     onSetSourceFilter: function(value) { lootState.setSourceFilter(value) }
                     onSetSourceNameFilter: function(value) { lootState.setSourceNameFilter(value) }
                     onSetLooterFilter: function(value) { lootState.setLooterFilter(value) }
                     onSetCategoryFilter: function(value) { lootState.setCategoryFilter(value) }
                     onSetKindFilter: function(value) { lootState.setKindFilter(value) }
+                    onStartSession: function(title) { lootState.startSession(title) }
+                    onStopSession: function() { lootState.stopSession() }
+                    onSelectSession: function(index) { lootState.selectSession(index) }
+                    onShowLiveBuffer: function() { lootState.showLiveBuffer() }
+                    onDeleteSelectedSession: function() { lootState.deleteSelectedSession() }
+                    onRefreshPrices: function() { lootState.refreshPrices() }
+                    onSetPriceCity: function(value) { lootState.setPriceCity(value) }
+                    onSetPriceRegion: function(value) { lootState.setPriceRegion(value) }
+                    onSetBufferSeconds: function(value) { lootState.setBufferSeconds(value) }
+                    onSetSelfAffiliation: function(guildName, allianceName) {
+                        lootState.setSelfAffiliation(guildName, allianceName)
+                    }
+                    onSettleEvent: function(eventId, action, quantity, actualValue, note) {
+                        lootState.settleEvent(eventId, action, quantity, actualValue, note)
+                    }
+                    onResetEventSettlement: function(eventId) {
+                        lootState.resetEventSettlement(eventId)
+                    }
+                    onSettlePlayer: function(playerName, action) {
+                        lootState.settlePlayer(playerName, action)
+                    }
+                    onSetEventQuality: function(eventId, quality) {
+                        lootState.setEventQuality(eventId, quality)
+                    }
                     onCopyLatestSummary: function() {
                         if (lootState.copyLatestSummary()) {
                             toastManager.showSuccess("Copied to clipboard", "Latest loot summary copied")

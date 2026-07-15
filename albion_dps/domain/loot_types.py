@@ -15,6 +15,7 @@ class LootItemRef:
     item_num_id: int | None
     unique_name: str | None
     display_name: str
+    quality: int | None = None
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,8 @@ class LootEvent:
     is_silver: bool
     raw_event_code: int
     raw_subtype: int
+    event_id: str = ""
+    eligibility_reason: str = "unknown"
 
 
 @dataclass

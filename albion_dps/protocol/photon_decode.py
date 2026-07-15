@@ -176,7 +176,12 @@ def _decode_message(
                 event_code,
                 len(message_payload),
             )
-        return PhotonMessage(opcode=event_code, event_code=event_code, payload=message_payload)
+        return PhotonMessage(
+            opcode=event_code,
+            event_code=event_code,
+            payload=message_payload,
+            message_type="event",
+        )
 
     if message_type in (MESSAGE_TYPE_OPERATION_REQUEST, MESSAGE_TYPE_OPERATION_RESPONSE):
         if not message_payload:
@@ -193,7 +198,17 @@ def _decode_message(
                 operation_code,
                 len(message_payload),
             )
-        return PhotonMessage(opcode=operation_code, event_code=None, payload=message_payload)
+        message_kind = (
+            "operation_request"
+            if message_type == MESSAGE_TYPE_OPERATION_REQUEST
+            else "operation_response"
+        )
+        return PhotonMessage(
+            opcode=operation_code,
+            event_code=None,
+            payload=message_payload,
+            message_type=message_kind,
+        )
 
     _dump_unknown(packet, "photon_message_type_unknown", dump_unknowns, unknown_output_dir, logger)
     return None

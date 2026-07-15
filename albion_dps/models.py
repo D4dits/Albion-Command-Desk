@@ -18,6 +18,7 @@ class PhotonMessage:
     opcode: int
     event_code: int | None
     payload: bytes
+    message_type: str = ""
 
 
 @dataclass(frozen=True)

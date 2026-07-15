@@ -58,6 +58,8 @@ if [[ -z "${DOTNET_CLI_HOME:-}" ]]; then
 fi
 export DOTNET_CLI_UI_LANGUAGE="en"
 export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+# A net8.0 framework-dependent tool can run on an installed newer runtime.
+export DOTNET_ROLL_FORWARD="${DOTNET_ROLL_FORWARD:-Major}"
 if [[ -z "${NUGET_PACKAGES:-}" ]]; then
   export NUGET_PACKAGES="$REPO_ROOT/artifacts/nuget"
 fi

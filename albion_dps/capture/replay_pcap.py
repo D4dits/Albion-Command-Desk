@@ -26,23 +26,27 @@ _MAGIC = {
 def replay_pcap(path: str | Path) -> Iterable[RawPacket]:
     path = Path(path)
     with path.open("rb") as handle:
-        config = _read_global_header(handle)
-        while True:
-            header = handle.read(16)
-            if not header:
-                break
-            if len(header) < 16:
-                raise ValueError("Truncated pcap record header")
-            ts_sec, ts_subsec, incl_len, _orig_len = struct.unpack(
-                f"{config.endian}IIII", header
-            )
-            packet = handle.read(incl_len)
-            if len(packet) < incl_len:
-                raise ValueError("Truncated pcap record data")
-            timestamp = _to_timestamp(ts_sec, ts_subsec, config)
-            raw = decode_udp_frame(packet, timestamp)
-            if raw is not None:
-                yield raw
+        yield from read_pcap_stream(handle)
+
+
+def read_pcap_stream(handle: BinaryIO) -> Iterable[RawPacket]:
+    config = _read_global_header(handle)
+    while True:
+        header = handle.read(16)
+        if not header:
+            break
+        if len(header) < 16:
+            raise ValueError("Truncated pcap record header")
+        ts_sec, ts_subsec, incl_len, _orig_len = struct.unpack(
+            f"{config.endian}IIII", header
+        )
+        packet = handle.read(incl_len)
+        if len(packet) < incl_len:
+            raise ValueError("Truncated pcap record data")
+        timestamp = _to_timestamp(ts_sec, ts_subsec, config)
+        raw = decode_udp_frame(packet, timestamp)
+        if raw is not None:
+            yield raw
 
 
 def _read_global_header(handle: BinaryIO) -> _PcapConfig:

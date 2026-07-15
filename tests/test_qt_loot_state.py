@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import queue
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ pytest.importorskip("PySide6")
 
 from albion_dps.domain.fame_tracker import FameTracker
 from albion_dps.domain.loot_types import LootEvent, LootItemRef, LootPlayer
+from albion_dps.domain.loot_session_store import LootSessionStore
 from albion_dps.domain.map_resolver import MapResolver
 from albion_dps.domain.name_registry import NameRegistry
 from albion_dps.domain.party_registry import PartyRegistry
@@ -114,6 +116,42 @@ def test_loot_state_builds_model_and_export_text() -> None:
     source = sources.index(0, 0)
     assert sources.data(source, sources.LabelRole) == "Enemy"
     assert sources.data(source, sources.SublabelRole) == ""
+
+
+def test_loot_state_moves_buffered_event_into_session_without_duplicates(tmp_path) -> None:
+    store = LootSessionStore(tmp_path / "loot-sessions.sqlite3")
+    try:
+        event = LootEvent(
+            timestamp=time.time() - 5,
+            looted_by=LootPlayer(player_name="Alice", guild_name="Guild A"),
+            looted_from=None,
+            source_name="@MOB_KEEPER",
+            source_kind="mob",
+            item=LootItemRef(
+                item_num_id=3130,
+                unique_name="T3_BAG",
+                display_name="Journeyman's Bag",
+            ),
+            quantity=1,
+            is_silver=False,
+            raw_event_code=1,
+            raw_subtype=275,
+            event_id="run-1:1",
+            eligibility_reason="party",
+        )
+        tracker = _FakeLootTracker([event])
+        state = LootState(history_limit=10, session_store=store)
+
+        state.update_from_tracker(tracker)
+        state.update_from_tracker(tracker)
+
+        assert state.eventCount == 1
+        assert state.startSession("Dungeon") is True
+        assert state.sessionActive is True
+        assert state.eventCount == 1
+        assert len(store.loot_rows(session_id=state.selectedSessionId)) == 1
+    finally:
+        store.close()
 
 
 def test_loot_state_skips_missing_renderer_icons_for_trash_items() -> None:

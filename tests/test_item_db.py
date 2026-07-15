@@ -98,6 +98,16 @@ def test_extractor_targets_supported_dotnet_sdk() -> None:
     assert compile_items == {"Program.cs", "src/**/*.cs"}
 
 
+def test_extractor_scripts_allow_newer_dotnet_runtime() -> None:
+    scripts = [
+        item_db.REPO_ROOT / "tools" / "extract_items" / "run_extract_items.sh",
+        item_db.REPO_ROOT / "tools" / "extract_items" / "run_extract_items.ps1",
+    ]
+
+    for script in scripts:
+        assert "DOTNET_ROLL_FORWARD" in script.read_text(encoding="utf-8")
+
+
 def test_dotnet_sdk_major_versions_parses_list_output() -> None:
     output = "8.0.301 [/usr/lib/dotnet/sdk]\n9.0.100 [/usr/lib/dotnet-9/sdk]\n"
 

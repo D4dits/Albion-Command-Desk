@@ -25,7 +25,7 @@ Item {
     property string sourceNameFilter: ""
     property string looterFilter: "all"
     property string categoryFilter: "all"
-    property string kindFilter: "all"
+    property string kindFilter: "items"
     property var sourceFilterOptions: ["all", "player", "mob", "system"]
     property var looterFilterOptions: ["all"]
     property var categoryFilterOptions: ["all", "weapon", "armor", "bag", "cape", "mount", "consumable", "resource", "artifact", "other"]
@@ -35,15 +35,26 @@ Item {
     property var topItemsModel: null
     property var topSourcesModel: null
     property var topSilverLootersModel: null
-    property bool stackedControls: width < 1140
-    property bool stackedSummary: width < 920
-    property bool summaryRail: width >= 1040
-    property int summaryRailWidth: compactLayout ? 292 : 312
-    property int aggregateColumns: width >= 1050 ? 3 : (width >= 720 ? 2 : 1)
-    property int timeColumnWidth: compactLayout ? 50 : 58
-    property int looterColumnWidth: compactLayout ? 112 : 136
-    property int qtyColumnWidth: compactLayout ? 42 : 48
-    property int sourceColumnWidth: compactLayout ? 104 : 118
+
+    property bool sessionActive: false
+    property string sessionTitle: "Live buffer"
+    property string sessionDurationText: "00:00"
+    property var sessionOptions: []
+    property string selectedSessionId: ""
+    property int pendingScopeCount: 0
+    property int totalMarketValue: 0
+    property int totalLiquidationValue: 0
+    property int outstandingMarketValue: 0
+    property string pricingStatus: "idle"
+    property string priceRegion: "europe"
+    property string priceCity: "Bridgewatch"
+    property int bufferSeconds: 120
+    property string selfGuild: ""
+    property string selfAlliance: ""
+    property int activeView: 0
+    property string settlementEventId: ""
+    property string settlementAction: "returned"
+    property int settlementMaxQuantity: 1
 
     signal setSearchQuery(string value)
     signal setSourceFilter(string value)
@@ -57,154 +68,51 @@ Item {
     signal openLogFolder()
     signal importLog()
     signal useLiveLog()
+    signal startSession(string title)
+    signal stopSession()
+    signal selectSession(int index)
+    signal showLiveBuffer()
+    signal deleteSelectedSession()
+    signal refreshPrices()
+    signal setPriceCity(string value)
+    signal setPriceRegion(string value)
+    signal setBufferSeconds(int value)
+    signal setSelfAffiliation(string guildName, string allianceName)
+    signal settleEvent(string eventId, string action, int quantity, int actualValue, string note)
+    signal resetEventSettlement(string eventId)
+    signal settlePlayer(string playerName, string action)
+    signal setEventQuality(string eventId, int quality)
 
-    function cardValue(value) {
-        var number = Number(value)
-        if (!isFinite(number)) {
-            return "0"
-        }
-        var absValue = Math.abs(number)
-        if (absValue >= 1000000000) {
-            return (number / 1000000000).toFixed(1) + "B"
-        }
-        if (absValue >= 1000000) {
-            return (number / 1000000).toFixed(1) + "M"
-        }
-        if (absValue >= 1000) {
-            return (number / 1000).toFixed(1) + "k"
-        }
-        return String(Math.round(number))
-    }
-
-    function kindLabel(value) {
-        return categoryLabel(value)
+    function formatNumber(value) {
+        var n = Number(value)
+        if (!isFinite(n)) return "0"
+        return Math.round(n).toLocaleString(Qt.locale("en_US"), "f", 0)
     }
 
     function categoryLabel(value) {
-        if (value === "all") return "All items"
-        if (value === "weapon") return "Weapons"
-        if (value === "armor") return "Armor"
-        if (value === "bag") return "Bags"
-        if (value === "cape") return "Capes"
-        if (value === "mount") return "Mounts"
-        if (value === "consumable") return "Consumables"
-        if (value === "resource") return "Resources"
-        if (value === "artifact") return "Artifacts"
-        return "Other"
+        var labels = {
+            "all": "All",
+            "weapon": "Weapons",
+            "armor": "Armor",
+            "bag": "Bags",
+            "cape": "Capes",
+            "mount": "Mounts",
+            "consumable": "Consumables",
+            "resource": "Resources",
+            "artifact": "Artifacts",
+            "other": "Other"
+        }
+        return labels[value] || value
     }
 
-    function sourceLabel(value) {
-        var text = String(value || "all")
-        if (text.length === 0) {
-            return "All"
-        }
-        return text.charAt(0).toUpperCase() + text.slice(1)
-    }
-
-    function categoryBadgeBg(category, sourceKindValue) {
-        if (sourceKindValue === "player") {
-            return theme.stateDangerBg
-        }
-        if (category === "resource" || category === "consumable") {
-            return theme.stateWarningBg
-        }
-        return theme.stateSuccessBg
-    }
-
-    function categoryBadgeBorder(category, sourceKindValue) {
-        if (sourceKindValue === "player") {
-            return theme.stateDanger
-        }
-        if (category === "resource" || category === "consumable") {
-            return theme.stateWarning
-        }
-        return theme.stateSuccess
-    }
-
-    function categoryBadgeText(category, sourceKindValue) {
-        if (sourceKindValue === "player") {
-            return theme.stateDanger
-        }
-        if (category === "resource" || category === "consumable") {
-            return theme.stateWarning
-        }
-        return theme.stateSuccess
-    }
-
-    function categoryBadgeLabel(category) {
-        if (category === "all") return "ITEM"
-        return root.categoryLabel(category).toUpperCase()
-    }
-
-    function rowBackground(sourceKindValue) {
-        if (sourceKindValue === "player") {
-            return theme.stateDangerBg
-        }
-        if (sourceKindValue === "mob") {
-            return "#171a13"
-        }
-        return theme.surfaceInteractive
-    }
-
-    function rowBorder(sourceKindValue) {
-        if (sourceKindValue === "player") {
-            return theme.stateDanger
-        }
-        if (sourceKindValue === "mob") {
-            return "#54451d"
-        }
-        return theme.borderSubtle
-    }
-
-    function sourceBadgeBg(kind) {
-        if (kind === "mob") {
-            return theme.stateWarningBg
-        }
-        if (kind === "player") {
-            return theme.stateDangerBg
-        }
-        return theme.surfaceRaised
-    }
-
-    function sourceBadgeBorder(kind) {
-        if (kind === "mob") {
-            return theme.stateWarning
-        }
-        if (kind === "player") {
-            return theme.stateDanger
-        }
-        return theme.borderSubtle
-    }
-
-    function sourceBadgeText(kind) {
-        if (kind === "mob") {
-            return theme.stateWarning
-        }
-        if (kind === "player") {
-            return theme.stateDanger
-        }
-        return theme.textPrimary
-    }
-
-    function statCardBg(title) {
-        if (title === "Items" || title === "Unique") {
-            return theme.stateSuccessBg
-        }
-        return theme.surfaceRaised
-    }
-
-    function statCardBorder(title) {
-        if (title === "Items" || title === "Unique") {
-            return theme.stateSuccess
-        }
-        return theme.borderSubtle
-    }
-
-    function statCardValueColor(title) {
-        if (title === "Items" || title === "Unique") {
-            return theme.stateSuccess
-        }
-        return theme.textPrimary
+    function openSettlement(eventId, action, quantity) {
+        root.settlementEventId = eventId
+        root.settlementAction = action
+        root.settlementMaxQuantity = Math.max(1, Number(quantity))
+        settlementQuantity.value = root.settlementMaxQuantity
+        settlementActual.text = ""
+        settlementNote.text = ""
+        settlementDialog.open()
     }
 
     Rectangle {
@@ -217,347 +125,263 @@ Item {
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: theme.spacingSection
-            spacing: 10
+            spacing: 8
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                spacing: 10
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 3
-
+                    spacing: 2
                     Text {
                         text: "Loot"
                         color: theme.textPrimary
                         font.pixelSize: 20
                         font.bold: true
                     }
-
                     Text {
                         Layout.fillWidth: true
-                        text: latestLootSummary.length > 0
-                            ? latestLootSummary
-                            : "Party loot log. Import previous logs or inspect the current session feed."
-                        color: latestLootSummary.length > 0 ? theme.textSecondary : theme.textMuted
+                        text: root.sessionTitle + "  |  " + root.sessionDurationText
+                        color: root.sessionActive ? theme.stateSuccess : theme.textMuted
                         font.pixelSize: 11
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 2
+                        elide: Text.ElideRight
                     }
                 }
 
+                TextField {
+                    id: sessionName
+                    Layout.preferredWidth: 190
+                    visible: !root.sessionActive
+                    placeholderText: "Session name"
+                    color: theme.textPrimary
+                    selectByMouse: true
+                    background: Rectangle {
+                        radius: 4
+                        color: theme.cardLevel1
+                        border.color: sessionName.activeFocus ? theme.accentPrimary : theme.borderSubtle
+                    }
+                }
+
+                AppComboBox {
+                    id: lookbackCombo
+                    Layout.preferredWidth: 105
+                    visible: !root.sessionActive
+                    model: [0, 60, 120, 300, 600]
+                    currentIndex: Math.max(0, model.indexOf(root.bufferSeconds))
+                    textRole: ""
+                    displayText: String(currentValue) + "s buffer"
+                    onActivated: root.setBufferSeconds(Number(currentValue))
+                }
+
+                AppButton {
+                    text: root.sessionActive ? "Stop" : "Start"
+                    variant: root.sessionActive ? "danger" : "primary"
+                    onClicked: {
+                        if (root.sessionActive) root.stopSession()
+                        else root.startSession(sessionName.text)
+                    }
+                }
+
+                AppButton {
+                    text: "Export"
+                    onClicked: root.exportCurrentView()
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: controlsFlow.implicitHeight + 14
+                radius: 4
+                color: theme.cardLevel1
+                border.color: theme.borderSubtle
+
                 Flow {
-                    Layout.preferredWidth: compactLayout ? 330 : 382
-                    Layout.maximumWidth: 382
-                    spacing: 6
+                    id: controlsFlow
+                    anchors.fill: parent
+                    anchors.margins: 7
+                    spacing: 7
 
-                    Repeater {
-                        model: [
-                            { title: "Events", value: root.eventCount },
-                            { title: "Items", value: root.totalQuantity },
-                            { title: "Looters", value: root.uniqueLooters },
-                            { title: "Unique", value: root.uniqueItems }
-                        ]
+                    TextField {
+                        width: 190
+                        height: 30
+                        placeholderText: "Search player or item"
+                        text: root.searchQuery
+                        color: theme.textPrimary
+                        selectByMouse: true
+                        onTextEdited: root.setSearchQuery(text)
+                        background: Rectangle {
+                            radius: 4
+                            color: theme.cardLevel0
+                            border.color: parent.activeFocus ? theme.accentPrimary : theme.borderSubtle
+                        }
+                    }
 
-                        delegate: Rectangle {
-                            width: compactLayout ? 76 : 88
-                            height: 26
-                            radius: 8
-                            color: root.statCardBg(modelData.title)
-                            border.color: root.statCardBorder(modelData.title)
+                    AppComboBox {
+                        width: 145
+                        model: root.looterFilterOptions
+                        currentIndex: Math.max(0, model.indexOf(root.looterFilter))
+                        onActivated: root.setLooterFilter(String(currentValue))
+                    }
 
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: 5
+                    AppComboBox {
+                        width: 120
+                        model: root.sourceFilterOptions
+                        currentIndex: Math.max(0, model.indexOf(root.sourceFilter))
+                        onActivated: root.setSourceFilter(String(currentValue))
+                    }
 
-                                Text {
-                                    text: root.cardValue(modelData.value)
-                                    color: root.statCardValueColor(modelData.title)
-                                    font.pixelSize: 12
-                                    font.bold: true
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                                Text {
-                                    text: modelData.title
-                                    color: theme.textMuted
-                                    font.pixelSize: 9
-                                    font.letterSpacing: 0.4
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
+                    AppComboBox {
+                        width: 135
+                        model: root.categoryFilterOptions
+                        currentIndex: Math.max(0, model.indexOf(root.categoryFilter))
+                        displayText: root.categoryLabel(String(currentValue))
+                        onActivated: root.setCategoryFilter(String(currentValue))
+                    }
+
+                    AppComboBox {
+                        width: 92
+                        model: ["europe", "west", "east"]
+                        currentIndex: Math.max(0, model.indexOf(root.priceRegion))
+                        onActivated: root.setPriceRegion(String(currentValue))
+                    }
+
+                    TextField {
+                        width: 120
+                        height: 30
+                        text: root.priceCity
+                        placeholderText: "Price city"
+                        color: theme.textPrimary
+                        selectByMouse: true
+                        onEditingFinished: root.setPriceCity(text)
+                        background: Rectangle {
+                            radius: 4
+                            color: theme.cardLevel0
+                            border.color: parent.activeFocus ? theme.accentPrimary : theme.borderSubtle
+                        }
+                    }
+
+                    AppButton {
+                        text: "Refresh prices"
+                        enabled: root.pricingStatus !== "refreshing"
+                        onClicked: root.refreshPrices()
+                    }
+
+                    Text {
+                        height: 30
+                        verticalAlignment: Text.AlignVCenter
+                        text: root.pricingStatus
+                        color: root.pricingStatus.indexOf("error") === 0 ? theme.stateDanger : theme.textMuted
+                        font.pixelSize: 10
+                    }
+                }
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 1
+
+                Repeater {
+                    model: [
+                        { label: "Items", value: root.eventCount },
+                        { label: "Players", value: root.uniqueLooters },
+                        { label: "Market value", value: root.totalMarketValue },
+                        { label: "Instant value", value: root.totalLiquidationValue },
+                        { label: "Outstanding", value: root.outstandingMarketValue },
+                        { label: "Unclassified", value: root.pendingScopeCount }
+                    ]
+                    delegate: Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 48
+                        color: theme.cardLevel1
+                        border.color: theme.borderSubtle
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 2
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: root.formatNumber(modelData.value)
+                                color: modelData.label === "Outstanding" && modelData.value > 0
+                                    ? theme.stateWarning : theme.textPrimary
+                                font.pixelSize: 15
+                                font.bold: true
+                            }
+                            Text {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: modelData.label
+                                color: theme.textMuted
+                                font.pixelSize: 9
                             }
                         }
                     }
                 }
             }
 
-            GridLayout {
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 4
+                Repeater {
+                    model: ["Live", "Players", "Reconcile", "History"]
+                    delegate: AppButton {
+                        Layout.preferredWidth: 118
+                        text: modelData
+                        variant: root.activeView === index ? "primary" : "secondary"
+                        onClicked: root.activeView = index
+                    }
+                }
+                Item { Layout.fillWidth: true }
+                AppButton {
+                    text: "Import"
+                    onClicked: root.importLog()
+                }
+                AppButton {
+                    visible: root.importedLogActive
+                    text: "Back to live"
+                    onClicked: root.useLiveLog()
+                }
+            }
+
+            Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                columns: root.summaryRail ? 2 : 1
-                columnSpacing: 8
-                rowSpacing: 8
 
                 ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.minimumWidth: root.summaryRail ? 560 : 0
-                    spacing: 8
+                    anchors.fill: parent
+                    visible: root.activeView === 0 || root.activeView === 2
+                    spacing: 0
 
                     Rectangle {
                         Layout.fillWidth: true
-                        radius: theme.radiusLg
-                        color: theme.cardLevel2
-                        border.color: theme.borderStrong
-                        implicitHeight: filterContent.implicitHeight + 16
-
-                        ColumnLayout {
-                            id: filterContent
+                        implicitHeight: 28
+                        color: theme.cardLevel1
+                        border.color: theme.borderSubtle
+                        RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 8
-                            spacing: 6
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 10
-
-                                Flow {
-                                    Layout.fillWidth: true
-                                    spacing: 7
-
-                                    Repeater {
-                                        model: root.categoryFilterOptions
-
-                                        delegate: AppButton {
-                                            text: root.categoryLabel(modelData)
-                                            compact: true
-                                            checkable: true
-                                            checked: root.categoryFilter === String(modelData)
-                                            variant: checked ? "primary" : "secondary"
-                                            onClicked: root.setCategoryFilter(String(modelData))
-                                        }
-                                    }
-                                }
-                            }
-
-                            GridLayout {
-                                Layout.fillWidth: true
-                                columns: root.stackedControls ? 1 : 4
-                                columnSpacing: 8
-                                rowSpacing: 8
-
-                                AppTextField {
-                                    Layout.fillWidth: true
-                                    Layout.columnSpan: root.stackedControls ? 1 : 2
-                                    placeholderText: "Search item, looter, victim, guild..."
-                                    text: root.searchQuery
-                                    onTextEdited: root.setSearchQuery(text)
-                                }
-
-                                AppComboBox {
-                                    Layout.fillWidth: true
-                                    model: root.looterFilterOptions
-                                    currentIndex: Math.max(0, model.indexOf(root.looterFilter))
-                                    onActivated: function(index) {
-                                        root.setLooterFilter(String(model[index]))
-                                    }
-                                }
-
-                                AppComboBox {
-                                    Layout.fillWidth: true
-                                    model: root.sourceFilterOptions
-                                    currentIndex: Math.max(0, model.indexOf(root.sourceFilter))
-                                    onActivated: function(index) {
-                                        root.setSourceFilter(String(model[index]))
-                                    }
-                                }
-                            }
-
-                            Flow {
-                                Layout.fillWidth: true
-                                spacing: 7
-
-                                Rectangle {
-                                    radius: 9
-                                    color: theme.stateDangerBg
-                                    border.color: theme.stateDanger
-                                    implicitHeight: 18
-                                    implicitWidth: corpseLegend.implicitWidth + 12
-
-                                    Text {
-                                        id: corpseLegend
-                                        anchors.centerIn: parent
-                                        text: "red = player corpse"
-                                        color: theme.stateDanger
-                                        font.pixelSize: 9
-                                        font.bold: true
-                                    }
-                                }
-
-                                Rectangle {
-                                    radius: 9
-                                    color: theme.stateWarningBg
-                                    border.color: theme.stateWarning
-                                    implicitHeight: 18
-                                    implicitWidth: mobLegend.implicitWidth + 12
-
-                                    Text {
-                                        id: mobLegend
-                                        anchors.centerIn: parent
-                                        text: "yellow = mob/container"
-                                        color: theme.stateWarning
-                                        font.pixelSize: 9
-                                        font.bold: true
-                                    }
-                                }
-                            }
-
-                            ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 5
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 2
-
-                                    Text {
-                                        text: root.importedLogActive ? "Imported log" : "Live session log"
-                                        color: root.importedLogActive ? theme.stateInfo : theme.textSecondary
-                                        font.pixelSize: 10
-                                        font.bold: true
-                                    }
-
-                                    Text {
-                                        Layout.fillWidth: true
-                                        text: logPath.length > 0 ? logPath : "No loot log available yet"
-                                        color: theme.textMuted
-                                        font.pixelSize: 10
-                                        elide: Text.ElideMiddle
-                                    }
-                                }
-
-                                Flow {
-                                    Layout.fillWidth: true
-                                    spacing: 6
-
-                                    AppButton {
-                                        text: "Import Log"
-                                        compact: true
-                                        onClicked: root.importLog()
-                                    }
-
-                                    AppButton {
-                                        visible: root.importedLogActive
-                                        text: "Back To Live"
-                                        compact: true
-                                        onClicked: root.useLiveLog()
-                                    }
-
-                                    AppButton {
-                                        text: "Copy Summary"
-                                        compact: true
-                                        onClicked: root.copyLatestSummary()
-                                    }
-                                    AppButton {
-                                        text: "Copy View"
-                                        compact: true
-                                        onClicked: root.copyCurrentView()
-                                    }
-                                    AppButton {
-                                        text: "Export View"
-                                        compact: true
-                                        onClicked: root.exportCurrentView()
-                                    }
-                                    AppButton {
-                                        text: "Open Folder"
-                                        compact: true
-                                        onClicked: root.openLogFolder()
-                                    }
-                                }
-                            }
+                            anchors.leftMargin: 8
+                            anchors.rightMargin: 8
+                            spacing: 8
+                            Text { text: "TIME"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 52 }
+                            Text { text: "PLAYER"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 142 }
+                            Text { text: "ITEM"; color: theme.textMuted; font.pixelSize: 9; Layout.fillWidth: true }
+                            Text { text: "Q"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 45 }
+                            Text { text: "QTY"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 42 }
+                            Text { text: "VALUE"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 92 }
+                            Text { text: "STATUS"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: root.activeView === 2 ? 138 : 92 }
                         }
                     }
 
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.minimumHeight: root.summaryRail ? 330 : 220
-                    Layout.preferredHeight: root.summaryRail ? 430 : (compactLayout ? 220 : 250)
-                    radius: theme.radiusLg
-                    color: theme.surfacePanel
-                    border.color: theme.borderStrong
-                    clip: true
+                    ListView {
+                        id: lootList
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+                        model: root.eventsModel
+                        spacing: 1
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 6
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            Text {
-                                text: "Loot Feed"
-                                color: theme.textPrimary
-                                font.pixelSize: 14
-                                font.bold: true
-                            }
-
-                            Rectangle {
-                                radius: 9
-                                color: root.importedLogActive ? theme.stateInfoBg : theme.surfaceRaised
-                                border.color: root.importedLogActive ? theme.stateInfo : theme.borderSubtle
-                                implicitHeight: 20
-                                implicitWidth: recentLootCount.implicitWidth + 14
-
-                                Text {
-                                    id: recentLootCount
-                                    anchors.centerIn: parent
-                                    text: root.importedLogActive ? "Imported view" : (root.eventCount + " rows")
-                                    color: root.importedLogActive ? theme.stateInfo : theme.textMuted
-                                    font.pixelSize: 10
-                                    font.bold: true
-                                }
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
-                            }
-
-                            Text {
-                                text: root.sourceNameFilter.length > 0
-                                    ? ("From: " + root.sourceNameFilter)
-                                    : ("Source: " + root.sourceLabel(root.sourceFilter))
-                                color: theme.textMuted
-                                font.pixelSize: 11
-                            }
-
-                            AppButton {
-                                visible: root.sourceNameFilter.length > 0
-                                text: "Clear source"
-                                compact: true
-                                onClicked: root.setSourceNameFilter("")
-                            }
-
-                            Text {
-                                text: root.looterFilter === "all" ? "All looters" : root.looterFilter
-                                color: theme.textMuted
-                                font.pixelSize: 11
-                            }
-
-                            Text {
-                                text: root.categoryLabel(root.categoryFilter)
-                                color: theme.textMuted
-                                font.pixelSize: 11
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 26
-                            visible: !root.stackedSummary
-                            radius: 8
-                            color: theme.cardLevel2
+                        delegate: Rectangle {
+                            width: lootList.width
+                            height: 54
+                            color: index % 2 === 0 ? theme.cardLevel0 : theme.cardLevel1
                             border.color: theme.borderSubtle
 
                             RowLayout {
@@ -566,266 +390,292 @@ Item {
                                 anchors.rightMargin: 8
                                 spacing: 8
 
-                                Text { text: "TIME"; color: theme.textMuted; font.pixelSize: 10; font.bold: true; Layout.preferredWidth: root.timeColumnWidth }
-                                Text { text: "LOOTER"; color: theme.textMuted; font.pixelSize: 10; font.bold: true; Layout.preferredWidth: root.looterColumnWidth }
-                                Text { text: "ITEM"; color: theme.textMuted; font.pixelSize: 10; font.bold: true; Layout.fillWidth: true }
-                                Text { text: "QTY"; color: theme.textMuted; font.pixelSize: 10; font.bold: true; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: root.qtyColumnWidth }
-                                Text { text: "SOURCE"; color: theme.textMuted; font.pixelSize: 10; font.bold: true; horizontalAlignment: Text.AlignHCenter; Layout.preferredWidth: root.sourceColumnWidth }
-                            }
-                        }
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 1
-                            color: theme.borderSubtle
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            clip: true
-
-                            ListView {
-                                id: lootList
-                                anchors.fill: parent
-                                clip: true
-                                spacing: 4
-                                model: root.eventsModel
-                                reuseItems: true
-                                cacheBuffer: 900
-
-                                delegate: Rectangle {
-                                    required property string timestampText
-                                    required property string lootedByName
-                                    required property string lootedByGuild
-                                    required property string itemName
-                                    required property string itemId
-                                    required property string iconUrl
-                                    required property string category
-                                    required property int quantity
-                                    required property string sourceName
-                                    required property string sourceKind
-                                    required property bool isSilver
-                                    required property string summary
-
-                                    width: lootList.width
-                                    radius: theme.radiusLg
-                                    color: root.rowBackground(sourceKind)
-                                    border.color: root.rowBorder(sourceKind)
-                                    border.width: 1
-                                    implicitHeight: compactLayout ? 46 : 50
-
+                                Text {
+                                    text: timestampText
+                                    color: theme.textMuted
+                                    font.pixelSize: 9
+                                    Layout.preferredWidth: 52
+                                }
+                                ColumnLayout {
+                                    Layout.preferredWidth: 142
+                                    spacing: 0
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: lootedByName
+                                        color: theme.textPrimary
+                                        font.pixelSize: 10
+                                        font.bold: true
+                                        elide: Text.ElideRight
+                                    }
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: lootedByGuild.length > 0 ? lootedByGuild : lootedByAlliance
+                                        color: theme.textMuted
+                                        font.pixelSize: 8
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+                                    Image {
+                                        source: iconUrl
+                                        visible: iconUrl.length > 0
+                                        sourceSize.width: 34
+                                        sourceSize.height: 34
+                                        Layout.preferredWidth: 34
+                                        Layout.preferredHeight: 34
+                                        fillMode: Image.PreserveAspectFit
+                                    }
                                     ColumnLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 6
-                                        spacing: 1
-
-                                        RowLayout {
-                                            Layout.fillWidth: true
-                                            spacing: 8
-
-                                            Text {
-                                                text: timestampText
-                                                color: theme.textPrimary
-                                                font.pixelSize: 10
-                                                Layout.preferredWidth: root.timeColumnWidth
-                                            }
-                                            Text {
-                                                text: lootedByGuild.length > 0 ? (lootedByName + " [" + lootedByGuild + "]") : lootedByName
-                                                color: theme.textPrimary
-                                                font.pixelSize: 10
-                                                Layout.preferredWidth: root.looterColumnWidth
-                                                elide: Text.ElideRight
-                                            }
-
-                                            Item {
-                                                Layout.preferredWidth: iconUrl.length > 0 ? 24 : 0
-                                                Layout.preferredHeight: 23
-                                                visible: iconUrl.length > 0
-
-                                                Rectangle {
-                                                    anchors.fill: parent
-                                                    radius: 6
-                                                    color: theme.surfaceRaised
-                                                    border.color: theme.borderSubtle
-
-                                                    Image {
-                                                        anchors.fill: parent
-                                                        anchors.margins: 2
-                                                        source: iconUrl
-                                                        fillMode: Image.PreserveAspectFit
-                                                        asynchronous: true
-                                                        cache: true
-                                                    }
-                                                }
-                                            }
-
-                                            ColumnLayout {
-                                                Layout.fillWidth: true
-                                                Layout.minimumWidth: compactLayout ? 140 : 210
-                                                spacing: 0
-                                                RowLayout {
-                                                    Layout.fillWidth: true
-                                                    spacing: 6
-
-                                                    Text {
-                                                        Layout.fillWidth: true
-                                                        text: itemName
-                                                        color: sourceKind === "player" ? theme.stateDanger : theme.textPrimary
-                                                        font.pixelSize: 11
-                                                        font.bold: true
-                                                        elide: Text.ElideRight
-                                                    }
-
-                                                    Rectangle {
-                                                        radius: 9
-                                                        color: root.categoryBadgeBg(category, sourceKind)
-                                                        border.color: root.categoryBadgeBorder(category, sourceKind)
-                                                        implicitHeight: 16
-                                                        implicitWidth: kindBadgeText.implicitWidth + 12
-
-                                                        Text {
-                                                            id: kindBadgeText
-                                                            anchors.centerIn: parent
-                                                            text: root.categoryBadgeLabel(category)
-                                                            color: root.categoryBadgeText(category, sourceKind)
-                                                            font.pixelSize: 8
-                                                            font.bold: true
-                                                        }
-                                                    }
-                                                }
-                                                Text {
-                                                    Layout.fillWidth: true
-                                                    text: itemId
-                                                    color: theme.textDisabled
-                                                    font.pixelSize: 8
-                                                    elide: Text.ElideRight
-                                                    visible: itemId.length > 0
-                                                }
-                                            }
-                                            Text {
-                                                text: String(quantity) + "x"
-                                                color: sourceKind === "player" ? theme.stateDanger : theme.textPrimary
-                                                font.pixelSize: 10
-                                                font.bold: true
-                                                horizontalAlignment: Text.AlignRight
-                                                Layout.preferredWidth: root.qtyColumnWidth
-                                            }
-                                            Rectangle {
-                                                Layout.preferredWidth: root.sourceColumnWidth
-                                                radius: 10
-                                                color: root.sourceBadgeBg(sourceKind)
-                                                border.color: root.sourceBadgeBorder(sourceKind)
-                                                border.width: 1
-                                                implicitHeight: 18
-
-                                                Text {
-                                                    anchors.centerIn: parent
-                                                    text: sourceKind === "player"
-                                                        ? ("Corpse: " + (sourceName.length > 0 ? sourceName : "player"))
-                                                        : (sourceName.length > 0 ? sourceName : "System")
-                                                    color: root.sourceBadgeText(sourceKind)
-                                                    font.pixelSize: 8
-                                                    elide: Text.ElideRight
-                                                    width: parent.width - 12
-                                                    horizontalAlignment: Text.AlignHCenter
-                                                }
-                                            }
-                                        }
-
+                                        Layout.fillWidth: true
+                                        spacing: 0
                                         Text {
-                                            id: detailText
                                             Layout.fillWidth: true
-                                            text: summary
-                                            color: theme.textMuted
-                                            font.pixelSize: 9
+                                            text: itemName
+                                            color: theme.textPrimary
+                                            font.pixelSize: 10
+                                            font.bold: true
                                             elide: Text.ElideRight
-                                            maximumLineCount: 1
+                                        }
+                                        Text {
+                                            Layout.fillWidth: true
+                                            text: eligibilityReason + " | " + (sourceName.length > 0 ? sourceName : sourceKind)
+                                            color: theme.textMuted
+                                            font.pixelSize: 8
+                                            elide: Text.ElideRight
                                         }
                                     }
                                 }
-
-                                ScrollBar.vertical: ScrollBar {}
-                            }
-
-                            Item {
-                                anchors.fill: parent
-                                visible: lootList.count === 0
-
-                                Column {
-                                    anchors.centerIn: parent
-                                    spacing: 8
-
+                                AppComboBox {
+                                    Layout.preferredWidth: 45
+                                    model: ["Q?", "Q1", "Q2", "Q3", "Q4", "Q5"]
+                                    currentIndex: Math.max(0, model.indexOf(qualityText))
+                                    onActivated: root.setEventQuality(eventId, index)
+                                }
+                                Text {
+                                    text: String(quantity)
+                                    color: theme.textPrimary
+                                    font.pixelSize: 10
+                                    Layout.preferredWidth: 42
+                                }
+                                ColumnLayout {
+                                    Layout.preferredWidth: 92
+                                    spacing: 0
                                     Text {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        text: "No item drops in this view"
-                                        color: theme.textSecondary
-                                        font.pixelSize: 18
+                                        text: root.formatNumber(marketValue)
+                                        color: marketValue > 0 ? theme.stateSuccess : theme.textDisabled
+                                        font.pixelSize: 10
                                         font.bold: true
                                     }
-
                                     Text {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        text: root.importedLogActive
-                                            ? "Try another imported log or change the filters above."
-                                            : "Wait for party loot or import an earlier log file."
-                                        color: theme.textMuted
-                                        font.pixelSize: 12
+                                        text: valueEstimated ? "estimated" : "priced"
+                                        color: valueEstimated ? theme.stateWarning : theme.textMuted
+                                        font.pixelSize: 8
                                     }
+                                }
+                                Loader {
+                                    Layout.preferredWidth: root.activeView === 2 ? 138 : 92
+                                    sourceComponent: root.activeView === 2 ? reconcileControl : statusLabel
+                                }
+                            }
+
+                            Component {
+                                id: statusLabel
+                                Text {
+                                    text: settlementStatus
+                                    color: settlementStatus === "pending" ? theme.stateWarning : theme.stateSuccess
+                                    font.pixelSize: 9
+                                    font.bold: true
+                                    elide: Text.ElideRight
+                                }
+                            }
+                            Component {
+                                id: reconcileControl
+                                AppComboBox {
+                                    model: ["pending", "returned", "sold", "lost", "allowed", "unreturned", "excluded"]
+                                    currentIndex: Math.max(0, model.indexOf(settlementStatus))
+                                    onActivated: {
+                                        var action = String(currentValue)
+                                        if (action === "pending") root.resetEventSettlement(eventId)
+                                        else root.openSettlement(eventId, action, outstandingQuantity)
+                                    }
+                                }
+                            }
+                        }
+
+                        ScrollBar.vertical: ScrollBar {}
+                    }
+                }
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    visible: root.activeView === 1
+                    spacing: 1
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 28
+                        color: theme.cardLevel1
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 8
+                            Text { text: "PLAYER"; color: theme.textMuted; font.pixelSize: 9; Layout.fillWidth: true }
+                            Text { text: "ITEMS"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 70 }
+                            Text { text: "MARKET"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 110 }
+                            Text { text: "INSTANT"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 110 }
+                            Text { text: "OUTSTANDING"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 120 }
+                            Text { text: "SETTLE PLAYER"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 126 }
+                        }
+                    }
+                    ListView {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+                        model: root.topLootersModel
+                        delegate: Rectangle {
+                            width: ListView.view.width
+                            height: 42
+                            color: index % 2 === 0 ? theme.cardLevel0 : theme.cardLevel1
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 8
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 0
+                                    Text { text: label; color: theme.textPrimary; font.pixelSize: 11; font.bold: true }
+                                    Text { text: sublabel; color: theme.textMuted; font.pixelSize: 8 }
+                                }
+                                Text { text: String(quantity); color: theme.textSecondary; font.pixelSize: 10; Layout.preferredWidth: 70 }
+                                Text { text: root.formatNumber(marketValue); color: theme.stateSuccess; font.pixelSize: 10; Layout.preferredWidth: 110 }
+                                Text { text: root.formatNumber(liquidationValue); color: theme.textSecondary; font.pixelSize: 10; Layout.preferredWidth: 110 }
+                                Text { text: root.formatNumber(outstandingValue); color: outstandingValue > 0 ? theme.stateWarning : theme.stateSuccess; font.pixelSize: 10; Layout.preferredWidth: 120 }
+                                AppComboBox {
+                                    Layout.preferredWidth: 126
+                                    model: ["pending", "returned", "sold", "lost", "allowed", "unreturned", "excluded"]
+                                    onActivated: root.settlePlayer(label, String(currentValue))
                                 }
                             }
                         }
                     }
                 }
 
-                }
+                ColumnLayout {
+                    anchors.fill: parent
+                    visible: root.activeView === 3
+                    spacing: 10
 
-                GridLayout {
+                    RowLayout {
+                        Layout.fillWidth: true
+                        AppComboBox {
+                            Layout.fillWidth: true
+                            model: root.sessionOptions
+                            onActivated: root.selectSession(index)
+                        }
+                        AppButton {
+                            text: "Live buffer"
+                            onClicked: root.showLiveBuffer()
+                        }
+                        AppButton {
+                            text: "Delete"
+                            variant: "danger"
+                            enabled: root.selectedSessionId.length > 0 && !root.sessionActive
+                            onClicked: root.deleteSelectedSession()
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: affiliationLayout.implicitHeight + 20
+                        color: theme.cardLevel1
+                        border.color: theme.borderSubtle
+                        radius: 4
+                        ColumnLayout {
+                            id: affiliationLayout
+                            anchors.fill: parent
+                            anchors.margins: 10
+                            spacing: 7
+                            Text {
+                                text: "Loot scope"
+                                color: theme.textPrimary
+                                font.pixelSize: 12
+                                font.bold: true
+                            }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                TextField {
+                                    id: guildField
+                                    Layout.fillWidth: true
+                                    placeholderText: "Your guild"
+                                    text: root.selfGuild
+                                    color: theme.textPrimary
+                                    background: Rectangle { color: theme.cardLevel0; border.color: theme.borderSubtle; radius: 4 }
+                                }
+                                TextField {
+                                    id: allianceField
+                                    Layout.fillWidth: true
+                                    placeholderText: "Your alliance"
+                                    text: root.selfAlliance
+                                    color: theme.textPrimary
+                                    background: Rectangle { color: theme.cardLevel0; border.color: theme.borderSubtle; radius: 4 }
+                                }
+                                AppButton {
+                                    text: "Apply"
+                                    onClicked: root.setSelfAffiliation(guildField.text, allianceField.text)
+                                }
+                            }
+                        }
+                    }
+
+                    Item { Layout.fillHeight: true }
+                }
+            }
+        }
+    }
+
+    Dialog {
+        id: settlementDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        width: 380
+        modal: true
+        title: "Settle: " + root.settlementAction
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        onAccepted: root.settleEvent(
+            root.settlementEventId,
+            root.settlementAction,
+            settlementQuantity.value,
+            Number(settlementActual.text || 0),
+            settlementNote.text
+        )
+
+        contentItem: ColumnLayout {
+            spacing: 8
+            RowLayout {
+                Layout.fillWidth: true
+                Text { text: "Quantity"; color: theme.textMuted; Layout.preferredWidth: 90 }
+                SpinBox {
+                    id: settlementQuantity
                     Layout.fillWidth: true
-                    Layout.fillHeight: root.summaryRail
-                    Layout.minimumWidth: 0
-                    Layout.preferredWidth: root.summaryRail ? root.summaryRailWidth : -1
-                    Layout.maximumWidth: root.summaryRail ? root.summaryRailWidth : 16777215
-                    Layout.bottomMargin: 2
-                    columns: root.summaryRail ? 1 : root.aggregateColumns
-                    columnSpacing: 8
-                    rowSpacing: 8
-
-                    LootSummaryPanel {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: root.summaryRail
-                        Layout.preferredHeight: root.summaryRail ? 118 : (compactLayout ? 118 : 132)
-                        theme: root.theme
-                        title: "Top Looters"
-                        emptyText: "No looters in this view"
-                        accentMode: "neutral"
-                        model: root.topLootersModel
-                        onRowActivated: function(label) { root.setLooterFilter(label) }
-                    }
-
-                    LootSummaryPanel {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: root.summaryRail
-                        Layout.preferredHeight: root.summaryRail ? 138 : (compactLayout ? 118 : 132)
-                        theme: root.theme
-                        title: "Top Items"
-                        emptyText: "No item drops in this view"
-                        accentMode: "items"
-                        model: root.topItemsModel
-                    }
-
-                    LootSummaryPanel {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: root.summaryRail
-                        Layout.preferredHeight: root.summaryRail ? 118 : (compactLayout ? 118 : 132)
-                        theme: root.theme
-                        title: "Looted From Players"
-                        emptyText: "No player corpses in this view"
-                        accentMode: "danger"
-                        model: root.topSourcesModel
-                        onRowActivated: function(label) { root.setSourceNameFilter(label) }
-                    }
+                    from: 1
+                    to: Math.max(1, root.settlementMaxQuantity)
                 }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                visible: root.settlementAction === "sold"
+                Text { text: "Actual silver"; color: theme.textMuted; Layout.preferredWidth: 90 }
+                TextField {
+                    id: settlementActual
+                    Layout.fillWidth: true
+                    inputMethodHints: Qt.ImhDigitsOnly
+                    placeholderText: "Optional"
+                }
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                Text { text: "Note"; color: theme.textMuted; Layout.preferredWidth: 90 }
+                TextField { id: settlementNote; Layout.fillWidth: true }
             }
         }
     }

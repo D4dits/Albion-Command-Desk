@@ -11,8 +11,10 @@ from albion_dps.domain.loot_tracker import (
     EV_CHARACTER_STATS,
     EV_DETACH_ITEM_CONTAINER,
     EV_NEW_CHARACTER,
+    EV_NEW_EQUIPMENT_ITEM,
     EV_NEW_LOOT,
     EV_NEW_SIMPLE_ITEM,
+    EV_LEGACY_OTHER_GRABBED_LOOT,
     EV_OTHER_GRABBED_LOOT,
     EV_PARTY_MEMBER_GRABBED_LOOT,
     LootTracker,
@@ -68,6 +70,85 @@ def test_loot_tracker_tracks_player_metadata_from_character_events(monkeypatch) 
     assert player.alliance_name == "Alliance B"
 
 
+def test_loot_tracker_includes_same_guild_and_alliance_and_promotes_late_metadata(
+    monkeypatch,
+) -> None:
+    party = PartyRegistry()
+    party.set_self_name("SelfGuy", confirmed=True)
+    tracker = LootTracker(party_registry=party)
+    tracker.set_self_affiliation(guild_name="Guild A", alliance_name="Alliance A")
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_OTHER_GRABBED_LOOT,
+        parameters={1: "Enemy", 2: "Alice", 3: False, 4: 12345, 5: 1},
+    )
+    tracker.observe(_message(), _packet(1.0))
+    assert tracker.events() == []
+    assert len(tracker.observations()) == 1
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_CHARACTER,
+        parameters={1: "Alice", 8: "Guild A", 51: "Other Alliance"},
+    )
+    tracker.observe(_message())
+    assert tracker.events()[0].eligibility_reason == "guild"
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_CHARACTER,
+        parameters={1: "Bob", 8: "Other Guild", 51: "Alliance A"},
+    )
+    tracker.observe(_message())
+    _set_event(
+        monkeypatch,
+        subtype=EV_OTHER_GRABBED_LOOT,
+        parameters={1: "Enemy", 2: "Bob", 3: False, 4: 12345, 5: 1},
+    )
+    tracker.observe(_message(), _packet(2.0))
+    assert {event.eligibility_reason for event in tracker.events()} == {"guild", "alliance"}
+
+
+def test_loot_tracker_keeps_equipment_quality(monkeypatch) -> None:
+    tracker = LootTracker()
+    _set_event(
+        monkeypatch,
+        subtype=EV_NEW_EQUIPMENT_ITEM,
+        parameters={0: 7001, 1: 333, 2: 1, 6: 4},
+    )
+    tracker.observe(_message())
+
+    loot = tracker.loot_object(7001)
+    assert loot is not None
+    assert loot.item.quality == 4
+
+
+def test_loot_tracker_reads_self_affiliation_from_join_response(monkeypatch) -> None:
+    party = PartyRegistry()
+    party.set_self_name("SelfGuy", confirmed=True)
+    tracker = LootTracker(party_registry=party)
+    monkeypatch.setattr(
+        loot_tracker_module,
+        "decode_operation_response",
+        lambda _payload: SimpleNamespace(
+            code=2,
+            parameters={253: 2, 2: "SelfGuy", 58: "Guild A", 79: "Alliance A"},
+        ),
+    )
+
+    tracker.observe(
+        PhotonMessage(
+            opcode=2,
+            event_code=None,
+            payload=b"\x00",
+            message_type="operation_response",
+        )
+    )
+
+    assert tracker.self_affiliation() == ("Guild A", "Alliance A")
+
+
 def test_loot_tracker_records_loot_event_with_resolved_item(monkeypatch) -> None:
     tracker = LootTracker(
         item_resolver=ItemResolver(
@@ -97,6 +178,46 @@ def test_loot_tracker_records_loot_event_with_resolved_item(monkeypatch) -> None
     assert event.item.display_name == "Adept's Broadsword"
     assert event.quantity == 2
     assert event.is_silver is False
+
+
+def test_loot_tracker_decodes_current_other_grabbed_loot_payload() -> None:
+    tracker = LootTracker(
+        item_resolver=ItemResolver(
+            index_to_unique={3545: "T4_CAPE"},
+            index_to_name={3545: "Adept's Cape"},
+        )
+    )
+    payload = bytes.fromhex(
+        "01060011c9be010708536e616b65616c6502070b5473524f5470596173756f"
+        "040dd90d050f01fc041701"
+    )
+
+    tracker.observe(PhotonMessage(opcode=1, event_code=1, payload=payload), _packet(12.5))
+
+    events = tracker.events()
+    assert len(events) == 1
+    assert events[0].looted_by.player_name == "TsROTpYasuo"
+    assert events[0].looted_from is not None
+    assert events[0].looted_from.player_name == "Snakeale"
+    assert events[0].item is not None
+    assert events[0].item.item_num_id == 3545
+    assert events[0].quantity == 1
+    assert events[0].raw_subtype == EV_OTHER_GRABBED_LOOT
+
+
+def test_loot_tracker_keeps_legacy_other_grabbed_loot_code(monkeypatch) -> None:
+    tracker = LootTracker()
+
+    _set_event(
+        monkeypatch,
+        subtype=EV_LEGACY_OTHER_GRABBED_LOOT,
+        parameters={1: "Enemy", 2: "Alice", 3: False, 4: 12345, 5: 1},
+    )
+    tracker.observe(_message(), _packet(12.5))
+
+    events = tracker.events()
+    assert len(events) == 1
+    assert events[0].raw_subtype == EV_LEGACY_OTHER_GRABBED_LOOT
 
 
 def test_loot_tracker_records_party_member_loot_event_variant(monkeypatch) -> None:

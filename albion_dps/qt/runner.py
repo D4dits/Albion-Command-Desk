@@ -30,6 +30,7 @@ from albion_dps.domain import (
     load_item_resolver,
 )
 from albion_dps.domain.item_db import ensure_game_databases
+from albion_dps.domain.loot_session_store import LootSessionStore
 from albion_dps.domain.map_resolver import load_map_resolver
 from albion_dps.market.local_ingest import MarketWebSocketIngestor
 from albion_dps.market.local_store import LocalMarketStore
@@ -49,7 +50,7 @@ from albion_dps.versioning import resolve_app_version
 
 SnapshotQueue = queue.Queue[MeterSnapshot | None]
 _UPDATE_CHECK_LOCK = threading.Lock()
-LOOT_HISTORY_LIMIT = 500
+LOOT_HISTORY_LIMIT = 50_000
 
 
 def run_qt(args: argparse.Namespace) -> int:
@@ -217,7 +218,12 @@ def run_qt(args: argparse.Namespace) -> int:
         logger=logging.getLogger(__name__),
     )
     app_settings = load_app_settings()
-    loot_state = LootState(history_limit=max(args.history, LOOT_HISTORY_LIMIT))
+    loot_session_store = LootSessionStore(Path("data") / "loot_sessions.sqlite3")
+    loot_state = LootState(
+        history_limit=max(args.history, LOOT_HISTORY_LIMIT),
+        session_store=loot_session_store,
+        market_service=market_service,
+    )
     loot_writer = LootLogWriter(keep_files=app_settings.loot_log_keep_files)
     loot_state.set_log_path(str(loot_writer.path))
     scanner_state.settingsChanged.connect(lambda: loot_writer.set_keep_files(scanner_state.lootLogKeepFiles))
@@ -264,6 +270,7 @@ def run_qt(args: argparse.Namespace) -> int:
     app.aboutToQuit.connect(scanner_state.shutdown)
     app.aboutToQuit.connect(local_market_ingestor.stop)
     app.aboutToQuit.connect(market_setup_state.close)
+    app.aboutToQuit.connect(loot_session_store.close)
     app.aboutToQuit.connect(stop_event.set)
     app.exec()
     return 0
@@ -356,7 +363,7 @@ def _build_snapshot_stream(
                     args.qt_command = "core"
                     return ()
                 logging.getLogger(__name__).warning(
-                    "Auto-detect found no traffic; using fallback interface: %s",
+                    "No Albion UDP packet was seen during the startup probe; using fallback interface: %s",
                     interface,
                 )
             else:

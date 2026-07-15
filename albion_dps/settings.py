@@ -15,6 +15,11 @@ class AppSettings:
     meter_top_n: int = 20
     meter_history_limit: int = 20
     loot_log_keep_files: int = 5
+    loot_buffer_seconds: int = 120
+    loot_price_region: str = "europe"
+    loot_price_city: str = "Bridgewatch"
+    loot_self_guild: str = ""
+    loot_self_alliance: str = ""
     scanner_repo_dir: str = ""
     scanner_repo_url: str = ""
     log_level: str = "INFO"
@@ -51,6 +56,13 @@ def load_app_settings() -> AppSettings:
             meter_top_n=_normalize_meter_top_n(raw.get("meter_top_n", 20)),
             meter_history_limit=_normalize_meter_history_limit(raw.get("meter_history_limit", 20)),
             loot_log_keep_files=_normalize_keep_files(raw.get("loot_log_keep_files", 5)),
+            loot_buffer_seconds=_normalize_loot_buffer_seconds(
+                raw.get("loot_buffer_seconds", 120)
+            ),
+            loot_price_region=_normalize_loot_region(raw.get("loot_price_region", "europe")),
+            loot_price_city=str(raw.get("loot_price_city", "Bridgewatch") or "Bridgewatch"),
+            loot_self_guild=str(raw.get("loot_self_guild", "") or ""),
+            loot_self_alliance=str(raw.get("loot_self_alliance", "") or ""),
             scanner_repo_dir=str(raw.get("scanner_repo_dir", "") or ""),
             scanner_repo_url=str(raw.get("scanner_repo_url", "") or ""),
             log_level=_normalize_log_level(raw.get("log_level", "INFO")),
@@ -70,6 +82,11 @@ def save_app_settings(settings: AppSettings) -> None:
         "meter_top_n": _normalize_meter_top_n(settings.meter_top_n),
         "meter_history_limit": _normalize_meter_history_limit(settings.meter_history_limit),
         "loot_log_keep_files": _normalize_keep_files(settings.loot_log_keep_files),
+        "loot_buffer_seconds": _normalize_loot_buffer_seconds(settings.loot_buffer_seconds),
+        "loot_price_region": _normalize_loot_region(settings.loot_price_region),
+        "loot_price_city": str(settings.loot_price_city or "Bridgewatch"),
+        "loot_self_guild": str(settings.loot_self_guild or ""),
+        "loot_self_alliance": str(settings.loot_self_alliance or ""),
         "scanner_repo_dir": str(settings.scanner_repo_dir or ""),
         "scanner_repo_url": str(settings.scanner_repo_url or ""),
         "log_level": _normalize_log_level(settings.log_level),
@@ -83,6 +100,12 @@ def update_app_settings(**changes) -> AppSettings:
         changes["log_level"] = _normalize_log_level(changes["log_level"])
     if "loot_log_keep_files" in changes:
         changes["loot_log_keep_files"] = _normalize_keep_files(changes["loot_log_keep_files"])
+    if "loot_buffer_seconds" in changes:
+        changes["loot_buffer_seconds"] = _normalize_loot_buffer_seconds(
+            changes["loot_buffer_seconds"]
+        )
+    if "loot_price_region" in changes:
+        changes["loot_price_region"] = _normalize_loot_region(changes["loot_price_region"])
     if "meter_top_n" in changes:
         changes["meter_top_n"] = _normalize_meter_top_n(changes["meter_top_n"])
     if "meter_history_limit" in changes:
@@ -119,6 +142,19 @@ def _normalize_meter_top_n(value) -> int:
     except (TypeError, ValueError):
         return 20
     return min(40, max(1, top_n))
+
+
+def _normalize_loot_buffer_seconds(value) -> int:
+    try:
+        seconds = int(value)
+    except (TypeError, ValueError):
+        return 120
+    return min(600, max(0, seconds))
+
+
+def _normalize_loot_region(value) -> str:
+    candidate = str(value or "europe").strip().lower()
+    return candidate if candidate in {"europe", "west", "east"} else "europe"
 
 
 def _normalize_meter_history_limit(value) -> int:

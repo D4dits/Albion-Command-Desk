@@ -48,6 +48,7 @@ def loot_events_from_txt(payload: str) -> list[LootEvent]:
                 item_num_id=None,
                 unique_name=item_id or None,
                 display_name=item_name or item_id or "Unknown item",
+                quality=_parse_optional_quality(row.get("quality", "")),
             )
 
         events.append(
@@ -66,6 +67,10 @@ def loot_events_from_txt(payload: str) -> list[LootEvent]:
                 is_silver=is_silver,
                 raw_event_code=0,
                 raw_subtype=0,
+                event_id=str(row.get("event_id", "") or "").strip(),
+                eligibility_reason=str(
+                    row.get("eligibility_reason", "imported") or "imported"
+                ).strip(),
             )
         )
     return list(reversed(events))
@@ -86,6 +91,13 @@ def _parse_int(value) -> int:
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+def _parse_optional_quality(value) -> int | None:
+    quality = _parse_int(value)
+    if 1 <= quality <= 5:
+        return quality
+    return None
 
 
 def _infer_source_kind(looted_from_name: str, *, is_silver: bool) -> str:
