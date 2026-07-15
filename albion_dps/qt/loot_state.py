@@ -1623,7 +1623,11 @@ def _loot_icon_url(item_id: str) -> str:
     unique = str(item_id or "").strip()
     if not unique or unique == "SILVER":
         return ""
-    if unique.upper().endswith("_TRASH"):
+    upper = unique.upper()
+    if upper.startswith("UNIQUE_UNLOCK_SKIN_"):
+        unique = unique[len("UNIQUE_UNLOCK_") :]
+        upper = unique.upper()
+    if upper.endswith("_TRASH") or upper.startswith(("QUESTITEM_", "UNIQUE_UNLOCK_")):
         return ""
     base = os.environ.get("ALBION_DPS_ICON_BASE", "https://render.albiononline.com/v1/item").strip()
     if not base:

@@ -370,7 +370,7 @@ class LootSessionStore:
     def pending_scope_count(self) -> int:
         with self._lock:
             row = self._conn.execute(
-                "SELECT COUNT(*) AS count FROM loot_observations WHERE eligible=0"
+                "SELECT COUNT(*) AS count FROM loot_observations WHERE eligible=0 AND is_silver=0"
             ).fetchone()
             return int(row["count"] if row is not None else 0)
 

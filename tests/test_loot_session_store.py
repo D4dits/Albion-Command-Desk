@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from albion_dps.domain.loot_session_store import LootSessionStore
 from albion_dps.domain.loot_types import LootEvent, LootItemRef, LootPlayer
 
@@ -67,7 +69,12 @@ def test_session_store_supports_partial_settlement_and_reset(tmp_path) -> None:
 
 def test_session_store_keeps_unknown_affiliation_outside_session_until_promoted(tmp_path) -> None:
     store = LootSessionStore(tmp_path / "loot.sqlite3")
-    store.sync_observations([_event("one", reason="unknown")])
+    silver = replace(
+        _event("silver", reason="unknown"),
+        item=LootItemRef(None, "SILVER", "Silver"),
+        is_silver=True,
+    )
+    store.sync_observations([_event("one", reason="unknown"), silver])
     session = store.start_session(started_at=1000.0, lookback_seconds=120.0)
     assert store.loot_rows(session_id=session.session_id) == []
     assert store.pending_scope_count() == 1

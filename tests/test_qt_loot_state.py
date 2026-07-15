@@ -157,6 +157,11 @@ def test_loot_state_moves_buffered_event_into_session_without_duplicates(tmp_pat
 def test_loot_state_skips_missing_renderer_icons_for_trash_items() -> None:
     assert _loot_icon_url("T5_TRASH") == ""
     assert _loot_icon_url("T6_TRASH") == ""
+    assert _loot_icon_url("QUESTITEM_TOKEN_SMUGGLER") == ""
+    assert _loot_icon_url("UNIQUE_UNLOCK_LORE_KEEPER_03") == ""
+    assert _loot_icon_url("UNIQUE_UNLOCK_SKIN_HORSE_ANNIVERSARY_2026").endswith(
+        "/SKIN_HORSE_ANNIVERSARY_2026?size=64"
+    )
     assert _loot_icon_url("T3_BAG").endswith("/T3_BAG?size=64")
 
 

@@ -105,6 +105,24 @@ Item {
         return labels[value] || value
     }
 
+    function categorySymbol(value) {
+        var symbols = {
+            "weapon": "W", "armor": "A", "bag": "B", "cape": "C",
+            "mount": "M", "consumable": "+", "resource": "R",
+            "artifact": "*", "other": "?"
+        }
+        return symbols[value] || "?"
+    }
+
+    function categoryColor(value) {
+        var colors = {
+            "weapon": "#8f5d5d", "armor": "#536d87", "bag": "#6b6250",
+            "cape": "#795b84", "mount": "#4f756d", "consumable": "#477a55",
+            "resource": "#756744", "artifact": "#806447", "other": "#465567"
+        }
+        return colors[value] || colors.other
+    }
+
     function openSettlement(eventId, action, quantity) {
         root.settlementEventId = eventId
         root.settlementAction = action
@@ -341,13 +359,83 @@ Item {
                 }
             }
 
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: historyControls.implicitHeight + 14
+                visible: root.activeView === 3
+                color: theme.cardLevel1
+                border.color: theme.borderSubtle
+                radius: 4
+
+                ColumnLayout {
+                    id: historyControls
+                    anchors.fill: parent
+                    anchors.margins: 7
+                    spacing: 6
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 7
+                        Text {
+                            text: "Session"
+                            color: theme.textMuted
+                            font.pixelSize: 10
+                            Layout.preferredWidth: 54
+                        }
+                        AppComboBox {
+                            Layout.fillWidth: true
+                            model: root.sessionOptions
+                            onActivated: root.selectSession(index)
+                        }
+                        AppButton { text: "Live buffer"; onClicked: root.showLiveBuffer() }
+                        AppButton {
+                            text: "Delete"
+                            variant: "danger"
+                            enabled: root.selectedSessionId.length > 0 && !root.sessionActive
+                            onClicked: root.deleteSelectedSession()
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 7
+                        Text {
+                            text: "Scope"
+                            color: theme.textMuted
+                            font.pixelSize: 10
+                            Layout.preferredWidth: 54
+                        }
+                        TextField {
+                            id: historyGuildField
+                            Layout.fillWidth: true
+                            placeholderText: "Your guild"
+                            text: root.selfGuild
+                            color: theme.textPrimary
+                            background: Rectangle { color: theme.cardLevel0; border.color: theme.borderSubtle; radius: 4 }
+                        }
+                        TextField {
+                            id: historyAllianceField
+                            Layout.fillWidth: true
+                            placeholderText: "Your alliance"
+                            text: root.selfAlliance
+                            color: theme.textPrimary
+                            background: Rectangle { color: theme.cardLevel0; border.color: theme.borderSubtle; radius: 4 }
+                        }
+                        AppButton {
+                            text: "Apply"
+                            onClicked: root.setSelfAffiliation(historyGuildField.text, historyAllianceField.text)
+                        }
+                    }
+                }
+            }
+
             Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
 
                 ColumnLayout {
                     anchors.fill: parent
-                    visible: root.activeView === 0 || root.activeView === 2
+                    visible: root.activeView === 0 || root.activeView === 2 || root.activeView === 3
                     spacing: 0
 
                     Rectangle {
@@ -364,8 +452,8 @@ Item {
                             Text { text: "PLAYER"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 142 }
                             Text { text: "ITEM"; color: theme.textMuted; font.pixelSize: 9; Layout.fillWidth: true }
                             Text { text: "Q"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 45 }
-                            Text { text: "QTY"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 42 }
-                            Text { text: "VALUE"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 92 }
+                            Text { text: "QTY"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 42 }
+                            Text { text: "VALUE"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 92 }
                             Text { text: "STATUS"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: root.activeView === 2 ? 138 : 92 }
                         }
                     }
@@ -377,6 +465,7 @@ Item {
                         clip: true
                         model: root.eventsModel
                         spacing: 1
+                        boundsBehavior: Flickable.StopAtBounds
 
                         delegate: Rectangle {
                             width: lootList.width
@@ -418,14 +507,33 @@ Item {
                                 RowLayout {
                                     Layout.fillWidth: true
                                     spacing: 6
-                                    Image {
-                                        source: iconUrl
-                                        visible: iconUrl.length > 0
-                                        sourceSize.width: 34
-                                        sourceSize.height: 34
+                                    Item {
                                         Layout.preferredWidth: 34
                                         Layout.preferredHeight: 34
-                                        fillMode: Image.PreserveAspectFit
+
+                                        Rectangle {
+                                            anchors.fill: parent
+                                            radius: 4
+                                            color: root.categoryColor(category)
+                                            border.color: theme.borderStrong
+                                            visible: itemIcon.status !== Image.Ready
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: root.categorySymbol(category)
+                                                color: theme.textPrimary
+                                                font.pixelSize: 14
+                                                font.bold: true
+                                            }
+                                        }
+
+                                        Image {
+                                            id: itemIcon
+                                            anchors.fill: parent
+                                            source: iconUrl
+                                            sourceSize.width: 34
+                                            sourceSize.height: 34
+                                            fillMode: Image.PreserveAspectFit
+                                        }
                                     }
                                     ColumnLayout {
                                         Layout.fillWidth: true
@@ -457,21 +565,26 @@ Item {
                                     text: String(quantity)
                                     color: theme.textPrimary
                                     font.pixelSize: 10
+                                    horizontalAlignment: Text.AlignRight
                                     Layout.preferredWidth: 42
                                 }
                                 ColumnLayout {
                                     Layout.preferredWidth: 92
                                     spacing: 0
                                     Text {
+                                        Layout.fillWidth: true
                                         text: root.formatNumber(marketValue)
                                         color: marketValue > 0 ? theme.stateSuccess : theme.textDisabled
                                         font.pixelSize: 10
                                         font.bold: true
+                                        horizontalAlignment: Text.AlignRight
                                     }
                                     Text {
+                                        Layout.fillWidth: true
                                         text: valueEstimated ? "estimated" : "priced"
                                         color: valueEstimated ? theme.stateWarning : theme.textMuted
                                         font.pixelSize: 8
+                                        horizontalAlignment: Text.AlignRight
                                     }
                                 }
                                 Loader {
@@ -505,6 +618,14 @@ Item {
                         }
 
                         ScrollBar.vertical: ScrollBar {}
+
+                        Text {
+                            anchors.centerIn: parent
+                            visible: lootList.count === 0
+                            text: "No loot matches the current filters"
+                            color: theme.textMuted
+                            font.pixelSize: 11
+                        }
                     }
                 }
 
@@ -521,18 +642,20 @@ Item {
                             anchors.fill: parent
                             anchors.margins: 8
                             Text { text: "PLAYER"; color: theme.textMuted; font.pixelSize: 9; Layout.fillWidth: true }
-                            Text { text: "ITEMS"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 70 }
-                            Text { text: "MARKET"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 110 }
-                            Text { text: "INSTANT"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 110 }
-                            Text { text: "OUTSTANDING"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 120 }
+                            Text { text: "ITEMS"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 70 }
+                            Text { text: "MARKET"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 110 }
+                            Text { text: "INSTANT"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 110 }
+                            Text { text: "OUTSTANDING"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 120 }
                             Text { text: "SETTLE PLAYER"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 126 }
                         }
                     }
                     ListView {
+                        id: playersList
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         clip: true
                         model: root.topLootersModel
+                        boundsBehavior: Flickable.StopAtBounds
                         delegate: Rectangle {
                             width: ListView.view.width
                             height: 42
@@ -543,13 +666,13 @@ Item {
                                 ColumnLayout {
                                     Layout.fillWidth: true
                                     spacing: 0
-                                    Text { text: label; color: theme.textPrimary; font.pixelSize: 11; font.bold: true }
-                                    Text { text: sublabel; color: theme.textMuted; font.pixelSize: 8 }
+                                    Text { Layout.fillWidth: true; text: label; color: theme.textPrimary; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight }
+                                    Text { Layout.fillWidth: true; text: sublabel; color: theme.textMuted; font.pixelSize: 8; elide: Text.ElideRight }
                                 }
-                                Text { text: String(quantity); color: theme.textSecondary; font.pixelSize: 10; Layout.preferredWidth: 70 }
-                                Text { text: root.formatNumber(marketValue); color: theme.stateSuccess; font.pixelSize: 10; Layout.preferredWidth: 110 }
-                                Text { text: root.formatNumber(liquidationValue); color: theme.textSecondary; font.pixelSize: 10; Layout.preferredWidth: 110 }
-                                Text { text: root.formatNumber(outstandingValue); color: outstandingValue > 0 ? theme.stateWarning : theme.stateSuccess; font.pixelSize: 10; Layout.preferredWidth: 120 }
+                                Text { text: String(quantity); color: theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 70 }
+                                Text { text: root.formatNumber(marketValue); color: theme.stateSuccess; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 110 }
+                                Text { text: root.formatNumber(liquidationValue); color: theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 110 }
+                                Text { text: root.formatNumber(outstandingValue); color: outstandingValue > 0 ? theme.stateWarning : theme.stateSuccess; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 120 }
                                 AppComboBox {
                                     Layout.preferredWidth: 126
                                     model: ["pending", "returned", "sold", "lost", "allowed", "unreturned", "excluded"]
@@ -557,78 +680,17 @@ Item {
                                 }
                             }
                         }
+                        ScrollBar.vertical: ScrollBar {}
+                        Text {
+                            anchors.centerIn: parent
+                            visible: playersList.count === 0
+                            text: "No players match the current filters"
+                            color: theme.textMuted
+                            font.pixelSize: 11
+                        }
                     }
                 }
 
-                ColumnLayout {
-                    anchors.fill: parent
-                    visible: root.activeView === 3
-                    spacing: 10
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        AppComboBox {
-                            Layout.fillWidth: true
-                            model: root.sessionOptions
-                            onActivated: root.selectSession(index)
-                        }
-                        AppButton {
-                            text: "Live buffer"
-                            onClicked: root.showLiveBuffer()
-                        }
-                        AppButton {
-                            text: "Delete"
-                            variant: "danger"
-                            enabled: root.selectedSessionId.length > 0 && !root.sessionActive
-                            onClicked: root.deleteSelectedSession()
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: affiliationLayout.implicitHeight + 20
-                        color: theme.cardLevel1
-                        border.color: theme.borderSubtle
-                        radius: 4
-                        ColumnLayout {
-                            id: affiliationLayout
-                            anchors.fill: parent
-                            anchors.margins: 10
-                            spacing: 7
-                            Text {
-                                text: "Loot scope"
-                                color: theme.textPrimary
-                                font.pixelSize: 12
-                                font.bold: true
-                            }
-                            RowLayout {
-                                Layout.fillWidth: true
-                                TextField {
-                                    id: guildField
-                                    Layout.fillWidth: true
-                                    placeholderText: "Your guild"
-                                    text: root.selfGuild
-                                    color: theme.textPrimary
-                                    background: Rectangle { color: theme.cardLevel0; border.color: theme.borderSubtle; radius: 4 }
-                                }
-                                TextField {
-                                    id: allianceField
-                                    Layout.fillWidth: true
-                                    placeholderText: "Your alliance"
-                                    text: root.selfAlliance
-                                    color: theme.textPrimary
-                                    background: Rectangle { color: theme.cardLevel0; border.color: theme.borderSubtle; radius: 4 }
-                                }
-                                AppButton {
-                                    text: "Apply"
-                                    onClicked: root.setSelfAffiliation(guildField.text, allianceField.text)
-                                }
-                            }
-                        }
-                    }
-
-                    Item { Layout.fillHeight: true }
-                }
             }
         }
     }
