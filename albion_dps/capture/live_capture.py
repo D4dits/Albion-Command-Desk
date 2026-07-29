@@ -186,11 +186,7 @@ def live_capture(
         capture = pcapy.open_live(interface, snaplen, int(promisc), timeout_ms)
     except Exception as exc:
         if _is_permission_error(exc) and shutil.which("dumpcap"):
-            LOGGER.warning(
-                "pcapy cannot open %s (%s); using the permitted dumpcap backend",
-                interface,
-                exc,
-            )
+            LOGGER.info("Using dumpcap backend for live capture on %s", interface)
             yield from _dumpcap_live_capture(
                 interface,
                 bpf_filter=bpf_filter,

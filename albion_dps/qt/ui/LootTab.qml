@@ -56,6 +56,36 @@ Item {
     property string settlementAction: "returned"
     property int settlementMaxQuantity: 1
 
+    readonly property int lootColumnGap: 8
+    readonly property int lootTimeWidth: root.compactLayout ? 0 : 52
+    readonly property int lootPlayerWidth: root.compactLayout ? 112 : 142
+    readonly property int lootQualityWidth: 62
+    readonly property int lootQuantityWidth: 42
+    readonly property int lootValueWidth: root.compactLayout ? 78 : 92
+    readonly property int lootStatusWidth: root.activeView === 2 ? 148 : 100
+    readonly property int lootVisibleColumnGaps: root.compactLayout ? 5 : 6
+
+    function lootItemWidth(tableWidth) {
+        var fixedWidth = root.lootTimeWidth + root.lootPlayerWidth
+            + root.lootQualityWidth + root.lootQuantityWidth
+            + root.lootValueWidth + root.lootStatusWidth
+            + root.lootColumnGap * root.lootVisibleColumnGaps + 16
+        return Math.max(170, Number(tableWidth) - fixedWidth)
+    }
+
+    readonly property int playerItemsWidth: 70
+    readonly property int playerMarketWidth: root.compactLayout ? 90 : 110
+    readonly property int playerInstantWidth: root.compactLayout ? 90 : 110
+    readonly property int playerOutstandingWidth: root.compactLayout ? 100 : 120
+    readonly property int playerSettleWidth: 138
+
+    function playerNameWidth(tableWidth) {
+        var fixedWidth = root.playerItemsWidth + root.playerMarketWidth
+            + root.playerInstantWidth + root.playerOutstandingWidth
+            + root.playerSettleWidth + root.lootColumnGap * 5 + 16
+        return Math.max(150, Number(tableWidth) - fixedWidth)
+    }
+
     signal setSearchQuery(string value)
     signal setSourceFilter(string value)
     signal setSourceNameFilter(string value)
@@ -443,18 +473,18 @@ Item {
                         implicitHeight: 28
                         color: theme.cardLevel1
                         border.color: theme.borderSubtle
-                        RowLayout {
+                        Row {
                             anchors.fill: parent
                             anchors.leftMargin: 8
                             anchors.rightMargin: 8
                             spacing: 8
-                            Text { text: "TIME"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 52 }
-                            Text { text: "PLAYER"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 142 }
-                            Text { text: "ITEM"; color: theme.textMuted; font.pixelSize: 9; Layout.fillWidth: true }
-                            Text { text: "Q"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 45 }
-                            Text { text: "QTY"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 42 }
-                            Text { text: "VALUE"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 92 }
-                            Text { text: "STATUS"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: root.activeView === 2 ? 138 : 92 }
+                            Text { width: root.lootTimeWidth; height: parent.height; visible: width > 0; text: "TIME"; color: theme.textMuted; font.pixelSize: 9; verticalAlignment: Text.AlignVCenter }
+                            Text { width: root.lootPlayerWidth; height: parent.height; text: "PLAYER"; color: theme.textMuted; font.pixelSize: 9; verticalAlignment: Text.AlignVCenter }
+                            Text { width: root.lootItemWidth(parent.width); height: parent.height; text: "ITEM"; color: theme.textMuted; font.pixelSize: 9; verticalAlignment: Text.AlignVCenter }
+                            Text { objectName: "lootHeaderQuality"; width: root.lootQualityWidth; height: parent.height; text: "QUALITY"; color: theme.textMuted; font.pixelSize: 9; verticalAlignment: Text.AlignVCenter }
+                            Text { objectName: "lootHeaderQuantity"; width: root.lootQuantityWidth; height: parent.height; text: "QTY"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter }
+                            Text { objectName: "lootHeaderValue"; width: root.lootValueWidth; height: parent.height; text: "VALUE"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter }
+                            Text { objectName: "lootHeaderStatus"; width: root.lootStatusWidth; height: parent.height; text: "STATUS"; color: theme.textMuted; font.pixelSize: 9; verticalAlignment: Text.AlignVCenter }
                         }
                     }
 
@@ -473,43 +503,54 @@ Item {
                             color: index % 2 === 0 ? theme.cardLevel0 : theme.cardLevel1
                             border.color: theme.borderSubtle
 
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 8
-                                anchors.rightMargin: 8
+                            Row {
+                                x: 8
+                                y: 0
+                                width: parent.width - 16
+                                height: parent.height
                                 spacing: 8
 
                                 Text {
+                                    width: root.lootTimeWidth
+                                    height: parent.height
+                                    visible: width > 0
                                     text: timestampText
                                     color: theme.textMuted
                                     font.pixelSize: 9
-                                    Layout.preferredWidth: 52
+                                    verticalAlignment: Text.AlignVCenter
                                 }
-                                ColumnLayout {
-                                    Layout.preferredWidth: 142
+                                Column {
+                                    width: root.lootPlayerWidth
+                                    height: parent.height
                                     spacing: 0
                                     Text {
-                                        Layout.fillWidth: true
+                                        width: parent.width
+                                        height: parent.height / 2
                                         text: lootedByName
                                         color: theme.textPrimary
                                         font.pixelSize: 10
                                         font.bold: true
                                         elide: Text.ElideRight
+                                        verticalAlignment: Text.AlignBottom
                                     }
                                     Text {
-                                        Layout.fillWidth: true
+                                        width: parent.width
+                                        height: parent.height / 2
                                         text: lootedByGuild.length > 0 ? lootedByGuild : lootedByAlliance
                                         color: theme.textMuted
                                         font.pixelSize: 8
                                         elide: Text.ElideRight
+                                        verticalAlignment: Text.AlignTop
                                     }
                                 }
-                                RowLayout {
-                                    Layout.fillWidth: true
+                                Row {
+                                    width: root.lootItemWidth(parent.width)
+                                    height: parent.height
                                     spacing: 6
                                     Item {
-                                        Layout.preferredWidth: 34
-                                        Layout.preferredHeight: 34
+                                        width: 34
+                                        height: 34
+                                        anchors.verticalCenter: parent.verticalCenter
 
                                         Rectangle {
                                             anchors.fill: parent
@@ -535,60 +576,80 @@ Item {
                                             fillMode: Image.PreserveAspectFit
                                         }
                                     }
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
+                                    Column {
+                                        width: parent.width - 40
+                                        height: parent.height
                                         spacing: 0
                                         Text {
-                                            Layout.fillWidth: true
+                                            width: parent.width
+                                            height: parent.height / 2
                                             text: itemName
                                             color: theme.textPrimary
                                             font.pixelSize: 10
                                             font.bold: true
                                             elide: Text.ElideRight
+                                            verticalAlignment: Text.AlignBottom
                                         }
                                         Text {
-                                            Layout.fillWidth: true
+                                            width: parent.width
+                                            height: parent.height / 2
                                             text: eligibilityReason + " | " + (sourceName.length > 0 ? sourceName : sourceKind)
                                             color: theme.textMuted
                                             font.pixelSize: 8
                                             elide: Text.ElideRight
+                                            verticalAlignment: Text.AlignTop
                                         }
                                     }
                                 }
                                 AppComboBox {
-                                    Layout.preferredWidth: 45
+                                    objectName: "lootRowQuality"
+                                    width: root.lootQualityWidth
+                                    height: 30
+                                    anchors.verticalCenter: parent.verticalCenter
                                     model: ["Q?", "Q1", "Q2", "Q3", "Q4", "Q5"]
                                     currentIndex: Math.max(0, model.indexOf(qualityText))
                                     onActivated: root.setEventQuality(eventId, index)
                                 }
                                 Text {
+                                    objectName: "lootRowQuantity"
+                                    width: root.lootQuantityWidth
+                                    height: parent.height
                                     text: String(quantity)
                                     color: theme.textPrimary
                                     font.pixelSize: 10
                                     horizontalAlignment: Text.AlignRight
-                                    Layout.preferredWidth: 42
+                                    verticalAlignment: Text.AlignVCenter
                                 }
-                                ColumnLayout {
-                                    Layout.preferredWidth: 92
+                                Column {
+                                    objectName: "lootRowValue"
+                                    width: root.lootValueWidth
+                                    height: parent.height
                                     spacing: 0
                                     Text {
-                                        Layout.fillWidth: true
+                                        width: parent.width
+                                        height: parent.height / 2
                                         text: root.formatNumber(marketValue)
                                         color: marketValue > 0 ? theme.stateSuccess : theme.textDisabled
                                         font.pixelSize: 10
                                         font.bold: true
                                         horizontalAlignment: Text.AlignRight
+                                        verticalAlignment: Text.AlignBottom
                                     }
                                     Text {
-                                        Layout.fillWidth: true
+                                        width: parent.width
+                                        height: parent.height / 2
                                         text: valueEstimated ? "estimated" : "priced"
                                         color: valueEstimated ? theme.stateWarning : theme.textMuted
                                         font.pixelSize: 8
                                         horizontalAlignment: Text.AlignRight
+                                        verticalAlignment: Text.AlignTop
                                     }
                                 }
                                 Loader {
-                                    Layout.preferredWidth: root.activeView === 2 ? 138 : 92
+                                    objectName: "lootRowStatus"
+                                    width: root.lootStatusWidth
+                                    height: 30
+                                    anchors.verticalCenter: parent.verticalCenter
                                     sourceComponent: root.activeView === 2 ? reconcileControl : statusLabel
                                 }
                             }
@@ -596,16 +657,21 @@ Item {
                             Component {
                                 id: statusLabel
                                 Text {
+                                    width: parent ? parent.width : root.lootStatusWidth
+                                    height: parent ? parent.height : 30
                                     text: settlementStatus
                                     color: settlementStatus === "pending" ? theme.stateWarning : theme.stateSuccess
                                     font.pixelSize: 9
                                     font.bold: true
                                     elide: Text.ElideRight
+                                    verticalAlignment: Text.AlignVCenter
                                 }
                             }
                             Component {
                                 id: reconcileControl
                                 AppComboBox {
+                                    width: parent ? parent.width : root.lootStatusWidth
+                                    height: parent ? parent.height : 30
                                     model: ["pending", "returned", "sold", "lost", "allowed", "unreturned", "excluded"]
                                     currentIndex: Math.max(0, model.indexOf(settlementStatus))
                                     onActivated: {
@@ -638,15 +704,16 @@ Item {
                         Layout.fillWidth: true
                         implicitHeight: 28
                         color: theme.cardLevel1
-                        RowLayout {
+                        Row {
                             anchors.fill: parent
                             anchors.margins: 8
-                            Text { text: "PLAYER"; color: theme.textMuted; font.pixelSize: 9; Layout.fillWidth: true }
-                            Text { text: "ITEMS"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 70 }
-                            Text { text: "MARKET"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 110 }
-                            Text { text: "INSTANT"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 110 }
-                            Text { text: "OUTSTANDING"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 120 }
-                            Text { text: "SETTLE PLAYER"; color: theme.textMuted; font.pixelSize: 9; Layout.preferredWidth: 126 }
+                            spacing: root.lootColumnGap
+                            Text { width: root.playerNameWidth(parent.width); height: parent.height; text: "PLAYER"; color: theme.textMuted; font.pixelSize: 9; verticalAlignment: Text.AlignVCenter }
+                            Text { objectName: "playersHeaderItems"; width: root.playerItemsWidth; height: parent.height; text: "ITEMS"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter }
+                            Text { width: root.playerMarketWidth; height: parent.height; text: "MARKET"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter }
+                            Text { width: root.playerInstantWidth; height: parent.height; text: "INSTANT"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter }
+                            Text { width: root.playerOutstandingWidth; height: parent.height; text: "OUTSTANDING"; color: theme.textMuted; font.pixelSize: 9; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter }
+                            Text { width: root.playerSettleWidth; height: parent.height; text: "SETTLE PLAYER"; color: theme.textMuted; font.pixelSize: 9; verticalAlignment: Text.AlignVCenter }
                         }
                     }
                     ListView {
@@ -660,21 +727,27 @@ Item {
                             width: ListView.view.width
                             height: 42
                             color: index % 2 === 0 ? theme.cardLevel0 : theme.cardLevel1
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.margins: 8
-                                ColumnLayout {
-                                    Layout.fillWidth: true
+                            Row {
+                                x: 8
+                                y: 0
+                                width: parent.width - 16
+                                height: parent.height
+                                spacing: root.lootColumnGap
+                                Column {
+                                    width: root.playerNameWidth(parent.width)
+                                    height: parent.height
                                     spacing: 0
-                                    Text { Layout.fillWidth: true; text: label; color: theme.textPrimary; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight }
-                                    Text { Layout.fillWidth: true; text: sublabel; color: theme.textMuted; font.pixelSize: 8; elide: Text.ElideRight }
+                                    Text { width: parent.width; height: parent.height / 2; text: label; color: theme.textPrimary; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; verticalAlignment: Text.AlignBottom }
+                                    Text { width: parent.width; height: parent.height / 2; text: sublabel; color: theme.textMuted; font.pixelSize: 8; elide: Text.ElideRight; verticalAlignment: Text.AlignTop }
                                 }
-                                Text { text: String(quantity); color: theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 70 }
-                                Text { text: root.formatNumber(marketValue); color: theme.stateSuccess; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 110 }
-                                Text { text: root.formatNumber(liquidationValue); color: theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 110 }
-                                Text { text: root.formatNumber(outstandingValue); color: outstandingValue > 0 ? theme.stateWarning : theme.stateSuccess; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; Layout.preferredWidth: 120 }
+                                Text { objectName: "playersRowItems"; width: root.playerItemsWidth; height: parent.height; text: String(quantity); color: theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter }
+                                Text { width: root.playerMarketWidth; height: parent.height; text: root.formatNumber(marketValue); color: theme.stateSuccess; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter }
+                                Text { width: root.playerInstantWidth; height: parent.height; text: root.formatNumber(liquidationValue); color: theme.textSecondary; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter }
+                                Text { width: root.playerOutstandingWidth; height: parent.height; text: root.formatNumber(outstandingValue); color: outstandingValue > 0 ? theme.stateWarning : theme.stateSuccess; font.pixelSize: 10; horizontalAlignment: Text.AlignRight; verticalAlignment: Text.AlignVCenter }
                                 AppComboBox {
-                                    Layout.preferredWidth: 126
+                                    width: root.playerSettleWidth
+                                    height: 30
+                                    anchors.verticalCenter: parent.verticalCenter
                                     model: ["pending", "returned", "sold", "lost", "allowed", "unreturned", "excluded"]
                                     onActivated: root.settlePlayer(label, String(currentValue))
                                 }

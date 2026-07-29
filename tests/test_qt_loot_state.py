@@ -146,6 +146,7 @@ def test_loot_state_moves_buffered_event_into_session_without_duplicates(tmp_pat
         state.update_from_tracker(tracker)
 
         assert state.eventCount == 1
+        state.setBufferSeconds(120)
         assert state.startSession("Dungeon") is True
         assert state.sessionActive is True
         assert state.eventCount == 1

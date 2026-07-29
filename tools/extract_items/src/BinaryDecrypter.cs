@@ -14,13 +14,7 @@ internal static class BinaryDecrypter
         var fileBuffer = new byte[inputFile.Length];
         _ = await inputFile.ReadAsync(fileBuffer, 0, fileBuffer.Length);
 
-        var tDes = new DESCryptoServiceProvider
-        {
-            IV = Iv,
-            Mode = CipherMode.CBC,
-            Key = Key
-        };
-        var outBuffer = tDes.CreateDecryptor().TransformFinalBlock(fileBuffer, 0, fileBuffer.Length);
+        var outBuffer = Decrypt(fileBuffer, fileBuffer.Length);
 
         const int size = 4096;
         var buffer = new byte[size];
@@ -39,13 +33,7 @@ internal static class BinaryDecrypter
         var fileBuffer = new byte[inputFile.Length];
         int bytesRead = await inputFile.ReadAsync(fileBuffer, 0, fileBuffer.Length);
 
-        var tDes = new DESCryptoServiceProvider
-        {
-            IV = Iv,
-            Mode = CipherMode.CBC,
-            Key = Key
-        };
-        var outBuffer = tDes.CreateDecryptor().TransformFinalBlock(fileBuffer, 0, bytesRead);
+        var outBuffer = Decrypt(fileBuffer, bytesRead);
 
         const int size = 4096;
         var buffer = new byte[size];
@@ -60,5 +48,15 @@ internal static class BinaryDecrypter
         }
 
         return outputMemoryStream;
+    }
+
+    private static byte[] Decrypt(byte[] buffer, int count)
+    {
+        using var des = DES.Create();
+        des.IV = Iv;
+        des.Mode = CipherMode.CBC;
+        des.Key = Key;
+        using var decryptor = des.CreateDecryptor();
+        return decryptor.TransformFinalBlock(buffer, 0, count);
     }
 }

@@ -11,6 +11,7 @@ try:
     from PySide6.QtCore import QUrl
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtQml import QQmlApplicationEngine
+    from PySide6.QtQuick import QQuickItem
 except ImportError as exc:  # pragma: no cover
     pytest.skip(f"Qt runtime unavailable: {exc}", allow_module_level=True)
 
@@ -68,18 +69,25 @@ LootTab {
             lootedByGuild: "Guild A"
             lootedByAlliance: "AAA"
             itemId: "T3_BAG"
-            itemName: "Journeyman's Bag"
-            iconUrl: "https://render.albiononline.com/v1/item/T3_BAG?size=64"
-            category: "bag"
-            quantity: 2
-            sourceName: "Enemy"
+                itemName: "Journeyman's Bag"
+                iconUrl: "https://render.albiononline.com/v1/item/T3_BAG?size=64"
+                category: "bag"
+                eventId: "event-1"
+                qualityText: "Q1"
+                quantity: 2
+                marketValue: 1000
+                valueEstimated: false
+                settlementStatus: "pending"
+                outstandingQuantity: 2
+                eligibilityReason: "party"
+                sourceName: "Enemy"
             sourceKind: "player"
             isSilver: false
             summary: "Alice looted 2x Journeyman's Bag from Enemy"
         }
-    }
-    topLootersModel: ListModel {
-        ListElement { label: "Alice"; sublabel: "Guild A"; iconUrl: ""; quantity: 2; eventCount: 1 }
+        }
+        topLootersModel: ListModel {
+            ListElement { label: "Alice"; sublabel: "Guild A"; iconUrl: ""; quantity: 2; eventCount: 1; marketValue: 1000; liquidationValue: 800; outstandingValue: 1000 }
     }
     topItemsModel: ListModel {
         ListElement { label: "Journeyman's Bag"; sublabel: "T3_BAG"; iconUrl: "https://render.albiononline.com/v1/item/T3_BAG?size=64"; quantity: 2; eventCount: 1 }
@@ -97,3 +105,35 @@ LootTab {
     app.processEvents()
 
     assert engine.rootObjects(), "; ".join(msg.toString() for msg in warnings) or "LootTab QML load failed"
+    root = engine.rootObjects()[0]
+
+    def find_visual(item: QQuickItem, name: str) -> QQuickItem | None:
+        for child in item.childItems():
+            if child.objectName() == name:
+                return child
+            found = find_visual(child, name)
+            if found is not None:
+                return found
+        return None
+
+    for header_name, row_name in (
+        ("lootHeaderQuality", "lootRowQuality"),
+        ("lootHeaderQuantity", "lootRowQuantity"),
+        ("lootHeaderValue", "lootRowValue"),
+        ("lootHeaderStatus", "lootRowStatus"),
+    ):
+        header = find_visual(root, header_name)
+        row = find_visual(root, row_name)
+        assert header is not None
+        assert row is not None
+        assert abs(float(header.property("x")) - float(row.property("x"))) <= 1
+        assert float(header.property("width")) == float(row.property("width"))
+
+    root.setProperty("activeView", 1)
+    app.processEvents()
+    players_header = find_visual(root, "playersHeaderItems")
+    players_row = find_visual(root, "playersRowItems")
+    assert players_header is not None
+    assert players_row is not None
+    assert abs(float(players_header.property("x")) - float(players_row.property("x"))) <= 1
+    assert float(players_header.property("width")) == float(players_row.property("width"))
