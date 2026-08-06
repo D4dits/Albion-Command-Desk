@@ -33,15 +33,48 @@ def current_price_index(
 ):
     if force_refresh:
         return state._refresh_price_index(setup, force=True)
+    context_key = state._price_key(setup)
+    if (
+        state._price_index
+        and context_key == state._price_context_key
+        and str(getattr(state, "_prices_source", "")) == "live"
+    ):
+        return state._price_index
     if not allow_live:
+        if state._service is not None:
+            try:
+                item_ids = state._collect_pricing_item_ids()
+                locations = state._collect_locations(setup)
+                if item_ids and locations:
+                    local_index = state._service.get_price_index(
+                        region=setup.region,
+                        item_ids=item_ids,
+                        locations=locations,
+                        qualities=list(state._price_qualities(setup)),
+                        ttl_seconds=120.0,
+                        allow_stale=True,
+                        allow_cache=True,
+                        allow_live=False,
+                    )
+                    if local_index:
+                        state._price_index = local_index
+                        state._price_context_key = state._price_key(setup)
+                        meta = state._service.last_prices_meta
+                        state._prices_source = meta.source
+                        state._prices_status_text = f"{meta.source}: {meta.record_count} cached rows"
+                        state.pricesChanged.emit()
+                        return state._price_index
+            except Exception as exc:
+                state._log.debug("Local/cache price lookup failed, using fallback prices: %s", exc)
         fallback_index = state._build_fallback_price_index(setup)
         if state._price_index:
             fallback_index.update(state._price_index)
         state._price_index = fallback_index
         return state._price_index
-    context_key = state._price_key(setup)
     if state._price_index and context_key == state._price_context_key:
-        return state._price_index
+        if str(getattr(state, "_prices_source", "")) == "live":
+            return state._price_index
+        state._price_context_key = None
     return state._refresh_price_index(setup, force=False)
 
 

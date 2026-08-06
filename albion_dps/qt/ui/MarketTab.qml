@@ -1215,6 +1215,9 @@ CardPanel {
     Rectangle {
         anchors.fill: parent
         visible: root.priceFetchPending
+            && root.inputsModel.count === 0
+            && root.outputsModel.count === 0
+            && root.resultsItemsModel.count === 0
         z: 200
         color: Qt.rgba(6 / 255, 14 / 255, 24 / 255, 0.72)
 

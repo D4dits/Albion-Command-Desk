@@ -101,3 +101,25 @@ MarketTab {
     root = engine.rootObjects()[0]
     assert root.property("marketSetupStackedLayout") is False
     assert int(root.property("marketSetupPanelActiveWidth")) == int(root.property("marketSetupPanelWidth"))
+
+
+def test_market_setup_sell_city_includes_black_market() -> None:
+    ui_dir = Path(__file__).resolve().parents[1] / "albion_dps" / "qt" / "ui"
+    source = (ui_dir / "MarketSetupPanel.qml").read_text(encoding="utf-8")
+
+    sell_city_section = source.split('Text { text: "Sell City"', maxsplit=1)[1]
+    sell_city_section = sell_city_section.split('Text { text: "Default Runs"', maxsplit=1)[0]
+
+    assert '"Black Market"' in sell_city_section
+
+
+def test_market_loading_overlay_does_not_block_cached_rows() -> None:
+    ui_dir = Path(__file__).resolve().parents[1] / "albion_dps" / "qt" / "ui"
+    source = (ui_dir / "MarketTab.qml").read_text(encoding="utf-8")
+
+    overlay_section = source.split("visible: root.priceFetchPending", maxsplit=1)[1]
+    overlay_section = overlay_section.split("z: 200", maxsplit=1)[0]
+
+    assert "root.inputsModel.count === 0" in overlay_section
+    assert "root.outputsModel.count === 0" in overlay_section
+    assert "root.resultsItemsModel.count === 0" in overlay_section

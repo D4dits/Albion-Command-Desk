@@ -14,6 +14,15 @@ from albion_dps.market.models import MarketRegion
 
 CITY_NAMES = ("Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien")
 BLACK_MARKET_CITY = "Black Market"
+LOCATION_ALIASES = {
+    "0007": "Thetford",
+    "1002": "Lymhurst",
+    "2004": "Bridgewatch",
+    "3003": BLACK_MARKET_CITY,
+    "3005": "Caerleon",
+    "3008": "Martlock",
+    "4002": "Fort Sterling",
+}
 
 
 @dataclass(frozen=True)
@@ -113,7 +122,7 @@ class LocalMarketStore:
         qualities: list[int] | None = None,
     ) -> list[MarketPriceRecord]:
         requested_items = {str(item_id) for item_id in item_ids if str(item_id or "").strip()}
-        requested_locations = {str(location) for location in locations if str(location or "").strip()}
+        requested_locations = _location_query_values(locations)
         requested_qualities = {int(quality) for quality in (qualities or [1])}
         if not requested_items or not requested_locations or not requested_qualities:
             return []
@@ -139,7 +148,8 @@ class LocalMarketStore:
             rows = list(self._conn.execute(query, params))
         grouped: dict[tuple[str, str, int], dict[str, object]] = {}
         for row in rows:
-            key = (str(row["item_id"]), str(row["city"]), int(row["quality"]))
+            city = normalize_location_id(row["city"])
+            key = (str(row["item_id"]), city, int(row["quality"]))
             current = grouped.setdefault(
                 key,
                 {
@@ -150,7 +160,10 @@ class LocalMarketStore:
                 },
             )
             side = str(row["side"])
-            price = int(row["price"])
+            price = _normalize_existing_scanner_price(
+                int(row["price"]),
+                raw_location=str(row["city"]),
+            )
             observed = str(row["observed_at"])
             if side == "sell":
                 previous = int(current["sell_price_min"] or 0)
@@ -200,12 +213,32 @@ def normalize_location_id(location_id: object) -> str:
     upper = value.upper()
     if upper.startswith("BLACKBANK-") or upper == "BLACK MARKET":
         return BLACK_MARKET_CITY
+    lower = value.lower().replace("_", " ").replace("-", " ")
+    alias = LOCATION_ALIASES.get(lower)
+    if alias:
+        return alias
     compact = _compact_city(value)
     for city in CITY_NAMES:
         city_compact = _compact_city(city)
         if compact == city_compact or city_compact in compact:
             return city
     return value
+
+
+def _location_query_values(locations: list[str]) -> set[str]:
+    out: set[str] = set()
+    reverse_aliases: dict[str, set[str]] = {}
+    for alias, city in LOCATION_ALIASES.items():
+        reverse_aliases.setdefault(city, set()).add(alias)
+    for location in locations:
+        raw = str(location or "").strip()
+        if not raw:
+            continue
+        normalized = normalize_location_id(raw)
+        out.add(raw)
+        out.add(normalized)
+        out.update(reverse_aliases.get(normalized, set()))
+    return out
 
 
 def _normalize_order(
@@ -225,7 +258,7 @@ def _normalize_order(
     if side is None:
         return None
     try:
-        price = int(raw.get("UnitPriceSilver") or 0)
+        price = _normalize_scanner_price(int(raw.get("UnitPriceSilver") or 0))
         amount = int(raw.get("Amount") or 0)
         quality = int(raw.get("QualityLevel") or 1)
         enchantment = int(raw.get("EnchantmentLevel") or 0)
@@ -273,6 +306,33 @@ def _auction_side(value: object) -> str | None:
     if "request" in text or "buy" in text:
         return "buy"
     return None
+
+
+def _normalize_scanner_price(value: int) -> int:
+    price = int(value or 0)
+    if price <= 0:
+        return 0
+    if price >= 10_000 and price % 10_000 == 0:
+        return max(1, price // 10_000)
+    if price > 10_000:
+        return max(1, round(price / 10_000))
+    return price
+
+
+def _normalize_existing_scanner_price(value: int, *, raw_location: str) -> int:
+    price = int(value or 0)
+    if price <= 0:
+        return 0
+    location_was_raw = str(raw_location or "").strip().lower() in LOCATION_ALIASES
+    if location_was_raw and price >= 10_000 and price % 10_000 == 0:
+        return max(1, price // 10_000)
+    if location_was_raw and price > 10_000:
+        return max(1, round(price / 10_000))
+    if price >= 10_000_000 and price % 10_000 == 0:
+        return max(1, price // 10_000)
+    if price > 10_000_000:
+        return max(1, round(price / 10_000))
+    return price
 
 
 def _to_aod_timestamp(value: datetime) -> str:

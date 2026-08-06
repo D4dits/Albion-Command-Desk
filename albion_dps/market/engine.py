@@ -138,6 +138,7 @@ def build_input_lines(
             item_id=component.item.unique_name,
             city=city,
             quality=setup.quality,
+            price_type=price_type,
         )
         quantity_raw = component.quantity * float(quantity)
         # For a single craft, returns are probabilistic and you must provide
@@ -217,6 +218,7 @@ def build_output_lines(
             item_id=output.item.unique_name,
             city=city,
             quality=setup.quality,
+            price_type=price_type,
         )
         unit_price = _select_price(
             quote=quote,
@@ -623,6 +625,7 @@ def _pick_quote(
     item_id: str,
     city: str,
     quality: int,
+    price_type: PriceType = PriceType.SELL_ORDER,
 ) -> MarketPriceRecord | None:
     candidates = _item_id_candidates(item_id)
     fallback: MarketPriceRecord | None = None
@@ -630,18 +633,18 @@ def _pick_quote(
         key = (candidate_id, city, quality)
         quote = price_index.get(key)
         if quote is not None:
-            if _quote_has_market_data(quote):
+            if _quote_has_price_for_type(quote, price_type):
                 return quote
             fallback = fallback or quote
         key_q1 = (candidate_id, city, 1)
         quote = price_index.get(key_q1)
         if quote is not None:
-            if _quote_has_market_data(quote):
+            if _quote_has_price_for_type(quote, price_type):
                 return quote
             fallback = fallback or quote
     for candidate_key, candidate in price_index.items():
         if candidate_key[1] in {city} and candidate_key[0] in candidates:
-            if _quote_has_market_data(candidate):
+            if _quote_has_price_for_type(candidate, price_type):
                 return candidate
             fallback = fallback or candidate
     if fallback is not None:
@@ -679,6 +682,14 @@ def _has_manual_price(value: int | None) -> bool:
 
 def _quote_has_market_data(quote: MarketPriceRecord) -> bool:
     return int(quote.buy_price_max or 0) > 0 or int(quote.sell_price_min or 0) > 0
+
+
+def _quote_has_price_for_type(quote: MarketPriceRecord, price_type: PriceType) -> bool:
+    if price_type == PriceType.BUY_ORDER:
+        return int(quote.buy_price_max or 0) > 0
+    if price_type == PriceType.SELL_ORDER:
+        return int(quote.sell_price_min or 0) > 0
+    return _quote_has_market_data(quote)
 
 
 def _item_id_candidates(item_id: str) -> tuple[str, ...]:

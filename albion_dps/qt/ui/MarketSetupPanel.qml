@@ -183,7 +183,7 @@ TableSurface {
                     Layout.fillWidth: true
                     implicitHeight: root.compactControlHeight
                     font.pixelSize: 11
-                    model: ["Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien"]
+                    model: ["Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien", "Black Market"]
                     currentIndex: Math.max(0, model.indexOf(root.defaultSellCity))
                     onActivated: root.setDefaultSellCity(currentText)
                 }

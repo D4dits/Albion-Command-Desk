@@ -23,6 +23,8 @@ from albion_dps.settings import AppSettings, save_app_settings
 class _FakeMarketService:
     def __init__(self) -> None:
         self.calls = 0
+        self.live_calls = 0
+        self.last_allow_live: bool | None = None
         self.last_prices_meta = MarketFetchMeta(
             source="live",
             record_count=0,
@@ -44,6 +46,9 @@ class _FakeMarketService:
     ) -> dict[tuple[str, str, int], MarketPriceRecord]:
         _ = (region, ttl_seconds, allow_stale, allow_cache, allow_live)
         self.calls += 1
+        self.last_allow_live = allow_live
+        if allow_live:
+            self.live_calls += 1
         quality = int((qualities or [1])[0])
         out: dict[tuple[str, str, int], MarketPriceRecord] = {}
         for location in locations:
@@ -64,10 +69,12 @@ class _FakeMarketService:
                     buy_price_max_date="",
                 )
         self.last_prices_meta = MarketFetchMeta(
-            source="live",
+            source="live" if allow_live else "local",
             record_count=len(out),
             elapsed_ms=4.0,
             cache_key="fake",
+            local_record_count=0 if allow_live else len(out),
+            remote_record_count=len(out) if allow_live else 0,
         )
         return out
 
@@ -121,6 +128,79 @@ class _RecordingQualityMarketService(_FakeMarketService):
             allow_cache=allow_cache,
             allow_live=allow_live,
         )
+
+
+class _LocalOnlyMarketService(_FakeMarketService):
+    def __init__(self, rows: dict[tuple[str, str, int], MarketPriceRecord]) -> None:
+        super().__init__()
+        self.rows = rows
+        self.last_allow_live: bool | None = None
+
+    def get_price_index(
+        self,
+        *,
+        region: MarketRegion,
+        item_ids: list[str],
+        locations: list[str],
+        qualities: list[int] | None = None,
+        ttl_seconds: float = 120.0,
+        allow_stale: bool = True,
+        allow_cache: bool = True,
+        allow_live: bool = True,
+    ) -> dict[tuple[str, str, int], MarketPriceRecord]:
+        _ = (region, ttl_seconds, allow_stale, allow_cache)
+        self.calls += 1
+        self.last_allow_live = allow_live
+        requested = {
+            (item_id, location, int(quality))
+            for item_id in item_ids
+            for location in locations
+            for quality in (qualities or [1])
+        }
+        out = {key: row for key, row in self.rows.items() if key in requested}
+        self.last_prices_meta = MarketFetchMeta(
+            source="local",
+            record_count=len(out),
+            elapsed_ms=1.0,
+            cache_key="local",
+            local_record_count=len(out),
+            remote_record_count=0,
+        )
+        return out
+
+
+class _PartialStaleMarketService(_FakeMarketService):
+    def get_price_index(
+        self,
+        *,
+        region: MarketRegion,
+        item_ids: list[str],
+        locations: list[str],
+        qualities: list[int] | None = None,
+        ttl_seconds: float = 120.0,
+        allow_stale: bool = True,
+        allow_cache: bool = True,
+        allow_live: bool = True,
+    ) -> dict[tuple[str, str, int], MarketPriceRecord]:
+        out = super().get_price_index(
+            region=region,
+            item_ids=item_ids,
+            locations=locations,
+            qualities=qualities,
+            ttl_seconds=ttl_seconds,
+            allow_stale=allow_stale,
+            allow_cache=allow_cache,
+            allow_live=allow_live,
+        )
+        self.last_prices_meta = MarketFetchMeta(
+            source="local+local_db+partial_stale_cache",
+            record_count=len(out),
+            elapsed_ms=5.0,
+            cache_key="partial",
+            local_record_count=len(out),
+            remote_record_count=0,
+        )
+        return out
 
 
 def _enable_all_plan_rows(state: MarketSetupState) -> None:
@@ -252,12 +332,32 @@ def test_market_setup_state_skips_live_fetch_in_setup_tab_until_data_tabs() -> N
     state.setActiveMarketTab(0)
     state.addCurrentRecipeToPlan()
     _enable_all_plan_rows(state)
-    assert service.calls == 0
+    assert service.calls >= 1
+    assert service.live_calls == 0
+    assert service.last_allow_live is False
 
     # Entering Inputs/Outputs/Results should enable live fetch.
     state.setActiveMarketTab(1)
-    assert service.calls >= 1
+    assert service.live_calls >= 1
     assert state.pricesSource == "live"
+
+
+def test_market_setup_state_does_not_loop_after_partial_stale_async_result() -> None:
+    service = _PartialStaleMarketService()
+    state = MarketSetupState(service=service, auto_refresh_prices=False)
+
+    state.setActiveMarketTab(1)
+    state.addCurrentRecipeToPlan()
+    _enable_all_plan_rows(state)
+    first_live_calls = service.live_calls
+
+    assert first_live_calls == 1
+    assert state.pricesSource == "local+local_db+partial_stale_cache"
+    assert state.priceFetchPending is False
+
+    state._rebuild_preview(force_price_refresh=False)
+
+    assert service.live_calls == first_live_calls
 
 
 def test_market_setup_state_surfaces_rate_limit_cooldown_status() -> None:
@@ -447,6 +547,49 @@ def test_market_setup_state_supports_setup_presets(monkeypatch: pytest.MonkeyPat
         assert "martlock_42" not in list(state.presetNames)
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def test_market_setup_state_collects_black_market_sell_location() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    state.setCraftCity("Caerleon")
+    state.setDefaultBuyCity("Caerleon")
+    state.setDefaultSellCity("Black Market")
+    state.addCurrentRecipeToPlan()
+
+    locations = state._collect_locations(state.to_setup())
+
+    assert "Caerleon" in locations
+    assert "Black Market" in locations
+
+
+def test_market_setup_state_uses_local_prices_without_live_fetch() -> None:
+    service = _LocalOnlyMarketService(
+        {
+            ("T4_MAIN_SWORD", "Black Market", 1): MarketPriceRecord(
+                item_id="T4_MAIN_SWORD",
+                city="Black Market",
+                quality=1,
+                sell_price_min=279,
+                buy_price_max=0,
+                sell_price_min_date="2026-08-06T09:39:38",
+                buy_price_max_date="",
+            )
+        }
+    )
+    state = MarketSetupState(service=service, auto_refresh_prices=False)
+    state.setDefaultSellCity("Black Market")
+    state.addCurrentRecipeToPlan()
+
+    assert state.outputsModel.rowCount() >= 1
+    first_output = state.outputsModel.index(0, 0)
+    output_unit = float(state.outputsModel.data(first_output, state.outputsModel.UnitPriceRole))
+    output_mode = str(state.outputsModel.data(first_output, state.outputsModel.PriceTypeRole))
+    output_city = str(state.outputsModel.data(first_output, state.outputsModel.CityRole))
+
+    assert service.last_allow_live is False
+    assert output_city == "Black Market"
+    assert output_mode == "sell_order"
+    assert output_unit == 279.0
 
 
 def test_market_setup_state_restores_selected_preset_from_app_settings(monkeypatch: pytest.MonkeyPatch) -> None:

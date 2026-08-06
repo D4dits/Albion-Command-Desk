@@ -102,6 +102,104 @@ def test_local_store_normalizes_enchantment_and_black_market(tmp_path) -> None:
     assert rows[0].buy_price_max == 5555
 
 
+def test_local_store_normalizes_numeric_location_ids(tmp_path) -> None:
+    store = LocalMarketStore(tmp_path / "local_market.sqlite3")
+    try:
+        store.upsert_market_upload(
+            {
+                "Orders": [
+                    {
+                        "Id": 20,
+                        "ItemTypeId": "T4_MAIN_SWORD",
+                        "LocationId": "3005",
+                        "QualityLevel": 1,
+                        "EnchantmentLevel": 0,
+                        "UnitPriceSilver": 1200,
+                        "Amount": 1,
+                        "AuctionType": "offer",
+                    },
+                    {
+                        "Id": 21,
+                        "ItemTypeId": "T4_MAIN_SWORD",
+                        "LocationId": "3003",
+                        "QualityLevel": 1,
+                        "EnchantmentLevel": 0,
+                        "UnitPriceSilver": 2500,
+                        "Amount": 1,
+                        "AuctionType": "request",
+                    },
+                ]
+            },
+            observed_at=datetime(2026, 5, 22, 11, 0, tzinfo=timezone.utc),
+        )
+        caerleon_rows = store.get_prices(
+            region=MarketRegion.EUROPE,
+            item_ids=["T4_MAIN_SWORD"],
+            locations=["Caerleon"],
+            qualities=[1],
+        )
+        black_market_rows = store.get_prices(
+            region=MarketRegion.EUROPE,
+            item_ids=["T4_MAIN_SWORD"],
+            locations=["Black Market"],
+            qualities=[1],
+        )
+    finally:
+        store.close()
+
+    assert len(caerleon_rows) == 1
+    assert caerleon_rows[0].city == "Caerleon"
+    assert caerleon_rows[0].sell_price_min == 1200
+    assert len(black_market_rows) == 1
+    assert black_market_rows[0].city == "Black Market"
+    assert black_market_rows[0].buy_price_max == 2500
+
+
+def test_local_store_reads_existing_raw_location_scanner_prices(tmp_path) -> None:
+    store = LocalMarketStore(tmp_path / "local_market.sqlite3")
+    try:
+        store._conn.execute(
+            """
+            INSERT INTO local_market_orders(
+                region, order_id, item_id, raw_item_id, location_id, city, quality,
+                enchantment, side, price, amount, auction_type, expires,
+                observed_at, payload_json
+            )
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                MarketRegion.EUROPE.value,
+                "old-1",
+                "T4_METALBAR",
+                "T4_METALBAR",
+                "3005",
+                "3005",
+                1,
+                0,
+                "sell",
+                12_000_000,
+                1,
+                "offer",
+                "",
+                "2026-05-22T11:00:00",
+                "{}",
+            ),
+        )
+        store._conn.commit()
+        rows = store.get_prices(
+            region=MarketRegion.EUROPE,
+            item_ids=["T4_METALBAR"],
+            locations=["Caerleon"],
+            qualities=[1],
+        )
+    finally:
+        store.close()
+
+    assert len(rows) == 1
+    assert rows[0].city == "Caerleon"
+    assert rows[0].sell_price_min == 1200
+
+
 def test_parse_market_upload_message_filters_topic() -> None:
     message = '{"topic": "marketorders.ingest", "data": {"Orders": []}}'
     assert parse_market_upload_message(message) == {"Orders": []}
@@ -110,5 +208,7 @@ def test_parse_market_upload_message_filters_topic() -> None:
 
 def test_normalize_location_id_handles_city_variants() -> None:
     assert normalize_location_id("BLACKBANK-3003") == "Black Market"
+    assert normalize_location_id("3003") == "Black Market"
+    assert normalize_location_id("3005") == "Caerleon"
     assert normalize_location_id("Caerleon-Auction2") == "Caerleon"
     assert normalize_location_id("FortSterling-Auction2") == "Fort Sterling"
