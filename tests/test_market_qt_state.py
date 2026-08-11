@@ -16,6 +16,7 @@ from albion_dps.market.engine import build_craft_run
 from albion_dps.market.models import CraftSetup, ItemRef, MarketRegion, Recipe, RecipeComponent, RecipeOutput
 from albion_dps.market.service import MarketFetchMeta
 from albion_dps.qt.market import MarketSetupState
+from albion_dps.qt.market.common_ops import find_price_quote
 from albion_dps.qt.market import state as market_state
 from albion_dps.settings import AppSettings, save_app_settings
 
@@ -233,7 +234,7 @@ def test_market_setup_state_market_tax_defaults_follow_premium() -> None:
     assert state.marketTaxPercent == pytest.approx(10.5)
 
 
-def test_market_setup_state_fetches_quality_one_with_selected_quality() -> None:
+def test_market_setup_state_fetches_all_market_qualities() -> None:
     service = _RecordingQualityMarketService()
     state = MarketSetupState(service=service, auto_refresh_prices=False)
     state.setQuality(5)
@@ -242,7 +243,44 @@ def test_market_setup_state_fetches_quality_one_with_selected_quality() -> None:
 
     state.refreshPrices()
 
-    assert service.requested_qualities == [5, 1]
+    assert service.requested_qualities == [5, 1, 2, 3, 4]
+
+
+def test_market_table_uses_quality_with_requested_sell_price() -> None:
+    item_id = "T6_2H_DUALSCIMITAR_UNDEAD@3"
+    price_index = {
+        (item_id, "Martlock", 1): MarketPriceRecord(
+            item_id=item_id,
+            city="Martlock",
+            quality=1,
+            sell_price_min=0,
+            buy_price_max=1_400_001,
+            sell_price_min_date="",
+            buy_price_max_date="2026-08-01T20:43:39",
+        ),
+        (item_id, "Martlock", 3): MarketPriceRecord(
+            item_id=item_id,
+            city="Martlock",
+            quality=3,
+            sell_price_min=2_199_999,
+            buy_price_max=1_617_003,
+            sell_price_min_date="2026-08-01T20:43:40",
+            buy_price_max_date="2026-08-01T20:43:40",
+        ),
+    }
+
+    quote = find_price_quote(
+        price_index,
+        item_id=item_id,
+        city="Martlock",
+        quality=1,
+        preferred_mode="sell_order",
+        item_id_candidates=lambda value: (value,),
+    )
+
+    assert quote is not None
+    assert quote.quality == 3
+    assert quote.sell_price_min == 2_199_999
 
 
 def test_market_setup_state_daily_bonus_preset_rounding() -> None:

@@ -210,5 +210,39 @@ def test_normalize_location_id_handles_city_variants() -> None:
     assert normalize_location_id("BLACKBANK-3003") == "Black Market"
     assert normalize_location_id("3003") == "Black Market"
     assert normalize_location_id("3005") == "Caerleon"
+    assert normalize_location_id("3008") == "Martlock"
     assert normalize_location_id("Caerleon-Auction2") == "Caerleon"
     assert normalize_location_id("FortSterling-Auction2") == "Fort Sterling"
+
+
+def test_local_store_normalizes_scanner_fixed_point_price_and_numeric_city(tmp_path) -> None:
+    store = LocalMarketStore(tmp_path / "local_market.sqlite3")
+    try:
+        store.upsert_market_upload(
+            {
+                "Orders": [
+                    {
+                        "Id": 20,
+                        "ItemTypeId": "T6_2H_DUALSCIMITAR_UNDEAD@3",
+                        "LocationId": "3008",
+                        "QualityLevel": 3,
+                        "EnchantmentLevel": 3,
+                        "UnitPriceSilver": 21_999_990_000,
+                        "Amount": 1,
+                        "AuctionType": "offer",
+                    }
+                ]
+            },
+            observed_at=datetime(2026, 8, 1, 20, 43, 40, tzinfo=timezone.utc),
+        )
+        rows = store.get_prices(
+            region=MarketRegion.EUROPE,
+            item_ids=["T6_2H_DUALSCIMITAR_UNDEAD@3"],
+            locations=["Martlock"],
+            qualities=[3],
+        )
+    finally:
+        store.close()
+
+    assert len(rows) == 1
+    assert rows[0].sell_price_min == 2_199_999

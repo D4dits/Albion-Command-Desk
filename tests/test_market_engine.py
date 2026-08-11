@@ -142,6 +142,50 @@ def test_build_craft_run_manual_price_overrides_selected_mode() -> None:
     assert output.unit_price == 22222.0
 
 
+def test_output_sell_price_uses_available_quality_when_normal_has_only_buy_order() -> None:
+    recipe = _build_recipe()
+    setup = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Martlock",
+        default_buy_city="Bridgewatch",
+        default_sell_city="Martlock",
+        quality=1,
+    )
+    price_index = _build_price_index()
+    price_index.update(
+        {
+            ("T4_MAIN_SWORD", "Martlock", 1): MarketPriceRecord(
+                item_id="T4_MAIN_SWORD",
+                city="Martlock",
+                quality=1,
+                sell_price_min=0,
+                buy_price_max=1_400_001,
+                sell_price_min_date="",
+                buy_price_max_date="2026-08-01T20:43:39",
+            ),
+            ("T4_MAIN_SWORD", "Martlock", 3): MarketPriceRecord(
+                item_id="T4_MAIN_SWORD",
+                city="Martlock",
+                quality=3,
+                sell_price_min=2_199_999,
+                buy_price_max=0,
+                sell_price_min_date="2026-08-01T20:43:40",
+                buy_price_max_date="",
+            ),
+        }
+    )
+
+    run = build_craft_run(
+        recipe=recipe,
+        quantity=1,
+        setup=setup,
+        price_index=price_index,
+    )
+
+    assert run.outputs[0].price_type == PriceType.SELL_ORDER
+    assert run.outputs[0].unit_price == 2_199_999.0
+
+
 def test_build_craft_run_level_item_uses_base_market_quote() -> None:
     spear = ItemRef(
         unique_name="T7_MAIN_SPEAR_KEEPER",

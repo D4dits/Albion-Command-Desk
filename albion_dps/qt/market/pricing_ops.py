@@ -15,9 +15,7 @@ def price_key(
 
 def price_qualities(setup: CraftSetup) -> tuple[int, ...]:
     quality = max(1, min(6, int(setup.quality or 1)))
-    if quality == 1:
-        return (1,)
-    return (quality, 1)
+    return (quality,) + tuple(candidate for candidate in range(1, 6) if candidate != quality)
 
 
 def default_market_tax_percent(premium: bool) -> float:

@@ -83,9 +83,16 @@ def find_price_quote(
     if not candidates:
         return None
     fallback: MarketPriceRecord | None = None
-    quality_candidates = [int(quality)]
-    if int(quality) != 1:
-        quality_candidates.append(1)
+    preferred_quality = int(quality)
+    available_qualities = {
+        int(candidate_quality)
+        for candidate_id, candidate_city, candidate_quality in price_index
+        if candidate_city == city and candidate_id in candidates
+    }
+    quality_candidates = [preferred_quality] + sorted(
+        available_qualities - {preferred_quality},
+        key=lambda value: (abs(value - preferred_quality), value),
+    )
     for candidate_id in candidates:
         for candidate_quality in quality_candidates:
             quote = price_index.get((candidate_id, city, candidate_quality))
@@ -95,13 +102,6 @@ def find_price_quote(
                 return quote
             if fallback is None:
                 fallback = quote
-    for (candidate_id, candidate_city, _candidate_quality), quote in price_index.items():
-        if candidate_city != city or candidate_id not in candidates:
-            continue
-        if mode_has_price(quote, preferred_mode):
-            return quote
-        if fallback is None:
-            fallback = quote
     return fallback
 
 

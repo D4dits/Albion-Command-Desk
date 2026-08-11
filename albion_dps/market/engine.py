@@ -625,28 +625,26 @@ def _pick_quote(
     item_id: str,
     city: str,
     quality: int,
-    price_type: PriceType = PriceType.SELL_ORDER,
+    price_type: PriceType | None = None,
 ) -> MarketPriceRecord | None:
     candidates = _item_id_candidates(item_id)
     fallback: MarketPriceRecord | None = None
+    preferred_quality = int(quality)
+    quality_order = (preferred_quality,) + tuple(
+        candidate
+        for candidate in sorted(
+            range(1, 6), key=lambda value: (abs(value - preferred_quality), value)
+        )
+        if candidate != preferred_quality
+    )
     for candidate_id in candidates:
-        key = (candidate_id, city, quality)
-        quote = price_index.get(key)
-        if quote is not None:
-            if _quote_has_price_for_type(quote, price_type):
+        for candidate_quality in quality_order:
+            quote = price_index.get((candidate_id, city, candidate_quality))
+            if quote is None:
+                continue
+            if _quote_has_requested_price(quote, price_type):
                 return quote
             fallback = fallback or quote
-        key_q1 = (candidate_id, city, 1)
-        quote = price_index.get(key_q1)
-        if quote is not None:
-            if _quote_has_price_for_type(quote, price_type):
-                return quote
-            fallback = fallback or quote
-    for candidate_key, candidate in price_index.items():
-        if candidate_key[1] in {city} and candidate_key[0] in candidates:
-            if _quote_has_price_for_type(candidate, price_type):
-                return candidate
-            fallback = fallback or candidate
     if fallback is not None:
         return fallback
     return None
@@ -684,7 +682,9 @@ def _quote_has_market_data(quote: MarketPriceRecord) -> bool:
     return int(quote.buy_price_max or 0) > 0 or int(quote.sell_price_min or 0) > 0
 
 
-def _quote_has_price_for_type(quote: MarketPriceRecord, price_type: PriceType) -> bool:
+def _quote_has_requested_price(
+    quote: MarketPriceRecord, price_type: PriceType | None
+) -> bool:
     if price_type == PriceType.BUY_ORDER:
         return int(quote.buy_price_max or 0) > 0
     if price_type == PriceType.SELL_ORDER:

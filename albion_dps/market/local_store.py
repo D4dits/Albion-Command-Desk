@@ -10,6 +10,7 @@ from typing import Any
 
 from albion_dps.market.aod_client import MarketPriceRecord
 from albion_dps.market.models import MarketRegion
+from albion_dps.market.price_store import normalize_market_location
 
 
 CITY_NAMES = ("Bridgewatch", "Martlock", "Lymhurst", "Fort Sterling", "Thetford", "Caerleon", "Brecilien")
@@ -69,7 +70,30 @@ class LocalMarketStore:
                 "CREATE INDEX IF NOT EXISTS idx_local_market_lookup "
                 "ON local_market_orders(region, item_id, city, quality, side, observed_at)"
             )
+            self._migrate_scanner_values()
             self._conn.commit()
+
+    def _migrate_scanner_values(self) -> None:
+        version = int(self._conn.execute("PRAGMA user_version").fetchone()[0])
+        if version >= 1:
+            return
+        rows = self._conn.execute(
+            "SELECT rowid, location_id, city, price FROM local_market_orders"
+        ).fetchall()
+        updates: list[tuple[str, int, int]] = []
+        for row in rows:
+            city = normalize_location_id(row["location_id"]) or str(row["city"])
+            price = _normalize_existing_scanner_price(
+                int(row["price"] or 0),
+                raw_location=str(row["location_id"] or ""),
+            )
+            updates.append((city, price, int(row["rowid"])))
+        if updates:
+            self._conn.executemany(
+                "UPDATE local_market_orders SET city=?, price=? WHERE rowid=?",
+                updates,
+            )
+        self._conn.execute("PRAGMA user_version=1")
 
     def close(self) -> None:
         with self._lock:
@@ -222,7 +246,7 @@ def normalize_location_id(location_id: object) -> str:
         city_compact = _compact_city(city)
         if compact == city_compact or city_compact in compact:
             return city
-    return value
+    return normalize_market_location(value)
 
 
 def _location_query_values(locations: list[str]) -> set[str]:
