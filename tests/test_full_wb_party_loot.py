@@ -80,4 +80,7 @@ def test_full_wb_keeps_party_loot_and_party_meter_rows() -> None:
         allowed_player_names=allowed_display_names or None,
     )
     row_names = {row.name for row in rows}
-    assert {"D4dits", "TangaDeSeda", "kenAce1"}.issubset(row_names)
+    # The scoreboard contains contributors only; roster members with no stats
+    # remain represented by the separate party count.
+    assert row_names.issubset(party.snapshot_names())
+    assert "BrodatyJohn" not in row_names

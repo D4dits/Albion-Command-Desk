@@ -25,6 +25,10 @@ Item {
     signal clearHistorySelection()
     signal selectHistory(int index)
     signal copyHistory(int index)
+    signal copyHistoryShort(int index)
+    signal copyHistoryFull(int index)
+    signal deleteSelectedHistory()
+    signal clearCurrentHistory()
     signal copySessionCompare()
     property bool sessionCompareAvailable: false
     property string sessionCompareTitle: ""
@@ -53,12 +57,29 @@ Item {
             font.bold: true
         }
 
-        AppButton {
-            visible: root.selectedHistoryIndex >= 0
-            text: "Back to live"
-            implicitHeight: 30
-            implicitWidth: 104
-            onClicked: root.clearHistorySelection()
+        RowLayout {
+            Layout.fillWidth: true
+            AppButton {
+                visible: root.selectedHistoryIndex >= 0
+                text: "Back to live"
+                implicitHeight: 30
+                implicitWidth: 104
+                onClicked: root.clearHistorySelection()
+            }
+            AppButton {
+                visible: root.selectedHistoryIndex >= 0
+                text: "Delete selected"
+                compact: true
+                variant: "danger"
+                onClicked: deleteDialog.open()
+            }
+            Item { Layout.fillWidth: true }
+            AppButton {
+                text: "Clear all"
+                compact: true
+                variant: "ghost"
+                onClicked: clearDialog.open()
+            }
         }
 
         Rectangle {
@@ -164,12 +185,20 @@ Item {
                             elide: Text.ElideRight
                         }
                         AppButton {
-                            text: "Copy"
+                            text: "Short"
                             variant: "ghost"
                             compact: true
-                            implicitWidth: 64
+                            implicitWidth: 58
                             implicitHeight: 24
-                            onClicked: root.copyHistory(index)
+                            onClicked: root.copyHistoryShort(index)
+                        }
+                        AppButton {
+                            text: "Full"
+                            variant: "ghost"
+                            compact: true
+                            implicitWidth: 52
+                            implicitHeight: 24
+                            onClicked: root.copyHistoryFull(index)
                         }
                     }
                     Text {
@@ -222,5 +251,21 @@ Item {
                 historyList.contentY = Math.min(root.preservedContentY, maxContentY)
             })
         }
+    }
+
+    Dialog {
+        id: deleteDialog
+        title: "Delete selected fight?"
+        modal: true
+        standardButtons: Dialog.Yes | Dialog.No
+        onAccepted: root.deleteSelectedHistory()
+    }
+
+    Dialog {
+        id: clearDialog
+        title: "Clear all history for this mode?"
+        modal: true
+        standardButtons: Dialog.Yes | Dialog.No
+        onAccepted: root.clearCurrentHistory()
     }
 }

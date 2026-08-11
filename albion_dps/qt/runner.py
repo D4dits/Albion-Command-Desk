@@ -37,13 +37,14 @@ from albion_dps.market.local_store import LocalMarketStore
 from albion_dps.market.price_store import LocalMarketPriceStore
 from albion_dps.market.service import MarketDataService
 from albion_dps.meter.session_meter import SessionMeter
+from albion_dps.meter.history_store import MeterHistoryStore
 from albion_dps.models import MeterSnapshot
 from albion_dps.pipeline import live_snapshots, replay_snapshots
 from albion_dps.protocol.combat_mapper import CombatEventMapper
 from albion_dps.protocol.photon_decode import PhotonDecoder
 from albion_dps.protocol.registry import default_registry
 from albion_dps.qt.loot_state import LootState
-from albion_dps.settings import load_app_settings, update_app_settings
+from albion_dps.settings import load_app_settings, settings_dir, update_app_settings
 from albion_dps.update import check_for_updates
 from albion_dps.versioning import resolve_app_version
 
@@ -173,6 +174,9 @@ def run_qt(args: argparse.Namespace) -> int:
         history_limit=max(args.history, 1),
         set_mode_callback=meter.set_mode,
         set_history_limit_callback=meter.set_history_limit,
+        delete_history_callback=meter.delete_history,
+        clear_history_callback=meter.clear_history,
+        toggle_manual_callback=meter.toggle_manual,
         role_lookup=role_lookup,
         weapon_lookup=weapon_lookup,
         update_auto_check=app_settings.update_auto_check,
@@ -271,6 +275,8 @@ def run_qt(args: argparse.Namespace) -> int:
     app.aboutToQuit.connect(local_market_ingestor.stop)
     app.aboutToQuit.connect(market_setup_state.close)
     app.aboutToQuit.connect(loot_session_store.close)
+    if meter.history_store is not None:
+        app.aboutToQuit.connect(meter.history_store.close)
     app.aboutToQuit.connect(stop_event.set)
     app.exec()
     return 0
@@ -456,12 +462,17 @@ def _build_runtime(
     party = PartyRegistry()
     fame = FameTracker()
     map_trail = MapTrailTracker()
+    meter_history_store = MeterHistoryStore(settings_dir() / "meter_history.sqlite3")
     meter = SessionMeter(
         window_seconds=10.0,
         battle_timeout_seconds=args.battle_timeout,
         history_limit=max(args.history, 1),
         mode=args.mode,
-        name_lookup=names.lookup,
+        name_lookup=names.lookup_player,
+        roster_lookup=party.snapshot_names,
+        history_store=meter_history_store,
+        source="replay" if args.qt_command == "replay" else "live",
+        source_reference=str(getattr(args, "pcap", "") or ""),
     )
     if args.self_name:
         party.set_self_name(args.self_name, confirmed=True)
@@ -642,7 +653,7 @@ def _allowed_display_names_for_snapshot(
     def add_allowed_label(entity_id: int) -> None:
         resolved = names.get(entity_id)
         if not resolved and name_registry is not None:
-            resolved = name_registry.lookup(entity_id)
+            resolved = name_registry.lookup_player(entity_id)
         if isinstance(resolved, str) and resolved:
             allowed_names.add(resolved)
             return
@@ -652,7 +663,7 @@ def _allowed_display_names_for_snapshot(
     for entity_id in self_ids:
         resolved = names.get(entity_id)
         if not resolved and name_registry is not None:
-            resolved = name_registry.lookup(entity_id)
+            resolved = name_registry.lookup_player(entity_id)
         if self_name or resolved:
             add_allowed_label(entity_id)
 
@@ -676,7 +687,7 @@ def _allowed_display_names_for_snapshot(
     active_party_names = {
         name
         for entity_id in active_ids
-        for name in (names.get(entity_id), name_registry.lookup(entity_id) if name_registry is not None else None)
+        for name in (names.get(entity_id), name_registry.lookup_player(entity_id) if name_registry is not None else None)
         if isinstance(name, str) and name in party_names
     }
     allowed_names.update(active_party_names)

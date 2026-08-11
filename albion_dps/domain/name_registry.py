@@ -30,11 +30,18 @@ NAME_PARTY_PLAYER_JOINED_SUBTYPE = 214
 NAME_CURRENT_PARTY_PLAYER_JOINED_SUBTYPE = 233
 NAME_PARTY_JOINED_GUID_KEYS = (3, 4)
 NAME_PARTY_JOINED_NAME_KEYS = (5, 6)
+NON_PLAYER_NAME_PREFIXES = ("@", "MOB_", "NPC_")
+NON_PLAYER_NAMES = {"SYSTEM", "System", "owner", "friend", "user"}
 
 
 @dataclass
 class NameRegistry:
     _names: dict[int, str] = field(default_factory=dict)
+    # Player identity is deliberately kept separate from the generic entity
+    # label cache. Albion reuses parameter keys across event types, so a later
+    # mob/status event may legitimately update ``_names`` for the same numeric
+    # id. It must not erase a player identity established by NewCharacter.
+    _player_names: dict[int, str] = field(default_factory=dict)
     _guid_names: dict[bytes, str] = field(default_factory=dict)
     _id_guids: dict[int, bytes] = field(default_factory=dict)
     _strong_name_ids: dict[str, set[int]] = field(default_factory=dict)
@@ -58,11 +65,10 @@ class NameRegistry:
 
     def snapshot(self) -> dict[int, str]:
         merged = dict(self._names)
+        merged.update(self._player_names)
         for entity_id, guid in self._id_guids.items():
-            if entity_id in merged:
-                continue
             name = self._guid_names.get(guid)
-            if name:
+            if _looks_like_player_name(name):
                 merged[entity_id] = name
         return merged
 
@@ -75,21 +81,52 @@ class NameRegistry:
             return None
         return self._guid_names.get(guid)
 
+    def lookup_player(self, entity_id: int) -> str | None:
+        name = self._player_names.get(entity_id)
+        if name is not None:
+            return name
+        guid = self._id_guids.get(entity_id)
+        if guid is None:
+            return None
+        name = self._guid_names.get(guid)
+        return name if _looks_like_player_name(name) else None
+
+    def snapshot_players(self) -> dict[int, str]:
+        players = dict(self._player_names)
+        for entity_id, guid in self._id_guids.items():
+            if entity_id in players:
+                continue
+            name = self._guid_names.get(guid)
+            if _looks_like_player_name(name):
+                players[entity_id] = name
+        return players
+
     def record(self, entity_id: int, name: str) -> None:
         self._store(entity_id, name)
+        self._store_player(entity_id, name)
 
     def record_local(self, entity_id: int, name: str, timestamp: float) -> None:
         self._store(entity_id, name)
+        self._store_player(entity_id, name)
         self._mark_local(entity_id, timestamp)
 
     def record_weak(self, entity_id: int, name: str) -> None:
         self._store(entity_id, name, weak=True)
+
+    def record_player_if_unknown(self, entity_id: int, name: str) -> None:
+        if self.lookup_player(entity_id) is not None:
+            return
+        self._store(entity_id, name)
+        self._store_player(entity_id, name)
 
     def snapshot_guid_names(self) -> dict[bytes, str]:
         return dict(self._guid_names)
 
     def snapshot_id_guids(self) -> dict[int, bytes]:
         return dict(self._id_guids)
+
+    def lookup_guid(self, entity_id: int) -> bytes | None:
+        return self._id_guids.get(entity_id)
 
     def items_for(self, entity_id: int) -> list[int]:
         items = self._entity_items.get(entity_id)
@@ -119,6 +156,8 @@ class NameRegistry:
                 alt_entity_id = parameters.get(NAME_SUBTYPE_ENTITY_ALT_ID_KEY)
                 self._store(entity_id, name)
                 self._store(alt_entity_id, name)
+                self._store_player(entity_id, name)
+                self._store_player(alt_entity_id, name)
                 self._mark_local(entity_id, timestamp)
                 self._mark_local(alt_entity_id, timestamp)
         if subtype == NAME_SUBTYPE_UNIT_INFO:
@@ -127,6 +166,7 @@ class NameRegistry:
             if isinstance(name, str) and name:
                 self._store(entity_id, name)
                 self._store(parameters.get(7), name)
+                self._store_player(entity_id, name)
             items = parameters.get(NAME_UNIT_EQUIPMENT_LIST_KEY)
             if isinstance(entity_id, int) and isinstance(items, list):
                 filtered = [item for item in items if isinstance(item, int) and item > 0]
@@ -158,7 +198,10 @@ class NameRegistry:
                     self._infer_name_from_items(entity_id)
             self._mark_local(entity_id, timestamp)
         if subtype == NAME_SUBTYPE_ID_NAME:
-            self._store(parameters.get(NAME_ID_KEY), parameters.get(NAME_SUBTYPE_NAME_KEY), weak=True)
+            entity_id = parameters.get(NAME_ID_KEY)
+            name = parameters.get(NAME_SUBTYPE_NAME_KEY)
+            self._store(entity_id, name, weak=True)
+            self._store_player(entity_id, name)
         raw_id = parameters.get(NAME_ID_KEY)
         raw_name = parameters.get(NAME_VALUE_KEY)
 
@@ -203,17 +246,22 @@ class NameRegistry:
         if guid_entity_id is not None and isinstance(name, str) and name:
             self._guid_names[guid_entity_id] = name
 
-    def _apply_guid_link(self, parameters: dict[int, object]) -> None:
-        guid = parameters.get(3)
-        entity_id = parameters.get(1)
-        guid = _coerce_guid(guid)
-        if not isinstance(entity_id, int) or entity_id <= 0:
-            entity_id = None
-        if guid is not None and entity_id is not None:
-            self._id_guids[entity_id] = guid
-            return
+    def _store_player(self, entity_id: object, name: object) -> None:
+        if (
+            isinstance(entity_id, int)
+            and entity_id > 0
+            and _looks_like_player_name(name)
+        ):
+            self._player_names[entity_id] = name
 
+    def _apply_guid_link(self, parameters: dict[int, object]) -> None:
         subtype = parameters.get(252)
+        if subtype == 40:
+            guid = _coerce_guid(parameters.get(3))
+            entity_id = parameters.get(1)
+            if isinstance(entity_id, int) and entity_id > 0 and guid is not None:
+                self._bind_guid(entity_id, guid)
+                return
         candidates: list[tuple[int, int]] = []
         if subtype == NAME_PARTY_PLAYER_JOINED_SUBTYPE:
             candidates.append((0, 1))
@@ -230,8 +278,14 @@ class NameRegistry:
             guid = _coerce_guid(candidate_guid)
             if guid is None:
                 continue
-            self._id_guids[candidate_id] = guid
+            self._bind_guid(candidate_id, guid)
             return
+
+    def _bind_guid(self, entity_id: int, guid: bytes) -> None:
+        previous_guid = self._id_guids.get(entity_id)
+        if previous_guid is not None and previous_guid != guid:
+            self._player_names.pop(entity_id, None)
+        self._id_guids[entity_id] = guid
 
     def _apply_party_roster(self, parameters: dict[int, object]) -> None:
         subtype = parameters.get(252)
@@ -296,6 +350,16 @@ class NameRegistry:
 
 def _is_guid(value: object) -> bool:
     return _coerce_guid(value) is not None
+
+
+def _looks_like_player_name(value: object) -> bool:
+    if not isinstance(value, str):
+        return False
+    name = value.strip()
+    if not name or name in NON_PLAYER_NAMES or name.isdigit():
+        return False
+    upper = name.upper()
+    return not any(upper.startswith(prefix) for prefix in NON_PLAYER_NAME_PREFIXES)
 
 
 def _coerce_guid(value: object) -> bytes | None:

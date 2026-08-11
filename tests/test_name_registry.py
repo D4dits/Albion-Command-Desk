@@ -154,3 +154,52 @@ def test_name_registry_ignores_generic_raw_id_guid_pairs(monkeypatch) -> None:
     registry.observe(message)
 
     assert registry.snapshot_id_guids()[996330] == good_guid
+
+
+def test_player_identity_survives_generic_mob_label_for_same_object_id(monkeypatch) -> None:
+    registry = NameRegistry()
+    guid = bytes.fromhex("4bb4253238e88941ac4bedfb0647e578")
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    events = iter(
+        [
+            SimpleNamespace(
+                parameters={252: 29, 0: 996330, 1: "CascadeJP", 7: list(guid)}
+            ),
+            SimpleNamespace(parameters={252: 666, 0: 996330, 1: "@MOB_WOLF"}),
+        ]
+    )
+    monkeypatch.setattr(
+        name_registry_module,
+        "decode_event_data",
+        lambda _payload: next(events),
+    )
+
+    registry.observe(message)
+    registry.observe(message)
+
+    assert registry.lookup(996330) == "@MOB_WOLF"
+    assert registry.lookup_player(996330) == "CascadeJP"
+
+
+def test_guid_rebind_keeps_recent_player_object_ids_for_reordered_combat(monkeypatch) -> None:
+    registry = NameRegistry()
+    guid = bytes.fromhex("4bb4253238e88941ac4bedfb0647e578")
+    message = PhotonMessage(opcode=1, event_code=1, payload=b"\x00")
+    events = iter(
+        [
+            SimpleNamespace(parameters={252: 29, 0: 100, 1: "CascadeJP", 7: guid}),
+            SimpleNamespace(parameters={252: 29, 0: 200, 1: "CascadeJP", 7: guid}),
+        ]
+    )
+    monkeypatch.setattr(
+        name_registry_module,
+        "decode_event_data",
+        lambda _payload: next(events),
+    )
+
+    registry.observe(message)
+    registry.observe(message)
+
+    assert registry.snapshot_id_guids()[100] == guid
+    assert registry.lookup_player(100) == "CascadeJP"
+    assert registry.lookup_player(200) == "CascadeJP"

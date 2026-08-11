@@ -93,8 +93,8 @@ def test_ui_state_exports_history_txt_csv_json(monkeypatch) -> None:
 
     assert "battle 00:10 | total dmg 1500 heal 300 | players 2" in paths["txt"].read_text(encoding="utf-8")
     csv_payload = paths["csv"].read_text(encoding="utf-8")
-    assert "session_index,mode,label,duration_seconds,total_damage,total_heal,player_count,player_rank,player_name,damage,heal,dps,hps" in csv_payload
-    assert "1,battle,,10.0,1500,300,2,1,D4dits,1200,0,120.0,0.0" in csv_payload
+    assert "session_index,encounter_id,source,mode,label,duration_seconds,total_damage,total_heal,player_count,player_rank,player_name,damage,heal,dps,hps" in csv_payload
+    assert "1,,live,battle,,10.0,1500,300,2,1,D4dits,1200,0,120.0,0.0" in csv_payload
     json_payload = json.loads(paths["json"].read_text(encoding="utf-8"))
     assert json_payload[0]["total_damage"] == 1500
     assert json_payload[0]["entries"][0]["player_name"] == "D4dits"

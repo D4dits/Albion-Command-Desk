@@ -281,12 +281,16 @@ class UiState(QObject):
         history_limit: int,
         set_mode_callback: Callable[[str], None] | None = None,
         set_history_limit_callback: Callable[[int], None] | None = None,
+        delete_history_callback: Callable[[str], bool] | None = None,
+        clear_history_callback: Callable[[str | None], int] | None = None,
+        toggle_manual_callback: Callable[[], bool] | None = None,
         role_lookup: Callable[[int], str | None] | None = None,
         weapon_lookup: Callable[[int], object | None] | None = None,
         update_auto_check: bool = True,
     ) -> None:
         super().__init__()
         self._mode = "battle"
+        self._manual_active = False
         self._zone = "-"
         self._time_text = "-"
         self._duration_text = "00:00"
@@ -299,6 +303,9 @@ class UiState(QObject):
         self._history_limit = history_limit
         self._set_mode_callback = set_mode_callback
         self._set_history_limit_callback = set_history_limit_callback
+        self._delete_history_callback = delete_history_callback
+        self._clear_history_callback = clear_history_callback
+        self._toggle_manual_callback = toggle_manual_callback
         self._players = PlayerModel()
         self._history = HistoryModel()
         self._activity = ActivityModel()
@@ -322,10 +329,16 @@ class UiState(QObject):
         self._meter_export_dir = str(self._app_settings.meter_export_dir or "").strip()
         self._session_compare_title = ""
         self._session_compare_text = ""
+        self._contributor_count = 0
+        self._roster_count = 0
 
     @Property(str, notify=modeChanged)
     def mode(self) -> str:
         return self._mode
+
+    @Property(bool, notify=modeChanged)
+    def manualActive(self) -> bool:
+        return self._manual_active
 
     @Property(str, notify=zoneChanged)
     def zone(self) -> str:
@@ -374,6 +387,14 @@ class UiState(QObject):
     @Property(int, notify=meterDisplayChanged)
     def meterTopN(self) -> int:
         return self._top_n
+
+    @Property(int, notify=meterDisplayChanged)
+    def contributorCount(self) -> int:
+        return self._contributor_count
+
+    @Property(int, notify=meterDisplayChanged)
+    def rosterCount(self) -> int:
+        return self._roster_count
 
     @Property(int, notify=historyLimitChanged)
     def historyLimit(self) -> int:
@@ -467,16 +488,102 @@ class UiState(QObject):
             self._set_mode_callback(mode)
         self._set_mode(mode)
 
-    @Slot(int)
-    def copyHistory(self, index: int) -> None:
-        text = self._history.get_copy_text(index)
+    def _copy_to_clipboard(self, text: str) -> bool:
         if not text:
-            return
+            return False
         from PySide6.QtGui import QGuiApplication
 
         clipboard = QGuiApplication.clipboard()
-        if clipboard:
-            clipboard.setText(text)
+        if clipboard is None:
+            return False
+        clipboard.setText(text)
+        return True
+
+    @Slot(int, result=bool)
+    def copyHistory(self, index: int) -> bool:
+        return self.copyHistoryFull(index)
+
+    @Slot(int, result=bool)
+    def copyHistoryShort(self, index: int) -> bool:
+        if index < 0 or index >= len(self._last_history):
+            return False
+        return self._copy_to_clipboard(
+            _format_session_copy(
+                self._last_history[index],
+                names=self._last_names,
+                sort_key=self._sort_key,
+                full=False,
+            )
+        )
+
+    @Slot(int, result=bool)
+    def copyHistoryFull(self, index: int) -> bool:
+        if index < 0 or index >= len(self._last_history):
+            return False
+        return self._copy_to_clipboard(
+            _format_session_copy(
+                self._last_history[index],
+                names=self._last_names,
+                sort_key=self._sort_key,
+                full=True,
+            )
+        )
+
+    @Slot(bool, result=bool)
+    def copyCurrent(self, full: bool) -> bool:
+        if 0 <= self._selected_history_index < len(self._last_history):
+            summary = self._last_history[self._selected_history_index]
+            return self._copy_to_clipboard(
+                _format_session_copy(
+                    summary,
+                    names=self._last_names,
+                    sort_key=self._sort_key,
+                    full=bool(full),
+                )
+            )
+        if self._last_snapshot is None:
+            return False
+        return self._copy_to_clipboard(
+            _format_live_copy(
+                self._last_snapshot,
+                names=self._last_names,
+                sort_key=self._sort_key,
+                full=bool(full),
+                allowed_player_names=self._allowed_player_names,
+            )
+        )
+
+    @Slot(result=bool)
+    def toggleManual(self) -> bool:
+        if self._toggle_manual_callback is None:
+            return False
+        self._manual_active = bool(self._toggle_manual_callback())
+        self.modeChanged.emit()
+        return self._manual_active
+
+    @Slot(result=bool)
+    def deleteSelectedHistory(self) -> bool:
+        if not (0 <= self._selected_history_index < len(self._last_history)):
+            return False
+        summary = self._last_history[self._selected_history_index]
+        if self._delete_history_callback is None:
+            return False
+        if not self._delete_history_callback(summary.encounter_id):
+            return False
+        self._last_history.pop(self._selected_history_index)
+        self.clearHistorySelection()
+        self._refresh_history_table()
+        return True
+
+    @Slot(result=bool)
+    def clearCurrentHistory(self) -> bool:
+        if self._clear_history_callback is None:
+            return False
+        self._clear_history_callback(self._mode)
+        self._last_history.clear()
+        self.clearHistorySelection()
+        self._refresh_history_table()
+        return True
 
     @Slot(result=str)
     def exportHistoryTxtInteractive(self) -> str:
@@ -662,6 +769,8 @@ class UiState(QObject):
     def _set_mode(self, mode: str) -> None:
         if mode != self._mode:
             self._mode = mode
+            if mode != "manual":
+                self._manual_active = False
             self.modeChanged.emit()
 
     def _set_zone(self, zone: str) -> None:
@@ -725,8 +834,7 @@ class UiState(QObject):
         if self._selected_history_index >= 0 and self._selected_history_index < len(self._last_history):
             summary = self._last_history[self._selected_history_index]
             self._set_duration(summary.duration)
-            self._players.set_items(
-                _build_player_rows_from_entries(
+            rows = _build_player_rows_from_entries(
                     summary.entries,
                     sort_key=self._sort_key,
                     top_n=self._top_n,
@@ -734,15 +842,18 @@ class UiState(QObject):
                     role_lookup=self._role_lookup,
                     weapon_lookup=self._weapon_lookup,
                 )
+            self._players.set_items(rows)
+            self._set_meter_counts(
+                len(rows), len(summary.roster_names) or len(summary.participant_names)
             )
             return
         if self._last_snapshot is None:
             self._set_duration(0.0)
             self._players.set_items([])
+            self._set_meter_counts(0, 0)
             return
         self._set_duration(getattr(self._last_snapshot, "duration", 0.0))
-        self._players.set_items(
-            _build_player_rows(
+        rows = _build_player_rows(
                 self._last_snapshot.totals,
                 names=self._last_names,
                 sort_key=self._sort_key,
@@ -751,7 +862,17 @@ class UiState(QObject):
                 weapon_lookup=self._weapon_lookup,
                 allowed_player_names=self._allowed_player_names,
             )
+        self._players.set_items(rows)
+        self._set_meter_counts(
+            len(rows), len(self._allowed_player_names or set())
         )
+
+    def _set_meter_counts(self, contributors: int, roster: int) -> None:
+        if contributors == self._contributor_count and roster == self._roster_count:
+            return
+        self._contributor_count = contributors
+        self._roster_count = roster
+        self.meterDisplayChanged.emit()
 
     def _refresh_history_table(self) -> None:
         self._history.set_items(
@@ -928,26 +1049,6 @@ def _build_player_rows(
                 weapon_icon=weapon_icon,
             )
         )
-    if allowed_player_names is not None:
-        existing_labels = {row.name for row in rows}
-        for label in sorted(allowed_player_names, key=str.lower):
-            if label in existing_labels or not _is_player_label(label):
-                continue
-            rows.append(
-                PlayerRow(
-                    name=label,
-                    damage=0.0,
-                    heal=0.0,
-                    dps=0.0,
-                    hps=0.0,
-                    bar_ratio=0.0,
-                    role="",
-                    color=_color_for_label(label, None),
-                    weapon_name="",
-                    weapon_tier="",
-                    weapon_icon="",
-                )
-            )
     rows = _collapse_player_rows(rows)
     rows.sort(key=lambda item: _metric_value(item, metric), reverse=True)
     rows = rows[: max(top_n, 1)]
@@ -1025,12 +1126,20 @@ def _build_history_rows(
             duration=summary.duration,
         )
         players_count = len(collapsed_entries)
+        started = (
+            datetime.fromtimestamp(summary.start_ts).strftime("%Y-%m-%d %H:%M:%S")
+            if summary.start_ts > 0
+            else "unknown time"
+        )
         players = _format_players_preview(collapsed_entries, names=names, max_players=3)
         copy_text = _format_history_copy(summary, names=names, entries=collapsed_entries)
         rows.append(
             HistoryRow(
-                label=f"{label} {duration}",
-                meta=f"{totals} | players {players_count}",
+                label=f"{started} · {label} · {duration}",
+                meta=(
+                    f"{summary.source} | {totals} | contributors {players_count}"
+                    f" / party {len(summary.roster_names) or len(summary.participant_names)}"
+                ),
                 players=players,
                 copy_text=copy_text,
                 selected=index == selected_index,
@@ -1093,6 +1202,104 @@ def _format_history_copy(
     return "\n".join(lines)
 
 
+def _format_session_copy(
+    summary: SessionSummary,
+    *,
+    names: dict[int, str],
+    sort_key: str,
+    full: bool,
+) -> str:
+    entries = _collapse_history_entries(
+        summary.entries, names=names, duration=summary.duration
+    )
+    return _format_copy_rows(
+        entries,
+        title=(
+            f"{datetime.fromtimestamp(summary.start_ts).strftime('%Y-%m-%d %H:%M:%S')} "
+            f"| {summary.mode} | {summary.source} | {_format_duration(summary.duration)}"
+        ),
+        sort_key=sort_key,
+        full=full,
+        participant_count=len(summary.participant_names),
+        roster_count=len(summary.roster_names),
+    )
+
+
+def _format_live_copy(
+    snapshot,
+    *,
+    names: dict[int, str],
+    sort_key: str,
+    full: bool,
+    allowed_player_names: set[str] | None,
+) -> str:
+    entries = [
+        SessionEntry(
+            label=names.get(source_id, str(source_id)),
+            damage=float(stats.get("damage", 0.0)),
+            heal=float(stats.get("heal", 0.0)),
+            dps=float(stats.get("dps", 0.0)),
+            hps=float(stats.get("hps", 0.0)),
+            source_id=source_id,
+        )
+        for source_id, stats in snapshot.totals.items()
+        if _is_player_label(names.get(source_id, str(source_id)))
+        and (
+            allowed_player_names is None
+            or names.get(source_id, str(source_id)) in allowed_player_names
+        )
+    ]
+    return _format_copy_rows(
+        entries,
+        title=f"live | {_format_duration(getattr(snapshot, 'duration', 0.0))}",
+        sort_key=sort_key,
+        full=full,
+        participant_count=len(entries),
+        roster_count=len(allowed_player_names or set()),
+    )
+
+
+def _format_copy_rows(
+    entries: list[SessionEntry],
+    *,
+    title: str,
+    sort_key: str,
+    full: bool,
+    participant_count: int,
+    roster_count: int,
+) -> str:
+    metric = SORT_KEY_MAP.get(sort_key, "dps")
+    ordered = sorted(entries, key=lambda entry: getattr(entry, metric), reverse=True)
+    lines = [
+        f"{title} | contributors {len(ordered)} | participants {participant_count}"
+        f" | party {roster_count} | sorted {sort_key}"
+    ]
+    total_damage = sum(entry.damage for entry in ordered)
+    total_heal = sum(entry.heal for entry in ordered)
+    for index, entry in enumerate(ordered, start=1):
+        if full:
+            damage_share = (entry.damage / total_damage * 100.0) if total_damage else 0.0
+            heal_share = (entry.heal / total_heal * 100.0) if total_heal else 0.0
+            lines.append(
+                f"{index:02d}. {entry.label} | dmg {_format_int(entry.damage)} "
+                f"({damage_share:.1f}%) | dps {entry.dps:.1f} | heal {_format_int(entry.heal)} "
+                f"({heal_share:.1f}%) | hps {entry.hps:.1f}"
+            )
+        elif sort_key in {"heal", "hps"}:
+            share = (entry.heal / total_heal * 100.0) if total_heal else 0.0
+            lines.append(
+                f"{index:02d}. {entry.label} | heal {_format_int(entry.heal)} "
+                f"| hps {entry.hps:.1f} | {share:.1f}%"
+            )
+        else:
+            share = (entry.damage / total_damage * 100.0) if total_damage else 0.0
+            lines.append(
+                f"{index:02d}. {entry.label} | dmg {_format_int(entry.damage)} "
+                f"| dps {entry.dps:.1f} | {share:.1f}%"
+            )
+    return "\n".join(lines)
+
+
 def _history_to_txt(history: list[SessionSummary], *, names: dict[int, str]) -> str:
     blocks = [
         _format_history_copy(summary, names=names, entries=_collapse_history_entries(summary.entries, names=names, duration=summary.duration))
@@ -1107,6 +1314,8 @@ def _history_to_csv(history: list[SessionSummary], *, names: dict[int, str]) -> 
     writer.writerow(
         [
             "session_index",
+            "encounter_id",
+            "source",
             "mode",
             "label",
             "duration_seconds",
@@ -1128,6 +1337,8 @@ def _history_to_csv(history: list[SessionSummary], *, names: dict[int, str]) -> 
             writer.writerow(
                 [
                     index,
+                    summary.encounter_id,
+                    summary.source,
                     summary.mode,
                     session_label,
                     round(summary.duration, 2),
@@ -1152,6 +1363,8 @@ def _history_to_json(history: list[SessionSummary], *, names: dict[int, str]) ->
         payload.append(
             {
                 "session_index": index,
+                "encounter_id": summary.encounter_id,
+                "source": summary.source,
                 "mode": summary.mode,
                 "label": summary.label,
                 "start_ts": summary.start_ts,
@@ -1160,6 +1373,8 @@ def _history_to_json(history: list[SessionSummary], *, names: dict[int, str]) ->
                 "total_damage": _format_int(summary.total_damage),
                 "total_heal": _format_int(summary.total_heal),
                 "reason": summary.reason,
+                "roster_names": list(summary.roster_names),
+                "participant_names": list(summary.participant_names),
                 "player_count": len(entries),
                 "entries": [
                     {
@@ -1434,6 +1649,8 @@ def _collapse_history_entries(
 
 
 def _summary_key(summary: SessionSummary) -> tuple[Any, ...]:
+    if summary.encounter_id:
+        return (summary.encounter_id,)
     return (
         summary.mode,
         round(summary.start_ts, 3),

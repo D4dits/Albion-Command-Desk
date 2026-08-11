@@ -99,12 +99,14 @@ class PartyRegistry:
     strict: bool = True
     _party_names: set[str] = field(default_factory=set)
     _party_ids: set[int] = field(default_factory=set)
+    _guid_resolved_party_ids: set[int] = field(default_factory=set)
     _resolved_party_names: set[str] = field(default_factory=set)
     _party_guids: set[bytes] = field(default_factory=set)
     _party_guid_names: dict[bytes, str] = field(default_factory=dict)
     _combat_ids_seen: set[int] = field(default_factory=set)
     _target_ids: set[int] = field(default_factory=set)
     _self_ids: set[int] = field(default_factory=set)
+    _known_self_ids: set[int] = field(default_factory=set)
     _primary_self_id: int | None = None
     _self_name: str | None = None
     _self_name_confirmed: bool = False
@@ -311,7 +313,7 @@ class PartyRegistry:
             matches = [
                 entity_id
                 for entity_id in self._self_candidate_scores.keys()
-                if name_registry.lookup(entity_id) == self._self_name
+                if _lookup_player_name(name_registry, entity_id) == self._self_name
             ]
             if len(matches) == 1:
                 if (
@@ -327,7 +329,7 @@ class PartyRegistry:
             and self._party_names
             and not self._self_name_confirmed
         ):
-            best_name = name_registry.lookup(best_id)
+            best_name = _lookup_player_name(name_registry, best_id)
             if best_name in self._party_names and best_name != self._self_name:
                 return
         second_score = max(
@@ -365,6 +367,7 @@ class PartyRegistry:
             self._primary_self_id = None
         self._party_ids.add(entity_id)
         self._self_ids.add(entity_id)
+        self._known_self_ids.add(entity_id)
         if self._primary_self_id is None:
             self._primary_self_id = entity_id
 
@@ -481,7 +484,7 @@ class PartyRegistry:
     ) -> None:
         if not self._party_names:
             return
-        snapshot = name_registry.snapshot()
+        snapshot = name_registry.snapshot_players()
         recent_local_ids: set[int] = set()
         if timestamp is not None:
             recent_local_ids = name_registry.snapshot_recent_ids(
@@ -515,6 +518,8 @@ class PartyRegistry:
 
     def sync_guids(self, name_registry: NameRegistry) -> None:
         if not self._party_guids:
+            self._party_ids.difference_update(self._guid_resolved_party_ids)
+            self._guid_resolved_party_ids.clear()
             return
         snapshot = name_registry.snapshot_guid_names()
         updated = False
@@ -541,8 +546,9 @@ class PartyRegistry:
                     self._party_names.add(name)
                     updated = True
                 self._resolved_party_names.add(name)
-        if mapped_ids:
-            self._party_ids.update(mapped_ids)
+        self._party_ids.difference_update(self._guid_resolved_party_ids)
+        self._guid_resolved_party_ids = mapped_ids
+        self._party_ids.update(mapped_ids)
         if updated:
             self._reset_party_ids_after_roster_change()
 
@@ -561,7 +567,7 @@ class PartyRegistry:
         for ts, entity_id in self._recent_target_ids:
             if ts < cutoff:
                 continue
-            name = name_registry.lookup(entity_id)
+            name = _lookup_player_name(name_registry, entity_id)
             if not _looks_like_player_name(name):
                 continue
             counts[name] = counts.get(name, 0) + 1
@@ -582,17 +588,20 @@ class PartyRegistry:
         self.set_self_name(best_name, confirmed=confirm)
 
     def sync_id_names(self, name_registry: NameRegistry) -> None:
-        if not self._self_ids:
+        if not self._known_self_ids:
             return
         if not self._self_name or not self._self_name_confirmed:
             return
-        for entity_id in self._self_ids:
-            name_registry.record(entity_id, self._self_name)
+        for entity_id in self._known_self_ids:
+            if entity_id in self._self_ids:
+                name_registry.record(entity_id, self._self_name)
+            else:
+                name_registry.record_player_if_unknown(entity_id, self._self_name)
 
     def sync_self_name(self, name_registry: NameRegistry) -> None:
         if self._self_ids:
             for entity_id in self._self_ids:
-                mapped = name_registry.lookup(entity_id)
+                mapped = _lookup_player_name(name_registry, entity_id)
                 if mapped:
                     if (
                         not self._self_name_confirmed
@@ -638,22 +647,32 @@ class PartyRegistry:
         allow_name_only_fallback = self._allow_name_only_fallback()
         if self.strict:
             if source_id in self._self_ids:
-                return True
-            if source_id in self._party_ids:
                 if name_registry is None:
                     return True
-                name = name_registry.lookup(source_id)
+                name = _lookup_player_name(name_registry, source_id)
+                if self._self_name_confirmed and self._self_name:
+                    return name in (None, self._self_name)
+                return name is not None and (
+                    not self._party_names or name in self._party_names
+                )
+            if source_id in self._party_ids:
+                if name_registry is None:
+                    return bool(self._party_names or self._party_guids)
+                source_guid = name_registry.lookup_guid(source_id)
+                if source_guid is not None and self._party_guids:
+                    return source_guid in self._party_guids
+                name = _lookup_player_name(name_registry, source_id)
                 if name is None:
-                    return not self._party_names
+                    return False
                 if not _looks_like_player_name(name):
                     return False
                 if self._party_names:
                     return name in self._party_names
-                return True
+                return False
             if not self._self_ids:
                 if name_registry is None:
                     return False
-                name = name_registry.lookup(source_id)
+                name = _lookup_player_name(name_registry, source_id)
                 if not _looks_like_player_name(name):
                     return False
                 if self._self_name_confirmed and self._self_name:
@@ -673,7 +692,7 @@ class PartyRegistry:
             if not self._party_names:
                 if name_registry is None:
                     return False
-                name = name_registry.lookup(source_id)
+                name = _lookup_player_name(name_registry, source_id)
                 return (
                     self._self_name_confirmed
                     and self._self_name is not None
@@ -687,18 +706,18 @@ class PartyRegistry:
                     name_registry,
                     timestamp=timestamp,
                 )
-            name = name_registry.lookup(source_id)
+            name = _lookup_player_name(name_registry, source_id)
             return _looks_like_player_name(name) and name in self._party_names
         if self._party_ids:
             if source_id in self._party_ids:
                 return True
             if name_registry is None or not self._party_names:
                 return False
-            name = name_registry.lookup(source_id)
+            name = _lookup_player_name(name_registry, source_id)
             return _looks_like_player_name(name) and name in self._party_names
         if not self._party_names or name_registry is None:
             return True
-        name = name_registry.lookup(source_id)
+        name = _lookup_player_name(name_registry, source_id)
         return _looks_like_player_name(name) and name in self._party_names
 
     def _allows_party_name_fallback(
@@ -708,7 +727,7 @@ class PartyRegistry:
         *,
         timestamp: float | None,
     ) -> bool:
-        name = name_registry.lookup(source_id)
+        name = _lookup_player_name(name_registry, source_id)
         if not _looks_like_player_name(name) or name not in self._party_names:
             return False
         return True
@@ -774,11 +793,13 @@ class PartyRegistry:
         if self._primary_self_id is None:
             self._primary_self_id = candidate_id
             self._self_ids.add(candidate_id)
+            self._known_self_ids.add(candidate_id)
             self._party_ids.add(candidate_id)
             return
         if candidate_id != self._primary_self_id:
             return
         self._self_ids.add(candidate_id)
+        self._known_self_ids.add(candidate_id)
         self._party_ids.add(candidate_id)
 
     def _discard_self_id_candidate(self, candidate_id: int) -> None:
@@ -886,6 +907,8 @@ class PartyRegistry:
                 self._party_ids.difference_update(previous)
             self._primary_self_id = None
         self._combat_ids_seen.clear()
+        self._party_ids.difference_update(self._guid_resolved_party_ids)
+        self._guid_resolved_party_ids.clear()
 
     def _clear_party(self) -> None:
         had_party_state = bool(
@@ -902,6 +925,8 @@ class PartyRegistry:
         self._resolved_party_names.clear()
         self._party_guids.clear()
         self._party_guid_names.clear()
+        self._party_ids.difference_update(self._guid_resolved_party_ids)
+        self._guid_resolved_party_ids.clear()
         self._match_roster_names.clear()
         self._match_roster_order.clear()
         self._match_friend_ids.clear()
@@ -918,6 +943,7 @@ class PartyRegistry:
 
     def _reset_party_ids_after_roster_change(self) -> None:
         self._resolved_party_names.clear()
+        self._guid_resolved_party_ids.clear()
         if self._self_ids:
             self._party_ids.intersection_update(self._self_ids)
         else:
@@ -1062,8 +1088,8 @@ class PartyRegistry:
             return
         if not isinstance(event.source_id, int) or not isinstance(event.target_id, int):
             return
-        source_name = name_registry.lookup(event.source_id)
-        target_name = name_registry.lookup(event.target_id)
+        source_name = _lookup_player_name(name_registry, event.source_id)
+        target_name = _lookup_player_name(name_registry, event.target_id)
         if (
             source_name is not None
             and source_name not in self._match_roster_names
@@ -1124,14 +1150,14 @@ class PartyRegistry:
             return
         if self._match_pending_friend_ids:
             for entity_id in list(self._match_pending_friend_ids):
-                name = name_registry.lookup(entity_id)
+                name = _lookup_player_name(name_registry, entity_id)
                 if name is None:
                     continue
                 self._match_pending_friend_ids.discard(entity_id)
                 self._mark_match_friend(entity_id, name)
         if self._match_pending_enemy_ids:
             for entity_id in list(self._match_pending_enemy_ids):
-                name = name_registry.lookup(entity_id)
+                name = _lookup_player_name(name_registry, entity_id)
                 if name is None:
                     continue
                 self._match_pending_enemy_ids.discard(entity_id)
@@ -1282,6 +1308,19 @@ def _looks_like_player_name(name: str | None) -> bool:
     else:
         return False
     return True
+
+
+def _lookup_player_name(
+    name_registry: NameRegistry, entity_id: int
+) -> str | None:
+    name = name_registry.lookup_player(entity_id)
+    if _looks_like_player_name(name):
+        return name
+    # Some older captures expose a valid player label only through a weak
+    # id/name event. It remains safe as a fallback because mob/system labels
+    # are rejected here and the caller still requires party membership.
+    name = name_registry.lookup(entity_id)
+    return name if _looks_like_player_name(name) else None
 
 
 def _prune_deque(values: deque[float], now: float, window_seconds: float) -> None:

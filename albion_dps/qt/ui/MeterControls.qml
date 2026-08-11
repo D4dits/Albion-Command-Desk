@@ -9,9 +9,12 @@ TableSurface {
 
     property string currentMode: "battle"
     property string currentSortKey: "dps"
+    property bool manualActive: false
     property var theme: null
     signal modeChanged(string mode)
     signal sortKeyChanged(string sortKey)
+    signal toggleManual()
+    signal copyCurrent(bool full)
 
     implicitHeight: controlsColumn.implicitHeight + 16
 
@@ -116,6 +119,36 @@ TableSurface {
                 checkable: true
                 checked: root.currentSortKey === "heal"
                 onClicked: root.sortKeyChanged("heal")
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
+
+            Text {
+                Layout.preferredWidth: 38
+                text: "Actions:"
+                color: root.theme.textMuted
+                font.pixelSize: 11
+            }
+
+            AppButton {
+                visible: root.currentMode === "manual"
+                text: root.manualActive ? "Stop" : "Start"
+                compact: true
+                variant: root.manualActive ? "danger" : "primary"
+                onClicked: root.toggleManual()
+            }
+            AppButton {
+                text: "Copy short"
+                compact: true
+                onClicked: root.copyCurrent(false)
+            }
+            AppButton {
+                text: "Copy full"
+                compact: true
+                onClicked: root.copyCurrent(true)
             }
         }
     }

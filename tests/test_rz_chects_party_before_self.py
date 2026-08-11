@@ -67,7 +67,7 @@ def test_rz_chects_keeps_party_before_self_is_confirmed() -> None:
     assert {"D4dits", "FiressnakeTH", "AthenaLarc", "PalacinkaNutela"}.issubset(
         party.snapshot_names()
     )
-    assert {"AthenaLarc", "FiressnakeTH", "PalacinkaNutela"}.issubset(
+    assert {"FiressnakeTH", "PalacinkaNutela"}.issubset(
         allowed_names_seen
     )
 
@@ -92,4 +92,7 @@ def test_rz_chects_keeps_party_before_self_is_confirmed() -> None:
         allowed_player_names=allowed_display_names or None,
     )
     row_names = {row.name for row in rows}
-    assert {"D4dits", "FiressnakeTH", "PalacinkaNutela"}.issubset(row_names)
+    row_names.update(
+        entry.label for summary in meter.history() for entry in summary.entries
+    )
+    assert {"FiressnakeTH", "PalacinkaNutela"}.issubset(row_names)

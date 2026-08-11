@@ -581,6 +581,9 @@ ApplicationWindow {
 
                     // State properties from uiState
                     mode: uiState.mode
+                    manualActive: uiState.manualActive
+                    contributorCount: uiState.contributorCount
+                    rosterCount: uiState.rosterCount
                     zone: uiState.zone
                     sortKey: uiState.sortKey
                     selectedHistoryIndex: uiState.selectedHistoryIndex
@@ -617,8 +620,32 @@ ApplicationWindow {
                     }
                     onSelectHistory: function(index) { uiState.selectHistory(index) }
                     onCopyHistory: function(index) {
-                        uiState.copyHistory(index)
-                        toastManager.showSuccess("Copied to clipboard", "Battle data copied")
+                        if (uiState.copyHistory(index))
+                            toastManager.showSuccess("Copied to clipboard", "Battle data copied")
+                    }
+                    onCopyHistoryShort: function(index) {
+                        if (uiState.copyHistoryShort(index))
+                            toastManager.showSuccess("Copied", "Short battle summary copied")
+                    }
+                    onCopyHistoryFull: function(index) {
+                        if (uiState.copyHistoryFull(index))
+                            toastManager.showSuccess("Copied", "Full battle summary copied")
+                    }
+                    onCopyCurrent: function(full) {
+                        if (uiState.copyCurrent(full))
+                            toastManager.showSuccess("Copied", full ? "Full meter copied" : "Short meter copied")
+                    }
+                    onToggleManual: {
+                        var active = uiState.toggleManual()
+                        toastManager.showInfo("Manual meter", active ? "Recording started" : "Recording stopped")
+                    }
+                    onDeleteSelectedHistory: {
+                        if (uiState.deleteSelectedHistory())
+                            toastManager.showSuccess("History", "Selected fight deleted")
+                    }
+                    onClearCurrentHistory: {
+                        if (uiState.clearCurrentHistory())
+                            toastManager.showSuccess("History", "History cleared for this mode")
                     }
                     onCopySessionCompare: function() {
                         if (uiState.copySessionCompare()) {

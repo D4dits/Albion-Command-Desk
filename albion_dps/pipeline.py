@@ -189,6 +189,9 @@ def stream_snapshots(
                     if _allow_event(item, party_registry, name_registry):
                         meter.push(item)
                         continue
+                    _observe_incoming_party_damage(
+                        item, meter, party_registry, name_registry
+                    )
                     if _should_keep_pending_event(item, party_registry, name_registry):
                         pending_events.append(item)
             else:
@@ -202,8 +205,12 @@ def stream_snapshots(
                     party_registry.try_resolve_self_id(name_registry)
                 if _allow_event(event, party_registry, name_registry):
                     meter.push(event)
-                elif _should_keep_pending_event(event, party_registry, name_registry):
-                    pending_events.append(event)
+                else:
+                    _observe_incoming_party_damage(
+                        event, meter, party_registry, name_registry
+                    )
+                    if _should_keep_pending_event(event, party_registry, name_registry):
+                        pending_events.append(event)
 
         if mapped_party_sources and party_registry is not None and name_registry is not None:
             party_registry.sync_names(name_registry, timestamp=packet.timestamp)
@@ -325,7 +332,7 @@ def _allow_combat_state(
     if entity_id not in non_self_party_ids:
         return True
     party_names = party_registry.snapshot_names()
-    name = name_registry.lookup(entity_id)
+    name = name_registry.lookup_player(entity_id)
     if not party_names or name not in party_names:
         return True
     recent_local_ids = name_registry.snapshot_recent_ids(
@@ -352,8 +359,13 @@ def _should_keep_pending_entity(
 ) -> bool:
     if party_registry is None or not party_registry.strict:
         return False
+    if (
+        entity_id in party_registry.snapshot_self_ids()
+        and party_registry.self_name() is None
+    ):
+        return True
     if name_registry is not None:
-        name = name_registry.lookup(entity_id)
+        name = name_registry.lookup_player(entity_id)
         party_names = party_registry.snapshot_names()
         self_name = party_registry.self_name()
         if (
@@ -367,6 +379,28 @@ def _should_keep_pending_entity(
     if not party_registry.has_ids() or party_registry.has_unresolved_names():
         return True
     return False
+
+
+def _observe_incoming_party_damage(
+    event: CombatEvent,
+    meter: Meter,
+    party_registry: PartyRegistry | None,
+    name_registry: NameRegistry | None,
+) -> None:
+    if event.kind != "damage" or party_registry is None:
+        return
+    if not hasattr(meter, "observe_incoming_damage"):
+        return
+    if not party_registry.allows(
+        event.target_id,
+        name_registry,
+        timestamp=event.timestamp,
+    ):
+        return
+    try:
+        meter.observe_incoming_damage(event.target_id, event.timestamp)
+    except TypeError:
+        pass
 
 
 def _decode_combat_state(

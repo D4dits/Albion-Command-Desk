@@ -27,7 +27,7 @@ def test_build_player_rows_respects_allowed_player_names() -> None:
     assert [row.name for row in rows] == ["D4dits"]
 
 
-def test_build_player_rows_adds_zero_rows_for_allowed_party_names() -> None:
+def test_build_player_rows_only_shows_party_members_with_stats() -> None:
     totals = {
         101: {"damage": 1000.0, "heal": 0.0, "dps": 50.0, "hps": 0.0},
     }
@@ -41,9 +41,8 @@ def test_build_player_rows_adds_zero_rows_for_allowed_party_names() -> None:
         allowed_player_names={"D4dits", "PartyOne", "PartyTwo"},
     )
 
-    assert [row.name for row in rows] == ["D4dits", "PartyOne", "PartyTwo"]
-    assert rows[1].damage == 0
-    assert rows[2].dps == 0
+    assert [row.name for row in rows] == ["D4dits"]
+    assert rows[0].damage == 1000
 
 
 def test_is_player_label_rejects_mob_prefix_without_at() -> None:

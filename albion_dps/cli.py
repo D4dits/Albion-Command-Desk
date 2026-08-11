@@ -63,7 +63,7 @@ def _add_common_gui_args(subparser: argparse.ArgumentParser) -> None:
     subparser.add_argument("--self-id", type=int)
     subparser.add_argument("--mode", choices=["battle", "zone", "manual"], default="battle")
     subparser.add_argument("--history", type=int)
-    subparser.add_argument("--battle-timeout", type=float, default=20.0)
+    subparser.add_argument("--battle-timeout", type=float, default=10.0)
 
 
 def _normalize_argv(argv: list[str]) -> list[str]:

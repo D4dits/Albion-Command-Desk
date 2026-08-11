@@ -8,6 +8,9 @@ Item {
     anchors.fill: parent
 
     property string mode: "battle"
+    property bool manualActive: false
+    property int contributorCount: 0
+    property int rosterCount: 0
     property string zone: ""
     property string sortKey: "dps"
     property int selectedHistoryIndex: -1
@@ -31,12 +34,19 @@ Item {
     property bool compactLayout: false
     property bool historyAvailable: historyModel && historyModel.count > 0
     property bool activityAvailable: sessionActivityModel && sessionActivityModel.count > 0
+    property bool showCompactHistory: false
 
     signal setMode(string mode)
     signal setSortKey(string sortKey)
     signal clearHistorySelection()
     signal selectHistory(int index)
     signal copyHistory(int index)
+    signal copyHistoryShort(int index)
+    signal copyHistoryFull(int index)
+    signal copyCurrent(bool full)
+    signal toggleManual()
+    signal deleteSelectedHistory()
+    signal clearCurrentHistory()
     signal copySessionCompare()
     signal refreshCaptureRuntimeStatus()
     signal openCaptureRuntimeAction()
@@ -46,8 +56,8 @@ Item {
     property color mutedColor: theme.textMuted
     property color accentColor: theme.brandPrimary
     property int panelSpacing: 12
-    property int rightPanelWidth: 372
-    property int leftPanelWidth: Math.max(0, width - rightPanelWidth - panelSpacing)
+    property int rightPanelWidth: compactLayout ? width : 372
+    property int leftPanelWidth: compactLayout ? width : Math.max(0, width - rightPanelWidth - panelSpacing)
 
     property var tableRowColor: function(index) {
         return index % 2 === 0 ? theme.tableRowEven : theme.tableRowOdd
@@ -81,6 +91,7 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: root.leftPanelWidth
+        visible: !root.compactLayout || !root.showCompactHistory
 
         ColumnLayout {
             anchors.fill: parent
@@ -122,6 +133,13 @@ Item {
                 }
 
                 Item { Layout.fillWidth: true }
+
+                AppButton {
+                    visible: root.compactLayout
+                    text: "History"
+                    compact: true
+                    onClicked: root.showCompactHistory = true
+                }
             }
 
             Text {
@@ -133,6 +151,13 @@ Item {
                 font.pixelSize: 14
                 font.bold: true
                 wrapMode: Text.WordWrap
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: "Contributors " + root.contributorCount + " / party " + root.rosterCount
+                color: root.mutedColor
+                font.pixelSize: 11
             }
 
             RowLayout {
@@ -158,8 +183,11 @@ Item {
                 theme: root.theme
                 currentMode: root.mode
                 currentSortKey: root.sortKey
+                manualActive: root.manualActive
                 onModeChanged: function(mode) { root.setMode(mode) }
                 onSortKeyChanged: function(sortKey) { root.setSortKey(sortKey) }
+                onToggleManual: root.toggleManual()
+                onCopyCurrent: function(full) { root.copyCurrent(full) }
             }
 
             MeterScoreboard {
@@ -185,11 +213,19 @@ Item {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: root.rightPanelWidth
+        visible: !root.compactLayout || root.showCompactHistory
 
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: 12
             spacing: 8
+
+            AppButton {
+                visible: root.compactLayout
+                text: "Back to meter"
+                compact: true
+                onClicked: root.showCompactHistory = false
+            }
 
             MeterHistoryPanel {
                 id: meterHistoryPanel
@@ -208,6 +244,10 @@ Item {
                 onClearHistorySelection: root.clearHistorySelection()
                 onSelectHistory: function(index) { root.selectHistory(index) }
                 onCopyHistory: function(index) { root.copyHistory(index) }
+                onCopyHistoryShort: function(index) { root.copyHistoryShort(index) }
+                onCopyHistoryFull: function(index) { root.copyHistoryFull(index) }
+                onDeleteSelectedHistory: root.deleteSelectedHistory()
+                onClearCurrentHistory: root.clearCurrentHistory()
                 onCopySessionCompare: root.copySessionCompare()
             }
 

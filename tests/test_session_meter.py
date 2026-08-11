@@ -168,20 +168,36 @@ def test_battle_mode_does_not_end_on_combat_state_if_damage_continues() -> None:
     assert history[0].total_damage == 17.0
 
 
-def test_battle_mode_active_combatants_extend_idle_timeout() -> None:
+def test_battle_mode_active_combatants_still_use_idle_fallback() -> None:
     meter = SessionMeter(history_limit=5, mode="battle")
 
     meter.push(CombatEvent(1.0, 1, 2, 10, "damage"))
     meter.observe_combat_state(1, True, False, 1.1)
-    meter.observe_packet(_packet(30.0))
-
-    assert meter.history() == []
-
-    meter.observe_packet(_packet(41.1))
+    meter.observe_packet(_packet(12.0))
     history = meter.history()
     assert len(history) == 1
     assert history[0].reason == "idle"
     assert history[0].total_damage == 10.0
+
+
+def test_battle_mode_self_heal_does_not_start_encounter() -> None:
+    meter = SessionMeter(history_limit=5, mode="battle")
+
+    meter.push(CombatEvent(1.0, 1, 1, 20, "heal"))
+
+    assert meter.snapshot().totals == {}
+    assert meter.history() == []
+
+
+def test_live_rates_use_whole_encounter_duration() -> None:
+    meter = SessionMeter(history_limit=5, mode="battle")
+    meter.push(CombatEvent(10.0, 1, 2, 100, "damage"))
+    meter.observe_packet(_packet(14.0))
+
+    snapshot = meter.snapshot()
+
+    assert snapshot.duration == 4.0
+    assert snapshot.totals[1]["dps"] == 25.0
 
 
 def test_history_preserves_source_ids_for_replay_view() -> None:
