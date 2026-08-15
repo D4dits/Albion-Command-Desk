@@ -8,7 +8,7 @@ import pytest
 pytest.importorskip("PySide6")
 
 try:
-    from PySide6.QtCore import QUrl
+    from PySide6.QtCore import QObject, QUrl
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtQml import QQmlApplicationEngine
 except ImportError as exc:  # pragma: no cover - depends on system Qt libs
@@ -40,6 +40,7 @@ MeterTab {
     theme: Theme
     mode: "battle"
     sortKey: "dps"
+    selectedHistoryIndex: 0
     playersModel: ListModel {
         ListElement {
             name: "D4dits"
@@ -72,3 +73,7 @@ MeterTab {
     app.processEvents()
 
     assert engine.rootObjects(), "; ".join(msg.toString() for msg in warnings) or "MeterTab QML load failed"
+    root = engine.rootObjects()[0]
+    chart = root.findChild(QObject, "meterHistoryChart")
+    assert chart is not None
+    assert chart.property("visible") is True

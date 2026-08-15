@@ -235,6 +235,7 @@ Item {
                 textColor: root.textColor
                 mutedColor: root.mutedColor
                 historyModel: root.historyModel
+                playersModel: root.playersModel
                 selectedHistoryIndex: root.selectedHistoryIndex
                 sessionCompareAvailable: root.sessionCompareAvailable
                 sessionCompareTitle: root.sessionCompareTitle

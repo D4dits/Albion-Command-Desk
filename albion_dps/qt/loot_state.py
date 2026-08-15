@@ -5,6 +5,7 @@ import csv
 import io
 import os
 from pathlib import Path
+import re
 import threading
 import time
 from typing import Any
@@ -60,6 +61,9 @@ class LootRow:
     unreturned_quantity: int = 0
     excluded_quantity: int = 0
     actual_sold_value: int = 0
+    item_tier: int = 0
+    item_enchant: int = 0
+    item_tier_text: str = ""
 
 
 @dataclass(frozen=True)
@@ -99,6 +103,9 @@ class LootEventsModel(QAbstractListModel):
     ValueEstimatedRole = Qt.UserRole + 22
     SettlementStatusRole = Qt.UserRole + 23
     OutstandingQuantityRole = Qt.UserRole + 24
+    ItemTierRole = Qt.UserRole + 25
+    ItemEnchantRole = Qt.UserRole + 26
+    ItemTierTextRole = Qt.UserRole + 27
 
     def __init__(self) -> None:
         super().__init__()
@@ -162,6 +169,12 @@ class LootEventsModel(QAbstractListModel):
             return item.settlement_status
         if role == self.OutstandingQuantityRole:
             return item.outstanding_quantity
+        if role == self.ItemTierRole:
+            return item.item_tier
+        if role == self.ItemEnchantRole:
+            return item.item_enchant
+        if role == self.ItemTierTextRole:
+            return item.item_tier_text
         return None
 
     def roleNames(self) -> dict[int, bytes]:  # type: ignore[override]
@@ -190,6 +203,9 @@ class LootEventsModel(QAbstractListModel):
             self.ValueEstimatedRole: b"valueEstimated",
             self.SettlementStatusRole: b"settlementStatus",
             self.OutstandingQuantityRole: b"outstandingQuantity",
+            self.ItemTierRole: b"itemTier",
+            self.ItemEnchantRole: b"itemEnchant",
+            self.ItemTierTextRole: b"itemTierText",
         }
 
     def set_items(self, items: list[LootRow]) -> None:
@@ -315,6 +331,7 @@ class LootState(QObject):
         self._looter_filter = "all"
         self._category_filter = "all"
         self._kind_filter = "items"
+        self._sort_order = "newest"
         self._looter_filter_options: list[str] = ["all"]
         self._category_filter_options: list[str] = [
             "all",
@@ -444,6 +461,10 @@ class LootState(QObject):
     @Property(str, notify=changed)
     def kindFilter(self) -> str:
         return self._kind_filter
+
+    @Property(str, notify=changed)
+    def sortOrder(self) -> str:
+        return self._sort_order
 
     @Property("QVariantList", constant=True)
     def sourceFilterOptions(self) -> list[str]:
@@ -594,6 +615,16 @@ class LootState(QObject):
         if next_value == self._kind_filter:
             return
         self._kind_filter = next_value
+        self._refresh_models(force_changed=True)
+
+    @Slot(str)
+    def setSortOrder(self, value: str) -> None:
+        next_value = str(value or "newest").strip().lower() or "newest"
+        if next_value not in {"newest", "tier_desc", "item_name"}:
+            next_value = "newest"
+        if next_value == self._sort_order:
+            return
+        self._sort_order = next_value
         self._refresh_models(force_changed=True)
 
     @Slot(str, result=bool)
@@ -1015,20 +1046,25 @@ class LootState(QObject):
         )
         item_events = [event for event in base_events if not event.is_silver]
         filtered_events = list(item_events)
+        display_events = _sort_loot_events(filtered_events, self._sort_order)
         rows = [
             _loot_event_to_row(event, stored=self._stored_rows.get(event.event_id))
-            for event in filtered_events
+            for event in display_events
         ]
         item_rows = [
             _loot_event_to_row(event, stored=self._stored_rows.get(event.event_id))
-            for event in item_events
+            for event in display_events
+        ]
+        export_rows = [
+            _loot_event_to_row(event, stored=self._stored_rows.get(event.event_id))
+            for event in filtered_events
         ]
         export_text = (
-            _loot_rows_to_csv(list(reversed(rows)))
+            _loot_rows_to_csv(list(reversed(export_rows)))
             if self._session_store is not None and self._imported_events is None
             else loot_events_to_txt(list(reversed(filtered_events)))
         )
-        latest_summary = rows[0].summary if rows else ""
+        latest_summary = export_rows[0].summary if export_rows else ""
         total_quantity = sum(row.quantity for row in rows)
         item_total_quantity = sum(row.quantity for row in item_rows)
         silver_total_quantity = 0
@@ -1293,6 +1329,56 @@ def _filter_events(
     return filtered
 
 
+_LOOT_TIER_RE = re.compile(r"^T(\d+)_", re.IGNORECASE)
+_LOOT_ENCHANT_RE = re.compile(r"(?:@(\d+)|_LEVEL(\d+))(?:$|_)", re.IGNORECASE)
+
+
+def _loot_item_tier(unique_name: str | None) -> tuple[int, int]:
+    value = str(unique_name or "").strip()
+    upper = value.upper()
+    # Trash keeps its technical T-prefix in Albion data, but it is not gear and
+    # must never outrank a real item in the "Highest tier" view.
+    if upper.endswith("_TRASH") or upper.startswith(("QUESTITEM_", "UNIQUE_UNLOCK_")):
+        return 0, 0
+    tier_match = _LOOT_TIER_RE.match(value)
+    if tier_match is None:
+        return 0, 0
+    tier = int(tier_match.group(1))
+    enchant_match = _LOOT_ENCHANT_RE.search(value)
+    enchant = 0
+    if enchant_match is not None:
+        enchant = int(enchant_match.group(1) or enchant_match.group(2) or 0)
+    return tier, enchant
+
+
+def _sort_loot_events(events: list[LootEvent], sort_order: str) -> list[LootEvent]:
+    if sort_order == "tier_desc":
+        def tier_key(event: LootEvent) -> tuple[int, int, float, str]:
+            tier, enchant = _loot_item_tier(
+                event.item.unique_name if event.item else None
+            )
+            return (
+                -tier,
+                -enchant,
+                -(event.timestamp or 0.0),
+                (event.item.display_name if event.item else "").lower(),
+            )
+
+        return sorted(
+            events,
+            key=tier_key,
+        )
+    if sort_order == "item_name":
+        return sorted(
+            events,
+            key=lambda event: (
+                (event.item.display_name if event.item else "").lower(),
+                -(event.timestamp or 0.0),
+            ),
+        )
+    return list(events)
+
+
 def _event_source_name(event: LootEvent) -> str:
     if event.looted_from is not None:
         return event.looted_from.player_name
@@ -1441,6 +1527,11 @@ def _loot_event_to_row(
     outstanding = int(stored.get("outstanding_quantity", quantity) or 0)
     settlements = stored.get("settlements")
     settlement_counts = settlements if isinstance(settlements, dict) else {}
+    item_tier, item_enchant = _loot_item_tier(item_id)
+    item_tier_text = (
+        f"T{item_tier}.{item_enchant}" if item_tier and item_enchant
+        else (f"T{item_tier}" if item_tier else "")
+    )
     return LootRow(
         timestamp_text=_format_timestamp(event.timestamp),
         looted_by_name=event.looted_by.player_name,
@@ -1473,6 +1564,9 @@ def _loot_event_to_row(
         unreturned_quantity=int(settlement_counts.get("unreturned", 0)),
         excluded_quantity=int(settlement_counts.get("excluded", 0)),
         actual_sold_value=int(stored.get("actual_sold_value") or 0),
+        item_tier=item_tier,
+        item_enchant=item_enchant,
+        item_tier_text=item_tier_text,
     )
 
 

@@ -253,3 +253,21 @@ def test_merged_history_preserves_totals_by_id_for_relabeling() -> None:
     assert 111 in summary.totals_by_id
     assert 222 in summary.totals_by_id
     assert sum(entry.damage for entry in summary.entries) == 15.0
+
+
+def test_refresh_history_labels_replaces_numeric_fallback_when_name_arrives() -> None:
+    names: dict[int, str] = {}
+    meter = SessionMeter(
+        battle_timeout_seconds=1.0,
+        history_limit=5,
+        mode="battle",
+        name_lookup=names.get,
+    )
+    meter.push(CombatEvent(0.0, 111, 2, 10, "damage"))
+    meter.observe_packet(_packet(2.0))
+    assert meter.history()[0].entries[0].label == "111"
+
+    names[111] = "LatePlayer"
+
+    assert meter.refresh_history_labels() is True
+    assert meter.history()[0].entries[0].label == "LatePlayer"

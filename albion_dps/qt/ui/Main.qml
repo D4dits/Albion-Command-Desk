@@ -1028,6 +1028,7 @@ ApplicationWindow {
                     looterFilter: lootState.looterFilter
                     categoryFilter: lootState.categoryFilter
                     kindFilter: lootState.kindFilter
+                    sortOrder: lootState.sortOrder
                     sourceFilterOptions: lootState.sourceFilterOptions
                     looterFilterOptions: lootState.looterFilterOptions
                     categoryFilterOptions: lootState.categoryFilterOptions
@@ -1058,6 +1059,7 @@ ApplicationWindow {
                     onSetLooterFilter: function(value) { lootState.setLooterFilter(value) }
                     onSetCategoryFilter: function(value) { lootState.setCategoryFilter(value) }
                     onSetKindFilter: function(value) { lootState.setKindFilter(value) }
+                    onSetSortOrder: function(value) { lootState.setSortOrder(value) }
                     onStartSession: function(title) { lootState.startSession(title) }
                     onStopSession: function() { lootState.stopSession() }
                     onSelectSession: function(index) { lootState.selectSession(index) }

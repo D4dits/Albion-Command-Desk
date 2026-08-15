@@ -1667,6 +1667,8 @@ def _is_player_label(label: str | None) -> bool:
     normalized = label.strip()
     if not normalized:
         return False
+    if normalized.isdigit():
+        return False
     if normalized in NON_PLAYER_NAMES:
         return False
     upper = normalized.upper()

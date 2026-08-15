@@ -48,6 +48,7 @@ def test_build_player_rows_only_shows_party_members_with_stats() -> None:
 def test_is_player_label_rejects_mob_prefix_without_at() -> None:
     assert not _is_player_label("MOB_MORGANA_CULTIST")
     assert not _is_player_label("NPC_VENDOR")
+    assert not _is_player_label("58207")
     assert _is_player_label("D4dits")
 
 

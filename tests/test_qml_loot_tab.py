@@ -70,6 +70,7 @@ LootTab {
             lootedByAlliance: "AAA"
             itemId: "T3_BAG"
                 itemName: "Journeyman's Bag"
+                itemTierText: "T3"
                 iconUrl: "https://render.albiononline.com/v1/item/T3_BAG?size=64"
                 category: "bag"
                 eventId: "event-1"
@@ -137,3 +138,26 @@ LootTab {
     assert players_row is not None
     assert abs(float(players_header.property("x")) - float(players_row.property("x"))) <= 1
     assert float(players_header.property("width")) == float(players_row.property("width"))
+
+    tab_widths_before = []
+    for index in range(4):
+        tab = find_visual(root, f"lootViewTab{index}")
+        assert tab is not None
+        tab_widths_before.append(float(tab.property("width")))
+    assert max(tab_widths_before) - min(tab_widths_before) <= 1
+
+    root.setProperty("activeView", 2)
+    app.processEvents()
+    tabs_after = [find_visual(root, f"lootViewTab{index}") for index in range(4)]
+    assert all(tab is not None for tab in tabs_after)
+    tab_widths_after = [float(tab.property("width")) for tab in tabs_after]
+    assert max(tab_widths_after) - min(tab_widths_after) <= 1
+    assert tab_widths_after == pytest.approx(tab_widths_before, abs=1)
+    assert find_visual(root, "lootSortOrder") is not None
+
+    reconcile_header = find_visual(root, "lootHeaderStatus")
+    reconcile_row = find_visual(root, "lootRowStatus")
+    assert reconcile_header is not None
+    assert reconcile_row is not None
+    assert abs(float(reconcile_header.property("x")) - float(reconcile_row.property("x"))) <= 1
+    assert float(reconcile_header.property("width")) == float(reconcile_row.property("width"))

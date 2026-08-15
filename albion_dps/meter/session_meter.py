@@ -406,11 +406,7 @@ class SessionMeter:
                     totals_by_id,
                     summary.duration,
                     self.name_lookup,
-                    label_overrides={
-                        int(entry.source_id): entry.label
-                        for entry in summary.entries
-                        if entry.source_id is not None and entry.label
-                    },
+                    label_overrides=_resolved_label_overrides(summary.entries),
                 )
                 total_damage = sum(entry.damage for entry in entries)
                 total_heal = sum(entry.heal for entry in entries)
@@ -462,11 +458,7 @@ class SessionMeter:
                     summary.totals_by_id,
                     summary.duration,
                     self.name_lookup,
-                    label_overrides={
-                        int(entry.source_id): entry.label
-                        for entry in summary.entries
-                        if entry.source_id is not None and entry.label
-                    },
+                    label_overrides=_resolved_label_overrides(summary.entries),
                 )
                 total_damage = sum(entry.damage for entry in entries)
                 total_heal = sum(entry.heal for entry in entries)
@@ -811,6 +803,17 @@ def _build_entries_from_totals_by_id(
         )
     entries.sort(key=lambda item: item.damage, reverse=True)
     return entries
+
+
+def _resolved_label_overrides(entries: list[SessionEntry]) -> dict[int, str]:
+    """Keep stable names while allowing unresolved numeric IDs to be relabeled."""
+    return {
+        int(entry.source_id): entry.label
+        for entry in entries
+        if entry.source_id is not None
+        and entry.label
+        and not entry.label.isdigit()
+    }
 
 
 def _is_non_player_label(label: str) -> bool:

@@ -21,6 +21,7 @@ MeterTab 1.0 MeterTab.qml
 MeterControls 1.0 MeterControls.qml
 MeterScoreboard 1.0 MeterScoreboard.qml
 MeterHistoryPanel 1.0 MeterHistoryPanel.qml
+MeterHistoryChart 1.0 MeterHistoryChart.qml
 MeterLegend 1.0 MeterLegend.qml
 MarketTab 1.0 MarketTab.qml
 FlipperTab 1.0 FlipperTab.qml

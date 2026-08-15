@@ -18,6 +18,7 @@ Item {
 
     // Properties to bind to parent state
     property var historyModel: null
+    property var playersModel: null
     property int selectedHistoryIndex: -1
     property string sortKey: "dps"
 
@@ -131,6 +132,15 @@ Item {
                     clip: true
                 }
             }
+        }
+
+        MeterHistoryChart {
+            visible: root.selectedHistoryIndex >= 0
+            Layout.fillWidth: true
+            Layout.preferredHeight: implicitHeight
+            theme: root.theme
+            playersModel: root.playersModel
+            sortKey: root.sortKey
         }
 
         ListView {

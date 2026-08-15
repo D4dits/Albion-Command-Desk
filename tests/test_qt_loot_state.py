@@ -18,7 +18,12 @@ from albion_dps.domain.party_registry import PartyRegistry
 from albion_dps.domain.session_activity import MapTrailTracker
 from albion_dps.meter.session_meter import SessionMeter
 from albion_dps.models import MeterSnapshot
-from albion_dps.qt.loot_state import LootState, _item_category, _loot_icon_url
+from albion_dps.qt.loot_state import (
+    LootState,
+    _item_category,
+    _loot_icon_url,
+    _loot_item_tier,
+)
 from albion_dps.qt.models import UiState
 from albion_dps.qt.runner import _drain_snapshots
 from tests.support_temp import mk_test_dir
@@ -164,6 +169,7 @@ def test_loot_state_skips_missing_renderer_icons_for_trash_items() -> None:
         "/SKIN_HORSE_ANNIVERSARY_2026?size=64"
     )
     assert _loot_icon_url("T3_BAG").endswith("/T3_BAG?size=64")
+    assert _loot_item_tier("T8_TRASH") == (0, 0)
 
 
 def test_loot_state_filters_and_rebuilds_aggregates() -> None:
@@ -208,6 +214,79 @@ def test_loot_state_filters_and_rebuilds_aggregates() -> None:
     state.setCategoryFilter("consumable")
     assert state.eventCount == 1
     assert state.latestLootSummary == "Bob looted 1x Adept's Potion from @MOB_KEEPER_DRUID_CHAMPION"
+
+
+def test_loot_state_sorts_items_by_highest_tier_and_exposes_tier_label() -> None:
+    state = LootState(history_limit=10)
+    events = _sample_events()
+    events.append(
+        LootEvent(
+            timestamp=3659.0,
+            looted_by=LootPlayer(player_name="TrashCollector"),
+            looted_from=None,
+            source_name="Enemy",
+            source_kind="player",
+            item=LootItemRef(
+                item_num_id=998,
+                unique_name="T8_TRASH",
+                display_name="Trash",
+            ),
+            quantity=1,
+            is_silver=False,
+            raw_event_code=1,
+            raw_subtype=275,
+        )
+    )
+    state.update_from_tracker(_FakeLootTracker(events))
+
+    state.setSortOrder("tier_desc")
+
+    assert state.sortOrder == "tier_desc"
+    model = state.eventsModel
+    first = model.index(0, 0)
+    second = model.index(1, 0)
+    assert model.data(first, model.LootedByNameRole) == "Bob"
+    assert model.data(first, model.ItemTierRole) == 4
+    assert model.data(first, model.ItemTierTextRole) == "T4"
+    assert model.data(second, model.LootedByNameRole) == "Alice"
+    assert model.data(second, model.ItemTierRole) == 3
+    assert state.latestLootSummary == "Alice looted 2x Journeyman's Bag from Enemy"
+
+    state.setSortOrder("item_name")
+    assert model.data(model.index(0, 0), model.ItemNameRole) == "Adept's Potion"
+
+
+def test_loot_state_highest_tier_uses_enchantment_as_tiebreaker() -> None:
+    events = _sample_events()
+    events.append(
+        LootEvent(
+            timestamp=3658.0,
+            looted_by=LootPlayer(player_name="Cara"),
+            looted_from=None,
+            source_name="Chest",
+            source_kind="system",
+            item=LootItemRef(
+                item_num_id=999,
+                unique_name="T4_MAIN_SWORD@3",
+                display_name="Adept's Enchanted Sword",
+            ),
+            quantity=1,
+            is_silver=False,
+            raw_event_code=1,
+            raw_subtype=275,
+        )
+    )
+    state = LootState(history_limit=10)
+    state.update_from_tracker(_FakeLootTracker(events))
+
+    state.setSortOrder("tier_desc")
+
+    model = state.eventsModel
+    first = model.index(0, 0)
+    assert model.data(first, model.LootedByNameRole) == "Cara"
+    assert model.data(first, model.ItemTierRole) == 4
+    assert model.data(first, model.ItemEnchantRole) == 3
+    assert model.data(first, model.ItemTierTextRole) == "T4.3"
 
 
 def test_runner_drain_snapshots_updates_loot_state() -> None:

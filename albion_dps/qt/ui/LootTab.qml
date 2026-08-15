@@ -26,6 +26,7 @@ Item {
     property string looterFilter: "all"
     property string categoryFilter: "all"
     property string kindFilter: "items"
+    property string sortOrder: "newest"
     property var sourceFilterOptions: ["all", "player", "mob", "system"]
     property var looterFilterOptions: ["all"]
     property var categoryFilterOptions: ["all", "weapon", "armor", "bag", "cape", "mount", "consumable", "resource", "artifact", "other"]
@@ -92,6 +93,7 @@ Item {
     signal setLooterFilter(string value)
     signal setCategoryFilter(string value)
     signal setKindFilter(string value)
+    signal setSortOrder(string value)
     signal copyLatestSummary()
     signal copyCurrentView()
     signal exportCurrentView()
@@ -235,6 +237,17 @@ Item {
                     text: "Export"
                     onClicked: root.exportCurrentView()
                 }
+
+                AppButton {
+                    text: "Import"
+                    onClicked: root.importLog()
+                }
+
+                AppButton {
+                    visible: root.importedLogActive
+                    text: "Back to live"
+                    onClicked: root.useLiveLog()
+                }
             }
 
             Rectangle {
@@ -285,6 +298,19 @@ Item {
                         currentIndex: Math.max(0, model.indexOf(root.categoryFilter))
                         displayText: root.categoryLabel(String(currentValue))
                         onActivated: root.setCategoryFilter(String(currentValue))
+                    }
+
+                    AppComboBox {
+                        objectName: "lootSortOrder"
+                        width: 140
+                        model: ["newest", "tier_desc", "item_name"]
+                        currentIndex: Math.max(0, model.indexOf(root.sortOrder))
+                        displayText: {
+                            if (String(currentValue) === "tier_desc") return "Highest tier"
+                            if (String(currentValue) === "item_name") return "Item A-Z"
+                            return "Newest"
+                        }
+                        onActivated: root.setSortOrder(String(currentValue))
                     }
 
                     AppComboBox {
@@ -365,27 +391,18 @@ Item {
                 }
             }
 
-            RowLayout {
+            Row {
                 Layout.fillWidth: true
                 spacing: 4
                 Repeater {
                     model: ["Live", "Players", "Reconcile", "History"]
                     delegate: AppButton {
-                        Layout.preferredWidth: 118
+                        objectName: "lootViewTab" + index
+                        width: Math.max(72, (parent.width - parent.spacing * 3) / 4)
                         text: modelData
                         variant: root.activeView === index ? "primary" : "secondary"
                         onClicked: root.activeView = index
                     }
-                }
-                Item { Layout.fillWidth: true }
-                AppButton {
-                    text: "Import"
-                    onClicked: root.importLog()
-                }
-                AppButton {
-                    visible: root.importedLogActive
-                    text: "Back to live"
-                    onClicked: root.useLiveLog()
                 }
             }
 
@@ -593,7 +610,8 @@ Item {
                                         Text {
                                             width: parent.width
                                             height: parent.height / 2
-                                            text: eligibilityReason + " | " + (sourceName.length > 0 ? sourceName : sourceKind)
+                                            text: (itemTierText.length > 0 ? itemTierText + " | " : "")
+                                                + eligibilityReason + " | " + (sourceName.length > 0 ? sourceName : sourceKind)
                                             color: theme.textMuted
                                             font.pixelSize: 8
                                             elide: Text.ElideRight
