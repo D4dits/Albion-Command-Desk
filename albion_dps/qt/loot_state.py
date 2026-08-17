@@ -509,17 +509,17 @@ class LootState(QObject):
     def pendingScopeCount(self) -> int:
         return self._pending_scope_count
 
-    @Property(int, notify=changed)
-    def totalMarketValue(self) -> int:
-        return self._total_market_value
+    @Property(float, notify=changed)
+    def totalMarketValue(self) -> float:
+        return float(self._total_market_value)
 
-    @Property(int, notify=changed)
-    def totalLiquidationValue(self) -> int:
-        return self._total_liquidation_value
+    @Property(float, notify=changed)
+    def totalLiquidationValue(self) -> float:
+        return float(self._total_liquidation_value)
 
-    @Property(int, notify=changed)
-    def outstandingMarketValue(self) -> int:
-        return self._outstanding_market_value
+    @Property(float, notify=changed)
+    def outstandingMarketValue(self) -> float:
+        return float(self._outstanding_market_value)
 
     @Property(str, notify=changed)
     def pricingStatus(self) -> str:

@@ -28,6 +28,7 @@ _JOURNAL_NAME_BY_KIND: dict[str, str] = {
 }
 _TIER_PREFIX_RE = re.compile(r"^T(?P<tier>\d+)_(?P<rest>.+)$", re.IGNORECASE)
 _LEVEL_SUFFIX_RE = re.compile(r"_LEVEL\d+$", re.IGNORECASE)
+_HALF_FAME_MARKERS = ("_HEAD_", "_SHOES_", "_OFF_")
 
 
 def _base_item_id(item_id: str) -> str:
@@ -268,6 +269,17 @@ def journal_display_name(kind: str, tier: int) -> str:
     return base_name
 
 
+def _journal_fame_weight_for_recipe(recipe: Any) -> float:
+    item = getattr(recipe, "item", None)
+    base_id = _base_item_id(str(getattr(item, "unique_name", "") or ""))
+    if any(marker in base_id for marker in _HALF_FAME_MARKERS):
+        return 0.5
+    station = str(getattr(recipe, "station", "") or "").strip().lower()
+    if station.endswith((" helmet", " shoes")) or station == "offhand":
+        return 0.5
+    return 1.0
+
+
 def estimate_journal_totals(
     *,
     runs: list[Any],
@@ -300,7 +312,8 @@ def estimate_journal_totals(
         if crafted_units <= 0:
             continue
         factor = journal_fame_factor_for_item(str(recipe.item.unique_name))
-        gained_fame = crafted_units * float(rule.fame_per_item) * float(factor)
+        fame_weight = _journal_fame_weight_for_recipe(recipe)
+        gained_fame = crafted_units * float(rule.fame_per_item) * float(factor) * float(fame_weight)
         if gained_fame <= 0:
             continue
         key = f"{rule.empty_item_id}|{rule.full_item_id}|{rule.max_fame}"

@@ -1169,6 +1169,54 @@ def test_journal_display_name_uses_specific_kind_and_tier() -> None:
     assert market_state._journal_display_name("WARRIOR", 8) == "T8 Blacksmith's Journal"
 
 
+def test_estimate_journal_totals_uses_half_fame_for_hoods_but_not_swords() -> None:
+    state = MarketSetupState(auto_refresh_prices=False)
+    hood = state._catalog.get("T4_HEAD_LEATHER_SET2")
+    sword = state._catalog.get("T4_MAIN_SWORD")
+    setup = CraftSetup(
+        region=MarketRegion.EUROPE,
+        craft_city="Bridgewatch",
+        default_buy_city="Bridgewatch",
+        default_sell_city="Bridgewatch",
+        quality=1,
+    )
+    price_index = {
+        ("T4_JOURNAL_HUNTER_FULL", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_JOURNAL_HUNTER_FULL",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=6000,
+            buy_price_max=5500,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+        ("T4_JOURNAL_WARRIOR_FULL", "Bridgewatch", 1): MarketPriceRecord(
+            item_id="T4_JOURNAL_WARRIOR_FULL",
+            city="Bridgewatch",
+            quality=1,
+            sell_price_min=6000,
+            buy_price_max=5500,
+            sell_price_min_date="",
+            buy_price_max_date="",
+        ),
+    }
+
+    totals = state._estimate_journal_totals(
+        runs=[
+            SimpleNamespace(recipe=hood, outputs=(SimpleNamespace(item=hood.item, quantity=6.0),)),
+            SimpleNamespace(recipe=sword, outputs=(SimpleNamespace(item=sword.item, quantity=3.0),)),
+        ],
+        setup=setup,
+        price_index=price_index,
+    )
+
+    lines = {(line.kind, line.tier): line for line in totals.lines}
+    assert lines[("HUNTER", 4)].empty_quantity == pytest.approx(1.0)
+    assert lines[("HUNTER", 4)].full_quantity == pytest.approx(1.0)
+    assert lines[("WARRIOR", 4)].empty_quantity == pytest.approx(1.0)
+    assert lines[("WARRIOR", 4)].full_quantity == pytest.approx(1.0)
+
+
 @pytest.mark.skip(reason="Royal journal fallback coverage disabled for CI stability.")
 def test_journal_rule_falls_back_for_royal_plate_items() -> None:
     rule = market_state._journal_rule_for_item("T6_ARMOR_PLATE_ROYAL")

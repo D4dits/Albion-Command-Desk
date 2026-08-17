@@ -52,3 +52,16 @@ def test_qt_smoke_loads_qml() -> None:
     if not engine.rootObjects():
         message = "; ".join(msg.toString() for msg in warnings) or "QML load failed"
         pytest.skip(message)
+
+
+def test_loot_market_value_properties_allow_large_values() -> None:
+    loot_state = LootState(history_limit=5)
+    large_value = 3_653_313_492
+    loot_state._total_market_value = large_value
+    loot_state._total_liquidation_value = large_value
+    loot_state._outstanding_market_value = large_value
+
+    meta = loot_state.metaObject()
+    for name in ("totalMarketValue", "totalLiquidationValue", "outstandingMarketValue"):
+        prop = meta.property(meta.indexOfProperty(name))
+        assert prop.read(loot_state) == float(large_value)
